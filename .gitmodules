@@ -1,0 +1,3 @@
+[submodule "vendor/PathOfBuilding"]
+	path = vendor/PathOfBuilding
+	url = https://github.com/PathOfBuildingCommunity/PathOfBuilding.git
