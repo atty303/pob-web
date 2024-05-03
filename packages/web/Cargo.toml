@@ -1,0 +1,9 @@
+[package]
+name = "pob-web"
+version = { workspace = true }
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = ["web"] }
+tracing = "0.1"
+tracing-wasm = "0.2"
