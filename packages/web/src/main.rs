@@ -13,7 +13,10 @@ extern "C" {
 }
 
 fn app() -> Element {
-    Engine::new().test();
+    use_effect(|| {
+        let engine = Engine::new();
+        engine.test();
+    });
     rsx! {
         div {
             "Hello, world!"

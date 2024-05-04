@@ -11,6 +11,7 @@ script = '''
 mkdir packages/web/dist
 cp target/pob_engine.mjs packages/web/dist/pob_engine.mjs
 cp target/pob_engine.wasm packages/web/dist/pob_engine.wasm
+cp target/pob_engine.data packages/web/dist/pob_engine.data
 '''
 
 [tasks.watch-build]

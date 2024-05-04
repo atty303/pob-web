@@ -5,8 +5,7 @@ export class Engine {
     }
 
     async test() {
-        console.log("test");
         const engine = await PoBEngine();
-        console.log(engine._test());
+        engine._test();
     }
 }
