@@ -1,6 +1,22 @@
 -- This wrapper allows the program to run headless on any OS (in theory)
 -- It can be run using a standard lua interpreter, although LuaJIT is preferable
 
+unpack = table.unpack
+loadstring = load
+
+bit = {
+    rshift = bit32.rshift,
+    band = bit32.band,
+    bor = bit32.bor,
+    bxor = bit32.bxor,
+    bnot = bit32.bnot,
+}
+
+
+local sha1 = require("sha1.init")
+package.loaded["sha1"] = sha1
+
+arg = {}
 
 -- Callbacks
 local callbackTable = { }
@@ -37,23 +53,32 @@ end
 function imageHandleClass:IsValid()
     return self.valid
 end
-function imageHandleClass:SetLoadingPriority(pri) end
+function imageHandleClass:SetLoadingPriority(pri)
+end
 function imageHandleClass:ImageSize()
     return 1, 1
 end
 
 -- Rendering
-function RenderInit() end
+function RenderInit()
+end
 function GetScreenSize()
     return 1920, 1080
 end
-function SetClearColor(r, g, b, a) end
-function SetDrawLayer(layer, subLayer) end
-function SetViewport(x, y, width, height) end
-function SetDrawColor(r, g, b, a) end
-function DrawImage(imgHandle, left, top, width, height, tcLeft, tcTop, tcRight, tcBottom) end
-function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4) end
-function DrawString(left, top, align, height, font, text) end
+function SetClearColor(r, g, b, a)
+end
+function SetDrawLayer(layer, subLayer)
+end
+function SetViewport(x, y, width, height)
+end
+function SetDrawColor(r, g, b, a)
+end
+function DrawImage(imgHandle, left, top, width, height, tcLeft, tcTop, tcRight, tcBottom)
+end
+function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4)
+end
+function DrawString(left, top, align, height, font, text)
+end
 function DrawStringWidth(height, font, text)
     return 1
 end
@@ -61,25 +86,32 @@ function DrawStringCursorIndex(height, font, text, cursorX, cursorY)
     return 0
 end
 function StripEscapes(text)
-    return text:gsub("%^%d",""):gsub("%^x%x%x%x%x%x%x","")
+    return text:gsub("%^%d", ""):gsub("%^x%x%x%x%x%x%x", "")
 end
 function GetAsyncCount()
     return 0
 end
 
 -- Search Handles
-function NewFileSearch() end
+function NewFileSearch()
+end
 
 -- General Functions
-function SetWindowTitle(title) end
+function SetWindowTitle(title)
+end
 function GetCursorPos()
     return 0, 0
 end
-function SetCursorPos(x, y) end
-function ShowCursor(doShow) end
-function IsKeyDown(keyName) end
-function Copy(text) end
-function Paste() end
+function SetCursorPos(x, y)
+end
+function ShowCursor(doShow)
+end
+function IsKeyDown(keyName)
+end
+function Copy(text)
+end
+function Paste()
+end
 function Deflate(data)
     -- TODO: Might need this
     return ""
@@ -100,15 +132,21 @@ end
 function GetUserPath()
     return ""
 end
-function MakeDir(path) end
-function RemoveDir(path) end
-function SetWorkDir(path) end
+function MakeDir(path)
+end
+function RemoveDir(path)
+end
+function SetWorkDir(path)
+end
 function GetWorkDir()
     return ""
 end
-function LaunchSubScript(scriptText, funcList, subList, ...) end
-function AbortSubScript(ssID) end
-function IsSubScriptRunning(ssID) end
+function LaunchSubScript(scriptText, funcList, subList, ...)
+end
+function AbortSubScript(ssID)
+end
+function IsSubScriptRunning(ssID)
+end
 function LoadModule(fileName, ...)
     if not fileName:match("%.lua") then
         fileName = fileName .. ".lua"
@@ -117,7 +155,7 @@ function LoadModule(fileName, ...)
     if func then
         return func(...)
     else
-        error("LoadModule() error loading '"..fileName.."': "..err)
+        error("LoadModule() error loading '" .. fileName .. "': " .. err)
     end
 end
 function PLoadModule(fileName, ...)
@@ -128,7 +166,7 @@ function PLoadModule(fileName, ...)
     if func then
         return PCall(func, ...)
     else
-        error("PLoadModule() error loading '"..fileName.."': "..err)
+        error("PLoadModule() error loading '" .. fileName .. "': " .. err)
     end
 end
 function PCall(func, ...)
@@ -144,14 +182,22 @@ function ConPrintf(fmt, ...)
     -- Optional
     print(string.format(fmt, ...))
 end
-function ConPrintTable(tbl, noRecurse) end
-function ConExecute(cmd) end
-function ConClear() end
-function SpawnProcess(cmdName, args) end
-function OpenURL(url) end
-function SetProfiling(isEnabled) end
-function Restart() end
-function Exit() end
+function ConPrintTable(tbl, noRecurse)
+end
+function ConExecute(cmd)
+end
+function ConClear()
+end
+function SpawnProcess(cmdName, args)
+end
+function OpenURL(url)
+end
+function SetProfiling(isEnabled)
+end
+function Restart()
+end
+function Exit()
+end
 
 local l_require = require
 function require(name)
@@ -161,7 +207,6 @@ function require(name)
     end
     return l_require(name)
 end
-
 
 dofile("Launch.lua")
 

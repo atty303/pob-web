@@ -8,5 +8,5 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-mlua = { version = "0.9", features = ["lua51", "vendored"] }
+mlua = { version = "0.9", features = ["lua52", "vendored"] }
 tracing = "0.1"
