@@ -1,0 +1,17 @@
+[config]
+default_to_workspace = false
+
+[tasks.build]
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-emscripten", "-p", "pob-engine"]
+env = { EMCC_CFLAGS = "--no-entry -s MODULARIZE=1 -s ENVIRONMENT=web" }
+
+[tasks.example]
+script_runner = "@duckscript"
+script = '''
+cp target/wasm32-unknown-emscripten/debug/pob_engine.wasm ./packages/web/
+'''
+
+[tasks.serve]
+command = "dx"
+args = ["serve", "--bin", "pob-web"]
