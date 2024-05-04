@@ -1,10 +1,9 @@
 [package]
-name = "pob-web"
+name = "pob-engine"
 version = { workspace = true }
 edition = "2021"
 publish = false
 
 [dependencies]
-dioxus = { workspace = true, features = ["web"] }
+mlua = { version = "0.9", features = ["lua51", "vendored"] }
 tracing = "0.1"
-tracing-wasm = "0.2"

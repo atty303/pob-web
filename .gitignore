@@ -1,3 +1,5 @@
 /target
 *.iml
 .idea/
+/work
+/.cargo/config.toml

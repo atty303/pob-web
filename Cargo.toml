@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "packages/engine",
     "packages/web",
 ]
 
@@ -9,4 +10,5 @@ version = "0.1.0"
 
 [workspace.dependencies]
 dioxus = "0.5"
+pob-engine = { path = "packages/pob-engine" }
 pob-web = { path = "packages/pob-web" }
