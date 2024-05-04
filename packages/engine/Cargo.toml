@@ -10,12 +10,3 @@ crate-type = ["cdylib"]
 [dependencies]
 mlua = { version = "0.9", features = ["lua51", "vendored"] }
 tracing = "0.1"
-
-#[target.'cfg(all(target_arch = "wasm32", target_env = "emscripten"))']
-#rustflags = [
-#    "-C", "link-arg=-o", "-C", "link-arg=test.js",
-#    "-C", "link-arg=--no-entry",
-#    "-C", "link-arg=-s", "-C", "link-arg=ERROR_ON_UNDEFINED_SYMBOLS=0",
-#    "-C", "link-arg=-s", "-C", "link-arg=MODULARIZE=1",
-#    "-C", "link-arg=-s", "-C", "link-arg=ENVIRONMENT=web",
-#]

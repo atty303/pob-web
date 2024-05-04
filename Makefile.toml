@@ -4,14 +4,22 @@ default_to_workspace = false
 [tasks.build]
 command = "cargo"
 args = ["build", "--target", "wasm32-unknown-emscripten", "-p", "pob-engine"]
-env = { EMCC_CFLAGS = "--no-entry -s MODULARIZE=1 -s ENVIRONMENT=web" }
 
-[tasks.example]
+[tasks.copy-engine]
 script_runner = "@duckscript"
 script = '''
-cp target/wasm32-unknown-emscripten/debug/pob_engine.wasm ./packages/web/
+mkdir packages/web/dist
+cp target/pob_engine.mjs packages/web/dist/pob_engine.mjs
+cp target/pob_engine.wasm packages/web/dist/pob_engine.wasm
 '''
 
-[tasks.serve]
+[tasks.watch-build]
+dependencies = ["build", "copy-engine"]
+watch = true
+
+[tasks.serve-web]
 command = "dx"
 args = ["serve", "--bin", "pob-web"]
+
+[tasks.serve]
+run_task = { name = ["serve-web", "watch-build"], fork = true, parallel = true }

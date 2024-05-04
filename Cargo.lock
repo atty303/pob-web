@@ -1462,6 +1462,7 @@ dependencies = [
  "dioxus",
  "tracing",
  "tracing-wasm",
+ "wasm-bindgen",
 ]
 
 [[package]]
