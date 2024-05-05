@@ -1,0 +1,8 @@
+[package]
+name = "pob-prepare"
+version = { workspace = true }
+edition = "2021"
+publish = false
+
+[dependencies]
+imsz = "0.3"

@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::ffi::CString;
+use std::sync::atomic::AtomicI32;
 use std::sync::{Arc, Mutex};
 
-use mlua::{Error, FromLua, Lua, UserData, Value};
+use mlua::{Error, FromLua, Lua, UserData, Value, Variadic};
 use once_cell::sync::Lazy;
 
 extern "C" {
@@ -19,22 +21,91 @@ fn escape_js(input: &str) -> String {
     format!("\"{}\"", escaped)
 }
 
-struct ImageHandle;
+// static IMAGE_META_TSV: &'static str = include_str!("../../../target/fs.tsv");
+static IMAGE_META: Lazy<HashMap<String, (i32, i32)>> = Lazy::new(|| {
+    let tsv = include_str!("../../../target/fs.tsv");
+    let lines = tsv.lines().map(|line| {
+        let mut xs = line.split('\t');
+        let name = xs.next().unwrap();
+        let width: i32 = xs.next().unwrap().parse().unwrap();
+        let height: i32 = xs.next().unwrap().parse().unwrap();
+        (name.to_string(), (width, height))
+    });
+    HashMap::from_iter(lines)
+});
+
+static IMAGE_HANDLE_DATA: Lazy<Mutex<HashMap<i32, ImageHandleData>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+struct ImageHandleData {
+    width: i32,
+    height: i32,
+}
+
+struct ImageHandle {
+    handle: i32,
+    width: i32,
+    height: i32,
+}
+
+impl ImageHandle {
+    fn new() -> Self {
+        static NEXT_HANDLE: AtomicI32 = AtomicI32::new(1);
+        let handle = NEXT_HANDLE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        IMAGE_HANDLE_DATA.lock().unwrap().insert(
+            handle,
+            ImageHandleData {
+                width: 1,
+                height: 1,
+            },
+        );
+        ImageHandle {
+            handle,
+            width: 0,
+            height: 0,
+        }
+    }
+}
 
 impl UserData for ImageHandle {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method_mut("Load", |_, _this, (name,): (String,)| Ok(()));
+        methods.add_method_mut(
+            "Load",
+            |_, this, (name, _args): (String, Variadic<Option<String>>)| {
+                // println!("ImageHandle:Load: {}, {:?}", name, args);
+                let (width, height) = IMAGE_META.get(&name).unwrap_or(&(0, 0));
+                this.width = *width;
+                this.height = *height;
+                let script =
+                    CString::new(format!(r#"ImageHandleLoad({}, "{}")"#, this.handle, &name,))
+                        .unwrap();
+                unsafe { Ok(emscripten_run_script(script.as_ptr())) }
+            },
+        );
         methods.add_method_mut("Unload", |_, _this, ()| Ok(()));
         methods.add_method("IsValid", |_, _this, ()| Ok(true));
-        methods.add_method("SetLoadingPriority", |_, _this, (p,): (i32,)| Ok(()));
-        methods.add_method("ImageSize", |_, _this, ()| Ok((1, 1)));
+        methods.add_method("SetLoadingPriority", |_, _this, (_,): (i32,)| Ok(()));
+        methods.add_method("ImageSize", |_, this, ()| {
+            // println!("ImageHandle:ImageSize");
+            // let data = IMAGE_HANDLE_DATA.lock().unwrap();
+            // data.get(&this.handle)
+            //     .map_or_else(|| Ok((1, 1)), |this| Ok((this.width, this.height)))
+            Ok((this.width, this.height))
+        });
     }
 }
 
 impl<'lua> FromLua<'lua> for ImageHandle {
-    fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
-        // println!("FromLua: {:?}", value);
-        Ok(ImageHandle)
+    fn from_lua(value: Value<'lua>, _lua: &'lua Lua) -> mlua::Result<Self> {
+        // println!("FromLua: {:?}", value.as_userdata().unwrap());
+        let a = value.as_userdata().unwrap();
+        let b = a.borrow::<ImageHandle>().unwrap();
+        // println!("FromLua: {:?}", b.handle);
+        Ok(ImageHandle {
+            handle: b.handle,
+            width: b.width,
+            height: b.height,
+        })
     }
 }
 
@@ -80,10 +151,23 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
     // image
     globals.set(
         "NewImageHandle",
-        lua.create_function(|_, ()| Ok(ImageHandle))?,
+        lua.create_function(|_, ()| Ok(ImageHandle::new()))?,
     )?;
 
     // render
+    globals.set(
+        "SetDrawLayer",
+        lua.create_function(|_, (layer, sub): (Option<i32>, Option<i32>)| {
+            let script = CString::new(format!(
+                r#"SetDrawLayer({}, {})"#,
+                layer.map_or("undefined".to_string(), |l| l.to_string()),
+                sub.map_or("undefined".to_string(), |l| l.to_string()),
+            ))
+            .unwrap();
+            unsafe { Ok(emscripten_run_script(script.as_ptr())) }
+        })?,
+    )?;
+
     globals.set(
         "SetViewport",
         lua.create_function(
@@ -147,7 +231,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
         "DrawImage",
         lua.create_function(
             |_,
-             (_image, left, top, width, height, tc_left, tc_top, tc_right, tc_bottom): (
+             (image, left, top, width, height, tc_left, tc_top, tc_right, tc_bottom): (
                 Option<ImageHandle>,
                 f32,
                 f32,
@@ -159,8 +243,8 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 Option<f32>,
             )| {
                 let script = CString::new(format!(
-                    "DrawImage({}, {}, {}, {}, {}, {}, {}, {})",
-                    // image,
+                    "DrawImage({}, {}, {}, {}, {}, {}, {}, {}, {})",
+                    image.map(|i| i.handle).unwrap_or(0),
                     left,
                     top,
                     width,
@@ -264,4 +348,15 @@ pub fn test() {
 pub fn on_frame() {
     let lua = LUA.lock().unwrap();
     lua.load(r#"runCallback("OnFrame")"#).exec().unwrap();
+}
+
+#[no_mangle]
+pub fn on_image_load(handle: i32, width: i32, height: i32) {
+    match IMAGE_HANDLE_DATA.lock().unwrap().get_mut(&handle) {
+        Some(image) => {
+            image.width = width;
+            image.height = height;
+        }
+        None => {}
+    }
 }

@@ -34,7 +34,7 @@ fn app() -> Element {
         let mut engine = None;
         while let Some(_) = rx.next().await {
             frames += 1;
-            if let Some(c) = canvas() {
+            if let Some(_c) = canvas() {
                 if engine.is_none() {
                     let e = Engine::new();
                     e.test();
@@ -63,13 +63,16 @@ fn app() -> Element {
 
     rsx! {
         div { "frames: {frames}" }
-        canvas {
-            id: "canvas",
-            width: 1920,
-            height: 1080,
-            onmounted: move |e| {
-                let el = e.downcast::<web_sys::Element>().unwrap();
-                canvas.set(el.dyn_ref::<web_sys::HtmlCanvasElement>().map(|e| e.clone()));
+        div { id: "layers", position: "relative",
+            canvas {
+                id: "canvas",
+                position: "absolute",
+                width: 1920,
+                height: 1080,
+                onmounted: move |e| {
+                    let el = e.downcast::<web_sys::Element>().unwrap();
+                    canvas.set(el.dyn_ref::<web_sys::HtmlCanvasElement>().map(|e| e.clone()));
+                }
             }
         }
     }

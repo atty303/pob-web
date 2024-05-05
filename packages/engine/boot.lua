@@ -67,8 +67,8 @@ function GetScreenSize()
 end
 function SetClearColor(r, g, b, a)
 end
-function SetDrawLayer(layer, subLayer)
-end
+--function SetDrawLayer(layer, subLayer)
+--end
 --function SetViewport(x, y, width, height)
 --end
 --function SetDrawColor(r, g, b, a)

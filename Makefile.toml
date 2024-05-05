@@ -9,9 +9,10 @@ args = ["build", "--target", "wasm32-unknown-emscripten", "-p", "pob-engine"]
 script_runner = "@duckscript"
 script = '''
 mkdir packages/web/dist
-cp target/pob_engine.mjs packages/web/dist/pob_engine.mjs
-cp target/pob_engine.wasm packages/web/dist/pob_engine.wasm
-cp target/pob_engine.data packages/web/dist/pob_engine.data
+glob_cp target/pob_engine.* packages/web/dist/
+cd vendor/PathOfBuilding/src
+glob_cp ./**/*.png ../../../packages/web/dist/
+glob_cp ./**/*.jpg ../../../packages/web/dist/
 '''
 
 [tasks.watch-build]

@@ -1123,6 +1123,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "imsz"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d5b020f63464f3baae9aa9ca51c89c5d60861f11bb78fb8de7fea4fbf86be2a"
+
+[[package]]
 name = "indexmap"
 version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1454,6 +1460,13 @@ dependencies = [
  "mlua",
  "once_cell",
  "tracing",
+]
+
+[[package]]
+name = "pob-prepare"
+version = "0.1.0"
+dependencies = [
+ "imsz",
 ]
 
 [[package]]
