@@ -1460,9 +1460,11 @@ name = "pob-web"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "futures-util",
  "tracing",
  "tracing-wasm",
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

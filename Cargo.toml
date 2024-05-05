@@ -9,6 +9,7 @@ members = [
 version = "0.1.0"
 
 [workspace.dependencies]
-dioxus = "0.5"
+#dioxus = { git = "https://github.com/DioxusLabs/dioxus.git", rev = "40df088b7dd355c781b827df17d36b2ec40b3469" }
+dioxus = "0.5.1"
 pob-engine = { path = "packages/engine" }
 pob-web = { path = "packages/web" }
