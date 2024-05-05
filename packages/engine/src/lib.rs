@@ -1,12 +1,41 @@
 use std::ffi::CString;
 use std::sync::{Arc, Mutex};
 
-use mlua::{Error, Lua, Table, Value};
+use mlua::{Error, FromLua, Lua, UserData, Value};
 use once_cell::sync::Lazy;
 
 extern "C" {
     pub fn emscripten_run_script(script: *const std::os::raw::c_char);
     pub fn emscripten_run_script_int(script: *const std::os::raw::c_char) -> i32;
+}
+
+fn escape_js(input: &str) -> String {
+    let escaped = input
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t");
+    format!("\"{}\"", escaped)
+}
+
+struct ImageHandle;
+
+impl UserData for ImageHandle {
+    fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method_mut("Load", |_, _this, (name,): (String,)| Ok(()));
+        methods.add_method_mut("Unload", |_, _this, ()| Ok(()));
+        methods.add_method("IsValid", |_, _this, ()| Ok(true));
+        methods.add_method("SetLoadingPriority", |_, _this, (p,): (i32,)| Ok(()));
+        methods.add_method("ImageSize", |_, _this, ()| Ok((1, 1)));
+    }
+}
+
+impl<'lua> FromLua<'lua> for ImageHandle {
+    fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
+        // println!("FromLua: {:?}", value);
+        Ok(ImageHandle)
+    }
 }
 
 static COLOR_ESCAPES: [(f32, f32, f32); 10] = [
@@ -48,6 +77,13 @@ fn parse_color(s: &str) -> Option<((f32, f32, f32), usize)> {
 fn init_engine(lua: &Lua) -> Result<(), Error> {
     let globals = lua.globals();
 
+    // image
+    globals.set(
+        "NewImageHandle",
+        lua.create_function(|_, ()| Ok(ImageHandle))?,
+    )?;
+
+    // render
     globals.set(
         "SetViewport",
         lua.create_function(
@@ -112,7 +148,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
         lua.create_function(
             |_,
              (_image, left, top, width, height, tc_left, tc_top, tc_right, tc_bottom): (
-                Option<Table>,
+                Option<ImageHandle>,
                 f32,
                 f32,
                 f32,
@@ -174,13 +210,13 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 };
 
                 let script = CString::new(format!(
-                    r#"DrawString({}, {}, "{}", {}, "{}", "{}")"#,
+                    r#"DrawString({}, {}, "{}", {}, "{}", {})"#,
                     x,
                     y,
                     align.unwrap_or("LEFT".to_string()),
                     height,
                     font,
-                    t // TODO: escape
+                    escape_js(t),
                 ))
                 .unwrap();
                 unsafe {
@@ -194,13 +230,13 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
     globals.set(
         "DrawStringWidth",
         lua.create_function(|_, (height, font, text): (f32, String, String)| {
-            let script = CString::new(format!(
-                r#"DrawStringWidth({}, "{}", "{}")"#,
+            let script = format!(
+                r#"DrawStringWidth({}, "{}", {})"#,
                 height,
-                font,
-                text // TODO: escape
-            ))
-            .unwrap();
+                &font,
+                escape_js(&text),
+            );
+            let script = CString::new(script).unwrap();
             unsafe { Ok(emscripten_run_script_int(script.as_ptr())) }
         })?,
     )?;

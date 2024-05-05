@@ -39,25 +39,25 @@ function SetMainObject(obj)
 end
 
 -- Image Handles
-local imageHandleClass = { }
-imageHandleClass.__index = imageHandleClass
-function NewImageHandle()
-    return setmetatable({ }, imageHandleClass)
-end
-function imageHandleClass:Load(fileName, ...)
-    self.valid = true
-end
-function imageHandleClass:Unload()
-    self.valid = false
-end
-function imageHandleClass:IsValid()
-    return self.valid
-end
-function imageHandleClass:SetLoadingPriority(pri)
-end
-function imageHandleClass:ImageSize()
-    return 1, 1
-end
+--local imageHandleClass = { }
+--imageHandleClass.__index = imageHandleClass
+--function NewImageHandle()
+--    return setmetatable({ }, imageHandleClass)
+--end
+--function imageHandleClass:Load(fileName, ...)
+--    self.valid = true
+--end
+--function imageHandleClass:Unload()
+--    self.valid = false
+--end
+--function imageHandleClass:IsValid()
+--    return self.valid
+--end
+--function imageHandleClass:SetLoadingPriority(pri)
+--end
+--function imageHandleClass:ImageSize()
+--    return 1, 1
+--end
 
 -- Rendering
 function RenderInit()
