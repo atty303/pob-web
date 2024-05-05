@@ -61,8 +61,8 @@ impl ImageHandle {
         );
         ImageHandle {
             handle,
-            width: 0,
-            height: 0,
+            width: 1,
+            height: 1,
         }
     }
 }
@@ -73,7 +73,10 @@ impl UserData for ImageHandle {
             "Load",
             |_, this, (name, _args): (String, Variadic<Option<String>>)| {
                 // println!("ImageHandle:Load: {}, {:?}", name, args);
-                let (width, height) = IMAGE_META.get(&name).unwrap_or(&(0, 0));
+                let (width, height) = IMAGE_META.get(&name).unwrap_or_else(|| {
+                    println!("ImageHandle:Load: not found: {}", name);
+                    &(1, 1)
+                });
                 this.width = *width;
                 this.height = *height;
                 let script =

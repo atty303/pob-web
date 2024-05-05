@@ -4,8 +4,12 @@ const engine = PoBEngine();
 
 const imageHandles = [];
 
+let bgHandle = -1;
 window.ImageHandleLoad = (handle, name) => {
-    // console.log('ImageHandleLoad', handle, name);
+    console.log('ImageHandleLoad', handle, name);
+    if (name === "TreeData/Background2.png") {
+        bgHandle = handle;
+    }
     const info = {
         image: new Image(),
         bitmap: undefined,
@@ -86,11 +90,22 @@ window.DrawImage = (imageHandle, x, y, width, height, tLeft, tTop, tRight, tBott
     const ctx = getCanvas().getContext('2d');
     const image = imageHandles[imageHandle];
     if (image && image.bitmap) {
-        const sx = image.image.width * tLeft;
-        const sy = image.image.height * tTop;
-        const sw = image.image.width * (tRight - tLeft);
-        const sh = image.image.height * (tBottom - tTop);
-        ctx.drawImage(image.bitmap, sx, sy, sw, sh, viewport.x + x, viewport.y + y, width, height);
+        // 312 32 1608 1016 -12.257495 -7.7447853 12.257495 7.7447853
+        if (tLeft < 0 || tTop < 0 || tRight > 1 || tBottom > 1) {
+            const pattern = ctx.createPattern(image.image, 'repeat');
+            ctx.fillStyle = pattern;
+            ctx.fillRect(viewport.x + x, viewport.y + y, width, height);
+        } else {
+            const sx = image.image.width * tLeft;
+            const sy = image.image.height * tTop;
+            const sw = image.image.width * (tRight - tLeft);
+            let sh = image.image.height * (tBottom - tTop);
+            if (sh < 0) {
+                sh = -sh;
+                ctx.scale(1, -1);
+            }
+            ctx.drawImage(image.bitmap, sx, sy, sw, sh, viewport.x + x, viewport.y + y, width, height);
+        }
     } else {
         ctx.fillRect(viewport.x + x, viewport.y + y, width, height);
     }
