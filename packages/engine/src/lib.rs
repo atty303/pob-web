@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 
 extern "C" {
     pub fn emscripten_run_script(script: *const std::os::raw::c_char);
+    pub fn emscripten_run_script_int(script: *const std::os::raw::c_char) -> i32;
 }
 
 static COLOR_ESCAPES: [(f32, f32, f32); 10] = [
@@ -21,8 +22,48 @@ static COLOR_ESCAPES: [(f32, f32, f32); 10] = [
     (0.4, 0.4, 0.4),
 ];
 
+fn parse_color(s: &str) -> Option<((f32, f32, f32), usize)> {
+    let mut it = s.chars();
+    if it.next() == Some('^') {
+        let c2 = it.next();
+        if c2.map_or(false, |c| c.is_digit(10)) {
+            let i = c2.and_then(|c| c.to_digit(10)).unwrap();
+            let t = COLOR_ESCAPES[i as usize];
+            Some((t, 2))
+        } else if c2 == Some('x') || c2 == Some('X') {
+            let s = &s[2..8];
+            let n = u32::from_str_radix(s, 16).unwrap();
+            let r = ((n >> 16) & 0xff) as f32 / 255.0;
+            let g = ((n >> 8) & 0xff) as f32 / 255.0;
+            let b = (n & 0xff) as f32 / 255.0;
+            Some(((r, g, b), 8))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 fn init_engine(lua: &Lua) -> Result<(), Error> {
     let globals = lua.globals();
+
+    globals.set(
+        "SetViewport",
+        lua.create_function(
+            |_, (x, y, width, height): (Option<f32>, Option<f32>, Option<f32>, Option<f32>)| {
+                let script = CString::new(format!(
+                    r#"SetViewport({}, {}, {}, {})"#,
+                    x.unwrap_or(0.0),
+                    y.unwrap_or(0.0),
+                    width.unwrap_or(1920.0),
+                    height.unwrap_or(1080.0)
+                ))
+                .unwrap();
+                unsafe { Ok(emscripten_run_script(script.as_ptr())) }
+            },
+        )?,
+    )?;
 
     globals.set(
         "SetDrawColor",
@@ -33,32 +74,14 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                     Value::Integer(n) => (n as f32, g0.unwrap_or(0.0), b0.unwrap_or(0.0)),
                     Value::String(ref t) => {
                         let s = t.to_str().unwrap();
-                        let mut it = s.chars();
-                        if it.next() == Some('^') {
-                            let c2 = it.next();
-                            if c2.map(|c| c.is_digit(10)).unwrap_or(false) {
-                                c2.unwrap()
-                                    .to_digit(10)
-                                    .map(|i| COLOR_ESCAPES[i as usize])
-                                    .unwrap()
-                            } else if c2 == Some('x') || c2 == Some('X') {
-                                let s = &s[2..];
-                                let n = u32::from_str_radix(s, 16).unwrap();
-                                let r = ((n >> 16) & 0xff) as f32 / 255.0;
-                                let g = ((n >> 8) & 0xff) as f32 / 255.0;
-                                let b = (n & 0xff) as f32 / 255.0;
-                                (r, g, b)
-                            } else {
+                        match parse_color(s) {
+                            Some((t, _)) => t,
+                            None => {
                                 return Err(Error::RuntimeError(format!(
                                     "SetDrawColor: r must be a number: {:?}",
                                     r0
-                                )));
+                                )))
                             }
-                        } else {
-                            return Err(Error::RuntimeError(format!(
-                                "SetDrawColor: r must be a number: {:?}",
-                                r0
-                            )));
                         }
                     }
                     _ => {
@@ -88,7 +111,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
         "DrawImage",
         lua.create_function(
             |_,
-             (image, left, top, width, height, tc_left, tc_top, tc_right, tc_bottom): (
+             (_image, left, top, width, height, tc_left, tc_top, tc_right, tc_bottom): (
                 Option<Table>,
                 f32,
                 f32,
@@ -132,6 +155,24 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 String,
                 String,
             )| {
+                let t = match parse_color(&text) {
+                    Some(((r, g, b), n)) => {
+                        let script = CString::new(format!(
+                            "SetDrawColor({}, {}, {}, {})",
+                            r,
+                            g,
+                            b,
+                            1.0
+                        ))
+                            .unwrap();
+                        unsafe {
+                            emscripten_run_script(script.as_ptr());
+                        }
+                        &text[n..]
+                    }
+                    None => &text,
+                };
+
                 let script = CString::new(format!(
                     r#"DrawString({}, {}, "{}", {}, "{}", "{}")"#,
                     x,
@@ -139,7 +180,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                     align.unwrap_or("LEFT".to_string()),
                     height,
                     font,
-                    text // TODO: escape
+                    t // TODO: escape
                 ))
                 .unwrap();
                 unsafe {
@@ -148,6 +189,20 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 Ok(())
             },
         )?,
+    )?;
+
+    globals.set(
+        "DrawStringWidth",
+        lua.create_function(|_, (height, font, text): (f32, String, String)| {
+            let script = CString::new(format!(
+                r#"DrawStringWidth({}, "{}", "{}")"#,
+                height,
+                font,
+                text // TODO: escape
+            ))
+            .unwrap();
+            unsafe { Ok(emscripten_run_script_int(script.as_ptr())) }
+        })?,
     )?;
 
     Ok(())

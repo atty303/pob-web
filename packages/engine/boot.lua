@@ -69,8 +69,8 @@ function SetClearColor(r, g, b, a)
 end
 function SetDrawLayer(layer, subLayer)
 end
-function SetViewport(x, y, width, height)
-end
+--function SetViewport(x, y, width, height)
+--end
 --function SetDrawColor(r, g, b, a)
 --end
 --function DrawImage(imgHandle, left, top, width, height, tcLeft, tcTop, tcRight, tcBottom)
@@ -79,9 +79,9 @@ function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, 
 end
 --function DrawString(left, top, align, height, font, text)
 --end
-function DrawStringWidth(height, font, text)
-    return 1
-end
+--function DrawStringWidth(height, font, text)
+--    return 1
+--end
 function DrawStringCursorIndex(height, font, text, cursorX, cursorY)
     return 0
 end
@@ -221,7 +221,7 @@ runCallback("OnFrame") -- Need at least one frame for everything to initialise
 if mainObject.promptMsg then
     -- Something went wrong during startup
     print(mainObject.promptMsg)
-    io.read("*l")
+    --io.read("*l")
     return
 end
 
