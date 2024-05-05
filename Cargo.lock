@@ -1452,6 +1452,7 @@ name = "pob-engine"
 version = "0.1.0"
 dependencies = [
  "mlua",
+ "once_cell",
  "tracing",
 ]
 

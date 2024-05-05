@@ -1,6 +1,8 @@
 use std::ffi::CString;
+use std::sync::{Arc, Mutex};
 
 use mlua::{Error, Lua, Table, Value};
+use once_cell::sync::Lazy;
 
 extern "C" {
     pub fn emscripten_run_script(script: *const std::os::raw::c_char);
@@ -118,12 +120,44 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
         )?,
     )?;
 
+    globals.set(
+        "DrawString",
+        lua.create_function(
+            |_,
+             (x, y, align, height, font, text): (
+                f32,
+                f32,
+                Option<String>,
+                f32,
+                String,
+                String,
+            )| {
+                let script = CString::new(format!(
+                    r#"DrawString({}, {}, "{}", {}, "{}", "{}")"#,
+                    x,
+                    y,
+                    align.unwrap_or("LEFT".to_string()),
+                    height,
+                    font,
+                    text // TODO: escape
+                ))
+                .unwrap();
+                unsafe {
+                    emscripten_run_script(script.as_ptr());
+                }
+                Ok(())
+            },
+        )?,
+    )?;
+
     Ok(())
 }
 
+static LUA: Lazy<Arc<Mutex<Lua>>> = Lazy::new(|| Arc::new(Mutex::new(Lua::new())));
+
 #[no_mangle]
 pub fn test() {
-    let lua = Lua::new();
+    let lua = LUA.lock().unwrap();
     init_engine(&lua).unwrap();
 
     let boot_lua = include_str!("../boot.lua");
@@ -133,4 +167,10 @@ pub fn test() {
             eprintln!("Error: {}", e);
         }
     }
+}
+
+#[no_mangle]
+pub fn on_frame() {
+    let lua = LUA.lock().unwrap();
+    lua.load(r#"runCallback("OnFrame")"#).exec().unwrap();
 }

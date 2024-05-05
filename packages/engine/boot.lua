@@ -77,8 +77,8 @@ end
 --end
 function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4)
 end
-function DrawString(left, top, align, height, font, text)
-end
+--function DrawString(left, top, align, height, font, text)
+--end
 function DrawStringWidth(height, font, text)
     return 1
 end

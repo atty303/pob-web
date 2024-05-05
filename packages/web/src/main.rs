@@ -14,6 +14,9 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     pub fn test(this: &Engine);
+
+    #[wasm_bindgen(method)]
+    pub fn on_frame(this: &Engine);
 }
 
 fn request_animation_frame(f: &Closure<dyn FnMut()>) {
@@ -36,6 +39,8 @@ fn app() -> Element {
                     let e = Engine::new();
                     e.test();
                     engine = Some(e);
+                } else if frames() % 60 == 0 {
+                    engine.as_ref().unwrap().on_frame();
                 }
             }
         }
