@@ -20,6 +20,7 @@ window.ImageHandleLoad = (handle, name) => {
     info.image.loading = 'eager';
     info.image.onload = async (e) => {
         info.bitmap = await createImageBitmap(info.image);
+        paint = true;
     };
 };
 
@@ -100,13 +101,13 @@ window.DrawImage = (imageHandle, x, y, width, height, tLeft, tTop, tRight, tBott
             const sy = image.image.height * tTop;
             const sw = image.image.width * (tRight - tLeft);
             let sh = image.image.height * (tBottom - tTop);
-            if (sh < 0) {
-                sh = -sh;
-                ctx.scale(1, -1);
-            }
+            // if (sh < 0) {
+            //     sh = -sh;
+            //     ctx.scale(1, -1);
+            // }
             ctx.drawImage(image.bitmap, sx, sy, sw, sh, viewport.x + x, viewport.y + y, width, height);
         }
-    } else {
+    } else if (imageHandle === 0) {
         ctx.fillRect(viewport.x + x, viewport.y + y, width, height);
     }
 };
@@ -170,20 +171,36 @@ window.DrawString = (x, y, align, height, font, text) => {
     ctx.fillText(text, viewport.x + x, viewport.y + y + h + m.ideographicBaseline);
 };
 
-export class Engine {
-    constructor() {
-        layers[[0, 0]] = document.getElementById('canvas');
-        document.getElementById('canvas').setAttribute("data-layer", "0");
-        document.getElementById('canvas').setAttribute("data-sublayer", "0");
+let paint = false;
+
+export const driver = {
+    init: async () => {
         document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/liberation-sans">');
         document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/bitstream-vera-sans-mono">');
-    }
+        SetDrawLayer(0, 0);
 
-    async test() {
         (await engine)._test();
-    }
 
-    async on_frame() {
-        (await engine)._on_frame();
-    }
-}
+        const root = document.getElementById("layers");
+        root.addEventListener("mousemove", (e) => {
+            const rect = root.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            paint = true;
+            // (await engine)._on_mouse_move(x, y);
+        });
+
+        const tick = async () => {
+            if (paint) {
+                paint = false;
+
+                const start = performance.now();
+                (await engine)._on_frame();
+                const end = performance.now();
+                console.debug(`Frame: ${end - start}ms`);
+            }
+            requestAnimationFrame(tick);
+        };
+        await tick();
+    },
+};

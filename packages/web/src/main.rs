@@ -1,78 +1,25 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use dioxus::prelude::*;
-use futures_util::stream::StreamExt;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(module = "/src/package.mjs")]
 extern "C" {
-    pub type Engine;
-
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Engine;
-
-    #[wasm_bindgen(method)]
-    pub fn test(this: &Engine);
-
-    #[wasm_bindgen(method)]
-    pub fn on_frame(this: &Engine);
-}
-
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
-    web_sys::window()
-        .unwrap()
-        .request_animation_frame(f.as_ref().unchecked_ref())
-        .unwrap();
+    #[wasm_bindgen(js_namespace = driver)]
+    pub fn init();
 }
 
 fn app() -> Element {
-    let mut frames = use_signal(|| 0);
-    let mut canvas = use_signal(|| None);
-
-    let tick = use_coroutine(|mut rx| async move {
-        let mut engine = None;
-        while let Some(_) = rx.next().await {
-            frames += 1;
-            if let Some(_c) = canvas() {
-                if engine.is_none() {
-                    let e = Engine::new();
-                    e.test();
-                    engine = Some(e);
-                } else if frames() % 60 == 0 {
-                    engine.as_ref().unwrap().on_frame();
-                }
-            }
-        }
-    });
-
-    use_effect(move || {
-        let f = Rc::new(RefCell::new(None));
-        let g = f.clone();
-
-        let tx = tick.tx();
-        *g.borrow_mut() = Some(Closure::new(move || {
-            // frames += 1;
-
-            tx.unbounded_send(()).unwrap();
-
-            request_animation_frame(f.borrow().as_ref().unwrap());
-        }));
-        request_animation_frame(g.borrow().as_ref().unwrap());
-    });
+    let mut layers = use_signal(|| None);
 
     rsx! {
-        div { "frames: {frames}" }
-        div { id: "layers", position: "relative",
-            canvas {
-                id: "canvas",
-                position: "absolute",
-                width: 1920,
-                height: 1080,
-                onmounted: move |e| {
-                    let el = e.downcast::<web_sys::Element>().unwrap();
-                    canvas.set(el.dyn_ref::<web_sys::HtmlCanvasElement>().map(|e| e.clone()));
-                }
+        div {
+            id: "layers",
+            position: "relative",
+            width: "1920px",
+            height: "1080px",
+            onmounted: move |e| {
+                let el = e.downcast::<web_sys::Element>().unwrap();
+                layers.set(Some(el.clone()));
+                init();
             }
         }
     }
