@@ -44,3 +44,13 @@ int init() {
 
     return 0;
 }
+
+int on_frame() {
+    lua_getglobal(GL, "runCallback");
+    lua_pushstring(GL, "OnFrame");
+    if (lua_pcall(GL, 1, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
+        return 1;
+    }
+    return 0;
+}
