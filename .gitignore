@@ -4,6 +4,5 @@
 /work
 /.cargo/config.toml
 dist/
-*.o
-*.a
 node_modules/
+build/
