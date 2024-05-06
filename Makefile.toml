@@ -3,7 +3,8 @@ default_to_workspace = false
 
 [tasks.build]
 command = "cargo"
-args = ["build", "--target", "wasm32-unknown-emscripten", "-p", "pob-engine"]
+args = ["build", "--target", "wasm32-unknown-emscripten", "-p", "pob-engine", "--release"]
+env = { "EMCC_CFLAGS" = "-O3" }
 
 [tasks.copy-engine]
 script_runner = "@duckscript"

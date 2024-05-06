@@ -1,0 +1,7 @@
+{
+  "name": "pob-web",
+  "private": true,
+  "workspaces": [
+    "packages/driver"
+  ]
+}

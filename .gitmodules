@@ -1,3 +1,7 @@
 [submodule "vendor/PathOfBuilding"]
 	path = vendor/PathOfBuilding
 	url = https://github.com/atty303/PathOfBuilding.git
+[submodule "packages/driver/lua"]
+	path = packages/driver/lua
+	url = https://github.com/lua/lua.git
+	branch = v5.2.3

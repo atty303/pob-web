@@ -18,6 +18,15 @@ fn main() {
     println!("cargo:rustc-link-arg=-s");
     println!("cargo:rustc-link-arg=ALLOW_MEMORY_GROWTH");
 
+    // println!("cargo:rustc-link-arg=-s");
+    // println!("cargo:rustc-link-arg=ASYNCIFY");
+
+    // println!("cargo:rustc-link-arg=-s");
+    // println!("cargo:rustc-link-arg=MALLOC=emmalloc");
+
     println!("cargo:rustc-link-arg=-s");
-    println!("cargo:rustc-link-arg=ASYNCIFY");
+    println!("cargo:rustc-link-arg=CASE_INSENSITIVE_FS");
+
+    println!("cargo:rustc-link-arg=-s");
+    println!("cargo:rustc-link-arg=EVAL_CTORS");
 }

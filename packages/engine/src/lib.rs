@@ -167,7 +167,10 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 sub.map_or("undefined".to_string(), |l| l.to_string()),
             ))
             .unwrap();
-            unsafe { Ok(emscripten_run_script(script.as_ptr())) }
+            unsafe {
+                // emscripten_run_script(script.as_ptr());
+            }
+            Ok(())
         })?,
     )?;
 
@@ -183,7 +186,10 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                     height.unwrap_or(1080.0)
                 ))
                 .unwrap();
-                unsafe { Ok(emscripten_run_script(script.as_ptr())) }
+                unsafe {
+                    // emscripten_run_script(script.as_ptr());
+                }
+                Ok(())
             },
         )?,
     )?;
@@ -222,9 +228,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                     a.unwrap_or(1.0)
                 ))
                 .unwrap();
-                unsafe {
-                    emscripten_run_script(script.as_ptr());
-                }
+                // unsafe { emscripten_run_script(script.as_ptr()); }
                 Ok(())
             },
         )?,
@@ -259,7 +263,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 ))
                 .unwrap();
                 unsafe {
-                    emscripten_run_script(script.as_ptr());
+                    // emscripten_run_script(script.as_ptr());
                 }
                 Ok(())
             },
@@ -289,7 +293,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                         ))
                             .unwrap();
                         unsafe {
-                            emscripten_run_script(script.as_ptr());
+                            // emscripten_run_script(script.as_ptr());
                         }
                         &text[n..]
                     }
@@ -307,7 +311,7 @@ fn init_engine(lua: &Lua) -> Result<(), Error> {
                 ))
                 .unwrap();
                 unsafe {
-                    emscripten_run_script(script.as_ptr());
+                    // emscripten_run_script(script.as_ptr());
                 }
                 Ok(())
             },

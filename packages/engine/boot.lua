@@ -79,9 +79,9 @@ function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, 
 end
 --function DrawString(left, top, align, height, font, text)
 --end
---function DrawStringWidth(height, font, text)
---    return 1
---end
+function DrawStringWidth(height, font, text)
+    return 1
+end
 function DrawStringCursorIndex(height, font, text, cursorX, cursorY)
     return 0
 end
