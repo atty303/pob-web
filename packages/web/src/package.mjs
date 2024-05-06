@@ -6,7 +6,7 @@ const imageHandles = [];
 
 let bgHandle = -1;
 window.ImageHandleLoad = (handle, name) => {
-    console.log('ImageHandleLoad', handle, name);
+    // console.log('ImageHandleLoad', handle, name);
     if (name === "TreeData/Background2.png") {
         bgHandle = handle;
     }
@@ -111,9 +111,8 @@ window.DrawImage = (imageHandle, x, y, width, height, tLeft, tTop, tRight, tBott
         ctx.fillRect(viewport.x + x, viewport.y + y, width, height);
     }
 };
-window.DrawStringWidth = (height, font, text) => {
-    // console.log('DrawStringWidth', height, font, text);
-    const ctx = getCanvas().getContext('2d');
+
+function setFont(ctx, height, font) {
     switch (font) {
         case "VAR":
             ctx.font = `${height - 1}px 'Liberation Sans'`;
@@ -126,26 +125,19 @@ window.DrawStringWidth = (height, font, text) => {
             ctx.font = `${height - 1}px 'Bitstream Vera Sans Mono'`;
             break;
     }
+}
 
+window.DrawStringWidth = (height, font, text) => {
+    // console.log('DrawStringWidth', height, font, text);
+    const ctx = getCanvas().getContext('2d');
+    setFont(ctx, height, font);
     const m = ctx.measureText(text);
     return m.width;
 };
 window.DrawString = (x, y, align, height, font, text) => {
     // console.log('DrawString', x, y, align, height, font, text);
     const ctx = getCanvas().getContext('2d');
-    switch (font) {
-        case "VAR":
-            ctx.font = `${height - 1}px 'Liberation Sans'`;
-            break;
-        case "VAR BOLD":
-            ctx.font = `${height - 1}px 'Liberation Sans'`;
-            break;
-        case "FIXED":
-        default:
-            ctx.font = `${height - 1}px 'Bitstream Vera Sans Mono'`;
-            break;
-    }
-
+    setFont(ctx, height, font);
     const m = ctx.measureText(text);
     const h = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
 
