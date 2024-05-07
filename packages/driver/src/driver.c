@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <emscripten.h>
 #include <string.h>
+#include <assert.h>
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -28,11 +29,6 @@ static const char *my_reader(lua_State *L, void *ud, size_t *size) {
     return boot_lua;
 }
 
-EM_JS(void, js_print, (const char *str), {
-//    Module.DrawImage();
-    console.log(UTF8ToString(str));
-});
-
 EM_JS(void, draw_commit, (const void *buffer, size_t size), {
     Module.drawCommit(buffer, size);
 });
@@ -41,13 +37,26 @@ EM_JS(void, draw_commit, (const void *buffer, size_t size), {
     lua_pushcclosure(GL, name, 0); \
     lua_setglobal(GL, #name);
 
+static int SetDrawColor(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    if (lua_type(L, 1) == LUA_TSTRING) {
+//        draw_set_color_escape(lua_tostring(L, 1));
+    } else {
+        assert(n >= 3);
+
+        float alpha = 1.0f;
+        if (n >= 4 && !lua_isnil(L, 4)) {
+            alpha = lua_tonumber(L, 4);
+        }
+        draw_set_color(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), alpha);
+    }
+    return 0;
+}
+
 static int DrawImage(lua_State *L) {
     int n = lua_gettop(L);
     if (n > 5) {
-//        double arg[8];
-//        for (int i = 2; i <= 9; ++i) {
-//            arg[i - 2] = lua_tonumber(L, i);
-//        }
     } else {
         draw_image(0, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5));
     }
@@ -59,6 +68,7 @@ int init() {
 
     luaL_openlibs(GL);  // 標準ライブラリを開く
 
+    ADD_LUA_FUNC(SetDrawColor);
     ADD_LUA_FUNC(DrawImage);
 
     if (luaL_dostring(GL, boot_lua) != LUA_OK) {

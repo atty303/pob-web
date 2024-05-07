@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.28)
 project(driver)
 
-#add_custom_command(
-#        OUTPUT ${CMAKE_BINARY_DIR}/boot.c
-#        COMMAND ${CMAKE_COMMAND} -E echo "Writing boot.lua to boot.c"
-#        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/boot.lua
-#)
-file(READ boot.lua file_content HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" c_string ${file_content})
-file(WRITE ${CMAKE_BINARY_DIR}/boot.c "const char* boot_lua = \"${c_string}\";\n")
+add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/boot.c
+        COMMAND ${CMAKE_COMMAND} -E echo "Writing boot.lua to boot.c"
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/boot.lua ${CMAKE_BINARY_DIR}/boot.lua
+        COMMAND ${CMAKE_COMMAND} ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/gen_boot_c.cmake
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/boot.lua
+)
 
 file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c)

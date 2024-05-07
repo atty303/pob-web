@@ -4,10 +4,23 @@
 #include "draw.h"
 
 typedef enum {
-    DRAW_IMAGE = 1,
+    DRAW_SET_CLEAR_COLOR = 1,
+    DRAW_SET_LAYER = 2,
+    DRAW_SET_VIEWPORT = 3,
+    DRAW_SET_COLOR = 4,
+    DRAW_SET_COLOR_ESCAPE = 5,
+    DRAW_IMAGE = 6,
+    DRAW_IMAGE_QUAD = 7,
+    DRAW_STRING = 8,
+
 } DrawCommandType;
 
 #pragma pack(push, 1)
+
+typedef struct {
+    uint8_t type;
+    uint8_t r, g, b, a;
+} SetColorCommand;
 
 typedef struct {
     uint8_t type;
@@ -48,6 +61,11 @@ void draw_get_buffer(void **data, size_t *size) {
 void draw_end() {
     free(st_buffer.data);
     st_buffer.data = NULL;
+}
+
+void draw_set_color(float r, float g, float b, float a) {
+    SetColorCommand cmd = {DRAW_SET_COLOR, r * 255, g * 255, b * 255, a * 255};
+    draw_push(&cmd, sizeof(cmd));
 }
 
 void draw_image(int image_handle, float x, float y, float w, float h) {
