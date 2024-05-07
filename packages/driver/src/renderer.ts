@@ -2,20 +2,33 @@ import {ImageRepository} from "./image";
 
 const vertexShaderSource = `
 attribute vec2 a_Position;
+attribute vec2 a_TexCoord;
+varying vec2 v_TexCoord;
 uniform vec2 u_Resolution;
+
 void main(void) {
   vec2 zeroToOne = a_Position / u_Resolution;
   vec2 zeroToTwo = zeroToOne * 2.0 - 1.0;
   vec2 clipSpace = zeroToTwo * vec2(1, -1);
   gl_Position = vec4(clipSpace, 0, 1);
+  v_TexCoord = a_TexCoord;
 }
 `;
 
-const fragmentShaderSource = `
+const fillFragmentShaderSource = `
 precision mediump float;
 uniform vec4 u_Color;
 void main(void) {
     gl_FragColor = u_Color;
+}
+`;
+
+const textureFragmentShaderSource = `
+precision mediump float;
+uniform sampler2D u_Texture;
+varying vec2 v_TexCoord;
+void main(void) {
+    gl_FragColor = texture2D(u_Texture, v_TexCoord);
 }
 `;
 
@@ -35,6 +48,9 @@ class ShaderProgram<T> {
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            throw new Error("Failed to link program: " + gl.getProgramInfoLog(program));
+        }
 
         this.locations = bindLocations(program);
 
@@ -64,8 +80,12 @@ class ShaderProgram<T> {
 
 class Canvas {
     private readonly gl: WebGLRenderingContext;
+
     private readonly fillProgram: ShaderProgram<{ position: number, resolution: WebGLUniformLocation, color: WebGLUniformLocation }>;
-    private readonly vertexBuffer: WebGLBuffer;
+    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, resolution: WebGLUniformLocation }>;
+
+    private readonly positionBuffer: WebGLBuffer;
+    private readonly texCoordBuffer: WebGLBuffer;
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -83,10 +103,9 @@ class Canvas {
         if (!gl) throw new Error("Failed to get WebGL context");
         this.gl = gl;
 
-        this.fillProgram = new ShaderProgram(gl, vertexShaderSource, fragmentShaderSource, (program) => {
+        this.fillProgram = new ShaderProgram(gl, vertexShaderSource, fillFragmentShaderSource, (program) => {
             const position = gl.getAttribLocation(program, "a_Position");
             if (position < 0) throw new Error("Failed to get attribute location");
-            gl.enableVertexAttribArray(position);
 
             const resolution = gl.getUniformLocation(program, "u_Resolution");
             if (!resolution) throw new Error("Failed to get uniform location");
@@ -101,87 +120,81 @@ class Canvas {
             };
         });
 
-        const vertexBuffer = gl.createBuffer();
-        if (!vertexBuffer) throw new Error("Failed to create vertex buffer");
-        this.vertexBuffer = vertexBuffer;
+        this.textureProgram = new ShaderProgram(gl, vertexShaderSource, textureFragmentShaderSource, (program) => {
+            const position = gl.getAttribLocation(program, "a_Position");
+            if (position < 0) throw new Error("Failed to get attribute location");
 
+            const texCoord = gl.getAttribLocation(program, "a_TexCoord");
+            if (texCoord < 0) throw new Error("Failed to get attribute location");
+
+            const resolution = gl.getUniformLocation(program, "u_Resolution");
+            if (!resolution) throw new Error("Failed to get uniform location");
+
+            return {
+                position,
+                texCoord,
+                resolution,
+            };
+        });
+
+        const positionBuffer = gl.createBuffer();
+        if (!positionBuffer) throw new Error("Failed to create vertex buffer");
+        this.positionBuffer = positionBuffer;
+
+        const texCoordBuffer = gl.createBuffer();
+        if (!texCoordBuffer) throw new Error("Failed to create texture coordinate buffer");
+        this.texCoordBuffer = texCoordBuffer;
+
+        // Set up the viewport
         gl.viewport(0, 0, width, height);
         this.fillProgram.use(({ resolution}) => {
+            gl.uniform2f(resolution, width, height)
+        });
+        this.textureProgram.use(({ resolution }) => {
             gl.uniform2f(resolution, width, height)
         });
     }
 
     fillRect(coords: number[], color0: number[]) {
         const gl = this.gl;
-
-        // Create a buffer to store the rectangle's vertices
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
-
         this.fillProgram.use(({ position, color }) => {
+            gl.enableVertexAttribArray(position);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
             gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
             gl.uniform4fv(color, color0);
-        });
 
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
+            gl.disableVertexAttribArray(position);
+        });
     }
 
     drawImage(coords: number[], texCoords: number[], bitmap: ImageBitmap) {
-        // const gl = this.gl;
-        // gl.useProgram(this.program);
-        //
-        // // Create a buffer to store the rectangle's vertices
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
-        //
-        // // Assign the buffer to the attribute
-        // gl.vertexAttribPointer(this.positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-        //
-        // // Assign the texture
-        // const texture = gl.createTexture();
-        // if (!texture) throw new Error("Failed to create texture");
-        // gl.bindTexture(gl.TEXTURE_2D, texture);
-        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        //
-        // // Create a buffer to store the texture coordinates
-        // const texCoordBuffer = gl.createBuffer();
-        // if (!texCoordBuffer) throw new Error("Failed to create texture coordinate buffer");
-        // gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
-        //
-        // // Assign the buffer to the attribute
-        // const texCoordAttributeLocation = gl.getAttribLocation(this.program, "a_TexCoord");
-        // if (texCoordAttributeLocation < 0) throw new Error("Failed to get attribute location");
-        // gl.enableVertexAttribArray(texCoordAttributeLocation);
-        // gl.vertexAttribPointer(texCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-        //
-        // // Draw the rectangle
-        // gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-    }
-
-    private createShaderProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
         const gl = this.gl;
+        this.textureProgram.use(({ position, texCoord }) => {
+            // Assign the texture
+            const texture = gl.createTexture();
+            if (!texture) throw new Error("Failed to create texture");
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        if (!vertexShader) throw new Error("Failed to create vertex shader");
-        gl.shaderSource(vertexShader, vertexShaderSource);
-        gl.compileShader(vertexShader);
+            gl.enableVertexAttribArray(position);
+            gl.enableVertexAttribArray(texCoord);
 
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        if (!fragmentShader) throw new Error("Failed to create fragment shader");
-        gl.shaderSource(fragmentShader, fragmentShaderSource);
-        gl.compileShader(fragmentShader);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+            gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
 
-        const shaderProgram = gl.createProgram();
-        if (!shaderProgram) throw new Error("Failed to create shader program");
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-        gl.linkProgram(shaderProgram);
-
-        return shaderProgram;
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+        });
     }
 }
 
