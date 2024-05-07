@@ -8,8 +8,16 @@ Module({
         if (path.endsWith(".data")) return "/dist/" + path;
         return prefix + path;
     },
+    DrawImage: () => {
+        console.log("drawImage");
+    },
 }).then((module: any) => {
-    // console.log(module);
+    console.log(module);
+
+    module.drawCommit = (bufferPtr: number, size: number) => {
+        console.log("drawCommit", bufferPtr, size);
+    };
+
     console.log(module._init());
 
     const tick = () => {
