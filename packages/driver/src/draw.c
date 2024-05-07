@@ -5,6 +5,7 @@
 #include "draw.h"
 #include "lua.h"
 #include "lauxlib.h"
+#include "image.h"
 
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
@@ -73,12 +74,12 @@ void draw_end() {
     st_buffer.data = NULL;
 }
 
-void draw_set_color(float r, float g, float b, float a) {
+static void draw_set_color(float r, float g, float b, float a) {
     SetColorCommand cmd = {DRAW_SET_COLOR, r * 255, g * 255, b * 255, a * 255};
     draw_push(&cmd, sizeof(cmd));
 }
 
-void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
+static void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
     DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
     draw_push(&cmd, sizeof(cmd));
 }
@@ -122,7 +123,49 @@ static int SetDrawLayer(lua_State *L) {
     return 0;
 }
 
+static int SetDrawColor(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    if (lua_type(L, 1) == LUA_TSTRING) {
+//        draw_set_color_escape(lua_tostring(L, 1));
+    } else {
+        assert(n >= 3);
+
+        float alpha = 1.0f;
+        if (n >= 4 && !lua_isnil(L, 4)) {
+            alpha = lua_tonumber(L, 4);
+        }
+        draw_set_color(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), alpha);
+    }
+    return 0;
+}
+
+static int DrawImage(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 5);
+
+    int handle = 0;
+    if (!lua_isnil(L, 1)) {
+        ImageHandle *image_handle = lua_touserdata(L, 1);
+        handle = image_handle->handle;
+    }
+    if (n > 5) {
+        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
+                   lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9));
+    } else {
+        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), 0.0f, 0.0f, 1.0f, 1.0f);
+    }
+    return 0;
+}
+
+
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");
+
+    lua_pushcclosure(L, SetDrawColor, 0);
+    lua_setglobal(L, "SetDrawColor");
+
+    lua_pushcclosure(L, DrawImage, 0);
+    lua_setglobal(L, "DrawImage");
 }
