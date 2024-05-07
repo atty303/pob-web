@@ -39,6 +39,13 @@ typedef struct {
     float s1, t1, s2, t2;
 } DrawImageCommand;
 
+typedef struct {
+    uint8_t type;
+    int image_handle;
+    float x1, y1, x2, y2, x3, y3, x4, y4;
+    float s1, t1, s2, t2, s3, t3, s4, t4;
+} DrawImageQuadCommand;
+
 #pragma pack(pop)
 
 typedef struct {
@@ -72,16 +79,6 @@ void draw_get_buffer(void **data, size_t *size) {
 void draw_end() {
     free(st_buffer.data);
     st_buffer.data = NULL;
-}
-
-static void draw_set_color(float r, float g, float b, float a) {
-    SetColorCommand cmd = {DRAW_SET_COLOR, r * 255, g * 255, b * 255, a * 255};
-    draw_push(&cmd, sizeof(cmd));
-}
-
-static void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
-    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
-    draw_push(&cmd, sizeof(cmd));
 }
 
 static int st_layer = 0;
@@ -123,6 +120,11 @@ static int SetDrawLayer(lua_State *L) {
     return 0;
 }
 
+static void draw_set_color(float r, float g, float b, float a) {
+    SetColorCommand cmd = {DRAW_SET_COLOR, (uint8_t )(r * 255), (uint8_t)(g * 255), (uint8_t)(b * 255), (uint8_t)(a * 255)};
+    draw_push(&cmd, sizeof(cmd));
+}
+
 static int SetDrawColor(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
@@ -138,6 +140,11 @@ static int SetDrawColor(lua_State *L) {
         draw_set_color(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), alpha);
     }
     return 0;
+}
+
+static void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
+    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
+    draw_push(&cmd, sizeof(cmd));
 }
 
 static int DrawImage(lua_State *L) {
@@ -158,6 +165,37 @@ static int DrawImage(lua_State *L) {
     return 0;
 }
 
+static void draw_image_quad(int image_handle, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,
+                            float s1, float t1, float s2, float t2, float s3, float t3, float s4, float t4) {
+    DrawImageQuadCommand cmd = {DRAW_IMAGE_QUAD, image_handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4};
+    draw_push(&cmd, sizeof(cmd));
+}
+
+static int DrawImageQuad(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 9);
+
+    int handle = 0;
+    if (!lua_isnil(L, 1)) {
+        ImageHandle *image_handle = lua_touserdata(L, 1);
+        handle = image_handle->handle;
+    }
+    if (n > 9) {
+        draw_image_quad(
+                handle,
+                lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
+                lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9),
+                lua_tonumber(L, 10), lua_tonumber(L, 11), lua_tonumber(L, 12), lua_tonumber(L, 13),
+                lua_tonumber(L, 14), lua_tonumber(L, 15), lua_tonumber(L, 16), lua_tonumber(L, 17));
+    } else {
+        draw_image_quad(
+                handle,
+                lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
+                lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9),
+                0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+    }
+    return 0;
+}
 
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, SetDrawLayer, 0);
@@ -168,4 +206,7 @@ void draw_init(lua_State *L) {
 
     lua_pushcclosure(L, DrawImage, 0);
     lua_setglobal(L, "DrawImage");
+
+    lua_pushcclosure(L, DrawImageQuad, 0);
+    lua_setglobal(L, "DrawImageQuad");
 }

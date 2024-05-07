@@ -78,6 +78,44 @@ Module({
                     renderer.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
                 }
                 break;
+                case 7: {
+                    const handle = view.getInt32(i, true);
+                    i += 4;
+                    const x1 = view.getFloat32(i, true);
+                    i += 4;
+                    const y1 = view.getFloat32(i, true);
+                    i += 4;
+                    const x2 = view.getFloat32(i, true);
+                    i += 4;
+                    const y2 = view.getFloat32(i, true);
+                    i += 4;
+                    const x3 = view.getFloat32(i, true);
+                    i += 4;
+                    const y3 = view.getFloat32(i, true);
+                    i += 4;
+                    const x4 = view.getFloat32(i, true);
+                    i += 4;
+                    const y4 = view.getFloat32(i, true);
+                    i += 4;
+                    const s1 = view.getFloat32(i, true);
+                    i += 4;
+                    const t1 = view.getFloat32(i, true);
+                    i += 4;
+                    const s2 = view.getFloat32(i, true);
+                    i += 4;
+                    const t2 = view.getFloat32(i, true);
+                    i += 4;
+                    const s3 = view.getFloat32(i, true);
+                    i += 4;
+                    const t3 = view.getFloat32(i, true);
+                    i += 4;
+                    const s4 = view.getFloat32(i, true);
+                    i += 4;
+                    const t4 = view.getFloat32(i, true);
+                    i += 4;
+                    renderer.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
+                }
+                    break;
             }
         }
 
