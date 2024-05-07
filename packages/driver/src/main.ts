@@ -36,6 +36,14 @@ Module({
             const commandType = view.getUint8(i);
             i += 1;
             switch (commandType) {
+                case 2: {
+                    const layer = view.getUint16(i, true);
+                    i += 2;
+                    const sublayer = view.getUint16(i, true);
+                    i += 2;
+                    renderer.setLayer(layer, sublayer);
+                }
+                break;
                 case 4: {
                     const r = view.getUint8(i);
                     i += 1;
@@ -72,6 +80,8 @@ Module({
                 break;
             }
         }
+
+        renderer.end();
     };
 
     console.log(module._init());

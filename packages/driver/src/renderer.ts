@@ -105,6 +105,9 @@ class Canvas {
         if (!gl) throw new Error("Failed to get WebGL context");
         this.gl = gl;
 
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
         this.fillProgram = new ShaderProgram(gl, vertexShaderSource, fillFragmentShaderSource, (program) => {
             const position = gl.getAttribLocation(program, "a_Position");
             if (position < 0) throw new Error("Failed to get attribute location");
@@ -210,6 +213,7 @@ class Canvas {
             const t = gl.createTexture();
             if (!t) throw new Error("Failed to create texture");
             texture = t;
+            (t as any).premultiplyAlpha = true;
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -221,10 +225,25 @@ class Canvas {
     }
 }
 
+type Command = {
+    type: "c";
+    color: number[];
+} | {
+    type: "f";
+    coords: number[];
+} | {
+    type: "i";
+    coords: number[];
+    texCoords: number[];
+    handle: number;
+    bitmap: ImageBitmap;
+};
+
 export class Renderer {
     private root: HTMLDivElement;
     private canvas: Canvas;
-    private currentColor: number[] = [0, 0, 0, 0];
+    private currentLayer: number = 0;
+    private commands: Map<number, Command[]> = new Map();
     private isDirty = false;
     private readonly imageRepo: ImageRepository;
 
@@ -241,23 +260,62 @@ export class Renderer {
     }
 
     begin() {
-        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.commands.clear();
+    }
+
+    end() {
+        const layers = [...this.commands.keys()];
+        layers.sort((a, b) => {
+            return a - b;
+        });
+        layers.forEach((layer) => {
+            const commands = this.commands.get(layer);
+            if (!commands) return;
+
+            let color = [0, 0, 0, 0];
+            commands.forEach(command => {
+                switch (command.type) {
+                    case "c":
+                        color = command.color;
+                        break;
+                    case "f":
+                        this.canvas.fillRect(command.coords, color);
+                        break;
+                    case "i":
+                        this.canvas.drawImage(command.coords, command.texCoords, command.handle, command.bitmap);
+                        break;
+                }
+            });
+        });
+    }
+
+    setLayer(layer: number, sublayer: number) {
+        this.currentLayer = (layer << 16) | sublayer;
     }
 
     setColor(r: number, g: number, b: number, a: number) {
-        this.currentColor = [r / 255, g / 255, b / 255, a / 255];
+        this.pushCommand({ type: "c", color: [r / 255, g / 255, b / 255, a / 255] });
     }
 
     drawImage(handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) {
         if (handle === 0) {
-            this.canvas.fillRect([x, y, x + width, y, x + width, y + height, x, y + height], this.currentColor);
+            this.pushCommand({ type: "f", coords: [x, y, x + width, y, x + width, y + height, x, y + height] });
+            // this.canvas.fillRect([x, y, x + width, y, x + width, y + height, x, y + height], this.currentColor);
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {
-                this.canvas.drawImage([x, y, x + width, y, x + width, y + height, x, y + height], [s1, t1, s2, t1, s2, t2, s1, t2], handle, image.bitmap);
-            } else {
-                this.canvas.fillRect([x, y, x + width, y, x + width, y + height, x, y + height], [1, 0, 1, 0.5]);
+                this.pushCommand({ type: "i", coords: [x, y, x + width, y, x + width, y + height, x, y + height], texCoords: [s1, t1, s2, t1, s2, t2, s1, t2], handle, bitmap: image.bitmap });
+                // this.canvas.drawImage([x, y, x + width, y, x + width, y + height, x, y + height], [s1, t1, s2, t1, s2, t2, s1, t2], handle, image.bitmap);
             }
+        }
+    }
+
+    private pushCommand(command: Command) {
+        const commands = this.commands.get(this.currentLayer);
+        if (!commands) {
+            this.commands.set(this.currentLayer, [command]);
+        } else {
+            commands.push(command);
         }
     }
 }

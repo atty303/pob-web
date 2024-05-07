@@ -11,7 +11,6 @@
 extern const char *boot_lua;
 static lua_State *GL;
 
-// メモリアロケーション関数
 static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     (void)ud;  (void)osize;  /* 未使用の引数 */
     if (nsize == 0) {
@@ -69,6 +68,7 @@ int init() {
     luaL_openlibs(GL);  // 標準ライブラリを開く
 
     image_init(L);
+    draw_init(L);
 
     // Rendering
     ADD_LUA_FUNC(SetDrawColor);

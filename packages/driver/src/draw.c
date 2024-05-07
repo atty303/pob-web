@@ -1,7 +1,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "draw.h"
+#include "lua.h"
+#include "lauxlib.h"
 
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
@@ -16,6 +19,12 @@ typedef enum {
 } DrawCommandType;
 
 #pragma pack(push, 1)
+
+typedef struct {
+    uint8_t type;
+    uint16_t layer;
+    uint16_t sublayer;
+} SetLayerCommand;
 
 typedef struct {
     uint8_t type;
@@ -72,4 +81,48 @@ void draw_set_color(float r, float g, float b, float a) {
 void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
     DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
     draw_push(&cmd, sizeof(cmd));
+}
+
+static int st_layer = 0;
+static int st_sublayer = 0;
+
+static int SetDrawLayer(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    if (n >= 2) {
+        assert(lua_isnumber(L, 2));
+    }
+
+    int layer = st_layer;
+    int sublayer;
+    if (lua_isnil(L, 1)) {
+        assert(n >= 2);
+        sublayer = lua_tointeger(L, 2);
+    } else if (n >= 2) {
+        layer = lua_tointeger(L, 1);
+        sublayer = lua_tointeger(L, 2);
+    } else {
+        layer = lua_tointeger(L, 1);
+        sublayer = 0;
+    }
+
+    if (layer < 0 || layer >= 65536) {
+        return luaL_error(L, "invalid layer %d", layer);
+    }
+    if (sublayer < 0 || sublayer >= 65536) {
+        return luaL_error(L, "invalid sublayer %d", sublayer);
+    }
+
+    st_layer = layer;
+    st_sublayer = sublayer;
+
+    SetLayerCommand cmd = {DRAW_SET_LAYER, layer, sublayer };
+    draw_push(&cmd, sizeof(cmd));
+
+    return 0;
+}
+
+void draw_init(lua_State *L) {
+    lua_pushcclosure(L, SetDrawLayer, 0);
+    lua_setglobal(L, "SetDrawLayer");
 }
