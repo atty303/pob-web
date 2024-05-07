@@ -107,7 +107,6 @@ export class DrawCommandInterpreter {
     }
 
     run(cb: {
-        onSetLayer: (layer: number, sublayer: number) => void,
         onSetColor: (r: number, g: number, b: number, a: number) => void,
         onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => void,
         onDrawImageQuad: (handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) => void,
@@ -121,14 +120,6 @@ export class DrawCommandInterpreter {
             const commandType = view.getUint8(i);
             i += 1;
             switch (commandType) {
-                case DrawCommandType.SetLayer: {
-                    const layer = view.getUint16(i, true);
-                    i += 2;
-                    const sublayer = view.getUint16(i, true);
-                    i += 2;
-                    cb.onSetLayer(layer, sublayer);
-                }
-                    break;
                 case DrawCommandType.SetColor: {
                     const r = view.getUint8(i);
                     i += 1;

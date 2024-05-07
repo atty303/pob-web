@@ -225,25 +225,10 @@ class Canvas {
     }
 }
 
-type Command = {
-    type: "c";
-    color: number[];
-} | {
-    type: "f";
-    coords: number[];
-} | {
-    type: "i";
-    coords: number[];
-    texCoords: number[];
-    handle: number;
-    bitmap: ImageBitmap;
-};
-
 export class Renderer {
     private root: HTMLDivElement;
     private canvas: Canvas;
-    private currentLayer: number = 0;
-    private commands: Map<number, Command[]> = new Map();
+    private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
 
     constructor(root: HTMLDivElement, imageRepo: ImageRepository) {
@@ -255,41 +240,14 @@ export class Renderer {
     }
 
     begin() {
-        this.commands.clear();
+        this.currentColor = [0, 0, 0, 0];
     }
 
     end() {
-        const layers = [...this.commands.keys()];
-        layers.sort((a, b) => {
-            return a - b;
-        });
-        layers.forEach((layer) => {
-            const commands = this.commands.get(layer);
-            if (!commands) return;
-
-            let color = [0, 0, 0, 0];
-            commands.forEach(command => {
-                switch (command.type) {
-                    case "c":
-                        color = command.color;
-                        break;
-                    case "f":
-                        this.canvas.fillRect(command.coords, color);
-                        break;
-                    case "i":
-                        this.canvas.drawImage(command.coords, command.texCoords, command.handle, command.bitmap);
-                        break;
-                }
-            });
-        });
-    }
-
-    setLayer(layer: number, sublayer: number) {
-        this.currentLayer = (layer << 16) | sublayer;
     }
 
     setColor(r: number, g: number, b: number, a: number) {
-        this.pushCommand({ type: "c", color: [r / 255, g / 255, b / 255, a / 255] });
+        this.currentColor = [r / 255, g / 255, b / 255, a / 255];
     }
 
     drawImage(handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) {
@@ -298,21 +256,12 @@ export class Renderer {
 
     drawImageQuad(handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) {
         if (handle === 0) {
-            this.pushCommand({ type: "f", coords: [x1, y1, x2, y2, x3, y3, x4, y4] });
+            this.canvas.fillRect([x1, y1, x2, y2, x3, y3, x4, y4], this.currentColor);
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {
-                this.pushCommand({ type: "i", coords: [x1, y1, x2, y2, x3, y3, x4, y4], texCoords: [s1, t1, s2, t2, s3, t3, s4, t4], handle, bitmap: image.bitmap });
+                this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], handle, image.bitmap);
             }
-        }
-    }
-
-    private pushCommand(command: Command) {
-        const commands = this.commands.get(this.currentLayer);
-        if (!commands) {
-            this.commands.set(this.currentLayer, [command]);
-        } else {
-            commands.push(command);
         }
     }
 }
