@@ -1,42 +1,6 @@
 // @ts-ignore
 import {default as Module} from "/dist/driver.mjs";
-
-class Renderer {
-    private root: HTMLDivElement;
-    private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D | undefined;
-
-    constructor(root: HTMLDivElement) {
-        this.root = root;
-        this.canvas = this.createCanvas(1920, 1080);
-    }
-
-    begin() {
-        this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
-        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    setColor(r: number, g: number, b: number, a: number) {
-        if (this.ctx) {
-            this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-        }
-    }
-
-    drawImage(handle: number, x: number, y: number, width: number, height: number) {
-        if (handle === 0) {
-            this.ctx?.fillRect(x, y, width, height);
-        }
-    }
-
-    private createCanvas(width: number, height: number): HTMLCanvasElement {
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        // canvas.style.position = 'absolute';
-        this.root.appendChild(canvas);
-        return canvas;
-    }
-}
+import {Renderer} from "./renderer";
 
 Module({
     print: console.log,
