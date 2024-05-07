@@ -1,7 +1,51 @@
 #include <assert.h>
 #include <emscripten.h>
+#include <string.h>
+#include <stdio.h>
 #include "image.h"
 #include "lua.h"
+
+// ---- VFS
+
+extern const char *VFS_TSV;
+
+typedef struct {
+    char name[1024];
+    int width;
+    int height;
+} VfsEntry;
+
+static VfsEntry st_vfs_entries[1024];
+static int st_vfs_count = 0;
+
+static void parse_vfs_tsv() {
+    char *line = strtok((char *)VFS_TSV, "\n");
+    while (line != NULL) {
+        char name[1024];
+        int width, height;
+        if (strlen(line) < 1024) {
+            sscanf(line, "%s\t%d\t%d", name, &width, &height);
+            if (st_vfs_count < 1024) {
+                strcpy(st_vfs_entries[st_vfs_count].name, name);
+                st_vfs_entries[st_vfs_count].width = width;
+                st_vfs_entries[st_vfs_count].height = height;
+            }
+        }
+        line = strtok(NULL, "\n");
+        st_vfs_count += 1;
+    }
+}
+
+static VfsEntry *lookup_vfs_entry(const char *name) {
+    for (int i = 0; i < st_vfs_count; i++) {
+        if (strcmp(st_vfs_entries[i].name, name) == 0) {
+            return &st_vfs_entries[i];
+        }
+    }
+    return NULL;
+}
+
+// ----
 
 static const char *IMAGE_HANDLE_TYPE = "ImageHandle";
 
@@ -51,7 +95,11 @@ static int ImageHandle_Load(lua_State *L) {
 
     const char *filename = lua_tostring(L, 1);
 
-    // TODO: lookup image size
+    VfsEntry *entry = lookup_vfs_entry(filename);
+    if (entry != NULL) {
+        image_handle->width = entry->width;
+        image_handle->height = entry->height;
+    }
 
     EM_ASM({
                Module.imageLoad($0, UTF8ToString($1));
@@ -69,7 +117,15 @@ static int ImageHandle_ImageSize(lua_State *L) {
     return 2;
 }
 
+
+
+
+
 void image_init(lua_State *L) {
+    // Parse vfs.tsv
+    parse_vfs_tsv();
+
+
     // Image handles
     lua_newtable(L);
     lua_pushvalue(L, -1);

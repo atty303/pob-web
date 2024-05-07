@@ -82,10 +82,12 @@ class Canvas {
     private readonly gl: WebGLRenderingContext;
 
     private readonly fillProgram: ShaderProgram<{ position: number, resolution: WebGLUniformLocation, color: WebGLUniformLocation }>;
-    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, resolution: WebGLUniformLocation }>;
+    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, resolution: WebGLUniformLocation, texture: WebGLUniformLocation }>;
 
     private readonly positionBuffer: WebGLBuffer;
     private readonly texCoordBuffer: WebGLBuffer;
+
+    private readonly textures: Map<number, WebGLTexture>  = new Map();
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -130,10 +132,14 @@ class Canvas {
             const resolution = gl.getUniformLocation(program, "u_Resolution");
             if (!resolution) throw new Error("Failed to get uniform location");
 
+            const texture = gl.getUniformLocation(program, "u_Texture");
+            if (!texture) throw new Error("Failed to get uniform location");
+
             return {
                 position,
                 texCoord,
                 resolution,
+                texture,
             };
         });
 
@@ -171,30 +177,47 @@ class Canvas {
         });
     }
 
-    drawImage(coords: number[], texCoords: number[], bitmap: ImageBitmap) {
+    drawImage(coords: number[], texCoords: number[], handle: number, bitmap: ImageBitmap) {
         const gl = this.gl;
-        this.textureProgram.use(({ position, texCoord }) => {
-            // Assign the texture
-            const texture = gl.createTexture();
-            if (!texture) throw new Error("Failed to create texture");
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        this.textureProgram.use(({ position, texCoord, texture }) => {
+            const tex = this.getTexture(handle, bitmap);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.uniform1i(texture, 0);
 
             gl.enableVertexAttribArray(position);
             gl.enableVertexAttribArray(texCoord);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+            // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), gl.STATIC_DRAW);
             gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
+            gl.disableVertexAttribArray(position);
+            gl.disableVertexAttribArray(texCoord);
         });
+    }
+
+    private getTexture(handle: number, bitmap: ImageBitmap): WebGLTexture {
+        const gl = this.gl;
+        let texture = this.textures.get(handle);
+        if (!texture) {
+            const t = gl.createTexture();
+            if (!t) throw new Error("Failed to create texture");
+            texture = t;
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            this.textures.set(handle, texture);
+        }
+        return texture;
     }
 }
 
@@ -231,7 +254,7 @@ export class Renderer {
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {
-                // this.canvas.drawImage([x, y, x + width, y, x + width, y + height, x, y + height], [s1, t1, s2, t2], image.bitmap);
+                this.canvas.drawImage([x, y, x + width, y, x + width, y + height, x, y + height], [s1, t1, s2, t1, s2, t2, s1, t2], handle, image.bitmap);
             } else {
                 this.canvas.fillRect([x, y, x + width, y, x + width, y + height, x, y + height], [1, 0, 1, 0.5]);
             }

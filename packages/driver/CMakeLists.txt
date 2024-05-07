@@ -9,6 +9,14 @@ add_custom_command(
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/boot.lua
 )
 
+add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/vfs.c
+        COMMAND ${CMAKE_COMMAND} -E echo "Writing vfs.tsv to vfs.c"
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../../target/fs.tsv ${CMAKE_BINARY_DIR}/vfs.tsv
+        COMMAND ${CMAKE_COMMAND} ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/gen_vfs_c.cmake
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../target/fs.tsv
+)
+
 file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c)
 
@@ -20,6 +28,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 add_executable(${PROJECT_NAME}
         ${LUA_SOURCES}
         ${CMAKE_BINARY_DIR}/boot.c
+        ${CMAKE_BINARY_DIR}/vfs.c
         src/driver.c
         src/draw.c
         src/draw.h
