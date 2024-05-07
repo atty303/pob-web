@@ -298,16 +298,6 @@ export class Renderer {
     }
 
     drawImage(handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) {
-        // if (handle === 0) {
-        //     this.pushCommand({ type: "f", coords: [x, y, x + width, y, x + width, y + height, x, y + height] });
-        //     // this.canvas.fillRect([x, y, x + width, y, x + width, y + height, x, y + height], this.currentColor);
-        // } else {
-        //     const image = this.imageRepo.get(handle);
-        //     if (image && image.bitmap) {
-        //         this.pushCommand({ type: "i", coords: [x, y, x + width, y, x + width, y + height, x, y + height], texCoords: [s1, t1, s2, t1, s2, t2, s1, t2], handle, bitmap: image.bitmap });
-        //         // this.canvas.drawImage([x, y, x + width, y, x + width, y + height, x, y + height], [s1, t1, s2, t1, s2, t2, s1, t2], handle, image.bitmap);
-        //     }
-        // }
         this.drawImageQuad(handle, x, y, x + width, y, x + width, y + height, x, y + height, s1, t1, s2, t1, s2, t2, s1, t2);
     }
 

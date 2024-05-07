@@ -19,24 +19,24 @@ package.loaded["sha1"] = sha1
 arg = {}
 
 -- Callbacks
-local callbackTable = { }
-local mainObject
-function runCallback(name, ...)
-    if callbackTable[name] then
-        return callbackTable[name](...)
-    elseif mainObject and mainObject[name] then
-        return mainObject[name](mainObject, ...)
-    end
-end
-function SetCallback(name, func)
-    callbackTable[name] = func
-end
-function GetCallback(name)
-    return callbackTable[name]
-end
-function SetMainObject(obj)
-    mainObject = obj
-end
+--local callbackTable = { }
+--local mainObject
+--function runCallback(name, ...)
+--    if callbackTable[name] then
+--        return callbackTable[name](...)
+--    elseif mainObject and mainObject[name] then
+--        return mainObject[name](mainObject, ...)
+--    end
+--end
+--function SetCallback(name, func)
+--    callbackTable[name] = func
+--end
+--function GetCallback(name)
+--    return callbackTable[name]
+--end
+--function SetMainObject(obj)
+--    mainObject = obj
+--end
 
 -- Image Handles
 --local imageHandleClass = { }
@@ -213,35 +213,35 @@ dofile("Launch.lua")
 -- Prevents loading of ModCache
 -- Allows running mod parsing related tests without pushing ModCache
 -- The CI env var will be true when run from github workflows but should be false for other tools using the headless wrapper
-mainObject.continuousIntegrationMode = os.getenv("CI")
+--mainObject.continuousIntegrationMode = os.getenv("CI")
 
-runCallback("OnInit")
-runCallback("OnFrame") -- Need at least one frame for everything to initialise
+--runCallback("OnInit")
+--runCallback("OnFrame") -- Need at least one frame for everything to initialise
 
-if mainObject.promptMsg then
-    -- Something went wrong during startup
-    print(mainObject.promptMsg)
-    --io.read("*l")
-    return
-end
+--if mainObject.promptMsg then
+--    -- Something went wrong during startup
+--    print(mainObject.promptMsg)
+--    --io.read("*l")
+--    return
+--end
 
 -- The build module; once a build is loaded, you can find all the good stuff in here
-build = mainObject.main.modes["BUILD"]
+--build = mainObject.main.modes["BUILD"]
 
 -- Here's some helpful helper functions to help you get started
-function newBuild()
-    mainObject.main:SetMode("BUILD", false, "Help, I'm stuck in Path of Building!")
-    runCallback("OnFrame")
-end
-function loadBuildFromXML(xmlText, name)
-    mainObject.main:SetMode("BUILD", false, name or "", xmlText)
-    runCallback("OnFrame")
-end
-function loadBuildFromJSON(getItemsJSON, getPassiveSkillsJSON)
-    mainObject.main:SetMode("BUILD", false, "")
-    runCallback("OnFrame")
-    local charData = build.importTab:ImportItemsAndSkills(getItemsJSON)
-    build.importTab:ImportPassiveTreeAndJewels(getPassiveSkillsJSON, charData)
-    -- You now have a build without a correct main skill selected, or any configuration options set
-    -- Good luck!
-end
+--function newBuild()
+--    mainObject.main:SetMode("BUILD", false, "Help, I'm stuck in Path of Building!")
+--    runCallback("OnFrame")
+--end
+--function loadBuildFromXML(xmlText, name)
+--    mainObject.main:SetMode("BUILD", false, name or "", xmlText)
+--    runCallback("OnFrame")
+--end
+--function loadBuildFromJSON(getItemsJSON, getPassiveSkillsJSON)
+--    mainObject.main:SetMode("BUILD", false, "")
+--    runCallback("OnFrame")
+--    local charData = build.importTab:ImportItemsAndSkills(getItemsJSON)
+--    build.importTab:ImportPassiveTreeAndJewels(getPassiveSkillsJSON, charData)
+--    -- You now have a build without a correct main skill selected, or any configuration options set
+--    -- Good luck!
+--end

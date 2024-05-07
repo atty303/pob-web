@@ -13,21 +13,22 @@ Module({
         return prefix + path;
     },
 }).then((module: any) => {
-    console.log(module);
-
     const imageRepo = new ImageRepository();
-    const renderer = new Renderer(document.querySelector("#app") as HTMLDivElement, imageRepo);
+
+    const win = document.querySelector("#window") as HTMLDivElement;
+    const renderer = new Renderer(win, imageRepo);
+
+    win.addEventListener("wheel", (e) => {
+        e.deltaY > 0 ? module._on_wheel(-1) : module._on_wheel(1);
+    });
 
     module.imageLoad = (handle: number, filename: string) => {
-        // console.log("imageLoad", handle, filename);
         imageRepo.load(handle, filename).then(() => {
             renderer.invalidate();
         });
     };
 
     module.drawCommit = (bufferPtr: number, size: number) => {
-        console.log("drawCommit", bufferPtr, size);
-
         renderer.begin();
 
         const view = new DataView(module.HEAPU8.buffer, bufferPtr, size);
@@ -122,7 +123,7 @@ Module({
         renderer.end();
     };
 
-    console.log(module._init());
+    module._init();
 
     const tick = () => {
         const start = performance.now();
