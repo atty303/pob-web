@@ -23,6 +23,8 @@ add_executable(${PROJECT_NAME}
         src/driver.c
         src/draw.c
         src/draw.h
+        src/image.c
+        src/image.h
 )
 #add_dependencies(${PROJECT_NAME} ${CMAKE_BINARY_DIR}/boot.c)
 set_target_properties(${PROJECT_NAME}

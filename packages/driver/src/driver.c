@@ -6,6 +6,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 #include "draw.h"
+#include "image.h"
 
 extern const char *boot_lua;
 static lua_State *GL;
@@ -20,14 +21,6 @@ static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     else
         return realloc(ptr, nsize);
 }
-
-EM_JS(void, draw_commit, (const void *buffer, size_t size), {
-    Module.drawCommit(buffer, size);
-});
-
-#define ADD_LUA_FUNC(name) \
-    lua_pushcclosure(GL, name, 0); \
-    lua_setglobal(GL, #name);
 
 static int SetDrawColor(lua_State *L) {
     int n = lua_gettop(L);
@@ -55,22 +48,36 @@ static int DrawImage(lua_State *L) {
     return 0;
 }
 
+#define ADD_LUA_FUNC(name) \
+    lua_pushcclosure(L, name, 0); \
+    lua_setglobal(L, #name);
+
+EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
+    lua_State *L = GL;
 
     luaL_openlibs(GL);  // 標準ライブラリを開く
 
+    image_init(L);
+
+    // Rendering
     ADD_LUA_FUNC(SetDrawColor);
     ADD_LUA_FUNC(DrawImage);
 
-    if (luaL_dostring(GL, boot_lua) != LUA_OK) {
-        fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
+    if (luaL_dostring(L, boot_lua) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
     }
 
     return 0;
 }
 
+EM_JS(void, draw_commit, (const void *buffer, size_t size), {
+    Module.drawCommit(buffer, size);
+});
+
+EMSCRIPTEN_KEEPALIVE
 int on_frame() {
     draw_begin();
 

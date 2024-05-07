@@ -9,13 +9,14 @@ Module({
         if (path.endsWith(".data")) return "/dist/" + path;
         return prefix + path;
     },
-    DrawImage: () => {
-        console.log("drawImage");
-    },
 }).then((module: any) => {
     console.log(module);
 
     const renderer = new Renderer(document.querySelector("#app") as HTMLDivElement);
+
+    module.imageLoad = (filename: string) => {
+        console.log("imageLoad", filename);
+    };
 
     module.drawCommit = (bufferPtr: number, size: number) => {
         console.log("drawCommit", bufferPtr, size);
