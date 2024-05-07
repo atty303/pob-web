@@ -99,9 +99,9 @@ end
 -- General Functions
 function SetWindowTitle(title)
 end
-function GetCursorPos()
-    return 0, 0
-end
+--function GetCursorPos()
+--    return 0, 0
+--end
 function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)

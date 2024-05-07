@@ -18,9 +18,24 @@ Module({
     const win = document.querySelector("#window") as HTMLDivElement;
     const renderer = new Renderer(win, imageRepo);
 
-    win.addEventListener("wheel", (e) => {
-        e.deltaY > 0 ? module._on_wheel(-1) : module._on_wheel(1);
+    const on_key_up = module.cwrap("on_key_up", "number", ["string", "number"]);
+
+    let cursorPosX = 0;
+    let cursorPosY = 0;
+    win.addEventListener("mousemove", (e) => {
+        cursorPosX = e.clientX;
+        cursorPosY = e.clientY;
     });
+
+    win.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const name = e.deltaY > 0 ? "WHEELUP" : "WHEELDOWN";
+        on_key_up(name, 0);
+        renderer.invalidate();
+    });
+
+    module.getCursorPosX = () => cursorPosX;
+    module.getCursorPosY = () => cursorPosY;
 
     module.imageLoad = (handle: number, filename: string) => {
         imageRepo.load(handle, filename).then(() => {
@@ -128,7 +143,7 @@ Module({
     const tick = () => {
         const start = performance.now();
         module._on_frame();
-        console.log(`${performance.now() - start}ms`);
+        // console.log(`${performance.now() - start}ms`);
     };
     setInterval(tick, 1000);
 });

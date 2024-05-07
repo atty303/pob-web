@@ -66,6 +66,14 @@ static int SetMainObject(lua_State *L) {
     return 0;
 }
 
+static int GetCursorPos(lua_State *L) {
+    int x = EM_ASM_INT({ return Module.getCursorPosX(); });
+    int y = EM_ASM_INT({ return Module.getCursorPosY(); });
+    lua_pushinteger(L, x);
+    lua_pushinteger(L, y);
+    return 2;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
@@ -90,8 +98,13 @@ int init() {
 
     lua_setfield(L, LUA_REGISTRYINDEX, "uicallbacks");
 
+    //
     image_init(L);
     draw_init(L);
+
+    //
+    lua_pushcclosure(L, GetCursorPos, 0);
+    lua_setglobal(L, "GetCursorPos");
 
     if (luaL_dostring(L, boot_lua) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
@@ -137,14 +150,16 @@ int on_frame() {
     return 0;
 }
 
-//EMSCRIPTEN_KEEPALIVE
-//int on_callback(const char *name) {
-//    lua_getglobal(GL, "runCallback");
-//    lua_pushstring(GL, name);
-//    if (lua_pcall(GL, 1, 0, 0) != LUA_OK) {
-//        fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
-//        return 1;
-//    }
-//
-//    return 0;
-//}
+EMSCRIPTEN_KEEPALIVE
+int on_key_up(const char *name, int repeat) {
+    printf("on_key_up: %s\n", name);  // デバッグ用
+    lua_State *L = GL;
+    push_callback(L, "OnKeyUp");
+    lua_pushstring(L, name);
+    lua_pushboolean(L, repeat);
+    if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        return 1;
+    }
+    return 0;
+}
