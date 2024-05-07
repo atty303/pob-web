@@ -21,14 +21,6 @@ static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
         return realloc(ptr, nsize);
 }
 
-static const char *my_reader(lua_State *L, void *ud, size_t *size) {
-    if (*(int *)ud == 0) return NULL;
-
-    *(int *)ud = 0;
-    *size = strlen(boot_lua);
-    return boot_lua;
-}
-
 EM_JS(void, draw_commit, (const void *buffer, size_t size), {
     Module.drawCommit(buffer, size);
 });
@@ -75,16 +67,6 @@ int init() {
         fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
         return 1;
     }
-//    static int read_state = 1;
-//    if (lua_load(GL, my_reader, &read_state, "boot.lua", NULL) != LUA_OK) {
-//        fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
-//        return 1;
-//    }
-//    if (lua_pcall(GL, 0, 0, 0) != LUA_OK) {
-//        fprintf(stderr, "Error: %s\n", lua_tostring(GL, -1));
-//        return 1;
-//    }
-
 
     return 0;
 }
