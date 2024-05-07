@@ -106,8 +106,8 @@ function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)
 end
-function IsKeyDown(keyName)
-end
+--function IsKeyDown(keyName)
+--end
 function Copy(text)
 end
 function Paste()

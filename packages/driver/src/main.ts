@@ -18,28 +18,85 @@ Module({
     const win = document.querySelector("#window") as HTMLDivElement;
     const renderer = new Renderer(win, imageRepo);
 
+    let isDirty = true;
+    const invalidate = () => {
+        isDirty = true;
+    };
+
     const on_key_up = module.cwrap("on_key_up", "number", ["string", "number"]);
+    const on_key_down = module.cwrap("on_key_down", "number", ["string", "number"]);
+
+    win.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+    });
 
     let cursorPosX = 0;
     let cursorPosY = 0;
     win.addEventListener("mousemove", (e) => {
         cursorPosX = e.clientX;
         cursorPosY = e.clientY;
+        invalidate();
+    });
+
+    const mouseString = (e: MouseEvent) => {
+        switch (e.button) {
+            case 0:
+                return "LEFTBUTTON";
+            case 1:
+                return "MIDDLEBUTTON";
+            case 2:
+                return "RIGHTBUTTON";
+        }
+    };
+
+    const buttonState = new Set<string>();
+    win.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const name = mouseString(e);
+        if (name) {
+            buttonState.add(name);
+            on_key_down(name, 0);
+            invalidate();
+        }
+    });
+
+    win.addEventListener("mouseup", (e) => {
+        e.preventDefault();
+        const name = mouseString(e);
+        if (name) {
+            buttonState.delete(name);
+            on_key_up(name, -1);
+            invalidate();
+        }
+    });
+
+    win.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+        const name = mouseString(e);
+        if (name) on_key_down(name, 1);
+        invalidate();
     });
 
     win.addEventListener("wheel", (e) => {
         e.preventDefault();
-        const name = e.deltaY > 0 ? "WHEELUP" : "WHEELDOWN";
+        const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
         on_key_up(name, 0);
-        renderer.invalidate();
+        invalidate();
     });
 
     module.getCursorPosX = () => cursorPosX;
     module.getCursorPosY = () => cursorPosY;
 
+    module.isKeyDown = (name: string) => {
+        if (name === "LEFTBUTTON" || name === "MIDDLEBUTTON" || name === "RIGHTBUTTON") {
+            return buttonState.has(name);
+        }
+        return false;
+    };
+
     module.imageLoad = (handle: number, filename: string) => {
         imageRepo.load(handle, filename).then(() => {
-            renderer.invalidate();
+            invalidate();
         });
     };
 
@@ -141,9 +198,13 @@ Module({
     module._init();
 
     const tick = () => {
-        const start = performance.now();
-        module._on_frame();
-        // console.log(`${performance.now() - start}ms`);
+        if (isDirty) {
+            const start = performance.now();
+            module._on_frame();
+            console.log(`frame: ${performance.now() - start}ms`);
+            isDirty = false;
+        }
+        requestAnimationFrame(tick);
     };
-    setInterval(tick, 1000);
+    requestAnimationFrame(tick);
 });

@@ -244,7 +244,6 @@ export class Renderer {
     private canvas: Canvas;
     private currentLayer: number = 0;
     private commands: Map<number, Command[]> = new Map();
-    private isDirty = false;
     private readonly imageRepo: ImageRepository;
 
     constructor(root: HTMLDivElement, imageRepo: ImageRepository) {
@@ -253,10 +252,6 @@ export class Renderer {
 
         this.canvas = new Canvas(1920, 1080);
         this.root.appendChild(this.canvas.element);
-    }
-
-    invalidate() {
-        this.isDirty = true;
     }
 
     begin() {

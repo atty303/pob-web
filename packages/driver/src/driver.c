@@ -74,6 +74,19 @@ static int GetCursorPos(lua_State *L) {
     return 2;
 }
 
+static int IsKeyDown(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    const char *name = lua_tostring(L, 1);
+    int result = EM_ASM_INT({
+                                return Module.isKeyDown(UTF8ToString($0));
+                            }, name);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
@@ -105,6 +118,9 @@ int init() {
     //
     lua_pushcclosure(L, GetCursorPos, 0);
     lua_setglobal(L, "GetCursorPos");
+
+    lua_pushcclosure(L, IsKeyDown, 0);
+    lua_setglobal(L, "IsKeyDown");
 
     if (luaL_dostring(L, boot_lua) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
@@ -151,15 +167,34 @@ int on_frame() {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int on_key_up(const char *name, int repeat) {
-    printf("on_key_up: %s\n", name);  // デバッグ用
+int on_key_down(const char *name, int repeat) {
     lua_State *L = GL;
-    push_callback(L, "OnKeyUp");
+    push_callback(L, "OnKeyDown");
     lua_pushstring(L, name);
     lua_pushboolean(L, repeat);
     if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int on_key_up(const char *name, int repeat) {
+    lua_State *L = GL;
+    push_callback(L, "OnKeyUp");
+    lua_pushstring(L, name);
+    if (repeat >= 0) {
+        lua_pushboolean(L, repeat);
+        if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+            fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+            return 1;
+        }
+    } else {
+        if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
+            fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+            return 1;
+        }
     }
     return 0;
 }
