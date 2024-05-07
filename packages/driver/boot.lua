@@ -18,47 +18,6 @@ package.loaded["sha1"] = sha1
 
 arg = {}
 
--- Callbacks
---local callbackTable = { }
---local mainObject
---function runCallback(name, ...)
---    if callbackTable[name] then
---        return callbackTable[name](...)
---    elseif mainObject and mainObject[name] then
---        return mainObject[name](mainObject, ...)
---    end
---end
---function SetCallback(name, func)
---    callbackTable[name] = func
---end
---function GetCallback(name)
---    return callbackTable[name]
---end
---function SetMainObject(obj)
---    mainObject = obj
---end
-
--- Image Handles
---local imageHandleClass = { }
---imageHandleClass.__index = imageHandleClass
---function NewImageHandle()
---    return setmetatable({ }, imageHandleClass)
---end
---function imageHandleClass:Load(fileName, ...)
---    self.valid = true
---end
---function imageHandleClass:Unload()
---    self.valid = false
---end
---function imageHandleClass:IsValid()
---    return self.valid
---end
---function imageHandleClass:SetLoadingPriority(pri)
---end
---function imageHandleClass:ImageSize()
---    return 1, 1
---end
-
 -- Rendering
 function RenderInit()
 end
@@ -77,8 +36,8 @@ end
 --end
 --function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4)
 --end
-function DrawString(left, top, align, height, font, text)
-end
+--function DrawString(left, top, align, height, font, text)
+--end
 function DrawStringWidth(height, font, text)
     return 1
 end

@@ -46,6 +46,16 @@ typedef struct {
     float s1, t1, s2, t2, s3, t3, s4, t4;
 } DrawImageQuadCommand;
 
+typedef struct {
+    uint8_t type;
+    float x, y;
+    uint8_t align;
+    uint8_t height;
+    uint8_t font;
+    uint16_t text_size;
+    char text[];
+} DrawStringCommand;
+
 #pragma pack(pop)
 
 typedef struct {
@@ -197,6 +207,37 @@ static int DrawImageQuad(lua_State *L) {
     return 0;
 }
 
+static int DrawString(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 6);
+    assert(lua_isnumber(L, 1));
+    assert(lua_isnumber(L, 2));
+    assert(lua_isstring(L, 3) || lua_isnil(L, 3));
+    assert(lua_isnumber(L, 4));
+    assert(lua_isstring(L, 5));
+    assert(lua_isstring(L, 6));
+
+    static const char *alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
+    static const char *fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
+
+    const char *text = lua_tostring(L, 6);
+    size_t text_size = strlen(text);
+    DrawStringCommand *cmd = malloc(sizeof(DrawStringCommand) + text_size);
+    cmd->type = DRAW_STRING;
+    cmd->x = lua_tonumber(L, 1);
+    cmd->y = lua_tonumber(L, 2);
+    cmd->align = luaL_checkoption(L, 3, "LEFT", alignMap);
+    cmd->height = lua_tointeger(L, 4); // TODO: check range
+    cmd->font = luaL_checkoption(L, 5, "FIXED", fontMap);
+    cmd->text_size = text_size;
+    strncpy(cmd->text, text, strlen(text));
+
+    draw_push(cmd, sizeof(DrawStringCommand) + text_size);
+    free(cmd);
+
+    return 0;
+}
+
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");
@@ -209,4 +250,7 @@ void draw_init(lua_State *L) {
 
     lua_pushcclosure(L, DrawImageQuad, 0);
     lua_setglobal(L, "DrawImageQuad");
+
+    lua_pushcclosure(L, DrawString, 0);
+    lua_setglobal(L, "DrawString");
 }
