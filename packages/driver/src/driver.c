@@ -41,9 +41,18 @@ static int SetDrawColor(lua_State *L) {
 
 static int DrawImage(lua_State *L) {
     int n = lua_gettop(L);
+    assert(n >= 5);
+
+    int handle = 0;
+    if (!lua_isnil(L, 1)) {
+        ImageHandle *image_handle = lua_touserdata(L, 1);
+        handle = image_handle->handle;
+    }
     if (n > 5) {
+        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
+                        lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9));
     } else {
-        draw_image(0, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5));
+        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), 0.0, 0.0, 1.0, 1.0);
     }
     return 0;
 }
@@ -73,10 +82,6 @@ int init() {
     return 0;
 }
 
-EM_JS(void, draw_commit, (const void *buffer, size_t size), {
-    Module.drawCommit(buffer, size);
-});
-
 EMSCRIPTEN_KEEPALIVE
 int on_frame() {
     draw_begin();
@@ -91,7 +96,9 @@ int on_frame() {
     void *buffer;
     size_t size;
     draw_get_buffer(&buffer, &size);
-    draw_commit(buffer, size);
+    EM_ASM({
+               Module.drawCommit($0, $1);
+           }, buffer, size);
 
     draw_end();
 

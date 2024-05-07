@@ -1,6 +1,9 @@
 // @ts-ignore
 import {default as Module} from "/dist/driver.mjs";
 import {Renderer} from "./renderer";
+import {ImageRepository} from "./image";
+
+// TODO: copy dist/assets, dist/TreeData
 
 Module({
     print: console.log,
@@ -12,10 +15,14 @@ Module({
 }).then((module: any) => {
     console.log(module);
 
-    const renderer = new Renderer(document.querySelector("#app") as HTMLDivElement);
+    const imageRepo = new ImageRepository();
+    const renderer = new Renderer(document.querySelector("#app") as HTMLDivElement, imageRepo);
 
-    module.imageLoad = (filename: string) => {
-        console.log("imageLoad", filename);
+    module.imageLoad = (handle: number, filename: string) => {
+        // console.log("imageLoad", handle, filename);
+        imageRepo.load(handle, filename).then(() => {
+            renderer.invalidate();
+        });
     };
 
     module.drawCommit = (bufferPtr: number, size: number) => {
@@ -52,7 +59,15 @@ Module({
                     i += 4;
                     const height = view.getFloat32(i, true);
                     i += 4;
-                    renderer.drawImage(handle, x, y, width, height);
+                    const s1 = view.getFloat32(i, true);
+                    i += 4;
+                    const t1 = view.getFloat32(i, true);
+                    i += 4;
+                    const s2 = view.getFloat32(i, true);
+                    i += 4;
+                    const t2 = view.getFloat32(i, true);
+                    i += 4;
+                    renderer.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
                 }
                 break;
             }

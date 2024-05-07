@@ -26,6 +26,7 @@ typedef struct {
     uint8_t type;
     int image_handle;
     float x, y, w, h;
+    float s1, t1, s2, t2;
 } DrawImageCommand;
 
 #pragma pack(pop)
@@ -68,7 +69,7 @@ void draw_set_color(float r, float g, float b, float a) {
     draw_push(&cmd, sizeof(cmd));
 }
 
-void draw_image(int image_handle, float x, float y, float w, float h) {
-    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h};
+void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
+    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
     draw_push(&cmd, sizeof(cmd));
 }

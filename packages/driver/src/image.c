@@ -5,12 +5,6 @@
 
 static const char *IMAGE_HANDLE_TYPE = "ImageHandle";
 
-typedef struct {
-    int handle;
-    int width;
-    int height;
-} ImageHandle;
-
 static int st_next_handle = 0;
 
 static int is_user_data(lua_State *L, int index, const char *type) {
@@ -60,8 +54,8 @@ static int ImageHandle_Load(lua_State *L) {
     // TODO: lookup image size
 
     EM_ASM({
-        Module.imageLoad($0, UTF8ToString($1));
-    }, image_handle->handle, filename);
+               Module.imageLoad($0, UTF8ToString($1));
+           }, image_handle->handle, filename);
 
     return 0;
 }
