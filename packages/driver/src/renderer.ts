@@ -1,4 +1,5 @@
 import {ImageRepository} from "./image";
+import {DrawCommandInterpreter} from "./draw.ts";
 
 type TextureBitmap = {
     id: string;
@@ -233,7 +234,17 @@ class TextRasterizer {
     private readonly cache: Map<string, ImageBitmap> = new Map();
     private readonly cacheKeys: Set<string> = new Set();
 
-    get(height: number, font: number, text: string) {
+    static font(size: number, fontNum: number) {
+        switch (fontNum) {
+            case 1: return `${size}px Liberation Sans`;
+            case 2: return `${size}px Liberation Sans`;
+            case 0:
+            default:
+                return `${size}px Bitstream Vera Mono`;
+        }
+    }
+
+    get(height: number, font: number, text: string, color: number[]) {
         const key = `${height}:${font}:${text}`;
         let bitmap = this.cache.get(key);
         if (!bitmap && !this.cacheKeys.has(key)) {
@@ -241,17 +252,22 @@ class TextRasterizer {
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             if (!context) throw new Error("Failed to get 2D context");
-            context.font = `${height}px sans-serif`;
+            context.font = TextRasterizer.font(height, font);
+            // context.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${color[3] * 255})`;
+            context.fillStyle = 'white';
             const metrics = context.measureText(text);
-            canvas.width = metrics.width;
-            canvas.height = height;
-            // context.textAlign = ["left", "center", "right"][align];
-            // context.textBaseline = "middle";
-            context.fillText(text, 0, 0);
-            createImageBitmap(canvas).then((bitmap) => {
-                this.cache.set(key, bitmap);
-                // TODO: invalidate();
-            });
+            if (metrics.width > 0) {
+                canvas.width = metrics.width;
+                canvas.height = height;
+                // context.textAlign = ["left", "center", "right"][align];
+                context.textBaseline = "top";
+                // context.textBaseline = "middle";
+                context.fillText(text, 0, 0);
+                createImageBitmap(canvas).then((bitmap) => {
+                    this.cache.set(key, bitmap);
+                    // TODO: invalidate();
+                });
+            }
         }
         return bitmap;
     }
@@ -279,6 +295,33 @@ export class Renderer {
     end() {
     }
 
+    render(view: DataView) {
+        this.begin();
+
+        const layers = DrawCommandInterpreter.sort(view);
+        layers.forEach((layer) => {
+            this.setColor(1, 1, 1, 1);
+            layer.commands.forEach((buffer) => {
+                DrawCommandInterpreter.run(buffer, {
+                    onSetColor: (r: number, g: number, b: number, a: number) => {
+                        this.setColor(r, g, b, a);
+                    },
+                    onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => {
+                        this.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
+                    },
+                    onDrawImageQuad: (handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) => {
+                        this.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
+                    },
+                    onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
+                        this.drawString(x, y, align, height, font, text);
+                    },
+                });
+            });
+        });
+
+        this.end();
+    }
+
     setColor(r: number, g: number, b: number, a: number) {
         this.currentColor = [r / 255, g / 255, b / 255, a / 255];
     }
@@ -299,7 +342,17 @@ export class Renderer {
     }
 
     drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
-        // const bitmap = this.textRasterizer.get(height, font, text);
-        // TODO
+        const bitmap = this.textRasterizer.get(height, font, text, this.currentColor);
+        if (bitmap) {
+            switch (align) {
+                case 3: // CENTER_X
+                    x -= Math.floor(bitmap.width / 2);
+                    break;
+                case 4: // RIGHT_X
+                    x -= bitmap.width;
+                    break;
+            };
+            this.canvas.drawImage([x, y, x + bitmap.width, y, x + bitmap.width, y + bitmap.height, x, y + bitmap.height], [0, 0, 1, 0, 1, 1, 0, 1], { id: `${font}:${height}:${text}`, bitmap });
+        }
     }
 }

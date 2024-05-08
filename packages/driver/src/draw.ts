@@ -39,8 +39,8 @@ export class DrawCommandInterpreter {
             const commandType = view.getUint8(i);
             switch (commandType) {
                 case DrawCommandType.SetLayer:
-                    const layer = view.getUint16(i + 1, true);
-                    const sublayer = view.getUint16(i + 3, true);
+                    const layer = view.getInt16(i + 1, true);
+                    const sublayer = view.getInt16(i + 3, true);
                     i += 5;
 
                     if (currentLayer.layer != layer || currentLayer.sublayer != sublayer) {

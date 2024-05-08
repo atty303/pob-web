@@ -23,8 +23,8 @@ typedef enum {
 
 typedef struct {
     uint8_t type;
-    uint16_t layer;
-    uint16_t sublayer;
+    int16_t layer;
+    int16_t sublayer;
 } SetLayerCommand;
 
 typedef struct {
@@ -114,10 +114,10 @@ static int SetDrawLayer(lua_State *L) {
         sublayer = 0;
     }
 
-    if (layer < 0 || layer >= 65536) {
+    if (layer < -32768 || layer >= 32768) {
         return luaL_error(L, "invalid layer %d", layer);
     }
-    if (sublayer < 0 || sublayer >= 65536) {
+    if (sublayer < -32768 || sublayer >= 32768) {
         return luaL_error(L, "invalid sublayer %d", sublayer);
     }
 

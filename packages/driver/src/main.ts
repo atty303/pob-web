@@ -13,7 +13,7 @@ Module({
         if (path.endsWith(".data")) return "/dist/" + path;
         return prefix + path;
     },
-}).then((module: any) => {
+}).then(async (module: any) => {
     const imageRepo = new ImageRepository();
 
     const win = document.querySelector("#window") as HTMLDivElement;
@@ -102,30 +102,10 @@ Module({
     };
 
     module.drawCommit = (bufferPtr: number, size: number) => {
-        renderer.begin();
-
-        const layers = DrawCommandInterpreter.sort(new DataView(module.HEAPU8.buffer, bufferPtr, size));
-        layers.forEach((layer) => {
-            layer.commands.forEach((buffer) => {
-                DrawCommandInterpreter.run(buffer, {
-                    onSetColor: (r: number, g: number, b: number, a: number) => {
-                        renderer.setColor(r, g, b, a);
-                    },
-                    onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => {
-                        renderer.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
-                    },
-                    onDrawImageQuad: (handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) => {
-                        renderer.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
-                    },
-                    onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
-                        renderer.drawString(x, y, align, height, font, text);
-                    },
-                });
-             });
-        });
-
-        renderer.end();
+        renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
     };
+
+    await document.fonts.ready;
 
     module._init();
 
