@@ -3,19 +3,14 @@
   "private": true,
   "type": "module",
   "devDependencies": {
+    "image-size": "^1.1.1",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
   },
   "files": [
     "emscripten"
   ],
   "scripts": {
-    "build:ninja": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
-    "build:vite": "tsc && vite build",
-    "dev": "vite",
-    "preview": "vite preview"
+    "build": "bun prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build"
   }
 }
