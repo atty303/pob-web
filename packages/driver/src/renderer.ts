@@ -352,8 +352,7 @@ class Canvas {
 // }
 
 export class TextRasterizer {
-    private readonly cache: Map<string, ImageBitmap> = new Map();
-    private readonly cacheKeys: Set<string> = new Set();
+    private readonly cache: Map<string, { width: number, bitmap: TextureBitmap | undefined }> = new Map();
 
     static font(size: number, fontNum: number) {
         size -= 2;
@@ -369,24 +368,28 @@ export class TextRasterizer {
     get(size: number, font: number, text: string) {
         const key = `${size}:${font}:${text}`;
         let bitmap = this.cache.get(key);
-        if (!bitmap && !this.cacheKeys.has(key)) {
-            this.cacheKeys.add(key);
+        if (!bitmap) {
+            bitmap = {
+                width: 0,
+                bitmap: undefined as (TextureBitmap | undefined)
+            };
+            this.cache.set(key, bitmap);
+
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             if (!context) throw new Error("Failed to get 2D context");
             context.font = TextRasterizer.font(size, font);
-            context.fillStyle = 'white';
             const metrics = context.measureText(text);
             if (metrics.width > 0) {
+                bitmap.width = metrics.width;
                 canvas.width = metrics.width;
                 canvas.height = size;
                 context.font = TextRasterizer.font(size, font);
                 context.fillStyle = 'white';
                 context.textBaseline = "bottom";
-                // context.textBaseline = "middle";
                 context.fillText(text, 0, size);
-                createImageBitmap(canvas).then((bitmap) => {
-                    this.cache.set(key, bitmap);
+                createImageBitmap(canvas).then((b) => {
+                    bitmap!.bitmap = { id: key, bitmap: b };
                     // TODO: invalidate();
                 });
             }
@@ -395,6 +398,7 @@ export class TextRasterizer {
     }
 }
 
+const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g
 const colorEscape = [
     [0, 0, 0, 1],
     [1, 0, 0, 1],
@@ -507,7 +511,66 @@ export class Renderer {
         }
     }
 
-    drawString(x: number, y: number, align: number, height: number, font: number, rawText: string) {
+    drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
+        let pos = { x, y };
+        text.split("\n").forEach((line) => {
+            this.drawStringLine(pos, align, height, font, line);
+        });
+    }
+
+    private drawStringLine(pos: { x: number, y: number }, align: number, height: number, font: number, text: string) {
+        const segments = [];
+
+        let m;
+        while (m = reColor.exec(text)) {
+            segments.push({ text: text.substring(0, m.index), color: this.currentColor, bitmap: this.textRasterizer.get(height, font, text.substring(0, m.index)) });
+            text = text.substring(m.index + m[0].length);
+
+            if (m[1]) {
+                this.currentColor = colorEscape[parseInt(m[1], 10)];
+            } else {
+                const r = parseInt(m[2].substring(0, 2), 16);
+                const g = parseInt(m[2].substring(2, 4), 16);
+                const b = parseInt(m[2].substring(4, 6), 16);
+                this.currentColor = [r / 255, g / 255, b / 255, 1];
+            }
+        }
+        if (text.length > 0) {
+            segments.push({ text, color: this.currentColor, bitmap: this.textRasterizer.get(height, font, text) });
+        }
+
+        const width = segments.reduce((width, segment) => width + segment.bitmap.width, 0);
+
+        let x = pos.x;
+        switch (align) {
+            case 1: // CENTER
+                x = Math.floor((this.width - width) / 2 + pos.x);
+                break;
+            case 2: // RIGHT
+                x = Math.floor(this.width - width - pos.x);
+                break;
+            case 3: // CENTER_X
+                x = Math.floor(pos.x - width / 2);
+                break;
+            case 4: // RIGHT_X
+                x = Math.floor(pos.x - width);
+                break;
+        }
+
+        segments.forEach((segment) => {
+            if (segment.bitmap.bitmap) {
+                this.canvas.drawQuad(
+                    [x, pos.y, x + segment.bitmap.width, pos.y, x + segment.bitmap.width, pos.y + height, x, pos.y + height],
+                    [0, 0, 1, 0, 1, 1, 0, 1],
+                    segment.bitmap.bitmap, segment.color);
+            }
+            x += segment.bitmap.width;
+        });
+
+        pos.y += height;
+    }
+
+    drawString_(x: number, y: number, align: number, height: number, font: number, rawText: string) {
         const color = this.currentColor;
         const text = this.setColorEscape(rawText);
         const isColored = text !== rawText;
