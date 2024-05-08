@@ -13,16 +13,18 @@ attribute vec2 a_Position;
 attribute vec2 a_TexCoord;
 attribute vec4 a_TintColor;
 attribute vec4 a_Viewport;
+attribute float a_TexId;
 
 varying vec2 v_ScreenPos;
 varying vec2 v_TexCoord;
 varying vec4 v_TintColor;
 varying vec4 v_Viewport;
+varying float v_TexId;
 
 void main(void) {
     v_TexCoord = a_TexCoord;
     v_TintColor = a_TintColor;
-
+    v_TexId = a_TexId;
     vec2 vp0 = a_Viewport.xy + vec2(0.0, a_Viewport.w);
     vec2 vp1 = a_Viewport.xy + vec2(a_Viewport.z, 0.0);
     v_Viewport = vec4(
@@ -34,24 +36,40 @@ void main(void) {
 }
 `;
 
-const textureFragmentShaderSource = `
+const textureFragmentShaderSource = ((max: number) => {
+    let switchCode = "";
+    for (let i = 0; i < max; ++i) {
+        if (i == 0) {
+            switchCode += `if (v_TexId < ${i}.5) `;
+        } else if (i == max - 1) {
+            switchCode += `else `;
+        } else {
+            switchCode += `else if (v_TexId < ${i}.5) `;
+        }
+        switchCode += `color = texture2D(u_Texture[${i}], v_TexCoord);\n`;
+    }
+    return `
 precision mediump float;
 
-uniform sampler2D u_Texture;
+uniform sampler2D u_Texture[${max}];
 
 varying vec2 v_ScreenPos;
 varying vec2 v_TexCoord;
-varying vec4 v_Viewport;
 varying vec4 v_TintColor;
+varying vec4 v_Viewport;
+varying float v_TexId;
 
 void main(void) {
     float x = v_ScreenPos[0], y = v_ScreenPos[1];
     if (x < v_Viewport[0] || x >= v_Viewport[2] || y < v_Viewport[1] || y >= v_Viewport[3]) {
       discard;
     }
-    gl_FragColor = texture2D(u_Texture, v_TexCoord) * v_TintColor;
+    vec4 color;
+    ${switchCode}
+    gl_FragColor = color * v_TintColor;
 }
 `;
+});
 
 class ShaderProgram<T> {
     private readonly gl: WebGLRenderingContext;
@@ -108,18 +126,52 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
     ];
 }
 
+class VertexBuffer {
+    readonly buffer: Float32Array;
+    private offset: number;
+
+    constructor() {
+        this.buffer = new Float32Array(13 * 100000);
+        this.offset = 0;
+    }
+
+    get length() {
+        return this.offset / 13;
+    }
+
+    push(i: number, coords: number[], texCoords: number[], tintColor: number[], viewport: number[], textureSlot: number) {
+        this.buffer[this.offset++] = coords[i * 2];
+        this.buffer[this.offset++] = coords[i * 2 + 1];
+        this.buffer[this.offset++] = texCoords[i * 2];
+        this.buffer[this.offset++] = texCoords[i * 2 + 1];
+        this.buffer[this.offset++] = tintColor[0];
+        this.buffer[this.offset++] = tintColor[1];
+        this.buffer[this.offset++] = tintColor[2];
+        this.buffer[this.offset++] = tintColor[3];
+        this.buffer[this.offset++] = viewport[0];
+        this.buffer[this.offset++] = viewport[1];
+        this.buffer[this.offset++] = viewport[2];
+        this.buffer[this.offset++] = viewport[3];
+        this.buffer[this.offset++] = textureSlot;
+    }
+}
+
 class Canvas {
     private readonly gl: WebGLRenderingContext;
 
-    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, tintColor: number, viewport: number, mvpMatrix: WebGLUniformLocation, texture: WebGLUniformLocation }>;
-
-    private readonly positionBuffer: WebGLBuffer;
-    private readonly texCoordBuffer: WebGLBuffer;
-    private readonly tintColorBuffer: WebGLBuffer;
-    private readonly viewportBuffer: WebGLBuffer;
+    private readonly textureProgram: ShaderProgram<{
+        position: number, texCoord: number, tintColor: number, viewport: number, texId: number,
+        mvpMatrix: WebGLUniformLocation, textures: WebGLUniformLocation[]
+    }>;
 
     private readonly textures: Map<string, WebGLTexture>  = new Map();
     private viewport: number[] = [];
+    private vertices: VertexBuffer = new VertexBuffer();
+    private drawCount: number = 0;
+    private readonly vbo: WebGLBuffer;
+    private readonly maxTextures: number;
+    private batchTextures: Map<string, TextureBitmap & { index: number }> = new Map();
+    private batchTextureCount: number = 0;
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -140,9 +192,12 @@ class Canvas {
         gl.depthMask(false);
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        this.textureProgram = new ShaderProgram(gl, vertexShaderSource, textureFragmentShaderSource, (program) => {
+        this.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number;
+        console.log(`Max textures: ${this.maxTextures}`);
+
+        this.textureProgram = new ShaderProgram(gl, vertexShaderSource, textureFragmentShaderSource(this.maxTextures), (program) => {
             const position = gl.getAttribLocation(program, "a_Position");
             if (position < 0) throw new Error("Failed to get attribute location");
 
@@ -155,37 +210,33 @@ class Canvas {
             const viewport = gl.getAttribLocation(program, "a_Viewport");
             if (viewport < 0) throw new Error("Failed to get attribute location: viewport");
 
+            const texId = gl.getAttribLocation(program, "a_TexId");
+            if (texId < 0) throw new Error("Failed to get attribute location: texId");
+
             const mvpMatrix = gl.getUniformLocation(program, "u_MvpMatrix");
             if (!mvpMatrix) throw new Error("Failed to get uniform location: mvpMatrix");
 
-            const texture = gl.getUniformLocation(program, "u_Texture");
-            if (!texture) throw new Error("Failed to get uniform location");
+            let textures = [];
+            for (let i = 0; i < this.maxTextures; ++i) {
+                const texture = gl.getUniformLocation(program, `u_Texture[${i}]`);
+                if (!texture) throw new Error("Failed to get uniform location: texture");
+                textures.push(texture);
+            }
 
             return {
                 position,
                 texCoord,
                 tintColor,
                 viewport,
+                texId,
                 mvpMatrix,
-                texture,
+                textures,
             };
         });
 
-        const positionBuffer = gl.createBuffer();
-        if (!positionBuffer) throw new Error("Failed to create vertex buffer");
-        this.positionBuffer = positionBuffer;
-
-        const texCoordBuffer = gl.createBuffer();
-        if (!texCoordBuffer) throw new Error("Failed to create texture coordinate buffer");
-        this.texCoordBuffer = texCoordBuffer;
-
-        const tintColorBuffer = gl.createBuffer();
-        if (!tintColorBuffer) throw new Error("Failed to create tint color buffer");
-        this.tintColorBuffer = tintColorBuffer;
-
-        const viewportBuffer = gl.createBuffer();
-        if (!viewportBuffer) throw new Error("Failed to create viewport buffer");
-        this.viewportBuffer = viewportBuffer;
+        const vbo = gl.createBuffer();
+        if (!vbo) throw new Error("Failed to create vertex buffer");
+        this.vbo = vbo;
 
         // Set up the viewport
         this.setViewport(0, 0, width, height);
@@ -193,49 +244,76 @@ class Canvas {
 
     setViewport(x: number, y: number, width: number, height: number) {
         this.viewport = [x, y, width, height];
-        this.gl.viewport(0, 0, this.element.width, this.element.height);
     }
 
-    drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor0: number[]) {
+    begin() {
+        this.vertices = new VertexBuffer();
+        this.drawCount = 0;
+    }
+
+    end() {
+        // console.log(`Draw count: ${this.drawCount}`);
+        this.dispatch();
+    }
+
+    drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
+        this.drawCount++;
+
+        let t = this.batchTextures.get(textureBitmap.id);
+        if (!t) {
+            if (this.batchTextures.size >= this.maxTextures) {
+                this.dispatch();
+            }
+            t = {...textureBitmap, index: this.batchTextureCount++}
+            this.batchTextures.set(textureBitmap.id, t);
+        }
+
+        for (let i of [0, 1, 2, 0, 2, 3]) {
+            this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index);
+        }
+    }
+
+    private dispatch() {
         const gl = this.gl;
-        this.textureProgram.use(({ position, texCoord, tintColor, viewport, mvpMatrix, texture }) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, this.vertices.buffer, gl.STREAM_DRAW);
+        this.textureProgram.use(p => {
+            // Set up the viewport
+            this.gl.viewport(0, 0, this.element.width, this.element.height);
             const matrix = orthoMatrix(0, this.element.width, this.element.height, 0, -9999, 9999);
-            this.gl.uniformMatrix4fv(mvpMatrix, false, new Float32Array(matrix));
+            this.gl.uniformMatrix4fv(p.mvpMatrix, false, new Float32Array(matrix));
 
-            const tex = this.getTexture(textureBitmap);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.uniform1i(texture, 0);
+            // Set up the texture
+            for (let t of this.batchTextures.values()) {
+                gl.activeTexture(gl.TEXTURE0 + t.index);
+                gl.bindTexture(gl.TEXTURE_2D, this.getTexture(t));
+                gl.uniform1i(p.textures[t.index], t.index);
+            }
 
-            gl.enableVertexAttribArray(position);
-            gl.enableVertexAttribArray(texCoord);
-            gl.enableVertexAttribArray(tintColor);
-            gl.enableVertexAttribArray(viewport);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.tintColorBuffer);
-            const tp = [...tintColor0, ...tintColor0, ...tintColor0, ...tintColor0];
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tp), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(tintColor, 4, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.viewportBuffer);
-            const vp = [...this.viewport, ...this.viewport, ...this.viewport, ...this.viewport];
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vp), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(viewport, 4, gl.FLOAT, false, 0, 0);
-
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-
-            gl.disableVertexAttribArray(position);
-            gl.disableVertexAttribArray(texCoord);
-            gl.disableVertexAttribArray(tintColor);
-            gl.disableVertexAttribArray(viewport);
+            // Draw
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
+            gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
+            gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 52, 8);
+            gl.vertexAttribPointer(p.tintColor, 4, gl.FLOAT, false, 52, 16);
+            gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, 52, 32);
+            gl.vertexAttribPointer(p.texId, 1, gl.FLOAT, false, 52, 48);
+            gl.enableVertexAttribArray(p.position);
+            gl.enableVertexAttribArray(p.texCoord);
+            gl.enableVertexAttribArray(p.tintColor);
+            gl.enableVertexAttribArray(p.viewport);
+            gl.enableVertexAttribArray(p.texId);
+            gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length);
+            // gl.disableVertexAttribArray(p.position);
+            // gl.disableVertexAttribArray(p.texCoord);
+            // gl.disableVertexAttribArray(p.tintColor);
+            // gl.disableVertexAttribArray(p.viewport);
+            // gl.disableVertexAttribArray(p.texId);
+            // gl.bindBuffer(gl.ARRAY_BUFFER, null);
         });
+        this.vertices = new VertexBuffer();
+        this.batchTextures = new Map();
+        this.batchTextureCount = 0;
     }
 
     private getTexture(textureBitmap: TextureBitmap): WebGLTexture {
@@ -256,6 +334,10 @@ class Canvas {
         return texture;
     }
 }
+
+// function aabbIntersects(a: number[], b: number[]) {
+//     return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+// }
 
 export class TextRasterizer {
     private readonly cache: Map<string, ImageBitmap> = new Map();
@@ -339,6 +421,7 @@ export class Renderer {
         const layers = DrawCommandInterpreter.sort(view);
         layers.forEach((layer) => {
             this.setColor(1, 1, 1, 1);
+            this.canvas.begin();
             layer.commands.forEach((buffer) => {
                 DrawCommandInterpreter.run(buffer, {
                     onSetViewport: (x: number, y: number, width: number, height: number) => {
@@ -365,6 +448,7 @@ export class Renderer {
                     },
                 });
             });
+            this.canvas.end();
         });
 
     }
