@@ -191,7 +191,7 @@ class Canvas {
         canvas.height = height;
         this._element = canvas;
 
-        const gl = canvas.getContext("webgl");
+        const gl = canvas.getContext("webgl", { premultipliedAlpha: true });
         if (!gl) throw new Error("Failed to get WebGL context");
         this.gl = gl;
 
@@ -199,7 +199,6 @@ class Canvas {
         gl.depthMask(false);
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
-        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         this.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number;
         console.log(`Max textures: ${this.maxTextures}`);
@@ -303,7 +302,7 @@ class Canvas {
             }
 
             // Draw
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
             gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
             gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 52, 8);
@@ -335,8 +334,8 @@ class Canvas {
             const t = gl.createTexture();
             if (!t) throw new Error("Failed to create texture");
             texture = t;
-            // (t as any).premultiplyAlpha = true;
             gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
