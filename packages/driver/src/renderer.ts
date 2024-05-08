@@ -309,7 +309,7 @@ export class TextRasterizer {
         }
     }
 
-    get(height: number, font: number, text: string, color: number[]) {
+    get(height: number, font: number, text: string) {
         const key = `${height}:${font}:${text}`;
         let bitmap = this.cache.get(key);
         if (!bitmap && !this.cacheKeys.has(key)) {
@@ -318,13 +318,11 @@ export class TextRasterizer {
             const context = canvas.getContext("2d");
             if (!context) throw new Error("Failed to get 2D context");
             context.font = TextRasterizer.font(height, font);
-            // context.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${color[3] * 255})`;
             context.fillStyle = 'white';
             const metrics = context.measureText(text);
             if (metrics.width > 0) {
                 canvas.width = metrics.width;
                 canvas.height = height;
-                // context.textAlign = ["left", "center", "right"][align];
                 context.textBaseline = "top";
                 // context.textBaseline = "middle";
                 context.fillText(text, 0, 0);
@@ -415,18 +413,21 @@ export class Renderer {
     }
 
     setColorEscape(text: string) {
-        const a = text.match(/\^[0-9]/);
+        const a = text.match(/^\^[0-9]/);
         if (a) {
             this.currentColor = colorEscape[parseInt(a[0][1])];
+            return text.substring(2);
         } else {
-            const color = text.match(/^[xX][0-9a-fA-F]{6}/);
+            const color = text.match(/^\^[xX][0-9a-fA-F]{6}/);
             if (color) {
-                const r = parseInt(color[0].substr(2, 2), 16);
-                const g = parseInt(color[0].substr(4, 2), 16);
-                const b = parseInt(color[0].substr(6, 2), 16);
+                const r = parseInt(color[0].substring(2, 4), 16);
+                const g = parseInt(color[0].substring(4, 6), 16);
+                const b = parseInt(color[0].substring(6, 8), 16);
                 this.currentColor = [r / 255, g / 255, b / 255, 1];
+                return text.substring(8);
             }
         }
+        return text;
     }
 
     drawImage(handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) {
@@ -444,8 +445,12 @@ export class Renderer {
         }
     }
 
-    drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
-        const bitmap = this.textRasterizer.get(height, font, text, this.currentColor);
+    drawString(x: number, y: number, align: number, height: number, font: number, rawText: string) {
+        const color = this.currentColor;
+        const text = this.setColorEscape(rawText);
+        const isColored = text !== rawText;
+
+        const bitmap = this.textRasterizer.get(height, font, text);
         if (bitmap) {
             switch (align) {
                 case 3: // CENTER_X
@@ -455,7 +460,10 @@ export class Renderer {
                     x -= bitmap.width;
                     break;
             }
-            this.canvas.drawImage([x, y, x + bitmap.width, y, x + bitmap.width, y + bitmap.height, x, y + bitmap.height], [0, 0, 1, 0, 1, 1, 0, 1], { id: `${font}:${height}:${text}`, bitmap }, this.currentColor);
+            this.canvas.drawImage([x, y, x + bitmap.width, y, x + bitmap.width, y + bitmap.height, x, y + bitmap.height], [0, 0, 1, 0, 1, 1, 0, 1], { id: `${font}:${height}:${rawText}`, bitmap }, this.currentColor);
+            if (isColored) {
+                this.currentColor = color;
+            }
         }
     }
 
