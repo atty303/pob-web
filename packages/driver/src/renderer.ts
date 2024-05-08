@@ -218,7 +218,7 @@ class Canvas {
 
     setViewport(x: number, y: number, width: number, height: number) {
         this.viewport = [x, y, width, height];
-        this.gl.viewport(x, y, width, height);
+        this.gl.viewport(0, 0, this.element.width, this.element.height);
     }
 
     fillRect(coords: number[], color0: number[]) {
@@ -240,7 +240,7 @@ class Canvas {
     drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor0: number[]) {
         const gl = this.gl;
         this.textureProgram.use(({ position, texCoord, tintColor, viewport, mvpMatrix, texture }) => {
-            const matrix = orthoMatrix(0, this.viewport[2], this.viewport[3], 0, -9999, 9999);
+            const matrix = orthoMatrix(0, this.element.width, this.element.height, 0, -9999, 9999);
             this.gl.uniformMatrix4fv(mvpMatrix, false, new Float32Array(matrix));
 
             const tex = this.getTexture(textureBitmap);
