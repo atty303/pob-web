@@ -537,7 +537,7 @@ export class Renderer {
             text = text.substring(m.index + m[0].length);
 
             if (m[1]) {
-                this.currentColor = colorEscape[parseInt(m[1], 10)];
+                this.currentColor = colorEscape[parseInt(m[1])];
             } else {
                 const r = parseInt(m[2].substring(0, 2), 16);
                 const g = parseInt(m[2].substring(2, 4), 16);
