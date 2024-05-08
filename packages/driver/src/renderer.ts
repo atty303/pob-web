@@ -361,11 +361,10 @@ export class Renderer {
                         this.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
                     },
                     onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
-                        this.drawString(x, y, align, height, font, text);
+                        // this.drawString(x, y, align, height, font, text);
                     },
                 });
             });
-            // this.canvas.drawImage([0, 0, this.width, 0, this.width, this.height, 0, this.height], [0, 0, 1, 0, 1, 1, 0, 1], this.white, [1,0,0,0.5]);
         });
 
     }
