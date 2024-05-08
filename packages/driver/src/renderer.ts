@@ -172,6 +172,7 @@ class Canvas {
     private readonly maxTextures: number;
     private batchTextures: Map<string, TextureBitmap & { index: number }> = new Map();
     private batchTextureCount: number = 0;
+    private dispatchCount: number = 0;
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -249,11 +250,12 @@ class Canvas {
     begin() {
         this.vertices = new VertexBuffer();
         this.drawCount = 0;
+        this.dispatchCount = 0;
     }
 
     end() {
-        // console.log(`Draw count: ${this.drawCount}`);
         this.dispatch();
+        console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
     }
 
     drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
@@ -274,6 +276,10 @@ class Canvas {
     }
 
     private dispatch() {
+        if (this.vertices.length === 0) return;
+
+        this.dispatchCount++;
+
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertices.buffer, gl.STREAM_DRAW);
