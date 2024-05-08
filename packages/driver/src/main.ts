@@ -104,11 +104,8 @@ Module({
         renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
     };
 
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
     module.getStringWidth = (size: number, font: number, text: string) => {
-        context!.font = TextRasterizer.font(size, font);
-        return context!.measureText(text).width;
+        return renderer.measureText(size, font, text);
     };
 
     await document.fonts.ready;
