@@ -129,12 +129,18 @@ Module({
 
     module._init();
 
+    // フレーム時間の平均を計算する
+    let frameTime = 0;
+    let frameCount = 0;
     const tick = () => {
         if (isDirty) {
             const start = performance.now();
             module._on_frame();
-            console.log(`frame: ${performance.now() - start}ms`);
             isDirty = false;
+            const time = performance.now() - start;
+            frameTime += time;
+            frameCount++;
+            console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
         }
         requestAnimationFrame(tick);
     };

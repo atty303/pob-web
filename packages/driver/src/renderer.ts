@@ -92,7 +92,7 @@ class Canvas {
     private readonly positionBuffer: WebGLBuffer;
     private readonly texCoordBuffer: WebGLBuffer;
 
-    private readonly textures: Map<number, WebGLTexture>  = new Map();
+    private readonly textures: Map<string, WebGLTexture>  = new Map();
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -185,10 +185,10 @@ class Canvas {
         });
     }
 
-    drawImage(coords: number[], texCoords: number[], handle: number, bitmap: ImageBitmap) {
+    drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap) {
         const gl = this.gl;
         this.textureProgram.use(({ position, texCoord, texture }) => {
-            const tex = this.getTexture(handle, bitmap);
+            const tex = this.getTexture(textureBitmap);
             gl.bindTexture(gl.TEXTURE_2D, tex);
             gl.uniform1i(texture, 0);
 
@@ -210,20 +210,20 @@ class Canvas {
         });
     }
 
-    private getTexture(handle: number, bitmap: ImageBitmap): WebGLTexture {
+    private getTexture(textureBitmap: TextureBitmap): WebGLTexture {
         const gl = this.gl;
-        let texture = this.textures.get(handle);
+        let texture = this.textures.get(textureBitmap.id);
         if (!texture) {
             const t = gl.createTexture();
             if (!t) throw new Error("Failed to create texture");
             texture = t;
             (t as any).premultiplyAlpha = true;
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            this.textures.set(handle, texture);
+            this.textures.set(textureBitmap.id, texture);
         }
         return texture;
     }
@@ -293,7 +293,7 @@ export class Renderer {
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {
-                this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], handle, image.bitmap);
+                this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], { id: handle.toString(), bitmap: image.bitmap });
             }
         }
     }
