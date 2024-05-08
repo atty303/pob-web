@@ -98,102 +98,58 @@ export class DrawCommandInterpreter {
     }) {
 
         const view = new DataView(command.buffer, command.byteOffset, command.byteLength);
-        let i = 0;
-
-        const commandType = view.getUint8(i);
-        i += 1;
+        const commandType = view.getUint8(0);
         switch (commandType) {
             case DrawCommandType.SetColor: {
-                const r = view.getUint8(i);
-                i += 1;
-                const g = view.getUint8(i);
-                i += 1;
-                const b = view.getUint8(i);
-                i += 1;
-                const a = view.getUint8(i);
-                i += 1;
+                const r = view.getUint8(1);
+                const g = view.getUint8(2);
+                const b = view.getUint8(3);
+                const a = view.getUint8(4);
                 cb.onSetColor(r, g, b, a);
-            }
-                break;
+            } break;
             case DrawCommandType.DrawImage: {
-                const handle = view.getInt32(i, true);
-                i += 4;
-                const x = view.getFloat32(i, true);
-                i += 4;
-                const y = view.getFloat32(i, true);
-                i += 4;
-                const width = view.getFloat32(i, true);
-                i += 4;
-                const height = view.getFloat32(i, true);
-                i += 4;
-                const s1 = view.getFloat32(i, true);
-                i += 4;
-                const t1 = view.getFloat32(i, true);
-                i += 4;
-                const s2 = view.getFloat32(i, true);
-                i += 4;
-                const t2 = view.getFloat32(i, true);
-                i += 4;
+                const handle = view.getInt32(1, true);
+                const x = view.getFloat32(5, true);
+                const y = view.getFloat32(9, true);
+                const width = view.getFloat32(13, true);
+                const height = view.getFloat32(17, true);
+                const s1 = view.getFloat32(21, true);
+                const t1 = view.getFloat32(25, true);
+                const s2 = view.getFloat32(29, true);
+                const t2 = view.getFloat32(33, true);
                 cb.onDrawImage(handle, x, y, width, height, s1, t1, s2, t2);
-            }
-                break;
+            } break;
             case DrawCommandType.DrawImageQuad: {
-                const handle = view.getInt32(i, true);
-                i += 4;
-                const x1 = view.getFloat32(i, true);
-                i += 4;
-                const y1 = view.getFloat32(i, true);
-                i += 4;
-                const x2 = view.getFloat32(i, true);
-                i += 4;
-                const y2 = view.getFloat32(i, true);
-                i += 4;
-                const x3 = view.getFloat32(i, true);
-                i += 4;
-                const y3 = view.getFloat32(i, true);
-                i += 4;
-                const x4 = view.getFloat32(i, true);
-                i += 4;
-                const y4 = view.getFloat32(i, true);
-                i += 4;
-                const s1 = view.getFloat32(i, true);
-                i += 4;
-                const t1 = view.getFloat32(i, true);
-                i += 4;
-                const s2 = view.getFloat32(i, true);
-                i += 4;
-                const t2 = view.getFloat32(i, true);
-                i += 4;
-                const s3 = view.getFloat32(i, true);
-                i += 4;
-                const t3 = view.getFloat32(i, true);
-                i += 4;
-                const s4 = view.getFloat32(i, true);
-                i += 4;
-                const t4 = view.getFloat32(i, true);
-                i += 4;
+                const handle = view.getInt32(1, true);
+                const x1 = view.getFloat32(5, true);
+                const y1 = view.getFloat32(9, true);
+                const x2 = view.getFloat32(13, true);
+                const y2 = view.getFloat32(17, true);
+                const x3 = view.getFloat32(21, true);
+                const y3 = view.getFloat32(25, true);
+                const x4 = view.getFloat32(29, true);
+                const y4 = view.getFloat32(33, true);
+                const s1 = view.getFloat32(37, true);
+                const t1 = view.getFloat32(41, true);
+                const s2 = view.getFloat32(45, true);
+                const t2 = view.getFloat32(49, true);
+                const s3 = view.getFloat32(53, true);
+                const t3 = view.getFloat32(57, true);
+                const s4 = view.getFloat32(61, true);
+                const t4 = view.getFloat32(65, true);
                 cb.onDrawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
-            }
-                break;
+            } break;
             case DrawCommandType.DrawString: {
-                const x = view.getFloat32(i, true);
-                i += 4;
-                const y = view.getFloat32(i, true);
-                i += 4;
-                const align = view.getUint8(i);
-                i += 1;
-                const height = view.getUint8(i);
-                i += 1;
-                const font = view.getUint8(i);
-                i += 1;
-                const textSize = view.getUint16(i, true);
-                i += 2;
-                const textArray = new Uint8Array(view.buffer, view.byteOffset + i, textSize);
-                i += textSize;
+                const x = view.getFloat32(1, true);
+                const y = view.getFloat32(5, true);
+                const align = view.getUint8(9);
+                const height = view.getUint8(10);
+                const font = view.getUint8(11);
+                const textSize = view.getUint16(12, true);
+                const textArray = new Uint8Array(view.buffer, view.byteOffset + 14, textSize);
                 const text = new TextDecoder().decode(textArray);
                 cb.onDrawString(x, y, align, height, font, text);
-            }
-                break;
+            } break;
         }
     }
 }
