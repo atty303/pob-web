@@ -111,7 +111,7 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
 class Canvas {
     private readonly gl: WebGLRenderingContext;
 
-    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, resolution: WebGLUniformLocation, texture: WebGLUniformLocation }>;
+    private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, tintColor: number, viewport: number, mvpMatrix: WebGLUniformLocation, texture: WebGLUniformLocation }>;
 
     private readonly positionBuffer: WebGLBuffer;
     private readonly texCoordBuffer: WebGLBuffer;
