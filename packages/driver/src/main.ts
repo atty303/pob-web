@@ -1,6 +1,6 @@
 // @ts-ignore
 import {default as Module} from "/dist/driver.mjs";
-import {Renderer, TextRasterizer} from "./renderer";
+import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
 
 // TODO: copy dist/assets, dist/TreeData
