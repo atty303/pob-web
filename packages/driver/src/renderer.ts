@@ -7,23 +7,36 @@ type TextureBitmap = {
 };
 
 const vertexShaderSource = `
+uniform mat4 u_MvpMatrix;
+
 attribute vec2 a_Position;
 attribute vec2 a_TexCoord;
+attribute vec4 a_Viewport;
+
+varying vec2 v_ScreenPos;
 varying vec2 v_TexCoord;
-uniform vec2 u_Resolution;
+varying vec4 v_Viewport;
 
 void main(void) {
-  vec2 zeroToOne = a_Position / u_Resolution;
-  vec2 zeroToTwo = zeroToOne * 2.0 - 1.0;
-  vec2 clipSpace = zeroToTwo * vec2(1, -1);
-  gl_Position = vec4(clipSpace, 0, 1);
   v_TexCoord = a_TexCoord;
+
+  vec2 vp0 = a_Viewport.xy + vec2(0.0, a_Viewport.w);
+  vec2 vp1 = a_Viewport.xy + vec2(a_Viewport.z, 0.0);
+  v_Viewport = vec4(
+    (u_MvpMatrix * vec4(vp0, 0.0, 1.0)).xy,
+    (u_MvpMatrix * vec4(vp1, 0.0, 1.0)).xy);
+  vec4 pos = u_MvpMatrix * vec4(a_Position + a_Viewport.xy, 0.0, 1.0);
+  v_ScreenPos = pos.xy;
+  gl_Position = pos;
 }
 `;
+
 
 const fillFragmentShaderSource = `
 precision mediump float;
 uniform vec4 u_Color;
+varying vec4 v_Viewport;
+
 void main(void) {
     gl_FragColor = u_Color;
 }
@@ -31,10 +44,19 @@ void main(void) {
 
 const textureFragmentShaderSource = `
 precision mediump float;
+
 uniform sampler2D u_Texture;
+
+varying vec2 v_ScreenPos;
 varying vec2 v_TexCoord;
+varying vec4 v_Viewport;
+
 void main(void) {
-    gl_FragColor = texture2D(u_Texture, v_TexCoord);
+  float x = v_ScreenPos[0], y = v_ScreenPos[1];
+  if (x < v_Viewport[0] || x >= v_Viewport[2] || y < v_Viewport[1] || y >= v_Viewport[3]) {
+    discard;
+  }
+  gl_FragColor = texture2D(u_Texture, v_TexCoord);
 }
 `;
 
@@ -84,6 +106,15 @@ class ShaderProgram<T> {
     }
 }
 
+function orthoMatrix(left: number, right: number, bottom: number, top: number, near: number, far: number) {
+    return [
+        2 / (right - left), 0, 0, 0,
+        0, 2 / (top - bottom), 0, 0,
+        0, 0, -2 / (far - near), 0,
+        -((right + left)  / (right - left)), -((top + bottom) / (top - bottom)), -((far + near) / (far - near)), 1,
+    ];
+}
+
 class Canvas {
     private readonly gl: WebGLRenderingContext;
 
@@ -92,8 +123,10 @@ class Canvas {
 
     private readonly positionBuffer: WebGLBuffer;
     private readonly texCoordBuffer: WebGLBuffer;
+    private readonly viewportBuffer: WebGLBuffer;
 
     private readonly textures: Map<string, WebGLTexture>  = new Map();
+    private viewport: number[];
 
     get element(): HTMLCanvasElement {
         return this._element;
@@ -118,15 +151,11 @@ class Canvas {
             const position = gl.getAttribLocation(program, "a_Position");
             if (position < 0) throw new Error("Failed to get attribute location");
 
-            const resolution = gl.getUniformLocation(program, "u_Resolution");
-            if (!resolution) throw new Error("Failed to get uniform location");
-
             const color = gl.getUniformLocation(program, "u_Color");
-            if (!color) throw new Error("Failed to get uniform location");
+            if (!color) throw new Error("Failed to get uniform location: color");
 
             return {
                 position,
-                resolution,
                 color,
             };
         });
@@ -138,8 +167,11 @@ class Canvas {
             const texCoord = gl.getAttribLocation(program, "a_TexCoord");
             if (texCoord < 0) throw new Error("Failed to get attribute location");
 
-            const resolution = gl.getUniformLocation(program, "u_Resolution");
-            if (!resolution) throw new Error("Failed to get uniform location");
+            const viewport = gl.getAttribLocation(program, "a_Viewport");
+            if (viewport < 0) throw new Error("Failed to get attribute location: viewport");
+
+            const mvpMatrix = gl.getUniformLocation(program, "u_MvpMatrix");
+            if (!mvpMatrix) throw new Error("Failed to get uniform location: mvpMatrix");
 
             const texture = gl.getUniformLocation(program, "u_Texture");
             if (!texture) throw new Error("Failed to get uniform location");
@@ -147,7 +179,8 @@ class Canvas {
             return {
                 position,
                 texCoord,
-                resolution,
+                viewport,
+                mvpMatrix,
                 texture,
             };
         });
@@ -160,14 +193,17 @@ class Canvas {
         if (!texCoordBuffer) throw new Error("Failed to create texture coordinate buffer");
         this.texCoordBuffer = texCoordBuffer;
 
+        const viewportBuffer = gl.createBuffer();
+        if (!viewportBuffer) throw new Error("Failed to create viewport buffer");
+        this.viewportBuffer = viewportBuffer;
+
         // Set up the viewport
-        gl.viewport(0, 0, width, height);
-        this.fillProgram.use(({ resolution}) => {
-            gl.uniform2f(resolution, width, height)
-        });
-        this.textureProgram.use(({ resolution }) => {
-            gl.uniform2f(resolution, width, height)
-        });
+        this.setViewport(0, 0, width, height);
+    }
+
+    setViewport(x: number, y: number, width: number, height: number) {
+        this.viewport = [x, y, width, height];
+        this.gl.viewport(0, 0, width, height);
     }
 
     fillRect(coords: number[], color0: number[]) {
@@ -188,13 +224,17 @@ class Canvas {
 
     drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap) {
         const gl = this.gl;
-        this.textureProgram.use(({ position, texCoord, texture }) => {
+        this.textureProgram.use(({ position, texCoord, viewport, mvpMatrix, texture }) => {
+            const matrix = orthoMatrix(0, this.viewport[2], this.viewport[3], 0, -9999, 9999);
+            this.gl.uniformMatrix4fv(mvpMatrix, false, new Float32Array(matrix));
+
             const tex = this.getTexture(textureBitmap);
             gl.bindTexture(gl.TEXTURE_2D, tex);
             gl.uniform1i(texture, 0);
 
             gl.enableVertexAttribArray(position);
             gl.enableVertexAttribArray(texCoord);
+            gl.enableVertexAttribArray(viewport);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
@@ -204,10 +244,16 @@ class Canvas {
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
             gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
 
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.viewportBuffer);
+            const vp = [...this.viewport, ...this.viewport, ...this.viewport, ...this.viewport];
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vp), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(viewport, 4, gl.FLOAT, false, 0, 0);
+
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 
             gl.disableVertexAttribArray(position);
             gl.disableVertexAttribArray(texCoord);
+            gl.disableVertexAttribArray(viewport);
         });
     }
 
@@ -279,12 +325,16 @@ export class Renderer {
     private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
     private readonly textRasterizer = new TextRasterizer();
+    private width: number;
+    private height: number;
 
     constructor(root: HTMLDivElement, imageRepo: ImageRepository) {
         this.root = root;
         this.imageRepo = imageRepo;
+        this.width = 1920;
+        this.height = 1080;
 
-        this.canvas = new Canvas(1920, 1080);
+        this.canvas = new Canvas(this.width, this.height);
         this.root.appendChild(this.canvas.element);
     }
 
@@ -303,6 +353,13 @@ export class Renderer {
             this.setColor(1, 1, 1, 1);
             layer.commands.forEach((buffer) => {
                 DrawCommandInterpreter.run(buffer, {
+                    onSetViewport: (x: number, y: number, width: number, height: number) => {
+                        if (width === 0 || height === 0) {
+                            this.setViewport(0, 0, this.width, this.height);
+                        } else {
+                            this.setViewport(x, y, width, height);
+                        }
+                    },
                     onSetColor: (r: number, g: number, b: number, a: number) => {
                         this.setColor(r, g, b, a);
                     },
@@ -322,6 +379,10 @@ export class Renderer {
         this.end();
     }
 
+    setViewport(x: number, y: number, width: number, height: number) {
+        this.canvas.setViewport(x, y, width, height);
+    }
+
     setColor(r: number, g: number, b: number, a: number) {
         this.currentColor = [r / 255, g / 255, b / 255, a / 255];
     }
@@ -332,7 +393,7 @@ export class Renderer {
 
     drawImageQuad(handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) {
         if (handle === 0) {
-            this.canvas.fillRect([x1, y1, x2, y2, x3, y3, x4, y4], this.currentColor);
+            // this.canvas.fillRect([x1, y1, x2, y2, x3, y3, x4, y4], this.currentColor);
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {

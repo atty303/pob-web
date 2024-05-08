@@ -91,6 +91,7 @@ export class DrawCommandInterpreter {
     }
 
     static run(command: Uint8Array, cb: {
+        onSetViewport: (x: number, y: number, width: number, height: number) => void,
         onSetColor: (r: number, g: number, b: number, a: number) => void,
         onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => void,
         onDrawImageQuad: (handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) => void,
@@ -105,7 +106,7 @@ export class DrawCommandInterpreter {
                 const y = view.getInt32(5, true);
                 const width = view.getInt32(9, true);
                 const height = view.getInt32(13, true);
-                console.log(`SetViewport: x=${x}, y=${y}, width=${width}, height=${height}`);
+                cb.onSetViewport(x, y, width, height);
             } break;
             case DrawCommandType.SetColor: {
                 const r = view.getUint8(1);
