@@ -303,6 +303,7 @@ class Canvas {
 
             // Draw
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            // TODO: Use bufferSubData
             // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
             gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
             gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 52, 8);

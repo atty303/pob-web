@@ -8,6 +8,8 @@
 #include "lauxlib.h"
 #include "image.h"
 
+static int st_layer = 0;
+
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
     DRAW_SET_LAYER = 2,
@@ -17,7 +19,6 @@ typedef enum {
     DRAW_IMAGE = 6,
     DRAW_IMAGE_QUAD = 7,
     DRAW_STRING = 8,
-
 } DrawCommandType;
 
 #pragma pack(push, 1)
@@ -91,6 +92,7 @@ void draw_begin() {
     st_buffer.data = NULL;
     st_buffer.size = 0;
     st_buffer.capacity = 0;
+    st_layer = 0;
 }
 
 void draw_get_buffer(void **data, size_t *size) {
@@ -103,8 +105,6 @@ void draw_end() {
     st_buffer.data = NULL;
 }
 
-static int st_layer = 0;
-static int st_sublayer = 0;
 
 static int SetDrawLayer(lua_State *L) {
     int n = lua_gettop(L);
@@ -134,7 +134,6 @@ static int SetDrawLayer(lua_State *L) {
     }
 
     st_layer = layer;
-    st_sublayer = sublayer;
 
     SetLayerCommand cmd = {DRAW_SET_LAYER, layer, sublayer };
     draw_push(&cmd, sizeof(cmd));

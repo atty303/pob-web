@@ -36,6 +36,7 @@ export class DrawCommandInterpreter {
     static sort(view: DataView) {
         const layers = new Map<number, Layer>([[0, new Layer(0, 0)]]);
         let currentLayer = layers.get(0)!;
+        let currentViewport: Uint8Array | undefined = undefined;
 
         let i = 0;
         while (i < view.byteLength) {
@@ -56,11 +57,14 @@ export class DrawCommandInterpreter {
                             currentLayer = n;
                         }
                     }
-                    // TODO: SetViewport(&curViewport);
-                    // TODO: SetBlendMode(curBlendMode);
+                    if (currentViewport) {
+                        currentLayer.push(currentViewport);
+                    }
                     break;
                 case DrawCommandType.SetViewport:
-                    currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 17));
+                    const c = new Uint8Array(view.buffer, view.byteOffset + i, 17);
+                    currentViewport = c;
+                    currentLayer.push(c);
                     i += 17;
                     break;
                 case DrawCommandType.SetColor:
@@ -91,8 +95,28 @@ export class DrawCommandInterpreter {
         }
 
         const keys = [...layers.keys()];
-        keys.sort((a, b) => a - b);
-        return keys.map((key) => layers.get(key)!);
+        keys.sort((a, b) => {
+            return a - b;
+            // const aLayer = a >> 16;
+            // const aSublayer = a & 0xFFFF;
+            // const bLayer = b >> 16;
+            // const bSublayer = b & 0xFFFF;
+            // if (aLayer < bLayer) {
+            //     return -1;
+            // } else if (aLayer > bLayer) {
+            //     return 1;
+            // } else if (aSublayer < bSublayer) {
+            //     return -1;
+            // } else {
+            //     return 1;
+            // }
+        });
+        return keys.flatMap((key) => {
+            const l = layers.get(key)!;
+            // console.log(l);
+            // return (l.layer === 5 && l.sublayer === 0) ? [l] : [];
+            return [l];
+        });
     }
 
     static run(command: Uint8Array, cb: {
