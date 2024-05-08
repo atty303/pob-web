@@ -38,9 +38,9 @@ end
 --end
 --function DrawString(left, top, align, height, font, text)
 --end
-function DrawStringWidth(height, font, text)
-    return 1
-end
+--function DrawStringWidth(height, font, text)
+--    return 1
+--end
 function DrawStringCursorIndex(height, font, text, cursorX, cursorY)
     return 0
 end

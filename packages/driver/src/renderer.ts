@@ -230,7 +230,7 @@ class Canvas {
     }
 }
 
-class TextRasterizer {
+export class TextRasterizer {
     private readonly cache: Map<string, ImageBitmap> = new Map();
     private readonly cacheKeys: Set<string> = new Set();
 

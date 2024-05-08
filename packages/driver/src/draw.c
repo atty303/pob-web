@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <emscripten.h>
 #include "draw.h"
 #include "lua.h"
 #include "lauxlib.h"
@@ -207,6 +208,9 @@ static int DrawImageQuad(lua_State *L) {
     return 0;
 }
 
+static const char *alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
+static const char *fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
+
 static int DrawString(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 6);
@@ -216,9 +220,6 @@ static int DrawString(lua_State *L) {
     assert(lua_isnumber(L, 4));
     assert(lua_isstring(L, 5));
     assert(lua_isstring(L, 6));
-
-    static const char *alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
-    static const char *fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
 
     const char *text = lua_tostring(L, 6);
     size_t text_size = strlen(text);
@@ -238,6 +239,25 @@ static int DrawString(lua_State *L) {
     return 0;
 }
 
+static int DrawStringWidth(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 3);
+    assert(lua_isnumber(L, 1));
+    assert(lua_isstring(L, 2));
+    assert(lua_isstring(L, 3));
+
+    int height = lua_tointeger(L, 1);
+    int font = luaL_checkoption(L, 2, "FIXED", fontMap);
+    const char *text = lua_tostring(L, 3);
+
+    int width = EM_ASM_INT({
+        return Module.getStringWidth($0, $1, UTF8ToString($2));
+    }, height, font, text);
+
+    lua_pushinteger(L, width);
+    return 1;
+}
+
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");
@@ -253,4 +273,7 @@ void draw_init(lua_State *L) {
 
     lua_pushcclosure(L, DrawString, 0);
     lua_setglobal(L, "DrawString");
+
+    lua_pushcclosure(L, DrawStringWidth, 0);
+    lua_setglobal(L, "DrawStringWidth");
 }

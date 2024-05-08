@@ -1,6 +1,6 @@
 // @ts-ignore
 import {default as Module} from "/dist/driver.mjs";
-import {Renderer} from "./renderer";
+import {Renderer, TextRasterizer} from "./renderer";
 import {ImageRepository} from "./image";
 import {DrawCommandInterpreter} from "./draw";
 
@@ -103,6 +103,13 @@ Module({
 
     module.drawCommit = (bufferPtr: number, size: number) => {
         renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
+    };
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    module.getStringWidth = (size: number, font: number, text: string) => {
+        context!.font = TextRasterizer.font(size, font);
+        return context!.measureText(text).width;
     };
 
     await document.fonts.ready;
