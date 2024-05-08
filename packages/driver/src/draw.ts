@@ -30,24 +30,17 @@ class Layer {
 }
 
 export class DrawCommandInterpreter {
-    private readonly view: DataView;
-
-    constructor(buffer: ArrayBufferLike, byteOffset: number, byteLength: number) {
-        this.view = new DataView(buffer, byteOffset, byteLength);
-    }
-
-    sort() {
+    static sort(view: DataView) {
         const layers = new Map<number, Layer>([[0, new Layer(0, 0)]]);
         let currentLayer = layers.get(0)!;
 
-        const view = this.view;
         let i = 0;
         while (i < view.byteLength) {
             const commandType = view.getUint8(i);
             switch (commandType) {
                 case DrawCommandType.SetLayer:
-                    const layer = this.view.getUint16(i + 1, true);
-                    const sublayer = this.view.getUint16(i + 3, true);
+                    const layer = view.getUint16(i + 1, true);
+                    const sublayer = view.getUint16(i + 3, true);
                     i += 5;
 
                     if (currentLayer.layer != layer || currentLayer.sublayer != sublayer) {
@@ -76,7 +69,7 @@ export class DrawCommandInterpreter {
                     i += 69;
                     break;
                 case DrawCommandType.DrawString:
-                    const textSize = this.view.getUint16(i + 12, true);
+                    const textSize = view.getUint16(i + 12, true);
                     currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 14 + textSize));
                     i += 14 + textSize;
                     break;

@@ -104,7 +104,7 @@ Module({
     module.drawCommit = (bufferPtr: number, size: number) => {
         renderer.begin();
 
-        const layers = new DrawCommandInterpreter(module.HEAPU8.buffer, bufferPtr, size).sort();
+        const layers = DrawCommandInterpreter.sort(new DataView(module.HEAPU8.buffer, bufferPtr, size));
         layers.forEach((layer) => {
             layer.commands.forEach((buffer) => {
                 DrawCommandInterpreter.run(buffer, {
