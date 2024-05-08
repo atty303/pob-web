@@ -263,7 +263,7 @@ class Canvas {
         // console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
     }
 
-    drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
+    drawQuad(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
         this.drawCount++;
 
         let t = this.batchTextures.get(textureBitmap.id);
@@ -356,6 +356,7 @@ export class TextRasterizer {
     private readonly cacheKeys: Set<string> = new Set();
 
     static font(size: number, fontNum: number) {
+        size -= 2;
         switch (fontNum) {
             case 1: return `${size}px Liberation Sans`;
             case 2: return `${size}px Liberation Sans`;
@@ -381,9 +382,9 @@ export class TextRasterizer {
                 canvas.height = size;
                 context.font = TextRasterizer.font(size, font);
                 context.fillStyle = 'white';
-                context.textBaseline = "top";
+                context.textBaseline = "bottom";
                 // context.textBaseline = "middle";
-                context.fillText(text, 0, 0);
+                context.fillText(text, 0, size);
                 createImageBitmap(canvas).then((bitmap) => {
                     this.cache.set(key, bitmap);
                     // TODO: invalidate();
@@ -456,7 +457,7 @@ export class Renderer {
                         this.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
                     },
                     onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
-                        // this.drawString(x, y, align, height, font, text);
+                        this.drawString(x, y, align, height, font, text);
                     },
                 });
             });
@@ -497,11 +498,11 @@ export class Renderer {
 
     drawImageQuad(handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) {
         if (handle === 0) {
-            this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [0, 0, 1, 0, 1, 1, 0, 1], this.white, this.currentColor);
+            this.canvas.drawQuad([x1, y1, x2, y2, x3, y3, x4, y4], [0, 0, 1, 0, 1, 1, 0, 1], this.white, this.currentColor);
         } else {
             const image = this.imageRepo.get(handle);
             if (image && image.bitmap) {
-                this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], { id: handle.toString(), bitmap: image.bitmap }, this.currentColor);
+                this.canvas.drawQuad([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], { id: handle.toString(), bitmap: image.bitmap }, this.currentColor);
             }
         }
     }
@@ -527,7 +528,7 @@ export class Renderer {
                     x -= bitmap.width;
                     break;
             }
-            this.canvas.drawImage([x, y, x + bitmap.width, y, x + bitmap.width, y + bitmap.height, x, y + bitmap.height], [0, 0, 1, 0, 1, 1, 0, 1], { id: `${font}:${height}:${rawText}`, bitmap }, this.currentColor);
+            this.canvas.drawQuad([x, y, x + bitmap.width, y, x + bitmap.width, y + bitmap.height, x, y + bitmap.height], [0, 0, 1, 0, 1, 1, 0, 1], { id: `${font}:${height}:${rawText}`, bitmap }, this.currentColor);
             if (isColored) {
                 this.currentColor = color;
             }
