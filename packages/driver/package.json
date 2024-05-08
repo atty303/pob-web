@@ -8,7 +8,7 @@
     "vite": "^5.2.0"
   },
   "files": [
-    "emscripten"
+    "dist"
   ],
   "scripts": {
     "build": "bun prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build"

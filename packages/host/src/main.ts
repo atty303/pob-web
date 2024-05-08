@@ -1,5 +1,5 @@
 // @ts-ignore
-import {default as Module} from "pob-driver/emscripten/driver.mjs";
+import {default as Module} from "pob-driver/dist/driver.mjs";
 import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
 
