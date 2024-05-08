@@ -1,6 +1,9 @@
 const enum DrawCommandType {
+    SetClearColor = 1,
     SetLayer = 2,
+    SetViewport = 3,
     SetColor = 4,
+    SetColorEscape = 5,
     DrawImage = 6,
     DrawImageQuad = 7,
     DrawString = 8,
@@ -56,6 +59,10 @@ export class DrawCommandInterpreter {
                     // TODO: SetViewport(&curViewport);
                     // TODO: SetBlendMode(curBlendMode);
                     break;
+                case DrawCommandType.SetViewport:
+                    currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 17));
+                    i += 17;
+                    break;
                 case DrawCommandType.SetColor:
                     currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 5));
                     i += 5;
@@ -93,6 +100,13 @@ export class DrawCommandInterpreter {
         const view = new DataView(command.buffer, command.byteOffset, command.byteLength);
         const commandType = view.getUint8(0);
         switch (commandType) {
+            case DrawCommandType.SetViewport: {
+                const x = view.getInt32(1, true);
+                const y = view.getInt32(5, true);
+                const width = view.getInt32(9, true);
+                const height = view.getInt32(13, true);
+                console.log(`SetViewport: x=${x}, y=${y}, width=${width}, height=${height}`);
+            } break;
             case DrawCommandType.SetColor: {
                 const r = view.getUint8(1);
                 const g = view.getUint8(2);

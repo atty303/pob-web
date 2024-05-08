@@ -30,6 +30,11 @@ typedef struct {
 
 typedef struct {
     uint8_t type;
+    int x, y, w, h;
+} SetViewportCommand;
+
+typedef struct {
+    uint8_t type;
     uint8_t r, g, b, a;
 } SetColorCommand;
 
@@ -127,6 +132,26 @@ static int SetDrawLayer(lua_State *L) {
 
     SetLayerCommand cmd = {DRAW_SET_LAYER, layer, sublayer };
     draw_push(&cmd, sizeof(cmd));
+
+    return 0;
+}
+
+static int SetViewport(lua_State *L) {
+    int n = lua_gettop(L);
+    if (n > 0) {
+        assert(n >= 4);
+        assert(lua_isnumber(L, 1));
+        assert(lua_isnumber(L, 2));
+        assert(lua_isnumber(L, 3));
+        assert(lua_isnumber(L, 4));
+
+        SetViewportCommand cmd = {DRAW_SET_VIEWPORT, lua_tointeger(L, 1), lua_tointeger(L, 2), lua_tointeger(L, 3),
+                                  lua_tointeger(L, 4)};
+        draw_push(&cmd, sizeof(cmd));
+    } else {
+        SetViewportCommand cmd = {DRAW_SET_VIEWPORT, 0, 0, 0, 0};
+        draw_push(&cmd, sizeof(cmd));
+    }
 
     return 0;
 }
@@ -261,6 +286,9 @@ static int DrawStringWidth(lua_State *L) {
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");
+
+    lua_pushcclosure(L, SetViewport, 0);
+    lua_setglobal(L, "SetViewport");
 
     lua_pushcclosure(L, SetDrawColor, 0);
     lua_setglobal(L, "SetDrawColor");

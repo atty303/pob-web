@@ -28,8 +28,8 @@ function SetClearColor(r, g, b, a)
 end
 --function SetDrawLayer(layer, subLayer)
 --end
-function SetViewport(x, y, width, height)
-end
+--function SetViewport(x, y, width, height)
+--end
 --function SetDrawColor(r, g, b, a)
 --end
 --function DrawImage(imgHandle, left, top, width, height, tcLeft, tcTop, tcRight, tcBottom)
