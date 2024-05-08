@@ -148,6 +148,9 @@ class Canvas {
         if (!gl) throw new Error("Failed to get WebGL context");
         this.gl = gl;
 
+        gl.clearColor(0, 0, 0, 1);
+        gl.depthMask(false);
+        gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -215,7 +218,7 @@ class Canvas {
 
     setViewport(x: number, y: number, width: number, height: number) {
         this.viewport = [x, y, width, height];
-        this.gl.viewport(0, 0, width, height);
+        this.gl.viewport(x, y, width, height);
     }
 
     fillRect(coords: number[], color0: number[]) {
@@ -283,7 +286,7 @@ class Canvas {
             const t = gl.createTexture();
             if (!t) throw new Error("Failed to create texture");
             texture = t;
-            (t as any).premultiplyAlpha = true;
+            // (t as any).premultiplyAlpha = true;
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -323,6 +326,8 @@ export class TextRasterizer {
             if (metrics.width > 0) {
                 canvas.width = metrics.width;
                 canvas.height = size;
+                context.font = TextRasterizer.font(size, font);
+                context.fillStyle = 'white';
                 context.textBaseline = "top";
                 // context.textBaseline = "middle";
                 context.fillText(text, 0, 0);
@@ -401,7 +406,9 @@ export class Renderer {
                     },
                 });
             });
+            // this.canvas.drawImage([0, 0, this.width, 0, this.width, this.height, 0, this.height], [0, 0, 1, 0, 1, 1, 0, 1], this.white, [1,0,0,0.5]);
         });
+
     }
 
     setViewport(x: number, y: number, width: number, height: number) {
