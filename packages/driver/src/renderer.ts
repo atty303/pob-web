@@ -255,7 +255,7 @@ class Canvas {
 
     end() {
         this.dispatch();
-        console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
+        // console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
     }
 
     drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
