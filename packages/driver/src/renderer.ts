@@ -309,20 +309,20 @@ export class TextRasterizer {
         }
     }
 
-    get(height: number, font: number, text: string) {
-        const key = `${height}:${font}:${text}`;
+    get(size: number, font: number, text: string) {
+        const key = `${size}:${font}:${text}`;
         let bitmap = this.cache.get(key);
         if (!bitmap && !this.cacheKeys.has(key)) {
             this.cacheKeys.add(key);
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             if (!context) throw new Error("Failed to get 2D context");
-            context.font = TextRasterizer.font(height, font);
+            context.font = TextRasterizer.font(size, font);
             context.fillStyle = 'white';
             const metrics = context.measureText(text);
             if (metrics.width > 0) {
                 canvas.width = metrics.width;
-                canvas.height = height;
+                canvas.height = size;
                 context.textBaseline = "top";
                 // context.textBaseline = "middle";
                 context.fillText(text, 0, 0);
@@ -453,6 +453,12 @@ export class Renderer {
         const bitmap = this.textRasterizer.get(height, font, text);
         if (bitmap) {
             switch (align) {
+                case 1: // CENTER
+                    x = ((this.width - bitmap.width) / 2) + x;
+                    break;
+                case 2: // RIGHT
+                    x = this.width - bitmap.width - x;
+                    break;
                 case 3: // CENTER_X
                     x -= Math.floor(bitmap.width / 2);
                     break;

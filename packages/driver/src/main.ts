@@ -2,7 +2,6 @@
 import {default as Module} from "/dist/driver.mjs";
 import {Renderer, TextRasterizer} from "./renderer";
 import {ImageRepository} from "./image";
-import {DrawCommandInterpreter} from "./draw";
 
 // TODO: copy dist/assets, dist/TreeData
 
