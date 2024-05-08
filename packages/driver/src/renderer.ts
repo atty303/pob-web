@@ -34,17 +34,6 @@ void main(void) {
 }
 `;
 
-
-const fillFragmentShaderSource = `
-precision mediump float;
-uniform vec4 u_Color;
-varying vec4 v_Viewport;
-
-void main(void) {
-    gl_FragColor = u_Color;
-}
-`;
-
 const textureFragmentShaderSource = `
 precision mediump float;
 
@@ -122,7 +111,6 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
 class Canvas {
     private readonly gl: WebGLRenderingContext;
 
-    private readonly fillProgram: ShaderProgram<{ position: number, resolution: WebGLUniformLocation, color: WebGLUniformLocation }>;
     private readonly textureProgram: ShaderProgram<{ position: number, texCoord: number, resolution: WebGLUniformLocation, texture: WebGLUniformLocation }>;
 
     private readonly positionBuffer: WebGLBuffer;
@@ -153,19 +141,6 @@ class Canvas {
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-        this.fillProgram = new ShaderProgram(gl, vertexShaderSource, fillFragmentShaderSource, (program) => {
-            const position = gl.getAttribLocation(program, "a_Position");
-            if (position < 0) throw new Error("Failed to get attribute location");
-
-            const color = gl.getUniformLocation(program, "u_Color");
-            if (!color) throw new Error("Failed to get uniform location: color");
-
-            return {
-                position,
-                color,
-            };
-        });
 
         this.textureProgram = new ShaderProgram(gl, vertexShaderSource, textureFragmentShaderSource, (program) => {
             const position = gl.getAttribLocation(program, "a_Position");
@@ -219,22 +194,6 @@ class Canvas {
     setViewport(x: number, y: number, width: number, height: number) {
         this.viewport = [x, y, width, height];
         this.gl.viewport(0, 0, this.element.width, this.element.height);
-    }
-
-    fillRect(coords: number[], color0: number[]) {
-        const gl = this.gl;
-        this.fillProgram.use(({ position, color }) => {
-            gl.enableVertexAttribArray(position);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-            gl.uniform4fv(color, color0);
-
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-
-            gl.disableVertexAttribArray(position);
-        });
     }
 
     drawImage(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor0: number[]) {
