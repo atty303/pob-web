@@ -67,6 +67,11 @@ export class DrawCommandInterpreter {
                     currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 5));
                     i += 5;
                     break;
+                case DrawCommandType.SetColorEscape:
+                    const textSize0 = view.getUint16(i + 1, true);
+                    currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 3 + textSize0));
+                    i += 3 + textSize0;
+                    break;
                 case DrawCommandType.DrawImage:
                     currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 37));
                     i += 37;
@@ -93,6 +98,7 @@ export class DrawCommandInterpreter {
     static run(command: Uint8Array, cb: {
         onSetViewport: (x: number, y: number, width: number, height: number) => void,
         onSetColor: (r: number, g: number, b: number, a: number) => void,
+        onSetColorEscape: (text: string) => void,
         onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => void,
         onDrawImageQuad: (handle: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, s1: number, t1: number, s2: number, t2: number, s3: number, t3: number, s4: number, t4: number) => void,
         onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => void,
@@ -114,6 +120,12 @@ export class DrawCommandInterpreter {
                 const b = view.getUint8(3);
                 const a = view.getUint8(4);
                 cb.onSetColor(r, g, b, a);
+            } break;
+            case DrawCommandType.SetColorEscape: {
+                const textSize = view.getUint16(1, true);
+                const textArray = new Uint8Array(view.buffer, view.byteOffset + 3, textSize);
+                const text = new TextDecoder().decode(textArray);
+                cb.onSetColorEscape(text);
             } break;
             case DrawCommandType.DrawImage: {
                 const handle = view.getInt32(1, true);

@@ -338,6 +338,19 @@ export class TextRasterizer {
     }
 }
 
+const colorEscape = [
+    [0, 0, 0, 1],
+    [1, 0, 0, 1],
+    [0, 1, 0, 1],
+    [0, 0, 1, 1],
+    [1, 1, 0, 1],
+    [1, 0, 1, 1],
+    [0, 1, 1, 1],
+    [1, 1, 1, 1],
+    [0.7, 0.7, 0.7, 1],
+    [0.4, 0.4, 0.4, 1],
+];
+
 export class Renderer {
     private root: HTMLDivElement;
     private canvas: Canvas;
@@ -376,6 +389,9 @@ export class Renderer {
                     onSetColor: (r: number, g: number, b: number, a: number) => {
                         this.setColor(r, g, b, a);
                     },
+                    onSetColorEscape: (text: string) => {
+                        this.setColorEscape(text);
+                    },
                     onDrawImage: (handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) => {
                         this.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
                     },
@@ -396,6 +412,21 @@ export class Renderer {
 
     setColor(r: number, g: number, b: number, a: number) {
         this.currentColor = [r / 255, g / 255, b / 255, a / 255];
+    }
+
+    setColorEscape(text: string) {
+        const a = text.match(/\^[0-9]/);
+        if (a) {
+            this.currentColor = colorEscape[parseInt(a[0][1])];
+        } else {
+            const color = text.match(/^[xX][0-9a-fA-F]{6}/);
+            if (color) {
+                const r = parseInt(color[0].substr(2, 2), 16);
+                const g = parseInt(color[0].substr(4, 2), 16);
+                const b = parseInt(color[0].substr(6, 2), 16);
+                this.currentColor = [r / 255, g / 255, b / 255, 1];
+            }
+        }
     }
 
     drawImage(handle: number, x: number, y: number, width: number, height: number, s1: number, t1: number, s2: number, t2: number) {

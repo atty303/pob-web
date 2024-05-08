@@ -40,6 +40,12 @@ typedef struct {
 
 typedef struct {
     uint8_t type;
+    uint16_t text_size;
+    char text[];
+} SetColorEscapeCommand;
+
+typedef struct {
+    uint8_t type;
     int image_handle;
     float x, y, w, h;
     float s1, t1, s2, t2;
@@ -161,11 +167,22 @@ static void draw_set_color(float r, float g, float b, float a) {
     draw_push(&cmd, sizeof(cmd));
 }
 
+static void draw_set_color_escape(const char *text) {
+    size_t text_size = strlen(text);
+    SetColorEscapeCommand *cmd = malloc(sizeof(SetColorEscapeCommand) + text_size);
+    cmd->type = DRAW_SET_COLOR_ESCAPE;
+    cmd->text_size = text_size;
+    strncpy(cmd->text, text, strlen(text));
+
+    draw_push(cmd, sizeof(SetColorEscapeCommand) + text_size);
+    free(cmd);
+}
+
 static int SetDrawColor(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
     if (lua_type(L, 1) == LUA_TSTRING) {
-//        draw_set_color_escape(lua_tostring(L, 1));
+        draw_set_color_escape(lua_tostring(L, 1));
     } else {
         assert(n >= 3);
 
