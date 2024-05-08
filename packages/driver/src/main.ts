@@ -118,7 +118,7 @@ Module({
                         renderer.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
                     },
                     onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
-                        // renderer.drawString(x, y, align, height, font, text);
+                        renderer.drawString(x, y, align, height, font, text);
                     },
                 });
              });

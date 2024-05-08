@@ -1,5 +1,10 @@
 import {ImageRepository} from "./image";
 
+type TextureBitmap = {
+    id: string;
+    bitmap: ImageBitmap;
+};
+
 const vertexShaderSource = `
 attribute vec2 a_Position;
 attribute vec2 a_TexCoord;
@@ -196,7 +201,6 @@ class Canvas {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
-            // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), gl.STATIC_DRAW);
             gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
@@ -225,11 +229,40 @@ class Canvas {
     }
 }
 
+class TextRasterizer {
+    private readonly cache: Map<string, ImageBitmap> = new Map();
+    private readonly cacheKeys: Set<string> = new Set();
+
+    get(height: number, font: number, text: string) {
+        const key = `${height}:${font}:${text}`;
+        let bitmap = this.cache.get(key);
+        if (!bitmap && !this.cacheKeys.has(key)) {
+            this.cacheKeys.add(key);
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            if (!context) throw new Error("Failed to get 2D context");
+            context.font = `${height}px sans-serif`;
+            const metrics = context.measureText(text);
+            canvas.width = metrics.width;
+            canvas.height = height;
+            // context.textAlign = ["left", "center", "right"][align];
+            // context.textBaseline = "middle";
+            context.fillText(text, 0, 0);
+            createImageBitmap(canvas).then((bitmap) => {
+                this.cache.set(key, bitmap);
+                // TODO: invalidate();
+            });
+        }
+        return bitmap;
+    }
+}
+
 export class Renderer {
     private root: HTMLDivElement;
     private canvas: Canvas;
     private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
+    private readonly textRasterizer = new TextRasterizer();
 
     constructor(root: HTMLDivElement, imageRepo: ImageRepository) {
         this.root = root;
@@ -263,5 +296,10 @@ export class Renderer {
                 this.canvas.drawImage([x1, y1, x2, y2, x3, y3, x4, y4], [s1, t1, s2, t2, s3, t3, s4, t4], handle, image.bitmap);
             }
         }
+    }
+
+    drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
+        // const bitmap = this.textRasterizer.get(height, font, text);
+        // TODO
     }
 }
