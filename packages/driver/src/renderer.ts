@@ -127,12 +127,17 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
 }
 
 class VertexBuffer {
-    readonly buffer: Float32Array;
+    private _buffer: Float32Array;
     private offset: number;
 
     constructor() {
-        this.buffer = new Float32Array(13 * 100000);
+        // TODO: Use a dynamic buffer
+        this._buffer = new Float32Array( 512 * 1024);
         this.offset = 0;
+    }
+
+    get buffer() {
+        return this._buffer.slice(0, this.offset);
     }
 
     get length() {
@@ -140,19 +145,20 @@ class VertexBuffer {
     }
 
     push(i: number, coords: number[], texCoords: number[], tintColor: number[], viewport: number[], textureSlot: number) {
-        this.buffer[this.offset++] = coords[i * 2];
-        this.buffer[this.offset++] = coords[i * 2 + 1];
-        this.buffer[this.offset++] = texCoords[i * 2];
-        this.buffer[this.offset++] = texCoords[i * 2 + 1];
-        this.buffer[this.offset++] = tintColor[0];
-        this.buffer[this.offset++] = tintColor[1];
-        this.buffer[this.offset++] = tintColor[2];
-        this.buffer[this.offset++] = tintColor[3];
-        this.buffer[this.offset++] = viewport[0];
-        this.buffer[this.offset++] = viewport[1];
-        this.buffer[this.offset++] = viewport[2];
-        this.buffer[this.offset++] = viewport[3];
-        this.buffer[this.offset++] = textureSlot;
+        const b = this._buffer;
+        b[this.offset++] = coords[i * 2];
+        b[this.offset++] = coords[i * 2 + 1];
+        b[this.offset++] = texCoords[i * 2];
+        b[this.offset++] = texCoords[i * 2 + 1];
+        b[this.offset++] = tintColor[0];
+        b[this.offset++] = tintColor[1];
+        b[this.offset++] = tintColor[2];
+        b[this.offset++] = tintColor[3];
+        b[this.offset++] = viewport[0];
+        b[this.offset++] = viewport[1];
+        b[this.offset++] = viewport[2];
+        b[this.offset++] = viewport[3];
+        b[this.offset++] = textureSlot;
     }
 }
 
@@ -298,7 +304,7 @@ class Canvas {
 
             // Draw
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
+            // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
             gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
             gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 52, 8);
             gl.vertexAttribPointer(p.tintColor, 4, gl.FLOAT, false, 52, 16);
