@@ -19,7 +19,7 @@ export class ImageRepository {
         await new Promise((resolve, reject) => {
             image.onload = resolve;
             image.onerror = reject;
-            image.src = "dist/" + src;
+            image.src = __ASSET_PREFIX__ + src;
         });
 
         info.bitmap = await createImageBitmap(image);

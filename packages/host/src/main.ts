@@ -3,14 +3,10 @@ import {default as Module} from "pob-driver/emscripten/driver.mjs";
 import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
 
-// TODO: copy dist/assets, dist/TreeData
-console.log(__DATA_PREFIX__);
-
 Module({
     print: console.log,
     printErr: console.error,
     locateFile: (path: string, prefix: string) => {
-        console.log(path, prefix);
         if (path.endsWith(".data")) return __DATA_PREFIX__ + path;
         return prefix + path;
     },

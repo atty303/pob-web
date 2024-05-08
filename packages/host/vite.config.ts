@@ -5,12 +5,14 @@ import * as path from "node:path";
 export default defineConfig({
     define: {
         __DATA_PREFIX__: JSON.stringify("@fs/" + path.resolve("../driver/emscripten").replaceAll("\\", "/") + "/"),
+        __ASSET_PREFIX__: JSON.stringify("@fs/" + path.resolve("../../vendor/PathOfBuilding/src").replaceAll("\\", "/") + "/"),
     },
     server: {
         fs: {
             allow: [
                 ".",
                 "../driver/emscripten",
+                "../../vendor/PathOfBuilding/src",
             ],
         },
     },
