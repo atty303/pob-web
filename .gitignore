@@ -3,5 +3,7 @@
 .idea/
 /work
 dist/
+dist-pages/
 node_modules/
 build/
+.env*
