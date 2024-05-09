@@ -2,7 +2,6 @@
   "name": "@atty303/path-of-building",
   "private": true,
   "workspaces": [
-    "packages/driver",
-    "packages/host"
+    "packages/driver"
   ]
 }
