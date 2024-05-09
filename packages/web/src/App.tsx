@@ -4,10 +4,25 @@ function App() {
     return (
         <>
             <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
-                <div className="navbar bg-base-100">
+                <div className="navbar bg-neutral text-neutral-content">
                     <div className="flex-1">
                         <a className="btn btn-ghost text-xl">Path of Building Web</a>
                         <span className="badge badge-warning">This site is a work in progress</span>
+                    </div>
+                    <div className="flex-none">
+                    </div>
+                </div>
+
+                <div className="p-4">
+                    <PobWindow/>
+                </div>
+
+                <footer className="footer flex items-center p-4 bg-neutral text-neutral-content">
+                    <aside className="flex-1">
+                        <p>©2024 Koji AGAWA (<a className="link" href="https://x.com/atty303" target="_blank">@atty303</a>)</p>
+                    </aside>
+                    <div className="flex-none">
+                        <p>This site is not affiliated with Grinding Gear Games or Path of Exile.</p>
                     </div>
                     <div className="flex-none">
                         <a href="https://github.com/atty303/poe-web" target="_blank">
@@ -19,11 +34,7 @@ function App() {
                             </svg>
                         </a>
                     </div>
-                </div>
-
-                <div className="p-4">
-                    <PobWindow/>
-                </div>
+                </footer>
             </div>
         </>
     )

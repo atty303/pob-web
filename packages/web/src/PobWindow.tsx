@@ -4,8 +4,6 @@ import {useEffect, useRef} from "react";
 export default function PobWindow() {
     const win = useRef<HTMLDivElement>(null);
     useEffect(() => {
-        const r = win.current!.getBoundingClientRect();
-        console.log(r);
         const pob = new PobWindowInternal({
             container: win.current!,
             dataPrefix: __DATA_PREFIX__,
@@ -18,6 +16,6 @@ export default function PobWindow() {
     }, [win]);
 
     return (
-        <div ref={win} className="h-full"/>
+        <div ref={win} className="h-full border border-base-300 bg-base-300"/>
     );
 }
