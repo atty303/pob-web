@@ -189,6 +189,7 @@ class Canvas {
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
+        canvas.style.position = "absolute";
         this._element = canvas;
 
         const gl = canvas.getContext("webgl", { premultipliedAlpha: true });
@@ -245,6 +246,12 @@ class Canvas {
         this.vbo = vbo;
 
         // Set up the viewport
+        this.setViewport(0, 0, width, height);
+    }
+
+    resize(width: number, height: number) {
+        this._element.width = width;
+        this._element.height = height;
         this.setViewport(0, 0, width, height);
     }
 
@@ -437,6 +444,9 @@ export class Renderer {
 
     constructor(root: HTMLElement, imageRepo: ImageRepository) {
         this.root = root;
+
+        root.style.position = "relative";
+
         const r = root.getBoundingClientRect();
         this._width = r.width;
         this._height = r.height;
@@ -451,6 +461,17 @@ export class Renderer {
 
     destroy() {
         this.root.removeChild(this.canvas.element);
+    }
+
+    onFrame() {
+        const r = this.root.getBoundingClientRect();
+        if (r.width !== this._width || r.height !== this._height) {
+            this._width = r.width;
+            this._height = r.height;
+            this.canvas.resize(this._width, this._height);
+            return true;
+        }
+        return false;
     }
 
     measureText(size: number, font: number, text: string) {

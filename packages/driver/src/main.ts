@@ -65,7 +65,7 @@ export class PobWindow {
         let frameTime = 0;
         let frameCount = 0;
         const tick = () => {
-            if (this.isDirty) {
+            if (this.renderer.onFrame() || this.isDirty) {
                 const start = performance.now();
                 module._on_frame();
                 this.isDirty = false;
