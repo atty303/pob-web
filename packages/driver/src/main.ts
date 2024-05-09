@@ -35,7 +35,7 @@ export class PobWindow {
         onFrame: (render: boolean, time: number) => void,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
-        this.renderer = new Renderer(props.container, this.imageRepo);
+        this.renderer = new Renderer(props.container, this.imageRepo, () => this.invalidate());
         this.module = Module({
             print: console.log,
             printErr: console.error,

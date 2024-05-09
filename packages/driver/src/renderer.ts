@@ -361,12 +361,17 @@ class Canvas {
 export class TextRasterizer {
     private readonly cache: Map<string, { width: number, bitmap: TextureBitmap | undefined }> = new Map();
     private readonly context = document.createElement("canvas").getContext("2d")!;
+    private readonly invalidate: () => void;
+
+    constructor(invalidate: () => void) {
+        this.invalidate = invalidate;
+    }
 
     static font(size: number, fontNum: number) {
         size -= 2;
         switch (fontNum) {
             case 1: return `${size}px Liberation Sans`;
-            case 2: return `${size}px Liberation Sans`;
+            case 2: return `${size}px Liberation Sans`; // TODO: bold
             case 0:
             default:
                 return `${size}px Bitstream Vera Mono`;
@@ -384,7 +389,7 @@ export class TextRasterizer {
         if (!bitmap) {
             bitmap = {
                 width: 0,
-                bitmap: undefined as (TextureBitmap | undefined)
+                bitmap: undefined as (TextureBitmap | undefined),
             };
             this.cache.set(key, bitmap);
 
@@ -403,7 +408,7 @@ export class TextRasterizer {
                 context.fillText(text, 0, size);
                 createImageBitmap(canvas).then((b) => {
                     bitmap!.bitmap = { id: key, bitmap: b };
-                    // TODO: invalidate();
+                    this.invalidate();
                 });
             }
         }
@@ -432,7 +437,7 @@ export class Renderer {
     private canvas: Canvas;
     private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
-    private readonly textRasterizer = new TextRasterizer();
+    private readonly textRasterizer;
     private white: { bitmap: ImageData; id: string };
 
     get width() {
@@ -442,7 +447,7 @@ export class Renderer {
         return this._height;
     }
 
-    constructor(root: HTMLElement, imageRepo: ImageRepository) {
+    constructor(root: HTMLElement, imageRepo: ImageRepository, invalidate: () => void) {
         this.root = root;
 
         root.style.position = "relative";
@@ -457,6 +462,8 @@ export class Renderer {
 
         this.canvas = new Canvas(this._width, this._height);
         this.root.appendChild(this.canvas.element);
+
+        this.textRasterizer = new TextRasterizer(invalidate);
     }
 
     destroy() {
