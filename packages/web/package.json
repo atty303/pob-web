@@ -12,7 +12,8 @@
   "dependencies": {
     "pob-driver": "workspace:*",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-use": "^17.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

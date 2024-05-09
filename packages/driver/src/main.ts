@@ -3,129 +3,142 @@ import {default as Module} from "../dist/driver.mjs";
 import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
 
-export function create() {
-    Module({
-        print: console.log,
-        printErr: console.error,
-        locateFile: (path: string, prefix: string) => {
-            if (path.endsWith(".data")) return __DATA_PREFIX__ + path;
-            return prefix + path;
-        },
-    }).then(async (module: any) => {
-        const imageRepo = new ImageRepository();
+function mouseString(e: MouseEvent) {
+    switch (e.button) {
+        case 0:
+            return "LEFTBUTTON";
+        case 1:
+            return "MIDDLEBUTTON";
+        case 2:
+            return "RIGHTBUTTON";
+    }
+}
 
-        const win = document.querySelector("#window") as HTMLDivElement;
-        const renderer = new Renderer(win, imageRepo);
+export class PobWindow {
+    private readonly module: Promise<any>;
+    private readonly imageRepo: ImageRepository;
+    private readonly renderer: Renderer;
 
-        let isDirty = true;
-        const invalidate = () => {
-            isDirty = true;
-        };
+    private isRunning = false;
+    private isDirty = true;
+    private luaOnKeyUp: (name: string, arg: number) => void = () => {};
+    private luaOnKeyDown: (name: string, arg: number) => void = () => {};
+    private cursorPosX: number = 0;
+    private cursorPosY: number = 0;
+    private buttonState: Set<string> = new Set();
 
-        const on_key_up = module.cwrap("on_key_up", "number", ["string", "number"]);
-        const on_key_down = module.cwrap("on_key_down", "number", ["string", "number"]);
+    constructor(container: HTMLElement) {
+        this.imageRepo = new ImageRepository(); // TODO: Pass __ASSET_PREFIX__ to ImageRepository
+        this.renderer = new Renderer(container, this.imageRepo);
+        this.module = Module({
+            print: console.log,
+            printErr: console.error,
+            locateFile: (path: string, prefix: string) => {
+                if (path.endsWith(".data")) return __DATA_PREFIX__ + path; // TODO: __DATA_PREFIX__ is not defined
+                return prefix + path;
+            },
+        });
+        this.module.then((module: any) => {
+            this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
+            this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
+            Object.assign(module, this.callbacks(module));
+        });
+        this.registerEventHandlers(container);
+    }
 
-        win.addEventListener("contextmenu", (e) => {
+    destroy() {
+        this.renderer.destroy();
+    }
+
+    start() {
+        this.module.then((module: any) => {
+            module._init();
+
+            this.isRunning = true;
+
+            // フレーム時間の平均を計算する
+            let frameTime = 0;
+            let frameCount = 0;
+            const tick = () => {
+                if (this.isDirty) {
+                    const start = performance.now();
+                    module._on_frame();
+                    this.isDirty = false;
+                    const time = performance.now() - start;
+                    frameTime += time;
+                    frameCount++;
+                    console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
+                }
+                if (this.isRunning) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+        });
+    }
+
+    private invalidate() {
+        this.isDirty = true;
+    }
+
+    private registerEventHandlers(container: HTMLElement) {
+        container.addEventListener("contextmenu", (e) => {
             e.preventDefault();
         });
 
-        let cursorPosX = 0;
-        let cursorPosY = 0;
-        win.addEventListener("mousemove", (e) => {
-            cursorPosX = e.clientX;
-            cursorPosY = e.clientY;
-            invalidate();
+        container.addEventListener("mousemove", (e) => {
+            this.cursorPosX = e.clientX;
+            this.cursorPosY = e.clientY;
+            this.invalidate();
         });
 
-        const mouseString = (e: MouseEvent) => {
-            switch (e.button) {
-                case 0:
-                    return "LEFTBUTTON";
-                case 1:
-                    return "MIDDLEBUTTON";
-                case 2:
-                    return "RIGHTBUTTON";
-            }
-        };
-
-        const buttonState = new Set<string>();
-        win.addEventListener("mousedown", (e) => {
+        container.addEventListener("mousedown", (e) => {
             e.preventDefault();
             const name = mouseString(e);
             if (name) {
-                buttonState.add(name);
-                on_key_down(name, 0);
-                invalidate();
+                this.buttonState.add(name);
+                this.luaOnKeyDown(name, 0);
+                this.invalidate();
             }
         });
 
-        win.addEventListener("mouseup", (e) => {
+        container.addEventListener("mouseup", (e) => {
             e.preventDefault();
             const name = mouseString(e);
             if (name) {
-                buttonState.delete(name);
-                on_key_up(name, -1);
-                invalidate();
+                this.buttonState.delete(name);
+                this.luaOnKeyUp(name, -1);
+                this.invalidate();
             }
         });
 
-        win.addEventListener("dblclick", (e) => {
+        container.addEventListener("dblclick", (e) => {
             e.preventDefault();
             const name = mouseString(e);
-            if (name) on_key_down(name, 1);
-            invalidate();
+            if (name) {
+                this.luaOnKeyDown(name, 1);
+                this.invalidate();
+            }
         });
 
-        win.addEventListener("wheel", (e) => {
+        container.addEventListener("wheel", (e) => {
             e.preventDefault();
             const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
-            on_key_up(name, 0);
-            invalidate();
+            this.luaOnKeyUp(name, 0);
+            this.invalidate();
         });
+    }
 
-        module.getCursorPosX = () => cursorPosX;
-        module.getCursorPosY = () => cursorPosY;
-
-        module.isKeyDown = (name: string) => {
-            if (name === "LEFTBUTTON" || name === "MIDDLEBUTTON" || name === "RIGHTBUTTON") {
-                return buttonState.has(name);
-            }
-            return false;
+    private callbacks(module: any) {
+        return {
+            getCursorPosX: () => this.cursorPosX,
+            getCursorPosY: () => this.cursorPosY,
+            isKeyDown: (name: string) => this.buttonState.has(name),
+            imageLoad: (handle: number, filename: string) => {
+                this.imageRepo.load(handle, filename).then(() => {
+                    this.invalidate();
+                });
+            },
+            drawCommit: (bufferPtr: number, size: number) => this.renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size)),
+            getStringWidth: (size: number, font: number, text: string) => this.renderer.measureText(size, font, text),
         };
-
-        module.imageLoad = (handle: number, filename: string) => {
-            imageRepo.load(handle, filename).then(() => {
-                invalidate();
-            });
-        };
-
-        module.drawCommit = (bufferPtr: number, size: number) => {
-            renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
-        };
-
-        module.getStringWidth = (size: number, font: number, text: string) => {
-            return renderer.measureText(size, font, text);
-        };
-
-        await document.fonts.ready;
-
-        module._init();
-
-        // フレーム時間の平均を計算する
-        let frameTime = 0;
-        let frameCount = 0;
-        const tick = () => {
-            if (isDirty) {
-                const start = performance.now();
-                module._on_frame();
-                isDirty = false;
-                const time = performance.now() - start;
-                frameTime += time;
-                frameCount++;
-                console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
-            }
-            requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-    });
+    }
 }

@@ -1,18 +1,17 @@
-import {useEffect, useState} from 'react'
+import {useState} from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import {create} from "pob-driver/src/main.ts";
+import PobWindow from "./PobWindow.tsx";
 
 function App() {
   const [count, setCount] = useState(0);
-    useEffect(() => {
-        create();
-    });
 
   return (
-    <>
-      <div>
+      <>
+          <PobWindow/>
+
+        <div>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
         </a>

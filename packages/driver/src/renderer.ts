@@ -419,7 +419,7 @@ const colorEscape = [
 ];
 
 export class Renderer {
-    private root: HTMLDivElement;
+    private root: HTMLElement;
     private canvas: Canvas;
     private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
@@ -428,7 +428,7 @@ export class Renderer {
     private height: number;
     private white: { bitmap: ImageData; id: string };
 
-    constructor(root: HTMLDivElement, imageRepo: ImageRepository) {
+    constructor(root: HTMLElement, imageRepo: ImageRepository) {
         this.root = root;
         this.imageRepo = imageRepo;
         this.width = 1920;
@@ -438,6 +438,10 @@ export class Renderer {
 
         this.canvas = new Canvas(this.width, this.height);
         this.root.appendChild(this.canvas.element);
+    }
+
+    destroy() {
+        this.root.removeChild(this.canvas.element);
     }
 
     measureText(size: number, font: number, text: string) {
