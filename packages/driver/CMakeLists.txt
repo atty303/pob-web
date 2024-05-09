@@ -39,5 +39,5 @@ add_executable(${PROJECT_NAME}
 set_target_properties(${PROJECT_NAME}
         PROPERTIES
         LINK_FLAGS "-flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH -s EXPORTED_FUNCTIONS=[_init,_on_frame,_on_key_down,_on_key_up] -s EXPORTED_RUNTIME_METHODS=cwrap"
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dist
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/emscripten
 )

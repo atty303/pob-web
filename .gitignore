@@ -2,7 +2,7 @@
 *.iml
 .idea/
 /work
-/.cargo/config.toml
 dist/
 node_modules/
 build/
+emscripten/
