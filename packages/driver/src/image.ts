@@ -24,6 +24,7 @@ export class ImageRepository {
         await new Promise((resolve, reject) => {
             image.onload = resolve;
             image.onerror = reject;
+            image.crossOrigin = "anonymous";
             image.src = this.prefix + src;
         });
 

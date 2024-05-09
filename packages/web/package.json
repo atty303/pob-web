@@ -31,9 +31,10 @@
   "trustedDependencies": ["rclone.js"],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "tsc && vite build",
     "preview": "vite preview",
+    "deploy": "DEPLOYMENT=cloudflare bun run build && bun run deploy:pages && bun run deploy:r2",
     "deploy:pages": "bun -e \"require('fs').rmSync('dist-pages', {recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages",
     "deploy:r2": "aws s3 cp --region auto --endpoint-url $S3_ENDPOINT_URL --recursive --exclude '*' --include '.r2-*' dist/ s3://pob-web/asset/"
   }

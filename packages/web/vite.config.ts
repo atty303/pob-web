@@ -12,10 +12,17 @@ const { dataPrefix, assetPrefix } = (() => {
       assetPrefix: JSON.stringify("@fs/" + path.resolve("../../vendor/PathOfBuilding/src").replaceAll("\\", "/") + "/"),
     };
   } else {
-    return {
-      dataPrefix: JSON.stringify(`/.r2-${randomString}/data/`),
-      assetPrefix: JSON.stringify(`/.r2-${randomString}/asset/`),
-    };
+    if (process.env.DEPLOYMENT === "cloudflare") {
+      return {
+        dataPrefix: JSON.stringify(`https://pob-web-asset.atty303.ninja/asset/.r2-${randomString}/data/`),
+        assetPrefix: JSON.stringify(`https://pob-web-asset.atty303.ninja/asset/.r2-${randomString}/asset/`),
+      };
+    } else {
+      return {
+        dataPrefix: JSON.stringify(`/.r2-${randomString}/data/`),
+        assetPrefix: JSON.stringify(`/.r2-${randomString}/asset/`),
+      };
+    }
   }
 })();
 
