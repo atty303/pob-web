@@ -18,6 +18,7 @@ export class PobWindow {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
     private readonly renderer: Renderer;
+    private readonly onFrame: (render: boolean, time: number) => void;
 
     private isRunning = false;
     private isDirty = false;
@@ -27,7 +28,12 @@ export class PobWindow {
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
 
-    constructor(props: {container: HTMLElement, dataPrefix: string, assetPrefix: string}) {
+    constructor(props: {
+        container: HTMLElement,
+        dataPrefix: string,
+        assetPrefix: string,
+        onFrame: (render: boolean, time: number) => void,
+    }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
         this.renderer = new Renderer(props.container, this.imageRepo);
         this.module = Module({
@@ -39,6 +45,7 @@ export class PobWindow {
             },
         });
         this.registerEventHandlers(props.container);
+        this.onFrame = props.onFrame;
     }
 
     destroy() {
@@ -62,18 +69,15 @@ export class PobWindow {
 
         module._start();
 
-        let frameTime = 0;
-        let frameCount = 0;
         const tick = () => {
-            if (this.renderer.onFrame() || this.isDirty) {
-                const start = performance.now();
+            const start = performance.now();
+            let render = this.renderer.onFrame() || this.isDirty;
+            if (render) {
                 module._on_frame();
                 this.isDirty = false;
-                const time = performance.now() - start;
-                frameTime += time;
-                frameCount++;
-                console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
             }
+            const time = performance.now() - start;
+            this.onFrame(render, time);
             if (this.isRunning) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
