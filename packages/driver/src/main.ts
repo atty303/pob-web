@@ -20,7 +20,7 @@ export class PobWindow {
     private readonly renderer: Renderer;
 
     private isRunning = false;
-    private isDirty = true;
+    private isDirty = false;
     private luaOnKeyUp: (name: string, arg: number) => void = () => {};
     private luaOnKeyDown: (name: string, arg: number) => void = () => {};
     private cursorPosX: number = 0;
@@ -38,11 +38,6 @@ export class PobWindow {
                 return prefix + path;
             },
         });
-        this.module.then((module: any) => {
-            this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
-            this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
-            Object.assign(module, this.callbacks(module));
-        });
         this.registerEventHandlers(container);
     }
 
@@ -57,11 +52,15 @@ export class PobWindow {
         await document.fonts.ready;
         let module = await this.module;
 
-        if (!this.isRunning) return;
-
         module._init();
 
-        this.isRunning = true;
+        this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
+        this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
+        Object.assign(module, this.callbacks(module));
+
+        if (!this.isRunning) return;
+
+        module._start();
 
         let frameTime = 0;
         let frameCount = 0;

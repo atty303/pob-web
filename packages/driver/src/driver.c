@@ -122,6 +122,13 @@ int init() {
     lua_pushcclosure(L, IsKeyDown, 0);
     lua_setglobal(L, "IsKeyDown");
 
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int start() {
+    lua_State *L = GL;
+
     if (luaL_dostring(L, boot_lua) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
