@@ -380,7 +380,7 @@ export class TextRasterizer {
 
     measureText(size: number, font: number, text: string) {
         this.context.font = TextRasterizer.font(size, font);
-        return this.context.measureText(text.replaceAll(reColor, "")).width;
+        return this.context.measureText(text.replaceAll(reColorGlobal, "")).width;
     }
 
     get(size: number, font: number, text: string) {
@@ -416,7 +416,8 @@ export class TextRasterizer {
     }
 }
 
-const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g
+const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/;
+const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 const colorEscape = [
     [0, 0, 0, 1],
     [1, 0, 0, 1],
@@ -574,9 +575,8 @@ export class Renderer {
 
         let m;
         while (m = reColor.exec(text)) {
-            segments.push({ text: text.substring(0, m.index), color: this.currentColor, bitmap: this.textRasterizer.get(height, font, text.substring(0, m.index)) });
+            const subtext = text.substring(0, m.index);
             text = text.substring(m.index + m[0].length);
-
             if (m[1]) {
                 this.currentColor = colorEscape[parseInt(m[1])];
             } else {
@@ -584,6 +584,10 @@ export class Renderer {
                 const g = parseInt(m[2].substring(2, 4), 16);
                 const b = parseInt(m[2].substring(4, 6), 16);
                 this.currentColor = [r / 255, g / 255, b / 255, 1];
+            }
+
+            if (subtext.length > 0) {
+                segments.push({ text: subtext, color: this.currentColor, bitmap: this.textRasterizer.get(height, font, subtext) });
             }
         }
         if (text.length > 0) {
