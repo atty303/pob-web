@@ -27,14 +27,14 @@ export class PobWindow {
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
 
-    constructor(container: HTMLElement) {
-        this.imageRepo = new ImageRepository(); // TODO: Pass __ASSET_PREFIX__ to ImageRepository
+    constructor({container, dataPrefix, assetPrefix}: {container: HTMLElement, dataPrefix: string, assetPrefix: string}) {
+        this.imageRepo = new ImageRepository(assetPrefix);
         this.renderer = new Renderer(container, this.imageRepo);
         this.module = Module({
             print: console.log,
             printErr: console.error,
             locateFile: (path: string, prefix: string) => {
-                if (path.endsWith(".data")) return __DATA_PREFIX__ + path; // TODO: __DATA_PREFIX__ is not defined
+                if (path.endsWith(".data")) return dataPrefix + path;
                 return prefix + path;
             },
         });

@@ -4,7 +4,11 @@ import {useEffect, useRef} from "react";
 export default function PobWindow() {
     const win = useRef(null);
     useEffect(() => {
-        const pob = new PobWindowInternal(win.current!);
+        const pob = new PobWindowInternal({
+            container: win.current!,
+            dataPrefix: __DATA_PREFIX__,
+            assetPrefix: __ASSET_PREFIX__,
+        });
         pob.start();
         return () => {
             pob.destroy();

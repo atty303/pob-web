@@ -4,7 +4,12 @@ type ImageInfo = {
 };
 
 export class ImageRepository {
+    private readonly prefix: string;
     private images: Map<number, ImageInfo> = new Map();
+
+    constructor(prefix: string) {
+        this.prefix = prefix;
+    }
 
     async load(handle: number, src: string): Promise<void> {
         if (this.images.has(handle)) return;
@@ -19,7 +24,7 @@ export class ImageRepository {
         await new Promise((resolve, reject) => {
             image.onload = resolve;
             image.onerror = reject;
-            image.src = __ASSET_PREFIX__ + src;
+            image.src = this.prefix + src;
         });
 
         info.bitmap = await createImageBitmap(image);
