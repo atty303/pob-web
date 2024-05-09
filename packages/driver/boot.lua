@@ -21,26 +21,8 @@ arg = {}
 -- Rendering
 function RenderInit()
 end
-function GetScreenSize()
-    return 1920, 1080
-end
 function SetClearColor(r, g, b, a)
 end
---function SetDrawLayer(layer, subLayer)
---end
---function SetViewport(x, y, width, height)
---end
---function SetDrawColor(r, g, b, a)
---end
---function DrawImage(imgHandle, left, top, width, height, tcLeft, tcTop, tcRight, tcBottom)
---end
---function DrawImageQuad(imageHandle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4)
---end
---function DrawString(left, top, align, height, font, text)
---end
---function DrawStringWidth(height, font, text)
---    return 1
---end
 function DrawStringCursorIndex(height, font, text, cursorX, cursorY)
     return 0
 end
@@ -58,15 +40,10 @@ end
 -- General Functions
 function SetWindowTitle(title)
 end
---function GetCursorPos()
---    return 0, 0
---end
 function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)
 end
---function IsKeyDown(keyName)
---end
 function Copy(text)
 end
 function Paste()
@@ -168,39 +145,3 @@ function require(name)
 end
 
 dofile("Launch.lua")
-
--- Prevents loading of ModCache
--- Allows running mod parsing related tests without pushing ModCache
--- The CI env var will be true when run from github workflows but should be false for other tools using the headless wrapper
---mainObject.continuousIntegrationMode = os.getenv("CI")
-
---runCallback("OnInit")
---runCallback("OnFrame") -- Need at least one frame for everything to initialise
-
---if mainObject.promptMsg then
---    -- Something went wrong during startup
---    print(mainObject.promptMsg)
---    --io.read("*l")
---    return
---end
-
--- The build module; once a build is loaded, you can find all the good stuff in here
---build = mainObject.main.modes["BUILD"]
-
--- Here's some helpful helper functions to help you get started
---function newBuild()
---    mainObject.main:SetMode("BUILD", false, "Help, I'm stuck in Path of Building!")
---    runCallback("OnFrame")
---end
---function loadBuildFromXML(xmlText, name)
---    mainObject.main:SetMode("BUILD", false, name or "", xmlText)
---    runCallback("OnFrame")
---end
---function loadBuildFromJSON(getItemsJSON, getPassiveSkillsJSON)
---    mainObject.main:SetMode("BUILD", false, "")
---    runCallback("OnFrame")
---    local charData = build.importTab:ImportItemsAndSkills(getItemsJSON)
---    build.importTab:ImportPassiveTreeAndJewels(getPassiveSkillsJSON, charData)
---    -- You now have a build without a correct main skill selected, or any configuration options set
---    -- Good luck!
---end

@@ -27,18 +27,18 @@ export class PobWindow {
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
 
-    constructor({container, dataPrefix, assetPrefix}: {container: HTMLElement, dataPrefix: string, assetPrefix: string}) {
-        this.imageRepo = new ImageRepository(assetPrefix);
-        this.renderer = new Renderer(container, this.imageRepo);
+    constructor(props: {container: HTMLElement, dataPrefix: string, assetPrefix: string}) {
+        this.imageRepo = new ImageRepository(props.assetPrefix);
+        this.renderer = new Renderer(props.container, this.imageRepo);
         this.module = Module({
             print: console.log,
             printErr: console.error,
             locateFile: (path: string, prefix: string) => {
-                if (path.endsWith(".data")) return dataPrefix + path;
+                if (path.endsWith(".data")) return props.dataPrefix + path;
                 return prefix + path;
             },
         });
-        this.registerEventHandlers(container);
+        this.registerEventHandlers(props.container);
     }
 
     destroy() {
@@ -133,6 +133,8 @@ export class PobWindow {
 
     private callbacks(module: any) {
         return {
+            getScreenWidth: () => this.renderer.width,
+            getScreenHeight: () => this.renderer.height,
             getCursorPosX: () => this.cursorPosX,
             getCursorPosY: () => this.cursorPosY,
             isKeyDown: (name: string) => this.buttonState.has(name),

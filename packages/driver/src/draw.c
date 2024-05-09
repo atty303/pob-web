@@ -105,6 +105,17 @@ void draw_end() {
     st_buffer.data = NULL;
 }
 
+static int GetScreenSize(lua_State *L) {
+    int width = EM_ASM_INT({
+        return Module.getScreenWidth();
+    });
+    int height = EM_ASM_INT({
+        return Module.getScreenHeight();
+    });
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    return 2;
+}
 
 static int SetDrawLayer(lua_State *L) {
     int n = lua_gettop(L);
@@ -300,6 +311,9 @@ static int DrawStringWidth(lua_State *L) {
 }
 
 void draw_init(lua_State *L) {
+    lua_pushcclosure(L, GetScreenSize, 0);
+    lua_setglobal(L, "GetScreenSize");
+
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");
 

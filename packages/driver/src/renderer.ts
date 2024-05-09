@@ -420,23 +420,32 @@ const colorEscape = [
 
 export class Renderer {
     private root: HTMLElement;
+    private _width: number;
+    private _height: number;
     private canvas: Canvas;
     private currentColor: number[] = [0, 0, 0, 0];
     private readonly imageRepo: ImageRepository;
     private readonly textRasterizer = new TextRasterizer();
-    private width: number;
-    private height: number;
     private white: { bitmap: ImageData; id: string };
+
+    get width() {
+        return this._width;
+    }
+    get height() {
+        return this._height;
+    }
 
     constructor(root: HTMLElement, imageRepo: ImageRepository) {
         this.root = root;
+        const r = root.getBoundingClientRect();
+        this._width = r.width;
+        this._height = r.height;
+
         this.imageRepo = imageRepo;
-        this.width = 1920;
-        this.height = 1080;
 
         this.white = { id: "white", bitmap: this.createWhiteTexture() };
 
-        this.canvas = new Canvas(this.width, this.height);
+        this.canvas = new Canvas(this._width, this._height);
         this.root.appendChild(this.canvas.element);
     }
 
@@ -457,7 +466,7 @@ export class Renderer {
                 DrawCommandInterpreter.run(buffer, {
                     onSetViewport: (x: number, y: number, width: number, height: number) => {
                         if (width === 0 || height === 0) {
-                            this.setViewport(0, 0, this.width, this.height);
+                            this.setViewport(0, 0, this._width, this._height);
                         } else {
                             this.setViewport(x, y, width, height);
                         }
@@ -558,10 +567,10 @@ export class Renderer {
         let x = pos.x;
         switch (align) {
             case 1: // CENTER
-                x = Math.floor((this.width - width) / 2 + pos.x);
+                x = Math.floor((this._width - width) / 2 + pos.x);
                 break;
             case 2: // RIGHT
-                x = Math.floor(this.width - width - pos.x);
+                x = Math.floor(this._width - width - pos.x);
                 break;
             case 3: // CENTER_X
                 x = Math.floor(pos.x - width / 2);
