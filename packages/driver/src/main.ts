@@ -89,8 +89,8 @@ export class PobWindow {
         });
 
         container.addEventListener("mousemove", (e) => {
-            this.cursorPosX = e.clientX;
-            this.cursorPosY = e.clientY;
+            this.cursorPosX = e.offsetX;
+            this.cursorPosY = e.offsetY;
             this.invalidate();
         });
 
