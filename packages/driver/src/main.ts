@@ -47,32 +47,37 @@ export class PobWindow {
     }
 
     destroy() {
+        this.isRunning = false;
         this.renderer.destroy();
     }
 
-    start() {
-        this.module.then((module: any) => {
-            module._init();
+    async start() {
+        this.isRunning = true;
 
-            this.isRunning = true;
+        await document.fonts.ready;
+        let module = await this.module;
 
-            // フレーム時間の平均を計算する
-            let frameTime = 0;
-            let frameCount = 0;
-            const tick = () => {
-                if (this.isDirty) {
-                    const start = performance.now();
-                    module._on_frame();
-                    this.isDirty = false;
-                    const time = performance.now() - start;
-                    frameTime += time;
-                    frameCount++;
-                    console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
-                }
-                if (this.isRunning) requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
-        });
+        if (!this.isRunning) return;
+
+        module._init();
+
+        this.isRunning = true;
+
+        let frameTime = 0;
+        let frameCount = 0;
+        const tick = () => {
+            if (this.isDirty) {
+                const start = performance.now();
+                module._on_frame();
+                this.isDirty = false;
+                const time = performance.now() - start;
+                frameTime += time;
+                frameCount++;
+                console.log(`average frame: ${frameTime / frameCount}ms, frame: ${time}ms`);
+            }
+            if (this.isRunning) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
     }
 
     private invalidate() {
