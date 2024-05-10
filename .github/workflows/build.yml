@@ -41,19 +41,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: [driver] Install dependencies
+      - name: "[driver] Install dependencies"
         run: bun install --frozen-lockfile
         working-directory: packages/driver
 
-      - name: [driver] Build
+      - name: "[driver] Build"
         run: bun run build
         working-directory: packages/driver
 
-      - name: [web] Install dependencies
+      - name: "[web] Install dependencies"
         run: bun install --frozen-lockfile
         working-directory: packages/web
 
-      - name: [web] Build
+      - name: "[web] Build"
         run: bun run build
         working-directory: packages/web
 
