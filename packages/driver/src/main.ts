@@ -11,8 +11,58 @@ function mouseString(e: MouseEvent) {
             return "MIDDLEBUTTON";
         case 2:
             return "RIGHTBUTTON";
+        case 3:
+            return "MOUSE4";
+        case 4:
+            return "MOUSE5";
     }
 }
+
+const KEY_MAP = new Map<string, string>([
+    ["Backspace", "BACK"],
+    ["Tab", "TAB"],
+    ["Enter", "RETURN"],
+    ["Escape", "ESCAPE"],
+    ["Shift", "SHIFT"],
+    ["Control", "CTRL"],
+    ["Alt", "ALT"],
+    ["Pause", "PAUSE"],
+    ["PageUp", "PAGEUP"],
+    ["PageDown", "PAGEDOWN"],
+    ["End", "END"],
+    ["Home", "HOME"],
+    ["PrintScreen", "PRINTSCREEN"],
+    ["Insert", "INSERT"],
+    ["Delete", "DELETE"],
+    ["ArrowUp", "UP"],
+    ["ArrowDown", "DOWN"],
+    ["ArrowLeft", "LEFT"],
+    ["ArrowRight", "RIGHT"],
+    ["F1", "F1"],
+    ["F2", "F2"],
+    ["F3", "F3"],
+    ["F4", "F4"],
+    ["F5", "F5"],
+    ["F6", "F6"],
+    ["F7", "F7"],
+    ["F8", "F8"],
+    ["F9", "F9"],
+    ["F10", "F10"],
+    ["F11", "F11"],
+    ["F12", "F12"],
+    ["F13", "F13"],
+    ["F14", "F14"],
+    ["F15", "F15"],
+    ["NumLock", "NUMLOCK"],
+    ["ScrollLock", "SCROLLLOCK"],
+]);
+
+const EXTRA_KEY_MAP = new Map<string, string>([
+    ["Backspace", String.fromCharCode(0x08)],
+    ["Tab", String.fromCharCode(0x09)],
+    ["Enter", String.fromCharCode(0x0D)],
+    ["Escape", String.fromCharCode(0x1B)],
+]);
 
 export class PobWindow {
     private readonly module: Promise<any>;
@@ -50,29 +100,39 @@ export class PobWindow {
         this.registerEventHandlers(props.container);
 
         const onKeyDown = (e: KeyboardEvent) => {
-            e.preventDefault();
-            const name = e.key;
-            if (name.length === 1) {
-                this.luaOnChar(name, 0);
+            ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
+            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
+            if (key) {
+                this.luaOnKeyDown(key, 0);
+                this.buttonState.add(key);
+                const ex = EXTRA_KEY_MAP.get(e.key);
+                if (ex) {
+                    this.luaOnChar(ex, 0);
+                }
+                this.invalidate();
             }
-            this.buttonState.add(name);
-            this.invalidate();
         };
         const onKeyUp = (e: KeyboardEvent) => {
             e.preventDefault();
-            const name = e.key;
-            if (name.length === 1) {
-                // this.luaOnKeyUp(name, 0);
+            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
+            if (key) {
+                this.luaOnKeyUp(key, 0);
+                this.buttonState.delete(key);
+                this.invalidate();
             }
-            this.buttonState.delete(name);
-            this.invalidate();
         };
+        const onKeyPress = (e: KeyboardEvent) => {
+            e.preventDefault();
+            this.luaOnChar(e.key, 0);
+        };
+
         window.addEventListener("keydown", onKeyDown);
         window.addEventListener("keyup", onKeyUp);
-
+        window.addEventListener("keypress", onKeyPress);
         this.removeEventListeners = () => {
             window.removeEventListener("keydown", onKeyDown);
             window.removeEventListener("keyup", onKeyUp);
+            window.removeEventListener("keypress", onKeyPress);
         };
 
         this.onFrame = props.onFrame;
