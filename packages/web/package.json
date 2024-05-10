@@ -36,6 +36,6 @@
     "preview": "vite preview",
     "deploy": "DEPLOYMENT=cloudflare bun run build && bun run deploy:pages && bun run deploy:r2",
     "deploy:pages": "bun -e \"require('fs').rmSync('dist-pages', {recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
-    "deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' dist/ s3://pob-web/asset/"
+    "deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' --no-progress dist/ s3://pob-web/asset/"
   }
 }

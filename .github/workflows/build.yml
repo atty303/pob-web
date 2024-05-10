@@ -29,6 +29,8 @@ jobs:
 
       - uses: oven-sh/setup-bun@v1
       - uses: mymindstorm/setup-emsdk@v14
+        with:
+          actions-cache-folder: .emsdk-cache
       - uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Cache node_modules
