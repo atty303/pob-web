@@ -8,6 +8,7 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             container: win.current!,
             dataPrefix: __DATA_PREFIX__,
             assetPrefix: __ASSET_PREFIX__,
+            onError: console.error,
             onFrame: props.onFrame,
         });
         pob.start();

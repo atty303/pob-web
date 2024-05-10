@@ -57,6 +57,7 @@ export class PobWindow {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
     private readonly renderer: Renderer;
+    private readonly onError: (message: string) => void;
     private readonly onFrame: (render: boolean, time: number) => void;
 
     private isRunning = false;
@@ -72,6 +73,7 @@ export class PobWindow {
         container: HTMLElement,
         dataPrefix: string,
         assetPrefix: string,
+        onError: (message: string) => void,
         onFrame: (render: boolean, time: number) => void,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
@@ -89,6 +91,7 @@ export class PobWindow {
         this.registerEventHandlers(props.container);
         props.container.focus();
 
+        this.onError = props.onError;
         this.onFrame = props.onFrame;
     }
 
@@ -215,6 +218,7 @@ export class PobWindow {
 
     private callbacks(module: any) {
         return {
+            onError: (message: string) => this.onError(message),
             getScreenWidth: () => this.renderer.width,
             getScreenHeight: () => this.renderer.height,
             getCursorPosX: () => this.cursorPosX,

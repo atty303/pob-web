@@ -21,6 +21,13 @@ static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
         return realloc(ptr, nsize);
 }
 
+static int OnError(lua_State *L) {
+    EM_ASM({
+               Module.onError(UTF8ToString($0));
+           }, lua_tostring(L, -1));
+    return 0;
+}
+
 static void push_callback(lua_State *L, const char *name) {
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
     lua_getfield(L, -1, "MainObject");
@@ -65,6 +72,12 @@ static int SetMainObject(lua_State *L) {
     }
     lua_settable(L, lua_upvalueindex(1));
     return 0;
+}
+
+static int GetMainObject(lua_State *L) {
+    lua_pushstring(L, "MainObject");
+    lua_gettable(L, lua_upvalueindex(1));
+    return 1;
 }
 
 static int GetCursorPos(lua_State *L) {
@@ -123,6 +136,9 @@ int init() {
 
     luaL_openlibs(GL);  // 標準ライブラリを開く
 
+    lua_pushcclosure(L, OnError, 0);
+    lua_setglobal(L, "OnError");
+
     // Callbacks
     lua_newtable(L);
 
@@ -137,6 +153,10 @@ int init() {
     lua_pushvalue(L, -1);
     lua_pushcclosure(L, SetMainObject, 1);
     lua_setglobal(L, "SetMainObject");
+
+    lua_pushvalue(L, -1);
+    lua_pushcclosure(L, GetMainObject, 1);
+    lua_setglobal(L, "GetMainObject");
 
     lua_setfield(L, LUA_REGISTRYINDEX, "uicallbacks");
 

@@ -98,8 +98,10 @@ function PLoadModule(fileName, ...)
         error("PLoadModule() error loading '" .. fileName .. "': " .. err)
     end
 end
+
+local debug = require "debug"
 function PCall(func, ...)
-    local ret = { pcall(func, ...) }
+    local ret = { xpcall(func, debug.traceback, ...) }
     if ret[1] then
         table.remove(ret, 1)
         return nil, unpack(ret)
@@ -107,6 +109,7 @@ function PCall(func, ...)
         return ret[2]
     end
 end
+
 function ConPrintf(fmt, ...)
     -- Optional
     print(string.format(fmt, ...))
@@ -138,3 +141,12 @@ function require(name)
 end
 
 dofile("Launch.lua")
+
+-- Inject error handler
+local mainObject = GetMainObject()
+
+local showErrMsg = mainObject["ShowErrMsg"]
+mainObject["ShowErrMsg"] = function(this, msg, ...)
+    OnError(string.format(msg, ...))
+    showErrMsg(this, msg, ...)
+end
