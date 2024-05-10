@@ -58,10 +58,10 @@ const KEY_MAP = new Map<string, string>([
 ]);
 
 const EXTRA_KEY_MAP = new Map<string, string>([
-    ["Backspace", String.fromCharCode(0x08)],
-    ["Tab", String.fromCharCode(0x09)],
-    ["Enter", String.fromCharCode(0x0D)],
-    ["Escape", String.fromCharCode(0x1B)],
+    ["Backspace", "\b"],
+    ["Tab", "\t"],
+    ["Enter", "\r"],
+    ["Escape", "\u001B"],
 ]);
 
 export class PobWindow {
