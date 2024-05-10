@@ -4,18 +4,7 @@ import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
 
 function mouseString(e: MouseEvent) {
-    switch (e.button) {
-        case 0:
-            return "LEFTBUTTON";
-        case 1:
-            return "MIDDLEBUTTON";
-        case 2:
-            return "RIGHTBUTTON";
-        case 3:
-            return "MOUSE4";
-        case 4:
-            return "MOUSE5";
-    }
+    return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][e.button];
 }
 
 const KEY_MAP = new Map<string, string>([
@@ -78,7 +67,6 @@ export class PobWindow {
     private cursorPosX: number = 0;
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
-    private removeEventListeners: () => void;
 
     constructor(props: {
         container: HTMLElement,
@@ -107,7 +95,6 @@ export class PobWindow {
     destroy() {
         this.isRunning = false;
         this.renderer.destroy();
-        this.removeEventListeners();
     }
 
     async start() {
