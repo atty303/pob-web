@@ -19,6 +19,9 @@ function App() {
                         <span className="badge badge-warning">This site is a work in progress</span>
                     </div>
                     <div className="flex-none pr-4">
+                        <a className="btn btn-ghost" href="https://github.com/atty303/pob-web/blob/main/CHANGELOG.md" target="_blank">Changelog</a>
+                    </div>
+                    <div className="flex-none pr-4">
                         <span className="badge">
                             Render: {frameTime.toFixed(1)}ms
                         </span>
