@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <emscripten.h>
 #include <assert.h>
+#include <string.h>
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -87,6 +88,34 @@ static int IsKeyDown(lua_State *L) {
     return 1;
 }
 
+static int Copy(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    const char *text = lua_tostring(L, 1);
+
+    EM_ASM({
+               Module.copy(UTF8ToString($0));
+           }, text);
+    return 0;
+}
+
+EM_ASYNC_JS(int, paste, (), {
+    var text = await Module.paste();
+    var lengthBytes = lengthBytesUTF8(text) + 1;
+    var stringOnWasmHeap = Module._malloc(lengthBytes);
+    stringToUTF8(text, stringOnWasmHeap, lengthBytes);
+    return stringOnWasmHeap;
+});
+
+static int Paste(lua_State *L) {
+    const char *text = (const char *)paste();
+    lua_pushlstring(L, text, strlen(text));
+    free((void *)text);
+    return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
@@ -121,6 +150,12 @@ int init() {
 
     lua_pushcclosure(L, IsKeyDown, 0);
     lua_setglobal(L, "IsKeyDown");
+
+    lua_pushcclosure(L, Copy, 0);
+    lua_setglobal(L, "Copy");
+
+    lua_pushcclosure(L, Paste, 0);
+    lua_setglobal(L, "Paste");
 
     return 0;
 }

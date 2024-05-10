@@ -228,6 +228,17 @@ export class PobWindow {
             drawCommit: (bufferPtr: number, size: number) => this.renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size)),
             getStringWidth: (size: number, font: number, text: string) => this.renderer.measureText(size, font, text),
             getStringCursorIndex: (size: number, font: number, text: string, cursorX: number, cursorY: number) => this.renderer.measureTextCursorIndex(size, font, text, cursorX, cursorY),
+            copy: (text: string) => navigator.clipboard.writeText(text),
+            paste: async () => {
+                let data = await navigator.clipboard.read();
+                for (let item of data) {
+                    if (item.types.includes("text/plain")) {
+                        const data = await item.getType("text/plain");
+                        return await data.text();
+                    }
+                }
+                return "";
+            }
         };
     }
 }

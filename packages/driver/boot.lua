@@ -5,13 +5,13 @@ unpack = table.unpack
 loadstring = load
 
 bit = {
+    lshift = bit32.lshift,
     rshift = bit32.rshift,
     band = bit32.band,
     bor = bit32.bor,
     bxor = bit32.bxor,
     bnot = bit32.bnot,
 }
-
 
 local sha1 = require("sha1.init")
 package.loaded["sha1"] = sha1
@@ -40,10 +40,6 @@ end
 function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)
-end
-function Copy(text)
-end
-function Paste()
 end
 function Deflate(data)
     -- TODO: Might need this
