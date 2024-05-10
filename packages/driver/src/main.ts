@@ -97,43 +97,9 @@ export class PobWindow {
             },
         });
 
+        props.container.tabIndex = 0;
         this.registerEventHandlers(props.container);
-
-        const onKeyDown = (e: KeyboardEvent) => {
-            ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
-            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-            if (key) {
-                this.luaOnKeyDown(key, 0);
-                this.buttonState.add(key);
-                const ex = EXTRA_KEY_MAP.get(e.key);
-                if (ex) {
-                    this.luaOnChar(ex, 0);
-                }
-                this.invalidate();
-            }
-        };
-        const onKeyUp = (e: KeyboardEvent) => {
-            e.preventDefault();
-            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-            if (key) {
-                this.luaOnKeyUp(key, 0);
-                this.buttonState.delete(key);
-                this.invalidate();
-            }
-        };
-        const onKeyPress = (e: KeyboardEvent) => {
-            e.preventDefault();
-            this.luaOnChar(e.key, 0);
-        };
-
-        window.addEventListener("keydown", onKeyDown);
-        window.addEventListener("keyup", onKeyUp);
-        window.addEventListener("keypress", onKeyPress);
-        this.removeEventListeners = () => {
-            window.removeEventListener("keydown", onKeyDown);
-            window.removeEventListener("keyup", onKeyUp);
-            window.removeEventListener("keypress", onKeyPress);
-        };
+        props.container.focus();
 
         this.onFrame = props.onFrame;
     }
@@ -198,6 +164,7 @@ export class PobWindow {
                 this.luaOnKeyDown(name, 0);
                 this.invalidate();
             }
+            container.focus();
         });
 
         container.addEventListener("mouseup", (e) => {
@@ -208,6 +175,7 @@ export class PobWindow {
                 this.luaOnKeyUp(name, -1);
                 this.invalidate();
             }
+            container.focus();
         });
 
         container.addEventListener("dblclick", (e) => {
@@ -217,6 +185,7 @@ export class PobWindow {
                 this.luaOnKeyDown(name, 1);
                 this.invalidate();
             }
+            container.focus();
         });
 
         container.addEventListener("wheel", (e) => {
@@ -224,6 +193,36 @@ export class PobWindow {
             const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
             this.luaOnKeyUp(name, 0);
             this.invalidate();
+            container.focus();
+        });
+
+        container.addEventListener("keydown", (e: KeyboardEvent) => {
+            ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
+            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
+            if (key) {
+                this.luaOnKeyDown(key, 0);
+                this.buttonState.add(key);
+                const ex = EXTRA_KEY_MAP.get(e.key);
+                if (ex) {
+                    this.luaOnChar(ex, 0);
+                }
+                this.invalidate();
+            }
+        });
+
+        container.addEventListener("keypress", (e: KeyboardEvent) => {
+            e.preventDefault();
+            this.luaOnChar(e.key, 0);
+        });
+
+        container.addEventListener("keyup", (e: KeyboardEvent) => {
+            e.preventDefault();
+            const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
+            if (key) {
+                this.luaOnKeyUp(key, 0);
+                this.buttonState.delete(key);
+                this.invalidate();
+            }
         });
     }
 
