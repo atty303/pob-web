@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/atty303/pob-web/compare/v0.1.0...v0.2.0) (2024-05-10)
+
+
+### Features
+
+* copy and paste ([5da8038](https://github.com/atty303/pob-web/commit/5da8038f1dda3320c53bb7594da24329de3597ee))
+* DrawStringCursorIndex ([7b487d9](https://github.com/atty303/pob-web/commit/7b487d923a28a3241d05d1516c8f0bcc16e78703))
+* keyboard handling ([d9f6885](https://github.com/atty303/pob-web/commit/d9f6885371ab61ffef061c8c9a77cd5ad9b205b9))
+* keyboard handling ([d718e1c](https://github.com/atty303/pob-web/commit/d718e1ca8028024461723fb73bf33f22dabf50c5))
+* keyboard handling ([2b2df41](https://github.com/atty303/pob-web/commit/2b2df41fda587129b0f1cf1ac325c7170ffc27ef))
+* keyboard handling ([8ae2d3e](https://github.com/atty303/pob-web/commit/8ae2d3e25a3e19f3e972c9b32cb7291bf8994a62))
+* keyboard handling ([ef20882](https://github.com/atty303/pob-web/commit/ef20882302fe679db6a64371897e3bc185722167))
+
 ## 0.1.0 (2024-05-10)
 
 
