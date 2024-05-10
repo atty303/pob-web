@@ -34,7 +34,9 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: packages/*/node_modules
+          path: |
+            packages/driver/node_modules
+            packages/web/node_modules
           key: "${{ runner.os }}-node-modules-${{ hashFiles('bun.lockb') }}"
           restore-keys: |
             ${{ runner.os }}-node-modules-
@@ -60,7 +62,7 @@ jobs:
         run: bun run deploy
         working-directory: packages/web
         env:
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
