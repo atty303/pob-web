@@ -38,6 +38,6 @@ add_executable(${PROJECT_NAME}
 #add_dependencies(${PROJECT_NAME} ${CMAKE_BINARY_DIR}/boot.c)
 set_target_properties(${PROJECT_NAME}
         PROPERTIES
-        LINK_FLAGS "-flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH -s EXPORTED_FUNCTIONS=[_init,_start,_on_frame,_on_key_down,_on_key_up] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall"
+        LINK_FLAGS "-flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH -s EXPORTED_FUNCTIONS=[_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall"
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dist
 )

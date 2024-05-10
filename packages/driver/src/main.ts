@@ -22,11 +22,13 @@ export class PobWindow {
 
     private isRunning = false;
     private isDirty = false;
-    private luaOnKeyUp: (name: string, arg: number) => void = () => {};
-    private luaOnKeyDown: (name: string, arg: number) => void = () => {};
+    private luaOnKeyUp: (name: string, doubleClick: number) => void = () => {};
+    private luaOnKeyDown: (name: string, doubleClick: number) => void = () => {};
+    private luaOnChar: (char: string, doubleClick: number) => void = () => {};
     private cursorPosX: number = 0;
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
+    private removeEventListeners: () => void;
 
     constructor(props: {
         container: HTMLElement,
@@ -44,13 +46,42 @@ export class PobWindow {
                 return prefix + path;
             },
         });
+
         this.registerEventHandlers(props.container);
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            e.preventDefault();
+            const name = e.key;
+            if (name.length === 1) {
+                this.luaOnChar(name, 0);
+            }
+            this.buttonState.add(name);
+            this.invalidate();
+        };
+        const onKeyUp = (e: KeyboardEvent) => {
+            e.preventDefault();
+            const name = e.key;
+            if (name.length === 1) {
+                // this.luaOnKeyUp(name, 0);
+            }
+            this.buttonState.delete(name);
+            this.invalidate();
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+
+        this.removeEventListeners = () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+        };
+
         this.onFrame = props.onFrame;
     }
 
     destroy() {
         this.isRunning = false;
         this.renderer.destroy();
+        this.removeEventListeners();
     }
 
     async start() {
@@ -63,6 +94,7 @@ export class PobWindow {
 
         this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
         this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
+        this.luaOnChar = module.cwrap("on_char", "number", ["string", "number"]);
         Object.assign(module, this.callbacks(module));
 
         if (!this.isRunning) return;

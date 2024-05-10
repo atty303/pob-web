@@ -174,11 +174,11 @@ int on_frame() {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int on_key_down(const char *name, int repeat) {
+int on_key_down(const char *name, int double_click) {
     lua_State *L = GL;
     push_callback(L, "OnKeyDown");
     lua_pushstring(L, name);
-    lua_pushboolean(L, repeat);
+    lua_pushboolean(L, double_click);
     if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
@@ -187,12 +187,12 @@ int on_key_down(const char *name, int repeat) {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int on_key_up(const char *name, int repeat) {
+int on_key_up(const char *name, int double_click) {
     lua_State *L = GL;
     push_callback(L, "OnKeyUp");
     lua_pushstring(L, name);
-    if (repeat >= 0) {
-        lua_pushboolean(L, repeat);
+    if (double_click >= 0) {
+        lua_pushboolean(L, double_click);
         if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
             fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
             return 1;
@@ -202,6 +202,19 @@ int on_key_up(const char *name, int repeat) {
             fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
             return 1;
         }
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int on_char(const char *name, int double_click) {
+    lua_State *L = GL;
+    push_callback(L, "OnChar");
+    lua_pushstring(L, name);
+    lua_pushboolean(L, double_click);
+    if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        return 1;
     }
     return 0;
 }
