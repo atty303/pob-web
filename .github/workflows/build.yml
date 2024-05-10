@@ -36,9 +36,7 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            packages/driver/node_modules
-            packages/web/node_modules
+          path: node_modules
           key: "${{ runner.os }}-node-modules-${{ hashFiles('bun.lockb') }}"
           restore-keys: |
             ${{ runner.os }}-node-modules-
