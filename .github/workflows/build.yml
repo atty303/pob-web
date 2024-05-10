@@ -1,0 +1,45 @@
+name: build
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release-please.outputs.release_created }}
+      tag_name: ${{ steps.release-please.outputs.tag_name }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.TOKEN_APP_ID }}
+          private-key: ${{ secrets.TOKEN_PRIVATE_KEY }}
+      - uses: google-github-actions/release-please-action@v4
+        id: release-please
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [ release-please ]
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+
+#      - name: Download artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: plugin
+#          path: build/distributions/
+#
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.TOKEN_APP_ID }}
+          private-key: ${{ secrets.TOKEN_PRIVATE_KEY }}

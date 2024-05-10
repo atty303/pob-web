@@ -1,6 +1,7 @@
 {
-  "name": "@atty303/path-of-building",
+  "name": "@atty303/pob-web",
   "private": true,
+  "version": "0.0.0",
   "workspaces": [
     "packages/driver",
     "packages/web"
