@@ -227,6 +227,7 @@ export class PobWindow {
             },
             drawCommit: (bufferPtr: number, size: number) => this.renderer.render(new DataView(module.HEAPU8.buffer, bufferPtr, size)),
             getStringWidth: (size: number, font: number, text: string) => this.renderer.measureText(size, font, text),
+            getStringCursorIndex: (size: number, font: number, text: string, cursorX: number, cursorY: number) => this.renderer.measureTextCursorIndex(size, font, text, cursorX, cursorY),
         };
     }
 }

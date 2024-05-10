@@ -383,6 +383,24 @@ export class TextRasterizer {
         return this.context.measureText(text.replaceAll(reColorGlobal, "")).width;
     }
 
+    measureTextCursorIndex(size: number, font: number, text: string, cursorX: number, cursorY: number) {
+        this.context.font = TextRasterizer.font(size, font);
+        const lines = text.split("\n");
+        const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
+        const line = lines[y];
+        let i = 0 ;
+        for (; i <= line.length; i++) {
+            const w = this.context.measureText(line.substring(0, i)).width;
+            if (w >= cursorX) {
+                break;
+            }
+        }
+        for (let j = 0; j < y; j++) {
+            i += lines[j].length + 1;
+        }
+        return i;
+    }
+
     get(size: number, font: number, text: string) {
         const key = `${size}:${font}:${text}`;
         let bitmap = this.cache.get(key);
@@ -484,6 +502,10 @@ export class Renderer {
 
     measureText(size: number, font: number, text: string) {
         return this.textRasterizer.measureText(size, font, text);
+    }
+
+    measureTextCursorIndex(size: number, font: number, text: string, cursorX: number, cursorY: number) {
+        return this.textRasterizer.measureTextCursorIndex(size, font, text, cursorX, cursorY);
     }
 
     render(view: DataView) {

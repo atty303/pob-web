@@ -310,6 +310,29 @@ static int DrawStringWidth(lua_State *L) {
     return 1;
 }
 
+static int DrawStringCursorIndex(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 5);
+    assert(lua_isnumber(L, 1));
+    assert(lua_isstring(L, 2));
+    assert(lua_isstring(L, 3));
+    assert(lua_isnumber(L, 4));
+    assert(lua_isnumber(L, 5));
+
+    int size = lua_tointeger(L, 1);
+    int font = luaL_checkoption(L, 2, "FIXED", fontMap);
+    const char *text = lua_tostring(L, 3);
+    int x = lua_tointeger(L, 4);
+    int y = lua_tointeger(L, 5);
+
+    int index = EM_ASM_INT({
+        return Module.getStringCursorIndex($0, $1, UTF8ToString($2), $3, $4);
+    }, size, font, text, x, y);
+
+    lua_pushinteger(L, index);
+    return 1;
+}
+
 void draw_init(lua_State *L) {
     lua_pushcclosure(L, GetScreenSize, 0);
     lua_setglobal(L, "GetScreenSize");
@@ -334,4 +357,7 @@ void draw_init(lua_State *L) {
 
     lua_pushcclosure(L, DrawStringWidth, 0);
     lua_setglobal(L, "DrawStringWidth");
+
+    lua_pushcclosure(L, DrawStringCursorIndex, 0);
+    lua_setglobal(L, "DrawStringCursorIndex");
 }
