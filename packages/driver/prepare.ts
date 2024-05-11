@@ -29,6 +29,8 @@ const outputFile = fs.createWriteStream('build/vfs.tsv');
 const callback = (filePath: string, basePath: string) => {
     const relPath = path.relative(basePath, filePath).replace(/\\/g, '/');
 
+    if (relPath.startsWith("Export/")) return;
+
     if (path.extname(filePath) === '.png' || path.extname(filePath) === '.jpg') {
         const { width, height } = imageSize(filePath);
         outputFile.write(`${relPath}\t${width}\t${height}\n`);
