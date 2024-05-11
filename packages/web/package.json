@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@sentry/react": "^7.114.0",
     "pob-driver": "*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
