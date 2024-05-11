@@ -71,6 +71,7 @@ export class PobWindow {
     private luaOnKeyUp: (name: string, doubleClick: number) => void = () => {};
     private luaOnKeyDown: (name: string, doubleClick: number) => void = () => {};
     private luaOnChar: (char: string, doubleClick: number) => void = () => {};
+    private luaOnDownloadPageResult: (result: string) => void = () => {};
     private cursorPosX: number = 0;
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
@@ -119,6 +120,7 @@ export class PobWindow {
         this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
         this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
         this.luaOnChar = module.cwrap("on_char", "number", ["string", "number"]);
+        this.luaOnDownloadPageResult = module.cwrap("on_download_page_result", "number", ["string"]);
         Object.assign(module, this.callbacks(module));
 
         if (!this.isRunning) return;
@@ -255,10 +257,10 @@ export class PobWindow {
                 try {
                     const r = await this.onFetch(url, header, body);
                     const headerText = Object.entries(r.header ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
-                    return JSON.stringify({body: r.body, code: r.code, header: headerText, error: undefined });
+                    this.luaOnDownloadPageResult(JSON.stringify({body: r.body, code: r.code, header: headerText, error: undefined }));
                 } catch (e: any) {
                     console.error(e);
-                    return JSON.stringify({body: undefined, code: 500, header: undefined, error: e.message });
+                    this.luaOnDownloadPageResult(JSON.stringify({body: undefined, code: 500, header: undefined, error: e.message }));
                 }
             },
         };

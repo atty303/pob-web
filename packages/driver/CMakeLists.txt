@@ -48,7 +48,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:zlib,INCLUD
 
 set(DRIVER_LINK_FLAGS "
     -flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ASYNCIFY -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH\
-    -s EXPORTED_FUNCTIONS=[_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_malloc] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall\
+    -s EXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall\
 ")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}\ -sASSERTIONS")

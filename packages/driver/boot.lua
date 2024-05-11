@@ -175,11 +175,25 @@ mainObject["OnInit"] = function(self)
 end
 
 local dkjson = require "dkjson"
+local downloadHandle = nil
 mainObject["DownloadPage"] = function(self, url, callback, params)
     params = params or {}
     print(string.format("DownloadPage: url=[%s], header=[%s], body=[%s]", url, params.header, params.body))
-    local resultJson = DownloadPage(url, params.header, params.body)
-    print("hoge")
-    local result = dkjson.decode(resultJson)
-    callback({header=result.header, body=result.body}, result.error)
+    if downloadHandle then
+        error("Download already in progress")
+    else
+        DownloadPage(url, params.header, params.body)
+        downloadHandle = callback
+    end
+end
+OnDownloadPageResult = function(resultJson)
+    print("OnDownloadPageResult")
+    if downloadHandle then
+        local callback = downloadHandle
+        downloadHandle = nil
+        local result = dkjson.decode(resultJson)
+        callback({header=result.header, body=result.body}, result.error)
+    else
+        error("No download handle")
+    end
 end

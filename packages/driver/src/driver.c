@@ -235,16 +235,6 @@ static int Inflate(lua_State *L) {
     return 1;
 }
 
-EM_ASYNC_JS(int, download_page, (const char *url, const char *header, const char *body), {
-    var response = await Module.fetch(UTF8ToString(url), UTF8ToString(header), UTF8ToString(body));
-
-    var lengthBytes = lengthBytesUTF8(response) + 1;
-    var stringOnWasmHeap = Module._malloc(lengthBytes);
-    stringToUTF8(response, stringOnWasmHeap, lengthBytes);
-
-    return stringOnWasmHeap;
-});
-
 static int DownloadPage(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 3);
@@ -256,11 +246,11 @@ static int DownloadPage(lua_State *L) {
     const char *header = lua_tostring(L, 2);
     const char *body = lua_tostring(L, 3);
 
-    const char *json = (const char *)download_page(url, header, body);
-    lua_pushlstring(L, json, strlen(json));
-    free((void *)json);
+    EM_ASM({
+               Module.fetch(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2));
+           }, url, header, body);
 
-    return 1;
+    return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -417,6 +407,18 @@ int on_char(const char *name, int double_click) {
     lua_pushstring(L, name);
     lua_pushboolean(L, double_click);
     if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        return 1;
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int on_download_page_result(const char *json) {
+    lua_State *L = GL;
+    lua_getglobal(L, "OnDownloadPageResult");
+    lua_pushstring(L, json);
+    if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
     }
