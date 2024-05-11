@@ -60,6 +60,8 @@ visitDirs(basePath1, basePath1, callback);
 const basePath2 = '../../vendor/PathOfBuilding/runtime/lua';
 visitDirs(basePath2, basePath2, callback);
 
-fs.copyFileSync('../../vendor/PathOfBuilding/manifest.xml', 'build/vfs/manifest.xml');
+const xml0 = fs.readFileSync('../../vendor/PathOfBuilding/manifest.xml', 'utf8');
+const xml = xml0.replace(/<Version number="([0-9.]+)" \/>/, `<Version number="$1" platform="win32" branch="master" />`);
+fs.writeFileSync('build/vfs/manifest.xml', xml);
 
 outputFile.end();

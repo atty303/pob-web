@@ -1,5 +1,4 @@
--- This wrapper allows the program to run headless on any OS (in theory)
--- It can be run using a standard lua interpreter, although LuaJIT is preferable
+-- pob-web: Path of Building Web
 
 unpack = table.unpack
 loadstring = load
@@ -131,7 +130,9 @@ end
 
 dofile("Launch.lua")
 
--- Inject error handler
+--
+-- pob-web related custom code
+--
 local mainObject = GetMainObject()
 
 local showErrMsg = mainObject["ShowErrMsg"]
