@@ -2,6 +2,7 @@
 #include <emscripten.h>
 #include <assert.h>
 #include <string.h>
+#include <zlib.h>
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -129,6 +130,104 @@ static int Paste(lua_State *L) {
     return 1;
 }
 
+static int Deflate(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    z_stream strm;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    int ret = deflateInit(&strm, Z_BEST_COMPRESSION);
+    if (ret != Z_OK) {
+        lua_pushnil(L);
+        lua_pushstring(L, "deflateInit failed");
+        return 2;
+    }
+
+    size_t in_len;
+    const char *in = lua_tolstring(L, 1, &in_len);
+
+    // Prevent deflation of input data larger than 128 MiB.
+    if (in_len > (128ull << 20)) {
+        lua_pushnil(L);
+        lua_pushstring(L, "Input larger than 128 MiB");
+        return 2;
+    }
+
+    uLong out_sz = deflateBound(&strm, in_len);
+    // Clamp deflate bound to a fairly reasonable 128 MiB.
+    void *out = malloc(out_sz > (128ull << 20) ? (128ull << 20) : out_sz);
+    strm.next_in = (Bytef *)in;
+    strm.avail_in = in_len;
+    strm.next_out = (Bytef *)out;
+    strm.avail_out = out_sz;
+
+    ret = deflate(&strm, Z_FINISH);
+    deflateEnd(&strm);
+    if (ret != Z_STREAM_END) {
+        lua_pushnil(L);
+        lua_pushstring(L, zError(ret));
+        return 2;
+    }
+
+    lua_pushlstring(L, out, strm.total_out);
+    free(out);
+    return 1;
+}
+
+static int Inflate(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    z_stream strm;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    int ret = inflateInit(&strm);
+    if (ret != Z_OK) {
+        lua_pushnil(L);
+        lua_pushstring(L, "inflateInit failed");
+        return 2;
+    }
+
+    size_t in_len;
+    const char *in = lua_tolstring(L, 1, &in_len);
+
+    // Prevent inflation of input data larger than 128 MiB.
+    if (in_len > (128ull << 20)) {
+        lua_pushnil(L);
+        lua_pushstring(L, "Input larger than 128 MiB");
+        return 2;
+    }
+
+    uLong out_sz = in_len * 4;
+    void *out = malloc(out_sz);
+    strm.next_in = (Bytef *)in;
+    strm.avail_in = in_len;
+    strm.next_out = (Bytef *)out;
+    strm.avail_out = out_sz;
+
+    while ((ret = inflate(&strm, Z_NO_FLUSH)) == Z_OK) {
+        if (strm.avail_out == 0) {
+            out_sz *= 2;
+            out = realloc(out, out_sz);
+            strm.next_out = (Bytef *)((char *)out + strm.total_out);
+            strm.avail_out = out_sz - strm.total_out;
+        }
+    }
+    inflateEnd(&strm);
+    if (ret != Z_STREAM_END) {
+        lua_pushnil(L);
+        lua_pushstring(L, zError(ret));
+        return 2;
+    }
+
+    lua_pushlstring(L, out, strm.total_out);
+    free(out);
+    return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
@@ -176,6 +275,12 @@ int init() {
 
     lua_pushcclosure(L, Paste, 0);
     lua_setglobal(L, "Paste");
+
+    lua_pushcclosure(L, Deflate, 0);
+    lua_setglobal(L, "Deflate");
+
+    lua_pushcclosure(L, Inflate, 0);
+    lua_setglobal(L, "Inflate");
 
     return 0;
 }

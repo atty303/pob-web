@@ -588,6 +588,7 @@ export class Renderer {
     private drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
         let pos = { x, y };
         text.split("\n").forEach((line) => {
+            if (line.length > 1024) line = line.substring(0, 1024);
             this.drawStringLine(pos, align, height, font, line);
         });
     }

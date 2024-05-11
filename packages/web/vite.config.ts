@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import * as path from "node:path";
 import {viteStaticCopy} from "vite-plugin-static-copy";
 
-const randomString = new Date().toISOString() + "." + Math.random().toString(36).substring(2, 8);
+const randomString = new Date().getTime() + "." + Math.random().toString(36).substring(2, 8);
 
 const { dataPrefix, assetPrefix } = (() => {
   if (process.env.NODE_ENV === "development") {

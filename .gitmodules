@@ -5,3 +5,6 @@
 	path = packages/driver/lua
 	url = https://github.com/lua/lua.git
 	branch = v5.2.3
+[submodule "vendor/zlib-ng"]
+	path = vendor/zlib-ng
+	url = https://github.com/zlib-ng/zlib-ng.git

@@ -41,14 +41,6 @@ function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)
 end
-function Deflate(data)
-    -- TODO: Might need this
-    return ""
-end
-function Inflate(data)
-    -- TODO: And this
-    return ""
-end
 function GetTime()
     return 0
 end
