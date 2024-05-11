@@ -26,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <Auth0Provider domain="pob-web.us.auth0.com" clientId="o8TOT9gDHzztbdIIIV54HxlfaSMFYTeH" authorizationParams={{
             redirect_uri: window.location.origin,
+            audience: "https://pob.cool/api",
         }}>
             <App />
         </Auth0Provider>

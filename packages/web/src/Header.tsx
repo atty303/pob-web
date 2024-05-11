@@ -1,4 +1,5 @@
 import {useAuth0} from "@auth0/auth0-react";
+import {useEffect, useState} from "react";
 
 function Auth() {
     const {loginWithPopup, logout, user, isAuthenticated, isLoading} = useAuth0();
@@ -36,6 +37,45 @@ function Auth() {
 }
 
 export default function Header(p: { frameTime: number }) {
+    const a = useAuth0();
+
+    const [token, setToken] = useState<string>();
+    useEffect(() => {
+        async function getToken() {
+            const t = await a.getAccessTokenSilently();
+            setToken(t);
+        }
+        getToken();
+    }, []);
+
+    const debug = async () => {
+        const r0 = await fetch("/api/kv/put/test/sub/hoge.txt", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({key: "test", value: "test"}),
+        });
+        console.log(r0);
+
+        const r = await fetch("/api/kv/list", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({key: "test", value: "test"}),
+        });
+        console.log(await r.json());
+
+        const r2 = await fetch("/api/kv/get/test/sub/hoge.txt", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        console.log(await r2.text());
+    };
+
     return (
         <>
             <div className="navbar bg-neutral text-neutral-content">
@@ -54,6 +94,7 @@ export default function Header(p: { frameTime: number }) {
                 </div>
                 <div className="flex-none pr-4">
                     <Auth/>
+                    <button className="btn btn-ghost" onClick={debug}>Debug</button>
                 </div>
             </div>
         </>
