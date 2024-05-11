@@ -4,38 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "pob-driver": "workspace:*",
+    "pob-driver": "*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.3"
   },
-  "devDependencies": {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
-    "autoprefixer": "^10.4.19",
-    "copyfiles": "^2.4.1",
-    "daisyui": "^4.11.1",
-    "dotenv": "^16.4.5",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
-    "postcss": "^8.4.38",
-    "typescript": "^5.2.2",
-    "vite": "^5.2.0",
-    "vite-plugin-static-copy": "^1.0.4",
-    "wrangler": "^3.53.1"
-  },
-  "trustedDependencies": ["rclone.js"],
   "scripts": {
     "dev": "vite",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "deploy": "DEPLOYMENT=cloudflare bun run build && bun run deploy:pages && bun run deploy:r2",
-    "deploy:pages": "bun -e \"require('fs').rmSync('dist-pages', {recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
+    "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages && npm run deploy:r2",
+    "deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
     "deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' --no-progress dist/ s3://pob-web/asset/"
   }
 }

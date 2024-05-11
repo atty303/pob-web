@@ -2,16 +2,11 @@
   "name": "pob-driver",
   "private": true,
   "type": "module",
-  "devDependencies": {
-    "image-size": "^1.1.1",
-    "typescript": "^5.2.2",
-    "vite": "^5.2.0"
-  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "bun prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
+    "build": "tsx prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
     "dev": "vite",
     "preview": "vite preview"
   }

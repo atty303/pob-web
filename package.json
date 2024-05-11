@@ -5,5 +5,26 @@
   "workspaces": [
     "packages/driver",
     "packages/web"
-  ]
+  ],
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "^10.4.19",
+    "copyfiles": "^2.4.1",
+    "daisyui": "^4.11.1",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "image-size": "^1.1.1",
+    "postcss": "^8.4.38",
+    "tsx": "^4.9.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vite-plugin-static-copy": "^1.0.4",
+    "wrangler": "^3.53.1"
+  }
 }
