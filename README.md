@@ -11,20 +11,24 @@ This is online version of [Path of Building](https://pathofbuilding.community/).
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/)
+- [Node 22](https://nodejs.org/)
 - [Emscripten](https://emscripten.org/)
 - [CMake](https://cmake.org/)
 - [Ninja](https://ninja-build.org/)
+
+### Install dependencies
+
+```bash
+npm ci
+```
 
 ### Run driver shell
 
 Set up a development server for the PoB engine alone.
 
 ```bash
-cd packages/driver
-bun install
-bun run build
-bun dev
+npm run build -w packages/driver
+npm run dev -w packages/driver
 ```
 
 ### Run web app
@@ -33,9 +37,7 @@ Set up a web application development server.
 You need to build the driver first.
 
 ```bash
-cd packages/web
-bun install
-bun dev
+npm run dev -w packages/web
 ```
 
 ## Under the hood
