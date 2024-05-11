@@ -53,18 +53,21 @@ const EXTRA_KEY_MAP = new Map<string, string>([
     ["Escape", "\u001B"],
 ]);
 
+type OnFetchFunction = (url: string, headers: Record<string, string>, body: string | undefined) => Promise<{
+    body: string;
+    status: number | undefined;
+    headers: Record<string, string>;
+    error: string | undefined;
+}>;
+
+
 export class PobWindow {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
     private readonly renderer: Renderer;
     private readonly onError: (message: string) => void;
     private readonly onFrame: (render: boolean, time: number) => void;
-    private onFetch: (url: string, header: string, body: string) => Promise<{
-        body: string;
-        code: number;
-        header: Record<string, string>;
-        error: string | undefined
-    }>;
+    private onFetch: OnFetchFunction;
 
     private isRunning = false;
     private isDirty = false;
@@ -82,7 +85,7 @@ export class PobWindow {
         assetPrefix: string,
         onError: (message: string) => void,
         onFrame: (render: boolean, time: number) => void,
-        onFetch: (url: string, header: string, body: string) => Promise<{ body: string, code: number, header: Record<string, string>, error: string | undefined }>,
+        onFetch: OnFetchFunction,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
         this.renderer = new Renderer(props.container, this.imageRepo, () => this.invalidate());
@@ -253,14 +256,15 @@ export class PobWindow {
                 }
                 return "";
             },
-            fetch: async (url: string, header: string, body: string) => {
+            fetch: async (url: string, header: string | undefined, body: string | undefined) => {
                 try {
-                    const r = await this.onFetch(url, header, body);
-                    const headerText = Object.entries(r.header ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
-                    this.luaOnDownloadPageResult(JSON.stringify({body: r.body, code: r.code, header: headerText, error: undefined }));
+                    const headers = header ? header.split("\n").map(_ => _.split(":")).reduce((acc, [k, v]) => ({...acc, [k.trim()]: v.trim()}), {}) : {};
+                    const r = await this.onFetch(url, headers, body);
+                    const headerText = Object.entries(r.headers ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
+                    this.luaOnDownloadPageResult(JSON.stringify({body: r.body, status: r.status, header: headerText, error: r.error }));
                 } catch (e: any) {
                     console.error(e);
-                    this.luaOnDownloadPageResult(JSON.stringify({body: undefined, code: 500, header: undefined, error: e.message }));
+                    this.luaOnDownloadPageResult(JSON.stringify({body: undefined, status: undefined, header: undefined, error: e.message }));
                 }
             },
         };
