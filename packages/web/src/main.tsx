@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import * as Sentry from "@sentry/react";
+import {Auth0Provider} from "@auth0/auth0-react";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
@@ -22,7 +23,11 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+    <React.StrictMode>
+        <Auth0Provider domain="pob-web.us.auth0.com" clientId="o8TOT9gDHzztbdIIIV54HxlfaSMFYTeH" authorizationParams={{
+            redirect_uri: window.location.origin,
+        }}>
+            <App />
+        </Auth0Provider>
+    </React.StrictMode>,
 )
