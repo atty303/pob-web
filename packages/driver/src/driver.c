@@ -256,9 +256,11 @@ static int DownloadPage(lua_State *L) {
     const char *header = lua_tostring(L, 2);
     const char *body = lua_tostring(L, 3);
 
-    download_page(url, header, body);
+    const char *json = (const char *)download_page(url, header, body);
+    lua_pushlstring(L, json, strlen(json));
+    free((void *)json);
 
-    return 0;
+    return 1;
 }
 
 EMSCRIPTEN_KEEPALIVE

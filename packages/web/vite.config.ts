@@ -32,6 +32,11 @@ function stripPrefix(prefix: string, fullPath: string) {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      "/api": "http://localhost:8788",
+    },
+  },
   build: {
     chunkSizeWarningLimit: 2000,
     rollupOptions: {

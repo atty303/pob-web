@@ -11,7 +11,13 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             onError: (message) => { throw new Error(message); },
             onFrame: props.onFrame,
             onFetch: async (url, _header, _body) => {
-                throw new Error(`Fetch not implemented in web: ${url}`);
+                const r0 = await fetch("/api/fetch", {
+                    method: "POST",
+                    body: JSON.stringify({url}),
+                });
+                const r = await r0.json();
+                console.log(r);
+                return r;
             },
         });
         pob.start();

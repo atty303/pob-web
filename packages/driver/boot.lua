@@ -12,6 +12,24 @@ bit = {
     bnot = bit32.bnot,
 }
 
+if not setfenv then -- Lua 5.2
+    -- based on http://lua-users.org/lists/lua-l/2010-06/msg00314.html
+    -- this assumes f is a function
+    local function findenv(f)
+        local level = 1
+        repeat
+            local name, value = debug.getupvalue(f, level)
+            if name == '_ENV' then return level, value end
+            level = level + 1
+        until name == nil
+        return nil end
+    getfenv = function (f) return(select(2, findenv(f)) or _G) end
+    setfenv = function (f, t)
+        local level = findenv(f)
+        if level then debug.setupvalue(f, level, t) end
+        return f end
+end
+
 local sha1 = require("sha1.init")
 package.loaded["sha1"] = sha1
 
@@ -156,8 +174,12 @@ mainObject["OnInit"] = function(self)
     end
 end
 
+local dkjson = require "dkjson"
 mainObject["DownloadPage"] = function(self, url, callback, params)
     params = params or {}
     print(string.format("DownloadPage: url=[%s], header=[%s], body=[%s]", url, params.header, params.body))
-    return DownloadPage(url, params.header, params.body)
+    local resultJson = DownloadPage(url, params.header, params.body)
+    print("hoge")
+    local result = dkjson.decode(resultJson)
+    callback({header=result.header, body=result.body}, result.error)
 end

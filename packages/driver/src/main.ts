@@ -62,7 +62,7 @@ export class PobWindow {
     private onFetch: (url: string, header: string, body: string) => Promise<{
         body: string;
         code: number;
-        header: string;
+        header: Record<string, string>;
         error: string | undefined
     }>;
 
@@ -81,7 +81,7 @@ export class PobWindow {
         assetPrefix: string,
         onError: (message: string) => void,
         onFrame: (render: boolean, time: number) => void,
-        onFetch: (url: string, header: string, body: string) => Promise<{ body: string, code: number, header: string, error: string | undefined }>,
+        onFetch: (url: string, header: string, body: string) => Promise<{ body: string, code: number, header: Record<string, string>, error: string | undefined }>,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
         this.renderer = new Renderer(props.container, this.imageRepo, () => this.invalidate());
@@ -251,7 +251,16 @@ export class PobWindow {
                 }
                 return "";
             },
-            fetch: this.onFetch,
+            fetch: async (url: string, header: string, body: string) => {
+                try {
+                    const r = await this.onFetch(url, header, body);
+                    const headerText = Object.entries(r.header ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
+                    return JSON.stringify({body: r.body, code: r.code, header: headerText, error: undefined });
+                } catch (e: any) {
+                    console.error(e);
+                    return JSON.stringify({body: undefined, code: 500, header: undefined, error: e.message });
+                }
+            },
         };
     }
 }
