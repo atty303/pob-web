@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/atty303/pob-web/compare/v0.2.0...v0.3.0) (2024-05-11)
+
+
+### Features
+
+* implement Deflate, Inflate ([48de82f](https://github.com/atty303/pob-web/commit/48de82fcd3cf55639ae97dec5d88729316ee8b5f))
+
 ## [0.2.0](https://github.com/atty303/pob-web/compare/v0.1.0...v0.2.0) (2024-05-10)
 
 
