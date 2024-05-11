@@ -59,6 +59,7 @@ function GetWorkDir()
     return ""
 end
 function LaunchSubScript(scriptText, funcList, subList, ...)
+    error("SubScript is not implemented")
 end
 function AbortSubScript(ssID)
 end
@@ -153,4 +154,10 @@ mainObject["OnInit"] = function(self)
     self.main.controls.checkUpdate.shown = function()
         return false
     end
+end
+
+mainObject["DownloadPage"] = function(self, url, callback, params)
+    params = params or {}
+    print(string.format("DownloadPage: url=[%s], header=[%s], body=[%s]", url, params.header, params.body))
+    return DownloadPage(url, params.header, params.body)
 end

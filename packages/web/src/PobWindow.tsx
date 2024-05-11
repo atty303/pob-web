@@ -10,6 +10,9 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             assetPrefix: __ASSET_PREFIX__,
             onError: (message) => { throw new Error(message); },
             onFrame: props.onFrame,
+            onFetch: async (url, _header, _body) => {
+                throw new Error(`Fetch not implemented in web: ${url}`);
+            },
         });
         pob.start();
         return () => {

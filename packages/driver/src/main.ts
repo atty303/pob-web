@@ -59,6 +59,12 @@ export class PobWindow {
     private readonly renderer: Renderer;
     private readonly onError: (message: string) => void;
     private readonly onFrame: (render: boolean, time: number) => void;
+    private onFetch: (url: string, header: string, body: string) => Promise<{
+        body: string;
+        code: number;
+        header: string;
+        error: string | undefined
+    }>;
 
     private isRunning = false;
     private isDirty = false;
@@ -75,6 +81,7 @@ export class PobWindow {
         assetPrefix: string,
         onError: (message: string) => void,
         onFrame: (render: boolean, time: number) => void,
+        onFetch: (url: string, header: string, body: string) => Promise<{ body: string, code: number, header: string, error: string | undefined }>,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
         this.renderer = new Renderer(props.container, this.imageRepo, () => this.invalidate());
@@ -93,6 +100,7 @@ export class PobWindow {
 
         this.onError = props.onError;
         this.onFrame = props.onFrame;
+        this.onFetch = props.onFetch;
     }
 
     destroy() {
@@ -242,7 +250,8 @@ export class PobWindow {
                     }
                 }
                 return "";
-            }
+            },
+            fetch: this.onFetch,
         };
     }
 }

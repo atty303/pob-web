@@ -235,6 +235,32 @@ static int Inflate(lua_State *L) {
     return 1;
 }
 
+EM_ASYNC_JS(int, download_page, (const char *url, const char *header, const char *body), {
+    var response = await Module.fetch(UTF8ToString(url), UTF8ToString(header), UTF8ToString(body));
+
+    var lengthBytes = lengthBytesUTF8(response) + 1;
+    var stringOnWasmHeap = Module._malloc(lengthBytes);
+    stringToUTF8(response, stringOnWasmHeap, lengthBytes);
+
+    return stringOnWasmHeap;
+});
+
+static int DownloadPage(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 3);
+    assert(lua_isstring(L, 1));
+    assert(lua_isstring(L, 2) || lua_isnil(L, 2));
+    assert(lua_isstring(L, 3) || lua_isnil(L, 3));
+
+    const char *url = lua_tostring(L, 1);
+    const char *header = lua_tostring(L, 2);
+    const char *body = lua_tostring(L, 3);
+
+    download_page(url, header, body);
+
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
@@ -291,6 +317,10 @@ int init() {
 
     lua_pushcclosure(L, Inflate, 0);
     lua_setglobal(L, "Inflate");
+
+    // pob-web specific
+    lua_pushcclosure(L, DownloadPage, 0);
+    lua_setglobal(L, "DownloadPage");
 
     return 0;
 }
