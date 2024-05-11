@@ -31,7 +31,6 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: packages-lock.json
 
       - uses: mymindstorm/setup-emsdk@v14
         with:
