@@ -17,8 +17,9 @@ add_custom_command(
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/build/vfs.tsv
 )
 
-file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
-list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c)
+file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/*.c)
+list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
 
 set(ZLIB_ENABLE_TESTS OFF)
 set(ZLIBNG_ENABLE_TESTS OFF)
@@ -27,7 +28,6 @@ set(ZLIB_COMPAT ON)
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/zlib-ng ${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib-ng)
 
-include_directories(lua)
 add_compile_options(-flto)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
