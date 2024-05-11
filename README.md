@@ -42,7 +42,8 @@ npm run dev -w packages/web
 
 ## Under the hood
 
-- Running the original PoB Lua code with [few modifications for Lua 5.2](https://github.com/atty303/PathOfBuilding/tree/pob-web).
+- Running the original PoB Lua code.
+- Use a custom Lua 5.2 interpreter to run the code.
 - Using Emscripten to compile the PoB engine to WebAssembly.
 - A module equivalent to SimpleGraphic is written in C to bridge with the JS driver.
 - The JS renderer renders using WebGL.
