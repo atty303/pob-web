@@ -15,7 +15,7 @@ function App() {
             <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
                 <div className="navbar bg-neutral text-neutral-content">
                     <div className="flex-1">
-                        <a className="btn btn-ghost text-xl">Path of Building Web</a>
+                        <a className="btn btn-ghost text-xl">pob.cool</a>
                         <span className="badge badge-warning">This site is a work in progress</span>
                     </div>
                     <div className="flex-none pr-4">
