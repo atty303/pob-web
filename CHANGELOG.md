@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/atty303/pob-web/compare/v0.3.1...v0.3.2) (2024-05-11)
+
+
+### Bug Fixes
+
+* console.log ([bc603e1](https://github.com/atty303/pob-web/commit/bc603e135964701ca865f8b42ab7d559a80d3912))
+
 ## [0.3.1](https://github.com/atty303/pob-web/compare/v0.3.0...v0.3.1) (2024-05-11)
 
 
