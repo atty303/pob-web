@@ -65,5 +65,6 @@ const xml = xml0.replace(/<Version number="([0-9.]+)" \/>/, `<Version number="$1
 fs.writeFileSync('build/vfs/manifest.xml', xml);
 
 fs.copyFileSync('../../vendor/PathOfBuilding/changelog.txt', 'build/vfs/changelog.txt');
+fs.copyFileSync('../../vendor/PathOfBuilding/help.txt', 'build/vfs/help.txt');
 
 outputFile.end();
