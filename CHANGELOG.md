@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/atty303/pob-web/compare/v0.3.4...v0.4.0) (2024-05-11)
+
+
+### Features
+
+* **driver:** implement DownloadPage API ([#23](https://github.com/atty303/pob-web/issues/23)) ([7d88097](https://github.com/atty303/pob-web/commit/7d8809724f0a61f22d2f9899fecdbc1b932dde8e))
+
 ## [0.3.4](https://github.com/atty303/pob-web/compare/v0.3.3...v0.3.4) (2024-05-11)
 
 
