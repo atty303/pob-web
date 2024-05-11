@@ -46,8 +46,18 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PRIVATE $<TARGET_FILE:zlib>)
 target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:zlib,INCLUDE_DIRECTORIES>)
 
+set(DRIVER_LINK_FLAGS "
+    -flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ASYNCIFY -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH\
+    -s EXPORTED_FUNCTIONS=[_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_malloc] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall\
+")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}\ -sASSERTIONS")
+else()
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}\ -sASYNCIFY_IGNORE_INDIRECT")
+endif()
+
 set_target_properties(${PROJECT_NAME}
         PROPERTIES
-        LINK_FLAGS "-flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ASYNCIFY -s ASYNCIFY_IGNORE_INDIRECT -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH -s EXPORTED_FUNCTIONS=[_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_malloc] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall"
+        LINK_FLAGS "${DRIVER_LINK_FLAGS}"
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dist
 )
