@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.4](https://github.com/atty303/pob-web/compare/v0.3.3...v0.3.4) (2024-05-11)
+
+
+### Bug Fixes
+
+* **driver:** compatibility with lua 5.1 ([b0852c3](https://github.com/atty303/pob-web/commit/b0852c3b26ed94d50834f51543ba9f296fdd1b45))
+* **driver:** fixes [#1](https://github.com/atty303/pob-web/issues/1) ([7daa555](https://github.com/atty303/pob-web/commit/7daa55510f8cbfbcbbcbe8d9e5f26a9bf6cb681a))
+
 ## [0.3.3](https://github.com/atty303/pob-web/compare/v0.3.2...v0.3.3) (2024-05-11)
 
 
