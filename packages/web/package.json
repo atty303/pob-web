@@ -16,7 +16,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages && npm run deploy:r2",
-    "deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
+    "deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {force:true, recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
     "deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' --no-progress dist/ s3://pob-web/asset/"
   }
 }
