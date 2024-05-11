@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/atty303/pob-web/compare/v0.3.0...v0.3.0) (2024-05-11)
+
+
+### Bug Fixes
+
+* deploy ([943969d](https://github.com/atty303/pob-web/commit/943969d9092a2ea274dfb5087d2f96fbe802a997))
+
 ## [0.3.0](https://github.com/atty303/pob-web/compare/v0.2.0...v0.3.0) (2024-05-11)
 
 
