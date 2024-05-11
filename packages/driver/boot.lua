@@ -41,9 +41,6 @@ function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)
 end
-function GetTime()
-    return 0
-end
 function GetScriptPath()
     return ""
 end

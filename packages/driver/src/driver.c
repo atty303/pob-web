@@ -11,6 +11,7 @@
 
 extern const char *boot_lua;
 static lua_State *GL;
+static double st_start_time;
 
 static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     (void)ud;  (void)osize;  /* 未使用の引数 */
@@ -78,6 +79,12 @@ static int SetMainObject(lua_State *L) {
 static int GetMainObject(lua_State *L) {
     lua_pushstring(L, "MainObject");
     lua_gettable(L, lua_upvalueindex(1));
+    return 1;
+}
+
+static int GetTime(lua_State *L) {
+    double t = emscripten_get_now() - st_start_time;
+    lua_pushinteger(L, (int)t);
     return 1;
 }
 
@@ -264,6 +271,9 @@ int init() {
     draw_init(L);
 
     //
+    lua_pushcclosure(L, GetTime, 0);
+    lua_setglobal(L, "GetTime");
+
     lua_pushcclosure(L, GetCursorPos, 0);
     lua_setglobal(L, "GetCursorPos");
 
@@ -288,6 +298,8 @@ int init() {
 EMSCRIPTEN_KEEPALIVE
 int start() {
     lua_State *L = GL;
+
+    st_start_time = emscripten_get_now();
 
     if (luaL_dostring(L, boot_lua) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
