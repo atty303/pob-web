@@ -23,6 +23,11 @@ static void *my_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
         return realloc(ptr, nsize);
 }
 
+static int at_panic(lua_State *L) {
+    fprintf(stderr, "Panic: %s\n", lua_tostring(L, -1));
+    return 0;
+}
+
 static int OnError(lua_State *L) {
     EM_ASM({
                Module.onError(UTF8ToString($0));
@@ -30,16 +35,32 @@ static int OnError(lua_State *L) {
     return 0;
 }
 
-static void push_callback(lua_State *L, const char *name) {
+static int push_callback(lua_State *L, const char *name) {
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_remove(L, -2);
     lua_getfield(L, -1, name);
-    lua_insert(L, -2);
+    if (lua_isfunction(L, -1)) {
+        lua_remove(L, -2);
+        return 0;
+    } else {
+        lua_pop(L, 1);
+        lua_getfield(L, -1, "MainObject");
+        lua_remove(L, -2);
+        if (lua_istable(L, -1)) {
+            lua_getfield(L, -1, name);
+            if (lua_isfunction(L, -1)) {
+                lua_insert(L, -2);
+                return 1;
+            } else {
+                lua_pop(L, 1);
+            }
+        } else {
+            lua_pop(L, 1);
+        }
+    }
+    return -1;
 }
 
 static int SetCallback(lua_State *L) {
-    const char *name = lua_tostring(L, 1);
     int n = lua_gettop(L);
     assert(n >= 1);
     assert(lua_isstring(L, 1));
@@ -235,12 +256,36 @@ static int Inflate(lua_State *L) {
     return 1;
 }
 
+static int DownloadPage(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 3);
+    assert(lua_isstring(L, 1));
+    assert(lua_isstring(L, 2) || lua_isnil(L, 2));
+    assert(lua_isstring(L, 3) || lua_isnil(L, 3));
+
+    const char *url = lua_tostring(L, 1);
+    const char *header = lua_tostring(L, 2);
+    const char *body = lua_tostring(L, 3);
+
+    EM_ASM({
+               Module.fetch(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2));
+           }, url, header, body);
+
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int init() {
     GL = lua_newstate(my_alloc, NULL);
     lua_State *L = GL;
 
     luaL_openlibs(GL);  // 標準ライブラリを開く
+
+    // Handle lua errors
+    lua_atpanic(L, at_panic);
+
+    lua_newtable(L);
+    lua_rawseti(L, LUA_REGISTRYINDEX, 0);
 
     lua_pushcclosure(L, OnError, 0);
     lua_setglobal(L, "OnError");
@@ -292,6 +337,10 @@ int init() {
     lua_pushcclosure(L, Inflate, 0);
     lua_setglobal(L, "Inflate");
 
+    // pob-web specific
+    lua_pushcclosure(L, DownloadPage, 0);
+    lua_setglobal(L, "DownloadPage");
+
     return 0;
 }
 
@@ -327,7 +376,9 @@ int on_frame() {
 
     draw_begin();
 
-    push_callback(L, "OnFrame");
+    if (push_callback(L, "OnFrame") < 0) {
+        return 1;
+    }
     if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
@@ -348,7 +399,9 @@ int on_frame() {
 EMSCRIPTEN_KEEPALIVE
 int on_key_down(const char *name, int double_click) {
     lua_State *L = GL;
-    push_callback(L, "OnKeyDown");
+    if (push_callback(L, "OnKeyDown") < 0) {
+        return 1;
+    }
     lua_pushstring(L, name);
     lua_pushboolean(L, double_click);
     if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
@@ -361,7 +414,9 @@ int on_key_down(const char *name, int double_click) {
 EMSCRIPTEN_KEEPALIVE
 int on_key_up(const char *name, int double_click) {
     lua_State *L = GL;
-    push_callback(L, "OnKeyUp");
+    if (push_callback(L, "OnKeyUp") < 0) {
+        return 1;
+    }
     lua_pushstring(L, name);
     if (double_click >= 0) {
         lua_pushboolean(L, double_click);
@@ -381,10 +436,24 @@ int on_key_up(const char *name, int double_click) {
 EMSCRIPTEN_KEEPALIVE
 int on_char(const char *name, int double_click) {
     lua_State *L = GL;
-    push_callback(L, "OnChar");
+    if (push_callback(L, "OnChar") < 0) {
+        return 1;
+    }
     lua_pushstring(L, name);
     lua_pushboolean(L, double_click);
     if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        return 1;
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int on_download_page_result(const char *json) {
+    lua_State *L = GL;
+    lua_getglobal(L, "OnDownloadPageResult");
+    lua_pushstring(L, json);
+    if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         return 1;
     }

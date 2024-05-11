@@ -12,6 +12,24 @@ bit = {
     bnot = bit32.bnot,
 }
 
+if not setfenv then -- Lua 5.2
+    -- based on http://lua-users.org/lists/lua-l/2010-06/msg00314.html
+    -- this assumes f is a function
+    local function findenv(f)
+        local level = 1
+        repeat
+            local name, value = debug.getupvalue(f, level)
+            if name == '_ENV' then return level, value end
+            level = level + 1
+        until name == nil
+        return nil end
+    getfenv = function (f) return(select(2, findenv(f)) or _G) end
+    setfenv = function (f, t)
+        local level = findenv(f)
+        if level then debug.setupvalue(f, level, t) end
+        return f end
+end
+
 local sha1 = require("sha1.init")
 package.loaded["sha1"] = sha1
 
@@ -59,6 +77,7 @@ function GetWorkDir()
     return ""
 end
 function LaunchSubScript(scriptText, funcList, subList, ...)
+    error("SubScript is not implemented")
 end
 function AbortSubScript(ssID)
 end
@@ -152,5 +171,29 @@ mainObject["OnInit"] = function(self)
     onInit(self)
     self.main.controls.checkUpdate.shown = function()
         return false
+    end
+end
+
+local dkjson = require "dkjson"
+local downloadHandle = nil
+mainObject["DownloadPage"] = function(self, url, callback, params)
+    params = params or {}
+    print(string.format("DownloadPage: url=[%s], header=[%s], body=[%s]", url, params.header, params.body))
+    if downloadHandle then
+        error("Download already in progress")
+    else
+        DownloadPage(url, params.header, params.body)
+        downloadHandle = callback
+    end
+end
+OnDownloadPageResult = function(resultJson)
+    print("OnDownloadPageResult")
+    if downloadHandle then
+        local callback = downloadHandle
+        downloadHandle = nil
+        local result = dkjson.decode(resultJson)
+        callback({header=result.header, body=result.body}, result.error)
+    else
+        error("No download handle")
     end
 end

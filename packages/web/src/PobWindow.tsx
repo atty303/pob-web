@@ -10,6 +10,13 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             assetPrefix: __ASSET_PREFIX__,
             onError: (message) => { throw new Error(message); },
             onFrame: props.onFrame,
+            onFetch: async (url, headers, body) => {
+                const rep = await fetch("/api/fetch", {
+                    method: "POST",
+                    body: JSON.stringify({ url, headers, body }),
+                });
+                return await rep.json();
+            },
         });
         pob.start();
         return () => {

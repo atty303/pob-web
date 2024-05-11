@@ -53,18 +53,28 @@ const EXTRA_KEY_MAP = new Map<string, string>([
     ["Escape", "\u001B"],
 ]);
 
+type OnFetchFunction = (url: string, headers: Record<string, string>, body: string | undefined) => Promise<{
+    body: string;
+    status: number | undefined;
+    headers: Record<string, string>;
+    error: string | undefined;
+}>;
+
+
 export class PobWindow {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
     private readonly renderer: Renderer;
     private readonly onError: (message: string) => void;
     private readonly onFrame: (render: boolean, time: number) => void;
+    private onFetch: OnFetchFunction;
 
     private isRunning = false;
     private isDirty = false;
     private luaOnKeyUp: (name: string, doubleClick: number) => void = () => {};
     private luaOnKeyDown: (name: string, doubleClick: number) => void = () => {};
     private luaOnChar: (char: string, doubleClick: number) => void = () => {};
+    private luaOnDownloadPageResult: (result: string) => void = () => {};
     private cursorPosX: number = 0;
     private cursorPosY: number = 0;
     private buttonState: Set<string> = new Set();
@@ -75,6 +85,7 @@ export class PobWindow {
         assetPrefix: string,
         onError: (message: string) => void,
         onFrame: (render: boolean, time: number) => void,
+        onFetch: OnFetchFunction,
     }) {
         this.imageRepo = new ImageRepository(props.assetPrefix);
         this.renderer = new Renderer(props.container, this.imageRepo, () => this.invalidate());
@@ -93,6 +104,7 @@ export class PobWindow {
 
         this.onError = props.onError;
         this.onFrame = props.onFrame;
+        this.onFetch = props.onFetch;
     }
 
     destroy() {
@@ -111,6 +123,7 @@ export class PobWindow {
         this.luaOnKeyUp = module.cwrap("on_key_up", "number", ["string", "number"]);
         this.luaOnKeyDown = module.cwrap("on_key_down", "number", ["string", "number"]);
         this.luaOnChar = module.cwrap("on_char", "number", ["string", "number"]);
+        this.luaOnDownloadPageResult = module.cwrap("on_download_page_result", "number", ["string"]);
         Object.assign(module, this.callbacks(module));
 
         if (!this.isRunning) return;
@@ -242,7 +255,18 @@ export class PobWindow {
                     }
                 }
                 return "";
-            }
+            },
+            fetch: async (url: string, header: string | undefined, body: string | undefined) => {
+                try {
+                    const headers = header ? header.split("\n").map(_ => _.split(":")).reduce((acc, [k, v]) => ({...acc, [k.trim()]: v.trim()}), {}) : {};
+                    const r = await this.onFetch(url, headers, body);
+                    const headerText = Object.entries(r.headers ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
+                    this.luaOnDownloadPageResult(JSON.stringify({body: r.body, status: r.status, header: headerText, error: r.error }));
+                } catch (e: any) {
+                    console.error(e);
+                    this.luaOnDownloadPageResult(JSON.stringify({body: undefined, status: undefined, header: undefined, error: e.message }));
+                }
+            },
         };
     }
 }

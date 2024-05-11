@@ -7,3 +7,4 @@ dist-pages/
 node_modules/
 build/
 .env*
+.wrangler
