@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "concurrently vite \"wrangler pages dev . --compatibility-date=2024-05-11\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "build": "tsc && vite build && wrangler pages build ",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages && npm run deploy:r2",
     "deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {force:true, recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
