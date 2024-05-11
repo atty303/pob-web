@@ -17,12 +17,13 @@ function visitDirs(
                 callback(filePath, base);
             }
         }
+    } else {
+        callback(dir, base);
     }
 }
 
-if (!fs.existsSync("build/vfs")) {
-    fs.mkdirSync("build/vfs", { recursive: true });
-}
+fs.rmSync("build/vfs", { force: true, recursive: true });
+fs.mkdirSync("build/vfs", { recursive: true });
 
 const outputFile = fs.createWriteStream('build/vfs.tsv');
 
@@ -43,7 +44,7 @@ const callback = (filePath: string, basePath: string) => {
         fs.createWriteStream(vfsPath).end();
     }
 
-    if (path.extname(filePath) === '.lua') {
+    if (path.extname(filePath) === '.lua' || path.extname(filePath) === ".zip" || path.extname(filePath).startsWith(".part")) {
         const vfsPath = `build/vfs/${relPath}`;
         const vfsDir = path.dirname(vfsPath);
         if (!fs.existsSync(vfsDir)) {
@@ -58,5 +59,7 @@ visitDirs(basePath1, basePath1, callback);
 
 const basePath2 = '../../vendor/PathOfBuilding/runtime/lua';
 visitDirs(basePath2, basePath2, callback);
+
+fs.copyFileSync('../../vendor/PathOfBuilding/manifest.xml', 'build/vfs/manifest.xml');
 
 outputFile.end();
