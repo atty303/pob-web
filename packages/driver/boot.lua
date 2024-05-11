@@ -135,8 +135,22 @@ dofile("Launch.lua")
 --
 local mainObject = GetMainObject()
 
+-- Disable the check for updates because we can't update the app
+mainObject["CheckForUpdate"] = function(this)
+end
+
+-- Install the error handler
 local showErrMsg = mainObject["ShowErrMsg"]
-mainObject["ShowErrMsg"] = function(this, msg, ...)
+mainObject["ShowErrMsg"] = function(self, msg, ...)
     OnError(string.format(msg, ...))
-    showErrMsg(this, msg, ...)
+    showErrMsg(self, msg, ...)
+end
+
+-- Hide the check for updates button
+local onInit = mainObject["OnInit"]
+mainObject["OnInit"] = function(self)
+    onInit(self)
+    self.main.controls.checkUpdate.shown = function()
+        return false
+    end
 end
