@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/atty303/pob-web/compare/v0.3.2...v0.3.3) (2024-05-11)
+
+
+### Bug Fixes
+
+* throw on error ([cfa83ca](https://github.com/atty303/pob-web/commit/cfa83ca2d38945560441cbe36c73627de0f9ac7f))
+
 ## [0.3.2](https://github.com/atty303/pob-web/compare/v0.3.1...v0.3.2) (2024-05-11)
 
 
