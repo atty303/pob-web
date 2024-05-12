@@ -1,14 +1,12 @@
 {
-  "name": "pob-driver",
-  "private": true,
-  "version": "0.5.0",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsx prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
-    "dev": "vite",
-    "preview": "vite preview"
-  }
+	"name": "pob-driver",
+	"private": true,
+	"version": "0.5.0",
+	"type": "module",
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsx prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
+		"dev": "vite",
+		"preview": "vite preview"
+	}
 }

@@ -1,27 +1,27 @@
 {
-  "name": "pob-web",
-  "private": true,
-  "version": "0.5.0",
-  "type": "module",
-  "dependencies": {
-    "@auth0/auth0-react": "^2.2.4",
-    "@sentry/react": "^7.114.0",
-    "@zenfs/core": "^0.10.0",
-    "@zenfs/dom": "^0.2.7",
-    "jose": "^5.3.0",
-    "missionlog": "^1.8.8",
-    "pob-driver": "*",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwindcss": "^3.4.3"
-  },
-  "scripts": {
-    "dev": "concurrently vite \"wrangler pages dev . --compatibility-date=2024-05-11\"",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages && npm run deploy:r2",
-    "deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {force:true, recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
-    "deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' --no-progress dist/ s3://pob-web/asset/"
-  }
+	"name": "pob-web",
+	"private": true,
+	"version": "0.5.0",
+	"type": "module",
+	"dependencies": {
+		"@auth0/auth0-react": "^2.2.4",
+		"@sentry/react": "^7.114.0",
+		"@zenfs/core": "^0.10.0",
+		"@zenfs/dom": "^0.2.7",
+		"jose": "^5.3.0",
+		"missionlog": "^1.8.8",
+		"pob-driver": "*",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"tailwindcss": "^3.4.3"
+	},
+	"scripts": {
+		"dev": "concurrently vite \"wrangler pages dev . --compatibility-date=2024-05-11\"",
+		"lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages && npm run deploy:r2",
+		"deploy:pages": "node -e \"require('fs').rmSync('dist-pages', {force:true, recursive:true})\" && copyfiles -u 1 \"dist/**/*\" dist-pages/ && wrangler pages deploy dist-pages --project-name pob-web",
+		"deploy:r2": "aws s3 cp --region auto --endpoint-url https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com --recursive --exclude '*' --include '.r2-*' --no-progress dist/ s3://pob-web/asset/"
+	}
 }

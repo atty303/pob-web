@@ -1,8 +1,7 @@
 {
-  "name": "pob-packer",
-  "private": true,
-  "version": "",
-  "type": "module",
-  "scripts": {
-  }
+	"name": "pob-packer",
+	"private": true,
+	"version": "",
+	"type": "module",
+	"scripts": {}
 }
