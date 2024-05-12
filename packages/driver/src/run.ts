@@ -1,6 +1,6 @@
-import {PobWindow} from "./main.ts";
+import {PobDriver} from "./main.ts";
 
-const win = new PobWindow({
+const driver = new PobDriver({
     container: document.querySelector("#window")!,
     dataPrefix: __DATA_PREFIX__,
     assetPrefix: __ASSET_PREFIX__,
@@ -10,4 +10,4 @@ const win = new PobWindow({
         throw new Error(`Fetch not implemented in shell: ${url}`);
     },
 });
-win.start();
+driver.start();

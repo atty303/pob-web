@@ -1,4 +1,4 @@
-import {PobWindow as PobWindowInternal} from "pob-driver/src/main.ts";
+import {PobDriver} from "pob-driver/src/main.ts";
 import {useEffect, useRef, useState} from "react";
 
 import * as zenfs from "@zenfs/core";
@@ -121,7 +121,7 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
     const win = useRef<HTMLDivElement>(null);
     useEffect(() => {
         let isRunning = true;
-        const pob = new PobWindowInternal({
+        const pob = new PobDriver({
             container: win.current!,
             dataPrefix: __DATA_PREFIX__,
             assetPrefix: __ASSET_PREFIX__,

@@ -61,7 +61,7 @@ type OnFetchFunction = (url: string, headers: Record<string, string>, body: stri
     error: string | undefined;
 }>;
 
-export class PobWindow {
+export class PobDriver {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
     private readonly renderer: Renderer;
