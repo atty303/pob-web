@@ -2,12 +2,19 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
   "include-component-in-tag": false,
-  "packages": {
-    ".": {
+  "extra-files": [
+    {
+      "type": "json",
+      "path": "packages/driver/package.json",
+      "jsonpath": "$.version"
     },
-    "packages/driver": {
-    },
-    "packages/web": {
+    {
+      "type": "json",
+      "path": "packages/web/package.json",
+      "jsonpath": "$.version"
     }
+  ],
+  "packages": {
+    ".": {}
   }
 }
