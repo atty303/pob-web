@@ -47,10 +47,6 @@ function GetAsyncCount()
     return 0
 end
 
--- Search Handles
-function NewFileSearch()
-end
-
 -- General Functions
 function SetWindowTitle(title)
 end

@@ -2,6 +2,7 @@
 import {default as Module} from "../dist/driver.mjs";
 import {Renderer} from "./renderer";
 import {ImageRepository} from "./image";
+import {NodeEmscriptenFS} from "./fs";
 
 function mouseString(e: MouseEvent) {
     return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][e.button];
@@ -60,7 +61,6 @@ type OnFetchFunction = (url: string, headers: Record<string, string>, body: stri
     error: string | undefined;
 }>;
 
-
 export class PobWindow {
     private readonly module: Promise<any>;
     private readonly imageRepo: ImageRepository;
@@ -110,6 +110,12 @@ export class PobWindow {
     destroy() {
         this.isRunning = false;
         this.renderer.destroy();
+    }
+
+    async mount(value: any) {
+        let module = await this.module;
+        module.FS.mkdir("/Builds");
+        module.FS.mount(new NodeEmscriptenFS(module.FS, module.PATH, module.ERRNO_CODES, value), { root: "/" }, "/Builds");
     }
 
     async start() {

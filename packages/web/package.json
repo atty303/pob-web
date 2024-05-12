@@ -6,6 +6,8 @@
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
     "@sentry/react": "^7.114.0",
+    "@zenfs/core": "^0.10.0",
+    "@zenfs/dom": "^0.2.7",
     "jose": "^5.3.0",
     "pob-driver": "*",
     "react": "^18.2.0",

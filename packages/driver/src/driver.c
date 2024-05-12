@@ -8,6 +8,7 @@
 #include "lauxlib.h"
 #include "draw.h"
 #include "image.h"
+#include "fs.h"
 
 extern const char *boot_lua;
 static lua_State *GL;
@@ -314,6 +315,7 @@ int init() {
     //
     image_init(L);
     draw_init(L);
+    fs_init(L);
 
     //
     lua_pushcclosure(L, GetTime, 0);

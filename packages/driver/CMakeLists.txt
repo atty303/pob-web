@@ -41,6 +41,8 @@ add_executable(${PROJECT_NAME}
         src/draw.h
         src/image.c
         src/image.h
+        src/fs.c
+        src/fs.h
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE $<TARGET_FILE:zlib>)
@@ -48,7 +50,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:zlib,INCLUD
 
 set(DRIVER_LINK_FLAGS "
     -flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ASYNCIFY -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH\
-    -s EXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall\
+    -s EXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall,FS,PATH,ERRNO_CODES\
 ")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}\ -sASSERTIONS")

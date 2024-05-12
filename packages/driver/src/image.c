@@ -117,14 +117,9 @@ static int ImageHandle_ImageSize(lua_State *L) {
     return 2;
 }
 
-
-
-
-
 void image_init(lua_State *L) {
     // Parse vfs.tsv
     parse_vfs_tsv();
-
 
     // Image handles
     lua_newtable(L);
