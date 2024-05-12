@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/atty303/pob-web/compare/v0.4.0...v0.5.0) (2024-05-12)
+
+
+### Features
+
+* **driver:** implement fs ([79c3792](https://github.com/atty303/pob-web/commit/79c3792c6a2ed440a739d64f709cc6b715abb06f))
+* **driver:** implement MakeDir/RemoveDir ([d56fd60](https://github.com/atty303/pob-web/commit/d56fd60964319c38a5a3dd2a4457b1525fbf44f2))
+* **web:** added auth0 ([a81b930](https://github.com/atty303/pob-web/commit/a81b930ca5449a084b2d000e478ea10c0062ab3d))
+* **web:** added cloud filesystem ([4c1f246](https://github.com/atty303/pob-web/commit/4c1f2466a1a93aa8923c56531ba5495085ece962))
+* **web:** added kv api ([bfeec36](https://github.com/atty303/pob-web/commit/bfeec36fb4fa2f9939d985fbe9e6c3700df954a4))
+
 ## [0.4.0](https://github.com/atty303/pob-web/compare/v0.3.4...v0.4.0) (2024-05-11)
 
 
