@@ -3,7 +3,7 @@ import {useState} from "react";
 import Header from "./Header.tsx";
 import Footer from "./Footer.tsx";
 
-function App() {
+export default function App() {
     const [frameTime , setFrameTime] = useState(0);
 
     const handleFrame = (render: boolean, time: number) => {
@@ -26,5 +26,3 @@ function App() {
         </>
     )
 }
-
-export default App

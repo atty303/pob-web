@@ -5,6 +5,8 @@ import './index.css'
 import * as Sentry from "@sentry/react";
 import {Auth0Provider} from "@auth0/auth0-react";
 
+import "./logger";
+
 if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
         dsn: import.meta.env.VITE_SENTRY_DSN,

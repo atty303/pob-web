@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import * as zenfs from "@zenfs/core";
 import {WebStorage} from "@zenfs/dom";
 import {useAuth0} from "@auth0/auth0-react";
+import {log, tag} from "./logger.ts";
 
 class KvStore implements zenfs.AsyncStore {
     get name() {
@@ -89,7 +90,7 @@ async function fs() {
     try {
         await zenfs.configure({
             mounts: {
-                "/local": {backend: WebStorage, options: {storage: localStorage}},
+                "/browser": {backend: WebStorage, options: {storage: localStorage}},
             }
         });
     } catch (e) {
@@ -114,6 +115,7 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             (async () => {
                 const kvfs = await zenfs.resolveMountConfig({ backend: KvFS, accessToken: token });
                 zenfs.mount("/cloud", kvfs);
+                log.info(tag.vfs, "KvFS is mounted");
             })();
         }
     }, [token]);
@@ -139,7 +141,10 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
         async function start() {
             const nodefs = await fs();
             pob.mount(nodefs);
-            if (isRunning) pob.start();
+            if (isRunning) {
+                pob.start();
+                log.info(tag.pob,"started");
+            }
         }
         start();
 
@@ -147,7 +152,7 @@ export default function PobWindow(props: { onFrame: (render: boolean, time: numb
             isRunning = false;
             pob.destroy();
         };
-    }, [win, token]);
+    }, [win]);
 
     return (
         <div ref={win} className="h-full border border-base-300 bg-base-300"/>
