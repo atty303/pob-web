@@ -40,8 +40,9 @@ export default function Header(_p: {}) {
     return (
         <>
             <div className="navbar bg-neutral text-neutral-content">
-                <div className="flex-1">
-                    <a className="btn btn-ghost text-xl">pob.cool</a>
+                <div className="flex-1 gap-2">
+                    <img className="w-8 h-8 rounded-box" src="/favicon.png" alt=""/>
+                    <a className="text-xl font-bold font-['Poiret_One']">pob.cool</a>
                     <span className="badge badge-warning">This site is a work in progress</span>
                 </div>
                 <div className="flex-none mr-4">
