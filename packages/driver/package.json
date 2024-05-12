@@ -9,5 +9,6 @@
     "build": "tsx prepare.ts && emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
     "dev": "vite",
     "preview": "vite preview"
-  }
+  },
+  "version": "0.3.1"
 }
