@@ -3,12 +3,11 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "packages": {
-    ".": {},
-    "packages/driver": {
-      "release-type": "node"
-    },
-    "packages/web": {
-      "release-type": "node"
+    ".": {
+      "extra-files": [
+        "packages/driver/package.json",
+        "packages/web/package.json"
+      ]
     }
   }
 }
