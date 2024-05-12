@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <libgen.h>
 #include <fnmatch.h>
+#include <unistd.h>
 
 #include "fs.h"
 
@@ -150,6 +151,42 @@ static int FsReaddirHandle_GetFileModifiedTime(lua_State *L) {
     return 1;
 }
 
+static int MakeDir(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    const char *path = lua_tostring(L, 1);
+
+    if (mkdir(path, 0777) != 0) {
+        fprintf(stderr, "Failed to create directory: %s\n", path);
+        lua_pushnil(L);
+        lua_pushstring(L, "Failed to create directory");
+        return 2;
+    }
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int RemoveDir(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    const char *path = lua_tostring(L, 1);
+
+    if (rmdir(path) != 0) {
+        fprintf(stderr, "Failed to remove directory: %s\n", path);
+        lua_pushnil(L);
+        lua_pushstring(L, "Failed to remove directory");
+        return 2;
+    }
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
 void fs_init(lua_State *L) {
     lua_newtable(L);
     lua_pushvalue(L, -1);
@@ -175,4 +212,10 @@ void fs_init(lua_State *L) {
     lua_setfield(L, -2, "GetFileModifiedTime");
 
     lua_setfield(L, LUA_REGISTRYINDEX, FS_READDIR_HANDLE_TYPE);
+
+    lua_pushcclosure(L, MakeDir, 0);
+    lua_setglobal(L, "MakeDir");
+
+    lua_pushcclosure(L, RemoveDir, 0);
+    lua_setglobal(L, "RemoveDir");
 }

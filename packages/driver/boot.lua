@@ -63,11 +63,8 @@ end
 function GetUserPath()
     return ""
 end
-function MakeDir(path)
-end
-function RemoveDir(path)
-end
 function SetWorkDir(path)
+    print("SetWorkDir: " .. path)
 end
 function GetWorkDir()
     return ""

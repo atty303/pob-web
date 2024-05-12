@@ -272,6 +272,7 @@ class NodeEmscriptenStreamOps implements EmscriptenStreamOps {
             if (FS.isFile(stream.node.mode)) {
                 let flags = stream.flags & O_SUPPORTED;
                 if ((flags & O_RDWR) && (flags & O_CREAT)) flags &= ~O_CREAT;
+                if (flags === (O_WRONLY | O_CREAT)) flags |= O_TRUNC;
                 stream.nfd = this.nodefs.openSync(path, flags);
             }
         } catch (e: any) {
@@ -364,7 +365,7 @@ export class NodeEmscriptenFS implements EmscriptenFS {
         return this.createNode(null, "/", this.getMode(m.opts.root), 0);
     }
 
-    public createNode(parent: EmscriptenEntry | null, name: string, mode: number, dev?: any): EmscriptenEntry {
+    public createNode(parent: EmscriptenEntry | null, name: string, mode: number, _dev?: any): EmscriptenEntry {
         if (!this.fs.isDir(mode) && !this.fs.isFile(mode) && !this.fs.isLink(mode)) {
             throw new this.fs.ErrnoError(this.errnoCodes.EINVAL);
         }
