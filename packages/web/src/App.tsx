@@ -14,7 +14,7 @@ function App() {
     return (
         <>
             <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
-                <Header frameTime={frameTime}/>
+                <Header/>
 
                 <div className="p-4">
                     <PobWindow onFrame={handleFrame}/>
@@ -22,10 +22,21 @@ function App() {
 
                 <footer className="footer flex items-center p-4 bg-neutral text-neutral-content">
                     <aside className="flex-1">
-                        <p>©2024 Koji AGAWA (<a className="link" href="https://x.com/atty303" target="_blank">@atty303</a>)</p>
+                        <span>© 2024 Koji AGAWA (<a className="link" href="https://x.com/atty303"
+                                                   target="_blank">@atty303</a>)
+                        - This site is not affiliated with Grinding Gear Games or Path of Exile.</span>
                     </aside>
                     <div className="flex-none">
-                        <p>This site is not affiliated with Grinding Gear Games or Path of Exile.</p>
+                        <span className="badge badge-sm">
+                            Render: {frameTime.toFixed(1)}ms
+                        </span>
+                    </div>
+                    <div className="flex-none">
+                        <span className="link">
+                            <a href="https://github.com/atty303/pob-web/blob/main/CHANGELOG.md" target="_blank">
+                                Version {APP_VERSION}
+                            </a>
+                        </span>
                     </div>
                     <div className="flex-none">
                         <a href="https://github.com/atty303/poe-web" target="_blank">

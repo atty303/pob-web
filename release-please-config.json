@@ -3,7 +3,12 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "packages": {
-    ".": {
+    ".": {},
+    "packages/driver": {
+      "release-type": "node"
+    },
+    "packages/web": {
+      "release-type": "node"
     }
   }
 }

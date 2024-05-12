@@ -55,6 +55,7 @@ export default defineConfig({
     },
   },
   define: {
+    APP_VERSION: JSON.stringify(process.env.npm_package_version),
     __DATA_PREFIX__: dataPrefix,
     __ASSET_PREFIX__: assetPrefix,
   },

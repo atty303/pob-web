@@ -36,7 +36,7 @@ function Auth() {
     }
 }
 
-export default function Header(p: { frameTime: number }) {
+export default function Header(_p: {}) {
     const a = useAuth0();
 
     const [token, setToken] = useState<string>();
@@ -83,16 +83,7 @@ export default function Header(p: { frameTime: number }) {
                     <a className="btn btn-ghost text-xl">pob.cool</a>
                     <span className="badge badge-warning">This site is a work in progress</span>
                 </div>
-                <div className="flex-none pr-4">
-                    <span className="badge">
-                        Render: {p.frameTime.toFixed(1)}ms
-                    </span>
-                </div>
-                <div className="flex-none pr-4">
-                    <a className="btn btn-ghost" href="https://github.com/atty303/pob-web/blob/main/CHANGELOG.md"
-                       target="_blank">Changelog</a>
-                </div>
-                <div className="flex-none pr-4">
+                <div className="flex-none mr-4">
                     <Auth/>
                     <button className="btn btn-ghost" onClick={debug}>Debug</button>
                 </div>
