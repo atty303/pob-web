@@ -371,7 +371,7 @@ export class TextRasterizer {
         size -= 2;
         switch (fontNum) {
             case 1: return `${size}px Liberation Sans`;
-            case 2: return `${size}px Liberation Sans`; // TODO: bold
+            case 2: return `${size}px Liberation Sans Bold`;
             case 0:
             default:
                 return `${size}px Bitstream Vera Mono`;

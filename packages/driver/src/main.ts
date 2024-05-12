@@ -121,7 +121,6 @@ export class PobDriver {
     async start() {
         this.isRunning = true;
 
-        await document.fonts.ready;
         let module = await this.module;
 
         module._init();
