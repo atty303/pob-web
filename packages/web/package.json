@@ -1,7 +1,7 @@
 {
   "name": "pob-web",
   "private": true,
-  "version": "0.0.0",
+  "version": "",
   "type": "module",
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",

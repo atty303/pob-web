@@ -4,10 +4,10 @@
   "include-component-in-tag": false,
   "packages": {
     ".": {
-      "extra-files": [
-        "packages/driver/package.json",
-        "packages/web/package.json"
-      ]
+    },
+    "packages/driver": {
+    },
+    "packages/web": {
     }
   }
 }

@@ -1,6 +1,7 @@
 {
   "name": "pob-driver",
   "private": true,
+  "version": "",
   "type": "module",
   "files": [
     "dist"
