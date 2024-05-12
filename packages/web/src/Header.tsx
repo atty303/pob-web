@@ -1,5 +1,4 @@
 import {useAuth0} from "@auth0/auth0-react";
-import {useEffect, useState} from "react";
 
 function Auth() {
     const {loginWithPopup, logout, user, isAuthenticated, isLoading} = useAuth0();
@@ -17,6 +16,7 @@ function Auth() {
                         <path strokeLinecap="round" strokeLinejoin="round"
                               d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"/>
                     </svg>
+                    Logout
                 </button>
             </>
         );
@@ -37,45 +37,6 @@ function Auth() {
 }
 
 export default function Header(_p: {}) {
-    const a = useAuth0();
-
-    const [token, setToken] = useState<string>();
-    useEffect(() => {
-        async function getToken() {
-            const t = await a.getAccessTokenSilently();
-            setToken(t);
-        }
-        getToken();
-    }, []);
-
-    const debug = async () => {
-        const r0 = await fetch("/api/kv/put/test/sub/hoge.txt", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({key: "test", value: "test"}),
-        });
-        console.log(r0);
-
-        const r = await fetch("/api/kv/list", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({key: "test", value: "test"}),
-        });
-        console.log(await r.json());
-
-        const r2 = await fetch("/api/kv/get/test/sub/hoge.txt", {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        console.log(await r2.text());
-    };
-
     return (
         <>
             <div className="navbar bg-neutral text-neutral-content">
@@ -85,7 +46,6 @@ export default function Header(_p: {}) {
                 </div>
                 <div className="flex-none mr-4">
                     <Auth/>
-                    <button className="btn btn-ghost" onClick={debug}>Debug</button>
                 </div>
             </div>
         </>
