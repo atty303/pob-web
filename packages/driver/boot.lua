@@ -54,11 +54,9 @@ end
 function ShowCursor(doShow)
 end
 function GetScriptPath()
-    print("GetScriptPath")
     return ""
 end
 function GetRuntimePath()
-    print("GetRuntimePath")
     return ""
 end
 function GetUserPath()
@@ -68,8 +66,7 @@ function SetWorkDir(path)
     print("SetWorkDir: " .. path)
 end
 function GetWorkDir()
-    print("GetWorkDir")
-    return "/app/root"
+    return ""
 end
 function LaunchSubScript(scriptText, funcList, subList, ...)
     error("SubScript is not implemented")

@@ -2,9 +2,8 @@ import * as zenfs from "@zenfs/core";
 import { WebStorage } from "@zenfs/dom";
 import { Zip } from "@zenfs/zip";
 import { PobDriver } from "pob-driver/src/main.ts";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAsync } from "react-use";
-import { atom, selector, useRecoilValue } from "recoil";
 import { log, tag } from "./logger.ts";
 
 class KvStore implements zenfs.AsyncStore {
@@ -90,17 +89,6 @@ const KvFS = {
 		return new zenfs.AsyncStoreFS({ store: new KvStore(opts.accessToken) });
 	},
 } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
-
-async function fs() {
-	try {
-		await zenfs.configure({
-			mounts: {
-				"/browser": { backend: WebStorage, options: { storage: localStorage } },
-			},
-		});
-	} catch (e) {}
-	return zenfs.fs;
-}
 
 // const versionState = atom<string>({
 // 	key: "currentVersion",
@@ -193,6 +181,19 @@ export default function PobWindow(props: {
 		}
 		zenfs.mount("/root", zipFs);
 
+		const browserFs = await zenfs.resolveMountConfig({
+			backend: WebStorage,
+			storage: localStorage,
+		});
+		if (!zenfs.existsSync("/user")) zenfs.mkdirSync("/user");
+		if (!zenfs.existsSync("/user/Path of Building"))
+			zenfs.mkdirSync("/user/Path of Building");
+
+		if (zenfs.existsSync("/user/Path of Building/Builds")) {
+			zenfs.umount("/user/Path of Building/Builds");
+		}
+		zenfs.mount("/user/Path of Building/Builds", browserFs);
+
 		return new PobDriver({
 			assetPrefix: `${__ASSET_PREFIX__}/v${props.version}`,
 			onError: (message) => {
@@ -208,6 +209,10 @@ export default function PobWindow(props: {
 			},
 		});
 	}, [props.version]);
+
+	if (driver.error) {
+		log.error(tag.pob, driver.error);
+	}
 
 	const container = useRef<HTMLDivElement>(null);
 

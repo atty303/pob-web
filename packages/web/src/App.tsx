@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Footer from "./Footer.tsx";
 import Header from "./Header.tsx";
 import PobWindow from "./PobWindow.tsx";
@@ -18,7 +18,7 @@ export default function App() {
 				<Header />
 
 				<div className="p-2">
-					<PobWindow onFrame={handleFrame} version="2.42.0" />
+					<PobWindow onFrame={handleFrame} version="2.41.1" />
 				</div>
 
 				<Footer frameTime={frameTime} />

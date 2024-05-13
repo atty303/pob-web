@@ -74,6 +74,7 @@ const manifest = shelljs.sed(
 	`<Version number="$1" platform="win32" branch="master" />`,
 	`${buildDir}/repo/manifest.xml`,
 );
+zip.addFile("installed.cfg", Buffer.from(""));
 zip.addFile("manifest.xml", Buffer.from(manifest));
 zip.addFile("changelog.txt", fs.readFileSync(`${buildDir}/repo/changelog.txt`));
 zip.addFile("help.txt", fs.readFileSync(`${buildDir}/repo/help.txt`));
