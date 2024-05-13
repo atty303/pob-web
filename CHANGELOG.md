@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/atty303/pob-web/compare/v0.5.0...v0.6.0) (2024-05-13)
+
+
+### Features
+
+* selectable PoB version ([#34](https://github.com/atty303/pob-web/issues/34)) ([d3bd5eb](https://github.com/atty303/pob-web/commit/d3bd5ebdaf8ed4c96be3033e9728e4be2bdddfbd))
+
+
+### Bug Fixes
+
+* **web:** preload font ([07d491e](https://github.com/atty303/pob-web/commit/07d491efcd86d237ad60e921f7260f78b46f3ea9)), closes [#4](https://github.com/atty303/pob-web/issues/4)
+
 ## [0.5.0](https://github.com/atty303/pob-web/compare/v0.4.0...v0.5.0) (2024-05-12)
 
 
