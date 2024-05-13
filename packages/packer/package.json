@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"pack": "tsx src/pack.ts",
-		"sync": "tsx src/sync.ts"
+		"sync": "tsx src/sync.ts",
+		"build": "true"
 	}
 }
