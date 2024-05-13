@@ -4,10 +4,9 @@
 #include <stdio.h>
 #include "image.h"
 #include "lua.h"
+#include "util.h"
 
 // ---- VFS
-
-extern const char *VFS_TSV;
 
 typedef struct {
     char name[1024];
@@ -19,8 +18,14 @@ static VfsEntry st_vfs_entries[1024];
 static int st_vfs_count = 0;
 
 static void parse_vfs_tsv() {
-    char *line = strtok((char *)VFS_TSV, "\n");
-    while (line != NULL) {
+    FILE *f = fopen(".image.tsv", "r");
+    if (f == NULL) {
+        log_error("Failed to open .image.tsv");
+        return;
+    }
+
+    char line[1024];
+    while (fgets(line, sizeof(line), f) != NULL) {
         char name[1024];
         int width, height;
         if (strlen(line) < 1024) {
@@ -31,9 +36,10 @@ static void parse_vfs_tsv() {
                 st_vfs_entries[st_vfs_count].height = height;
             }
         }
-        line = strtok(NULL, "\n");
         st_vfs_count += 1;
     }
+
+    fclose(f);
 }
 
 static VfsEntry *lookup_vfs_entry(const char *name) {

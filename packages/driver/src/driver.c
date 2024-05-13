@@ -277,6 +277,8 @@ static int DownloadPage(lua_State *L) {
 
 EMSCRIPTEN_KEEPALIVE
 int init() {
+    chdir("/app/root");
+
     GL = lua_newstate(my_alloc, NULL);
     lua_State *L = GL;
 
