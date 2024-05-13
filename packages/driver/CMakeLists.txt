@@ -9,14 +9,6 @@ add_custom_command(
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/boot.lua
 )
 
-add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/vfs.c
-        COMMAND ${CMAKE_COMMAND} -E echo "Writing vfs.tsv to vfs.c"
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/build/vfs.tsv ${CMAKE_BINARY_DIR}/in-vfs.tsv
-        COMMAND ${CMAKE_COMMAND} ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/gen_vfs_c.cmake
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/build/vfs.tsv
-)
-
 file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
@@ -43,13 +35,15 @@ add_executable(${PROJECT_NAME}
         src/image.h
         src/fs.c
         src/fs.h
+        src/util.c
+        src/util.h
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE $<TARGET_FILE:zlib>)
 target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:zlib,INCLUDE_DIRECTORIES>)
 
 set(DRIVER_LINK_FLAGS "
-    -flto --preload-file ${PROJECT_SOURCE_DIR}/build/vfs@/ -s LZ4 -s MODULARIZE -s ASYNCIFY -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH\
+    -flto -s MODULARIZE -s ASYNCIFY -s ENVIRONMENT=web,worker -s ALLOW_MEMORY_GROWTH\
     -s EXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result] -s EXPORTED_RUNTIME_METHODS=cwrap,ccall,FS,PATH,ERRNO_CODES\
 ")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

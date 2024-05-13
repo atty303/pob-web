@@ -1,8 +1,8 @@
 // @ts-ignore
 import { default as Module } from "../dist/driver.mjs";
-import { Renderer } from "./renderer";
-import { ImageRepository } from "./image";
 import { NodeEmscriptenFS } from "./fs";
+import { ImageRepository } from "./image";
+import { Renderer } from "./renderer";
 
 function mouseString(e: MouseEvent) {
 	return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][
@@ -87,23 +87,18 @@ export class PobDriver {
 
 	constructor(props: {
 		container: HTMLElement;
-		dataPrefix: string;
 		assetPrefix: string;
 		onError: (message: string) => void;
 		onFrame: (render: boolean, time: number) => void;
 		onFetch: OnFetchFunction;
 	}) {
-		this.imageRepo = new ImageRepository(props.assetPrefix);
+		this.imageRepo = new ImageRepository(`${props.assetPrefix}/root/`);
 		this.renderer = new Renderer(props.container, this.imageRepo, () =>
 			this.invalidate(),
 		);
 		this.module = Module({
 			print: console.log,
-			printErr: console.error,
-			locateFile: (path: string, prefix: string) => {
-				if (path.endsWith(".data")) return props.dataPrefix + path;
-				return prefix + path;
-			},
+			printErr: console.warn,
 		});
 
 		props.container.tabIndex = 0;
@@ -120,13 +115,13 @@ export class PobDriver {
 		this.renderer.destroy();
 	}
 
-	async mount(value: any) {
+	async mount(value: unknown) {
 		const module = await this.module;
-		module.FS.mkdir("/Builds");
+		module.FS.mkdir("/app");
 		module.FS.mount(
 			new NodeEmscriptenFS(module.FS, module.PATH, module.ERRNO_CODES, value),
-			{ root: "/" },
-			"/Builds",
+			{ root: "." },
+			"/app",
 		);
 	}
 

@@ -1,11 +1,17 @@
-# Path of Building Web
+# pob.cool - Path of Building for Browser environment
 
 [![wakatime](https://wakatime.com/badge/user/018dace5-5642-4ac8-88a7-2ec0a867f8a7/project/fa7418b8-8ddb-479c-805b-ce2043f24d24.svg)](https://wakatime.com/badge/user/018dace5-5642-4ac8-88a7-2ec0a867f8a7/project/fa7418b8-8ddb-479c-805b-ce2043f24d24)
 
 > [!WARNING]
 > This project is under development. 
 
-This is online version of [Path of Building](https://pathofbuilding.community/).
+This is browser version of [Path of Building](https://pathofbuilding.community/).
+
+## Principle
+
+- We will not make any changes to the original PoB. This is because a lot of work has been put into the PoB itself and
+  we want the community to focus on developing the offline version.
+  - However, it does make changes in behavior that are possible without changing the code.
 
 ## Development
 
@@ -24,7 +30,7 @@ npm ci
 
 ### Run driver shell
 
-Set up a development server for the PoB engine alone.
+Set up a development server for the PoB web driver alone.
 
 ```bash
 npm run build -w packages/driver

@@ -1,5 +1,7 @@
 -- pob-web: Path of Building Web
 
+package.path = package.path .. ";/app/root/lua/?.lua;/app/root/lua/?/init.lua"
+
 unpack = table.unpack
 loadstring = load
 
@@ -30,9 +32,6 @@ if not setfenv then -- Lua 5.2
         return f end
 end
 
-local sha1 = require("sha1.init")
-package.loaded["sha1"] = sha1
-
 arg = {}
 
 -- Rendering
@@ -55,19 +54,22 @@ end
 function ShowCursor(doShow)
 end
 function GetScriptPath()
+    print("GetScriptPath")
     return ""
 end
 function GetRuntimePath()
+    print("GetRuntimePath")
     return ""
 end
 function GetUserPath()
-    return ""
+    return "/app/user"
 end
 function SetWorkDir(path)
     print("SetWorkDir: " .. path)
 end
 function GetWorkDir()
-    return ""
+    print("GetWorkDir")
+    return "/app/root"
 end
 function LaunchSubScript(scriptText, funcList, subList, ...)
     error("SubScript is not implemented")

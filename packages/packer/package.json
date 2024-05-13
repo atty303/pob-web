@@ -3,5 +3,8 @@
 	"private": true,
 	"version": "",
 	"type": "module",
-	"scripts": {}
+	"scripts": {
+		"pack": "tsx src/pack.ts",
+		"sync": "tsx src/sync.ts"
+	}
 }

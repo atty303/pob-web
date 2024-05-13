@@ -1,21 +1,11 @@
-import { defineConfig } from "vite";
 import * as path from "node:path";
+import {defineConfig} from "vite";
 
 // // https://vitejs.dev/config/
 export default defineConfig({
 	define: {
-		__DATA_PREFIX__: JSON.stringify(
-			"@fs/" + path.resolve("dist").replaceAll("\\", "/") + "/",
-		),
 		__ASSET_PREFIX__: JSON.stringify(
-			"@fs/" +
-				path.resolve("../../vendor/PathOfBuilding/src").replaceAll("\\", "/") +
-				"/",
+			"https://pob-web-asset.atty303.ninja/versions",
 		),
-	},
-	server: {
-		fs: {
-			allow: [".", "../../vendor/PathOfBuilding/src"],
-		},
 	},
 });
