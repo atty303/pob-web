@@ -5,8 +5,9 @@ function Auth() {
 		useAuth0();
 
 	if (isLoading) {
-		return <span className="loading loading-spinner loading-md"></span>;
-	} else if (isAuthenticated) {
+		return <span className="loading loading-spinner loading-md" />;
+	}
+	if (isAuthenticated) {
 		return (
 			<>
 				<button
@@ -38,46 +39,54 @@ function Auth() {
 				</button>
 			</>
 		);
-	} else {
-		return (
-			<>
-				<button
-					className="btn btn-ghost btn-sm"
-					onClick={() => loginWithPopup()}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						strokeWidth={1.5}
-						stroke="currentColor"
-						className="w-6 h-6"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25"
-						/>
-					</svg>
-					Login
-				</button>
-			</>
-		);
 	}
+	return (
+		<>
+			<button className="btn btn-ghost btn-sm" onClick={() => loginWithPopup()}>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					strokeWidth={1.5}
+					stroke="currentColor"
+					className="w-6 h-6"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25"
+					/>
+				</svg>
+				Login
+			</button>
+		</>
+	);
 }
 
-export default function Header(_p: {}) {
+export default function Header(props: {
+	version: string;
+	onVersionChange: (version: string) => void;
+}) {
 	return (
 		<>
 			<div className="navbar bg-neutral text-neutral-content">
 				<div className="flex-1 gap-2">
 					<img className="w-8 h-8 rounded-box" src="/favicon.png" alt="" />
-					<a className="text-xl font-bold font-['Poiret_One']">pob.cool</a>
+					<span className="text-xl font-bold font-['Poiret_One']">
+						pob.cool
+					</span>
 					<span className="badge badge-warning">
 						This site is a work in progress
 					</span>
 				</div>
 				<div className="flex-none mr-4">
+					<select
+						value={props.version}
+						onChange={(e) => props.onVersionChange(e.target.value)}
+					>
+						<option value="2.42.0">2.42.0</option>
+						<option value="2.41.1">2.41.1</option>
+					</select>
 					<Auth />
 				</div>
 			</div>

@@ -4,6 +4,7 @@ import { Zip } from "@zenfs/zip";
 import { PobDriver } from "pob-driver/src/main.ts";
 import { useEffect, useRef } from "react";
 import { useAsync } from "react-use";
+import { cat } from "shelljs";
 import { log, tag } from "./logger.ts";
 
 class KvStore implements zenfs.AsyncStore {
@@ -185,14 +186,19 @@ export default function PobWindow(props: {
 			backend: WebStorage,
 			storage: localStorage,
 		});
-		if (!zenfs.existsSync("/user")) zenfs.mkdirSync("/user");
-		if (!zenfs.existsSync("/user/Path of Building"))
-			zenfs.mkdirSync("/user/Path of Building");
+		// if (!zenfs.existsSync("/user")) zenfs.mkdirSync("/user");
 
-		if (zenfs.existsSync("/user/Path of Building/Builds")) {
-			zenfs.umount("/user/Path of Building/Builds");
+		if (zenfs.existsSync("/user")) {
+			zenfs.umount("/user");
 		}
-		zenfs.mount("/user/Path of Building/Builds", browserFs);
+		zenfs.mount("/user", browserFs);
+
+		// if (!zenfs.existsSync("/user/Path of Building"))
+		// 	zenfs.mkdirSync("/user/Path of Building");
+		//
+		// if (zenfs.existsSync("/user/Path of Building/Builds")) {
+		// 	zenfs.umount("/user/Path of Building/Builds");
+		// }
 
 		return new PobDriver({
 			assetPrefix: `${__ASSET_PREFIX__}/v${props.version}`,
@@ -236,7 +242,11 @@ export default function PobWindow(props: {
 
 		return () => {
 			log.debug(tag.pob, "hook cleanup");
-			driver.value?.unmountFromDOM();
+			try {
+				driver.value?.unmountFromDOM();
+			} catch (e: unknown) {
+				console.warn(e);
+			}
 			driver.value?.destroy();
 		};
 	}, [driver]);

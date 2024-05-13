@@ -12,13 +12,15 @@ export default function App() {
 		}
 	};
 
+	const [version, setVersion] = useState("2.42.0");
+
 	return (
 		<>
 			<div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
-				<Header />
+				<Header version={version} onVersionChange={setVersion} />
 
 				<div className="p-2">
-					<PobWindow onFrame={handleFrame} version="2.41.1" />
+					<PobWindow onFrame={handleFrame} version={version} />
 				</div>
 
 				<Footer frameTime={frameTime} />
