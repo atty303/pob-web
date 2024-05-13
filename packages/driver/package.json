@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@zenfs/core": "github:atty303/zenfs-core#prepare",
-		"@zenfs/zip": "github:atty303/zenfs-zip#prepare"
+		"@zenfs/zip": "github:atty303/zenfs-zip#prepare",
+		"comlink": "^4.4.1"
 	}
 }

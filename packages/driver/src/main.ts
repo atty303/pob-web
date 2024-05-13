@@ -1,60 +1,13 @@
+import * as Comlink from "comlink";
 // @ts-ignore
 import { default as Module } from "../dist/driver.mjs";
 import { NodeEmscriptenFS } from "./fs";
 import { ImageRepository } from "./image";
 import { Canvas, Renderer, TextRasterizer } from "./renderer";
 
-function mouseString(e: MouseEvent) {
-	return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][
-		e.button
-	];
-}
-
-const KEY_MAP = new Map<string, string>([
-	["Backspace", "BACK"],
-	["Tab", "TAB"],
-	["Enter", "RETURN"],
-	["Escape", "ESCAPE"],
-	["Shift", "SHIFT"],
-	["Control", "CTRL"],
-	["Alt", "ALT"],
-	["Pause", "PAUSE"],
-	["PageUp", "PAGEUP"],
-	["PageDown", "PAGEDOWN"],
-	["End", "END"],
-	["Home", "HOME"],
-	["PrintScreen", "PRINTSCREEN"],
-	["Insert", "INSERT"],
-	["Delete", "DELETE"],
-	["ArrowUp", "UP"],
-	["ArrowDown", "DOWN"],
-	["ArrowLeft", "LEFT"],
-	["ArrowRight", "RIGHT"],
-	["F1", "F1"],
-	["F2", "F2"],
-	["F3", "F3"],
-	["F4", "F4"],
-	["F5", "F5"],
-	["F6", "F6"],
-	["F7", "F7"],
-	["F8", "F8"],
-	["F9", "F9"],
-	["F10", "F10"],
-	["F11", "F11"],
-	["F12", "F12"],
-	["F13", "F13"],
-	["F14", "F14"],
-	["F15", "F15"],
-	["NumLock", "NUMLOCK"],
-	["ScrollLock", "SCROLLLOCK"],
-]);
-
-const EXTRA_KEY_MAP = new Map<string, string>([
-	["Backspace", "\b"],
-	["Tab", "\t"],
-	["Enter", "\r"],
-	["Escape", "\u001B"],
-]);
+import { UIEventManager } from "./event.ts";
+import type { Worker } from "./worker.ts";
+import WorkerObject from "./worker.ts?worker";
 
 type OnFetchFunction = (
 	url: string,
@@ -80,9 +33,6 @@ export class PobDriver {
 	private luaOnKeyDown: (name: string, doubleClick: number) => void = () => {};
 	private luaOnChar: (char: string, doubleClick: number) => void = () => {};
 	private luaOnDownloadPageResult: (result: string) => void = () => {};
-	private cursorPosX = 0;
-	private cursorPosY = 0;
-	private buttonState: Set<string> = new Set();
 	private textRasterizer: TextRasterizer;
 	private root: HTMLElement | undefined;
 	private backend: Canvas | undefined;
@@ -90,6 +40,7 @@ export class PobDriver {
 		width: 800,
 		height: 600,
 	};
+	private uiEventManager: UIEventManager | undefined;
 
 	constructor(props: {
 		assetPrefix: string;
@@ -97,6 +48,10 @@ export class PobDriver {
 		onFrame: (render: boolean, time: number) => void;
 		onFetch: OnFetchFunction;
 	}) {
+		const w = new WorkerObject();
+		Comlink.wrap<Worker>(w).start(
+			Comlink.proxy(() => console.log("from main thread")),
+		);
 		this.imageRepo = new ImageRepository(`${props.assetPrefix}/root/`);
 		this.textRasterizer = new TextRasterizer(this.invalidate);
 		this.renderer = new Renderer(
@@ -186,101 +141,25 @@ export class PobDriver {
 		root.style.position = "relative";
 		root.appendChild(this.backend.element);
 		root.tabIndex = 0;
-		this.registerEventHandlers(root);
-		root.focus();
+		this.uiEventManager = new UIEventManager(root, {
+			onKeyDown: (name, doubleClick) => this.luaOnKeyDown(name, doubleClick),
+			onKeyUp: (name, doubleClick) => this.luaOnKeyUp(name, doubleClick),
+			onChar: (char, doubleClick) => this.luaOnChar(char, doubleClick),
+			invalidate: () => this.invalidate(),
+		});
 	}
 
 	unmountFromDOM() {
 		console.log("unmountFromDOM");
 		if (this.backend) this.root?.removeChild(this.backend.element);
-		// this.root.event;
+		this.uiEventManager?.destroy();
 		this.root = undefined;
 		this.backend = undefined;
+		this.uiEventManager = undefined;
 	}
 
 	private invalidate() {
 		this.isDirty = true;
-	}
-
-	private registerEventHandlers(container: HTMLElement) {
-		container.addEventListener("contextmenu", (e) => {
-			e.preventDefault();
-		});
-
-		container.addEventListener("mousemove", (e) => {
-			this.cursorPosX = e.offsetX;
-			this.cursorPosY = e.offsetY;
-			this.invalidate();
-		});
-
-		container.addEventListener("mousedown", (e) => {
-			e.preventDefault();
-			const name = mouseString(e);
-			if (name) {
-				this.buttonState.add(name);
-				this.luaOnKeyDown(name, 0);
-				this.invalidate();
-			}
-			container.focus();
-		});
-
-		container.addEventListener("mouseup", (e) => {
-			e.preventDefault();
-			const name = mouseString(e);
-			if (name) {
-				this.buttonState.delete(name);
-				this.luaOnKeyUp(name, -1);
-				this.invalidate();
-			}
-			container.focus();
-		});
-
-		container.addEventListener("dblclick", (e) => {
-			e.preventDefault();
-			const name = mouseString(e);
-			if (name) {
-				this.luaOnKeyDown(name, 1);
-				this.invalidate();
-			}
-			container.focus();
-		});
-
-		container.addEventListener("wheel", (e) => {
-			e.preventDefault();
-			const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
-			this.luaOnKeyUp(name, 0);
-			this.invalidate();
-			container.focus();
-		});
-
-		container.addEventListener("keydown", (e: KeyboardEvent) => {
-			["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
-			const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-			if (key) {
-				this.luaOnKeyDown(key, 0);
-				this.buttonState.add(key);
-				const ex = EXTRA_KEY_MAP.get(e.key);
-				if (ex) {
-					this.luaOnChar(ex, 0);
-				}
-				this.invalidate();
-			}
-		});
-
-		container.addEventListener("keypress", (e: KeyboardEvent) => {
-			e.preventDefault();
-			this.luaOnChar(e.key, 0);
-		});
-
-		container.addEventListener("keyup", (e: KeyboardEvent) => {
-			e.preventDefault();
-			const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-			if (key) {
-				this.luaOnKeyUp(key, 0);
-				this.buttonState.delete(key);
-				this.invalidate();
-			}
-		});
 	}
 
 	private callbacks(module: any) {
@@ -288,9 +167,10 @@ export class PobDriver {
 			onError: (message: string) => this.onError(message),
 			getScreenWidth: () => this.screenSize.width,
 			getScreenHeight: () => this.screenSize.height,
-			getCursorPosX: () => this.cursorPosX,
-			getCursorPosY: () => this.cursorPosY,
-			isKeyDown: (name: string) => this.buttonState.has(name),
+			getCursorPosX: () => this.uiEventManager?.cursorPosition.x ?? 0,
+			getCursorPosY: () => this.uiEventManager?.cursorPosition.y ?? 0,
+			isKeyDown: (name: string) =>
+				this.uiEventManager?.isKeyDown(name) ?? false,
 			imageLoad: (handle: number, filename: string) => {
 				this.imageRepo.load(handle, filename).then(() => {
 					this.invalidate();
