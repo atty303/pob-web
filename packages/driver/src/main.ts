@@ -2,7 +2,7 @@
 import { default as Module } from "../dist/driver.mjs";
 import { NodeEmscriptenFS } from "./fs";
 import { ImageRepository } from "./image";
-import { Renderer } from "./renderer";
+import { Canvas, Renderer, TextRasterizer } from "./renderer";
 
 function mouseString(e: MouseEvent) {
 	return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][
@@ -68,7 +68,6 @@ type OnFetchFunction = (
 }>;
 
 export class PobDriver {
-	private readonly module: Promise<any>;
 	private readonly imageRepo: ImageRepository;
 	private readonly renderer: Renderer;
 	private readonly onError: (message: string) => void;
@@ -84,27 +83,27 @@ export class PobDriver {
 	private cursorPosX = 0;
 	private cursorPosY = 0;
 	private buttonState: Set<string> = new Set();
+	private textRasterizer: TextRasterizer;
+	private root: HTMLElement | undefined;
+	private backend: Canvas | undefined;
+	private screenSize: { width: number; height: number } = {
+		width: 800,
+		height: 600,
+	};
 
 	constructor(props: {
-		container: HTMLElement;
 		assetPrefix: string;
 		onError: (message: string) => void;
 		onFrame: (render: boolean, time: number) => void;
 		onFetch: OnFetchFunction;
 	}) {
 		this.imageRepo = new ImageRepository(`${props.assetPrefix}/root/`);
-		this.renderer = new Renderer(props.container, this.imageRepo, () =>
-			this.invalidate(),
+		this.textRasterizer = new TextRasterizer(this.invalidate);
+		this.renderer = new Renderer(
+			this.imageRepo,
+			this.textRasterizer,
+			this.screenSize,
 		);
-		this.module = Module({
-			print: console.log,
-			printErr: console.warn,
-		});
-
-		props.container.tabIndex = 0;
-		this.registerEventHandlers(props.container);
-		props.container.focus();
-
 		this.onError = props.onError;
 		this.onFrame = props.onFrame;
 		this.onFetch = props.onFetch;
@@ -112,23 +111,22 @@ export class PobDriver {
 
 	destroy() {
 		this.isRunning = false;
-		this.renderer.destroy();
 	}
 
-	async mount(value: unknown) {
-		const module = await this.module;
+	async start(fs: unknown) {
+		this.isRunning = true;
+
+		const module = await Module({
+			print: console.log,
+			printErr: console.warn,
+		});
+
 		module.FS.mkdir("/app");
 		module.FS.mount(
-			new NodeEmscriptenFS(module.FS, module.PATH, module.ERRNO_CODES, value),
+			new NodeEmscriptenFS(module.FS, module.PATH, module.ERRNO_CODES, fs),
 			{ root: "." },
 			"/app",
 		);
-	}
-
-	async start() {
-		this.isRunning = true;
-
-		const module = await this.module;
 
 		module._init();
 
@@ -148,10 +146,24 @@ export class PobDriver {
 		if (!this.isRunning) return;
 
 		module._start();
+		console.log("driver started");
 
 		const tick = () => {
 			const start = performance.now();
-			const render = this.renderer.onFrame() || this.isDirty;
+
+			let render = false;
+			if (this.root) {
+				const r = this.root.getBoundingClientRect();
+				if (
+					r.width !== this.screenSize.width ||
+					r.height !== this.screenSize.height
+				) {
+					this.screenSize = { width: r.width, height: r.height };
+					this.renderer.resize(this.screenSize);
+					render = true;
+				}
+			}
+			render = render || this.isDirty;
 			if (render) {
 				module._on_frame();
 				this.isDirty = false;
@@ -160,7 +172,30 @@ export class PobDriver {
 			this.onFrame(render, time);
 			if (this.isRunning) requestAnimationFrame(tick);
 		};
-		requestAnimationFrame(tick);
+		if (this.isRunning) requestAnimationFrame(tick);
+	}
+
+	mountToDOM(root: HTMLElement) {
+		console.log("mountToDOM");
+		if (this.root) throw new Error("Already mounted");
+		this.root = root;
+
+		const r = root.getBoundingClientRect();
+		this.backend = new Canvas(r.width, r.height);
+		this.renderer.backend = this.backend;
+		root.style.position = "relative";
+		root.appendChild(this.backend.element);
+		root.tabIndex = 0;
+		this.registerEventHandlers(root);
+		root.focus();
+	}
+
+	unmountFromDOM() {
+		console.log("unmountFromDOM");
+		if (this.backend) this.root?.removeChild(this.backend.element);
+		// this.root.event;
+		this.root = undefined;
+		this.backend = undefined;
 	}
 
 	private invalidate() {
@@ -251,8 +286,8 @@ export class PobDriver {
 	private callbacks(module: any) {
 		return {
 			onError: (message: string) => this.onError(message),
-			getScreenWidth: () => this.renderer.width,
-			getScreenHeight: () => this.renderer.height,
+			getScreenWidth: () => this.screenSize.width,
+			getScreenHeight: () => this.screenSize.height,
 			getCursorPosX: () => this.cursorPosX,
 			getCursorPosY: () => this.cursorPosY,
 			isKeyDown: (name: string) => this.buttonState.has(name),
@@ -266,7 +301,7 @@ export class PobDriver {
 					new DataView(module.HEAPU8.buffer, bufferPtr, size),
 				),
 			getStringWidth: (size: number, font: number, text: string) =>
-				this.renderer.measureText(size, font, text),
+				this.textRasterizer.measureText(size, font, text),
 			getStringCursorIndex: (
 				size: number,
 				font: number,
@@ -274,7 +309,7 @@ export class PobDriver {
 				cursorX: number,
 				cursorY: number,
 			) =>
-				this.renderer.measureTextCursorIndex(
+				this.textRasterizer.measureTextCursorIndex(
 					size,
 					font,
 					text,
@@ -316,7 +351,7 @@ export class PobDriver {
 							error: r.error,
 						}),
 					);
-				} catch (e: any) {
+				} catch (e: unknown) {
 					console.error(e);
 					this.luaOnDownloadPageResult(
 						JSON.stringify({

@@ -1,7 +1,7 @@
-import PobWindow from "./PobWindow.tsx";
-import { useState } from "react";
-import Header from "./Header.tsx";
+import { Suspense, useState } from "react";
 import Footer from "./Footer.tsx";
+import Header from "./Header.tsx";
+import PobWindow from "./PobWindow.tsx";
 
 export default function App() {
 	const [frameTime, setFrameTime] = useState(0);
@@ -18,7 +18,7 @@ export default function App() {
 				<Header />
 
 				<div className="p-2">
-					<PobWindow onFrame={handleFrame} />
+					<PobWindow onFrame={handleFrame} version="2.42.0" />
 				</div>
 
 				<Footer frameTime={frameTime} />

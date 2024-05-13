@@ -1,9 +1,10 @@
-import { PobDriver } from "pob-driver/src/main.ts";
-import { useEffect, useRef, useState } from "react";
-
 import * as zenfs from "@zenfs/core";
 import { WebStorage } from "@zenfs/dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { Zip } from "@zenfs/zip";
+import { PobDriver } from "pob-driver/src/main.ts";
+import { useEffect, useRef, useState } from "react";
+import { useAsync } from "react-use";
+import { atom, selector, useRecoilValue } from "recoil";
 import { log, tag } from "./logger.ts";
 
 class KvStore implements zenfs.AsyncStore {
@@ -101,40 +102,99 @@ async function fs() {
 	return zenfs.fs;
 }
 
+// const versionState = atom<string>({
+// 	key: "currentVersion",
+// 	default: "2.42.0",
+// 	effects: [
+// 		({ setSelf, onSet, trigger }) => {
+// 			const load = async () => {};
+//
+// 			if (trigger === "get") {
+// 			}
+// 			onSet(async (version) => {
+// 				const rootZip = await fetch(`${__ASSET_PREFIX__}/v${version}/root.zip`);
+// 				const zipFs = await zenfs.resolveMountConfig({
+// 					backend: Zip,
+// 					zipData: await rootZip.arrayBuffer(),
+// 					name: "root.zip",
+// 				});
+// 				zenfs.mount("/root", zipFs);
+// 				return () => {
+// 					zenfs.umount("/root");
+// 				};
+// 			});
+// 		},
+// 	],
+// });
+
+// const driverState = selector<PobDriver>({
+// 	key: "PoBDriver",
+// 	get: ({ get }) => {
+// 		const version = get(versionState);
+// 		return new PobDriver({
+// 			assetPrefix: `${__ASSET_PREFIX__}/v${version}`,
+// 			onError: (message) => {
+// 				throw new Error(message);
+// 			},
+// 			onFrame: (render, time) => {},
+// 			onFetch: async (url, headers, body) => {
+// 				const rep = await fetch("/api/fetch", {
+// 					method: "POST",
+// 					body: JSON.stringify({ url, headers, body }),
+// 				});
+// 				return await rep.json();
+// 			},
+// 		});
+// 	},
+// });
+
 export default function PobWindow(props: {
+	version: string;
 	onFrame: (render: boolean, time: number) => void;
 }) {
-	const auth0 = useAuth0();
+	// const auth0 = useAuth0();
+	//
+	// const [token, setToken] = useState<string>();
+	// useEffect(() => {
+	// 	async function getToken() {
+	// 		const t = await auth0.getAccessTokenSilently();
+	// 		setToken(t);
+	// 	}
+	// 	getToken();
+	// }, [auth0]);
 
-	const [token, setToken] = useState<string>();
-	useEffect(() => {
-		async function getToken() {
-			const t = await auth0.getAccessTokenSilently();
-			setToken(t);
+	// useEffect(() => {
+	// 	if (token) {
+	// 		(async () => {
+	// 			const kvfs = await zenfs.resolveMountConfig({
+	// 				backend: KvFS,
+	// 				accessToken: token,
+	// 			});
+	// 			zenfs.mount("/cloud", kvfs);
+	// 			log.info(tag.vfs, "KvFS is mounted");
+	// 		})();
+	// 	}
+	// }, [token]);
+
+	// const [version] = useRecoilValue(versionState);
+
+	const driver = useAsync(async () => {
+		log.debug(tag.pob, "loading version", props.version);
+		const rootZip = await fetch(
+			`${__ASSET_PREFIX__}/v${props.version}/root.zip`,
+		);
+		const zipFs = await zenfs.resolveMountConfig({
+			backend: Zip,
+			zipData: await rootZip.arrayBuffer(),
+			name: "root.zip",
+		});
+		if (zenfs.existsSync("/root")) {
+			zenfs.umount("/root");
 		}
-		getToken();
-	}, [auth0]);
+		zenfs.mount("/root", zipFs);
 
-	useEffect(() => {
-		if (token) {
-			(async () => {
-				const kvfs = await zenfs.resolveMountConfig({
-					backend: KvFS,
-					accessToken: token,
-				});
-				zenfs.mount("/cloud", kvfs);
-				log.info(tag.vfs, "KvFS is mounted");
-			})();
-		}
-	}, [token]);
-
-	const win = useRef<HTMLDivElement>(null);
-	useEffect(() => {
-		let isRunning = true;
-		const pob = new PobDriver({
-			container: win.current!,
-			dataPrefix: __DATA_PREFIX__,
-			assetPrefix: __ASSET_PREFIX__,
+		return new PobDriver({
+			assetPrefix: `${__ASSET_PREFIX__}/v${props.version}`,
 			onError: (message) => {
 				throw new Error(message);
 			},
@@ -147,24 +207,45 @@ export default function PobWindow(props: {
 				return await rep.json();
 			},
 		});
+	}, [props.version]);
 
-		async function start() {
-			const nodefs = await fs();
-			pob.mount(nodefs);
-			if (isRunning) {
-				pob.start();
-				log.info(tag.pob, "started");
-			}
+	const container = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		// log.debug(tag.pob, "hook started");
+
+		if (driver.loading || driver.error || !container.current) {
+			return;
 		}
-		start();
+
+		if (!zenfs.existsSync("/root")) {
+			log.debug(tag.pob, "/root not mounted");
+			return;
+		}
+
+		driver.value?.mountToDOM(container.current);
+
+		(async () => {
+			await driver.value?.start(zenfs.fs);
+		})();
 
 		return () => {
-			isRunning = false;
-			pob.destroy();
+			log.debug(tag.pob, "hook cleanup");
+			driver.value?.unmountFromDOM();
+			driver.value?.destroy();
 		};
-	}, [win]);
+	}, [driver]);
 
+	if (driver.loading) {
+		return <div>Loading...</div>;
+	}
+	if (driver.error) {
+		return <div>Error: {driver.error.message}</div>;
+	}
 	return (
-		<div ref={win} className="h-full border border-base-300 bg-base-300" />
+		<div
+			ref={container}
+			className="h-full border border-base-300 bg-base-300"
+		/>
 	);
 }
