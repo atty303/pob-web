@@ -358,7 +358,7 @@ export class PobDriver {
 							body: undefined,
 							status: undefined,
 							header: undefined,
-							error: e.message,
+							error: e,
 						}),
 					);
 				}

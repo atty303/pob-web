@@ -81,6 +81,7 @@ export default function Header(props: {
 				</div>
 				<div className="flex-none mr-4">
 					<select
+						className="select select-sm"
 						value={props.version}
 						onChange={(e) => props.onVersionChange(e.target.value)}
 					>

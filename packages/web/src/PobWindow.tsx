@@ -1,10 +1,10 @@
+import { useAuth0 } from "@auth0/auth0-react";
 import * as zenfs from "@zenfs/core";
 import { WebStorage } from "@zenfs/dom";
 import { Zip } from "@zenfs/zip";
 import { PobDriver } from "pob-driver/src/main.ts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAsync } from "react-use";
-import { cat } from "shelljs";
 import { log, tag } from "./logger.ts";
 
 class KvStore implements zenfs.AsyncStore {
@@ -32,8 +32,11 @@ class KvTransaction implements zenfs.AsyncTransaction {
 				Authorization: `Bearer ${this.accessToken}`,
 			},
 		});
-		const blob = await r.blob();
-		return new Uint8Array(await blob.arrayBuffer());
+		if (r.ok) {
+			const blob = await r.blob();
+			return new Uint8Array(await blob.arrayBuffer());
+		}
+		return undefined as any;
 	}
 
 	async put(
@@ -91,81 +94,20 @@ const KvFS = {
 	},
 } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
 
-// const versionState = atom<string>({
-// 	key: "currentVersion",
-// 	default: "2.42.0",
-// 	effects: [
-// 		({ setSelf, onSet, trigger }) => {
-// 			const load = async () => {};
-//
-// 			if (trigger === "get") {
-// 			}
-// 			onSet(async (version) => {
-// 				const rootZip = await fetch(`${__ASSET_PREFIX__}/v${version}/root.zip`);
-// 				const zipFs = await zenfs.resolveMountConfig({
-// 					backend: Zip,
-// 					zipData: await rootZip.arrayBuffer(),
-// 					name: "root.zip",
-// 				});
-// 				zenfs.mount("/root", zipFs);
-// 				return () => {
-// 					zenfs.umount("/root");
-// 				};
-// 			});
-// 		},
-// 	],
-// });
-
-// const driverState = selector<PobDriver>({
-// 	key: "PoBDriver",
-// 	get: ({ get }) => {
-// 		const version = get(versionState);
-// 		return new PobDriver({
-// 			assetPrefix: `${__ASSET_PREFIX__}/v${version}`,
-// 			onError: (message) => {
-// 				throw new Error(message);
-// 			},
-// 			onFrame: (render, time) => {},
-// 			onFetch: async (url, headers, body) => {
-// 				const rep = await fetch("/api/fetch", {
-// 					method: "POST",
-// 					body: JSON.stringify({ url, headers, body }),
-// 				});
-// 				return await rep.json();
-// 			},
-// 		});
-// 	},
-// });
-
 export default function PobWindow(props: {
 	version: string;
 	onFrame: (render: boolean, time: number) => void;
 }) {
-	// const auth0 = useAuth0();
-	//
-	// const [token, setToken] = useState<string>();
-	// useEffect(() => {
-	// 	async function getToken() {
-	// 		const t = await auth0.getAccessTokenSilently();
-	// 		setToken(t);
-	// 	}
-	// 	getToken();
-	// }, [auth0]);
+	const auth0 = useAuth0();
 
-	// useEffect(() => {
-	// 	if (token) {
-	// 		(async () => {
-	// 			const kvfs = await zenfs.resolveMountConfig({
-	// 				backend: KvFS,
-	// 				accessToken: token,
-	// 			});
-	// 			zenfs.mount("/cloud", kvfs);
-	// 			log.info(tag.vfs, "KvFS is mounted");
-	// 		})();
-	// 	}
-	// }, [token]);
-
-	// const [version] = useRecoilValue(versionState);
+	const [token, setToken] = useState<string>();
+	useEffect(() => {
+		async function getToken() {
+			const t = await auth0.getAccessTokenSilently();
+			setToken(t);
+		}
+		getToken();
+	}, [auth0]);
 
 	const driver = useAsync(async () => {
 		log.debug(tag.pob, "loading version", props.version);
@@ -186,19 +128,30 @@ export default function PobWindow(props: {
 			backend: WebStorage,
 			storage: localStorage,
 		});
-		// if (!zenfs.existsSync("/user")) zenfs.mkdirSync("/user");
 
 		if (zenfs.existsSync("/user")) {
 			zenfs.umount("/user");
 		}
 		zenfs.mount("/user", browserFs);
+		log.info(tag.vfs, "WebStorage is mounted");
 
-		// if (!zenfs.existsSync("/user/Path of Building"))
-		// 	zenfs.mkdirSync("/user/Path of Building");
-		//
-		// if (zenfs.existsSync("/user/Path of Building/Builds")) {
-		// 	zenfs.umount("/user/Path of Building/Builds");
-		// }
+		if (token) {
+			const kvfs = await zenfs.resolveMountConfig({
+				backend: KvFS,
+				accessToken: token,
+			});
+
+			if (!zenfs.existsSync("/user/Path of Building"))
+				zenfs.mkdirSync("/user/Path of Building");
+			if (!zenfs.existsSync("/user/Path of Building/Builds")) {
+				zenfs.mkdirSync("/user/Path of Building/Builds");
+			}
+			if (zenfs.existsSync("/user/Path of Building/Builds/Cloud")) {
+				zenfs.umount("/user/Path of Building/Builds/Cloud");
+			}
+			zenfs.mount("/user/Path of Building/Builds/Cloud", kvfs);
+			log.info(tag.vfs, "KvFS is mounted");
+		}
 
 		return new PobDriver({
 			assetPrefix: `${__ASSET_PREFIX__}/v${props.version}`,
@@ -214,7 +167,7 @@ export default function PobWindow(props: {
 				return await rep.json();
 			},
 		});
-	}, [props.version]);
+	}, [props.version, token]);
 
 	if (driver.error) {
 		log.error(tag.pob, driver.error);
