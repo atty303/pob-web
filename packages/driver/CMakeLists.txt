@@ -27,7 +27,6 @@ set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 add_executable(${PROJECT_NAME}
         ${LUA_SOURCES}
         ${CMAKE_BINARY_DIR}/boot.c
-        ${CMAKE_BINARY_DIR}/vfs.c
         src/driver.c
         src/draw.c
         src/draw.h
