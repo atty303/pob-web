@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import AdmZip from "adm-zip";
 import imageSize from "image-size";
-import {default as shelljs} from "shelljs";
+import { default as shelljs } from "shelljs";
 
 shelljs.config.verbose = true;
 
@@ -18,7 +18,7 @@ shelljs.rm("-rf", buildDir);
 shelljs.mkdir("-p", buildDir);
 shelljs.exec(
 	`git clone --depth 1 --branch=${tag} https://github.com/PathOfBuildingCommunity/PathOfBuilding.git ${buildDir}/repo`,
-	{fatal: true},
+	{ fatal: true },
 );
 
 const rootDir = `${buildDir}/root`;
@@ -40,7 +40,7 @@ for (const file of shelljs.find(basePath)) {
 	}
 
 	if (path.extname(file) === ".png" || path.extname(file) === ".jpg") {
-		const {width, height} = imageSize(file);
+		const { width, height } = imageSize(file);
 		outputFile.push(`${relPath}\t${width}\t${height}`);
 
 		zip.addFile(relPath, Buffer.of());

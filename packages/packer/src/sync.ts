@@ -1,4 +1,4 @@
-import {default as shelljs} from "shelljs";
+import { default as shelljs } from "shelljs";
 import "dotenv/config";
 
 shelljs.config.verbose = true;
@@ -11,5 +11,5 @@ if (!tag || !tag.startsWith("v")) {
 
 shelljs.exec(
 	`aws s3 sync --region auto --endpoint-url ${process.env.R2_ENDPOINT_URL} build/${tag}/r2 s3://pob-web/versions/${tag}`,
-	{fatal: true},
+	{ fatal: true },
 );
