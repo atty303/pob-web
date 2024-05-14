@@ -2,7 +2,7 @@ import * as zenfs from "@zenfs/core";
 import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 // @ts-ignore
-import { default as Module } from "../dist/driver.mjs";
+import { default as Module } from "../../dist/driver.mjs";
 import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
 import type { FilesystemConfig } from "./main.ts";

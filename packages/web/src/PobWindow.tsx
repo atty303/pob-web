@@ -1,5 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { PobDriver } from "pob-driver/src/main.ts";
+import { PobDriver } from "pob-driver/src/js/main.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { log, tag } from "./logger.ts";
 
