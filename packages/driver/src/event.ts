@@ -116,10 +116,6 @@ export class UIEventManager {
     e.preventDefault();
   }
 
-  private handleContextMenu(e: MouseEvent) {
-    e.preventDefault();
-  }
-
   private handleMouseMove(e: MouseEvent) {
     this._cursorPosition = { x: e.offsetX, y: e.offsetY };
     this.callbacks.invalidate();
