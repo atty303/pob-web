@@ -1,11 +1,11 @@
 {
-	"name": "pob-packer",
-	"private": true,
-	"version": "",
-	"type": "module",
-	"scripts": {
-		"pack": "tsx src/pack.ts",
-		"sync": "tsx src/sync.ts",
-		"build": "true"
-	}
+  "name": "pob-packer",
+  "private": true,
+  "version": "",
+  "type": "module",
+  "scripts": {
+    "pack": "tsx src/pack.ts",
+    "sync": "tsx src/sync.ts",
+    "build": "true"
+  }
 }

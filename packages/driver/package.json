@@ -1,20 +1,18 @@
 {
-	"name": "pob-driver",
-	"private": true,
-	"version": "0.7.0",
-	"type": "module",
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
-		"dev": "vite",
-		"preview": "vite preview"
-	},
-	"dependencies": {
-		"@zenfs/core": "github:atty303/zenfs-core#prepare",
-		"@zenfs/zip": "github:atty303/zenfs-zip#prepare",
-		"@zenfs/dom": "^0.2.7",
-		"comlink": "^4.4.1"
-	}
+  "name": "pob-driver",
+  "private": true,
+  "version": "0.7.0",
+  "type": "module",
+  "files": ["dist"],
+  "scripts": {
+    "build": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@zenfs/core": "github:atty303/zenfs-core#prepare",
+    "@zenfs/zip": "github:atty303/zenfs-zip#prepare",
+    "@zenfs/dom": "^0.2.7",
+    "comlink": "^4.4.1"
+  }
 }
