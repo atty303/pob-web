@@ -1,9 +1,11 @@
 {
 	"name": "pob-driver",
 	"private": true,
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"type": "module",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
 		"dev": "vite",
