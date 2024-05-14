@@ -66,7 +66,7 @@ export class DriverWorker {
 
 	async start(
 		assetPrefix: string,
-		fileSystemConfig: FilesystemConfig,
+		_fileSystemConfig: FilesystemConfig,
 		onError: HostCallbacks["onError"],
 		onFrame: HostCallbacks["onFrame"],
 		onFetch: HostCallbacks["onFetch"],
@@ -75,7 +75,10 @@ export class DriverWorker {
 		paste: MainCallbacks["paste"],
 	) {
 		this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
+
+		await TextRasterizer.loadFonts();
 		this.textRasterizer = new TextRasterizer(this.invalidate);
+
 		this.renderer = new Renderer(
 			this.imageRepo,
 			this.textRasterizer,
@@ -99,13 +102,15 @@ export class DriverWorker {
 
 		const rootZip = await fetch(`${assetPrefix}/root.zip`);
 
+		const rootFs = await zenfs.resolveMountConfig({
+			backend: Zip,
+			zipData: await rootZip.arrayBuffer(),
+			name: "root.zip",
+		});
+
 		await zenfs.configure({
 			mounts: {
-				"/root": {
-					backend: Zip,
-					zipData: await rootZip.arrayBuffer(),
-					name: "root.zip",
-				},
+				"/root": rootFs,
 			},
 		});
 

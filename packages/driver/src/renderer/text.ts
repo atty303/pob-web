@@ -2,7 +2,44 @@ import type { TextureBitmap } from "./renderer.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 
+interface WorkerGlobalScope {
+	fonts: FontFaceSet;
+}
+
 export class TextRasterizer {
+	static async loadFonts() {
+		await TextRasterizer.loadFont(
+			"/LiberationSans-Regular.woff",
+			"Liberation Sans",
+		);
+		await TextRasterizer.loadFont(
+			"/LiberationSans-Bold.woff",
+			"Liberation Sans Bold",
+		);
+		await TextRasterizer.loadFont("/VeraMono.woff", "Bitstream Vera Mono");
+	}
+
+	static async loadFont(url: string, family: string) {
+		const r = await fetch(url);
+		if (!r.ok) throw new Error(`Failed to load font: ${url}`);
+		const blob = await r.blob();
+		const fontFace = new FontFace(family, await blob.arrayBuffer());
+		await fontFace.load();
+		(self as unknown as WorkerGlobalScope).fonts.add(fontFace);
+	}
+
+	private static font(size: number, fontNum: number) {
+		const fontSize = size - 2;
+		switch (fontNum) {
+			case 1:
+				return `${fontSize}px Liberation Sans`;
+			case 2:
+				return `${fontSize}px Liberation Sans Bold`;
+			default:
+				return `${fontSize}px Bitstream Vera Mono`;
+		}
+	}
+
 	private readonly cache: Map<
 		string,
 		{ width: number; bitmap: TextureBitmap | undefined }
@@ -15,18 +52,6 @@ export class TextRasterizer {
 		const context = new OffscreenCanvas(1, 1).getContext("2d");
 		if (!context) throw new Error("Failed to get 2D context");
 		this.context = context;
-	}
-
-	static font(size: number, fontNum: number) {
-		const fontSize = size - 2;
-		switch (fontNum) {
-			case 1:
-				return `${fontSize}px Liberation Sans`;
-			case 2:
-				return `${fontSize}px Liberation Sans Bold`;
-			default:
-				return `${fontSize}px Bitstream Vera Mono`;
-		}
 	}
 
 	measureText(size: number, font: number, text: string) {
@@ -84,7 +109,7 @@ export class TextRasterizer {
 				context.textBaseline = "bottom";
 				context.fillText(text, 0, size);
 				createImageBitmap(canvas).then((b) => {
-					bitmap!.bitmap = { id: key, bitmap: b };
+					if (bitmap) bitmap.bitmap = { id: key, bitmap: b };
 					this.invalidate();
 				});
 			}

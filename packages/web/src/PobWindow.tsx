@@ -1,96 +1,94 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import * as zenfs from "@zenfs/core";
 import { PobDriver } from "pob-driver/src/main.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAsync } from "react-use";
 import { log, tag } from "./logger.ts";
 
-class KvStore implements zenfs.AsyncStore {
-	get name() {
-		return "KvStore";
-	}
-
-	constructor(readonly accessToken: string | undefined) {}
-
-	async clear(): Promise<void> {
-		// throw new Error("Method not implemented.");
-	}
-	beginTransaction(): zenfs.AsyncTransaction {
-		return new KvTransaction(this.accessToken);
-	}
-}
-
-class KvTransaction implements zenfs.AsyncTransaction {
-	constructor(readonly accessToken: string | undefined) {}
-
-	async get(key: bigint): Promise<Uint8Array> {
-		const r = await fetch(`/api/kv/${key}`, {
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${this.accessToken}`,
-			},
-		});
-		if (r.ok) {
-			const blob = await r.blob();
-			return new Uint8Array(await blob.arrayBuffer());
-		}
-		return undefined as any;
-	}
-
-	async put(
-		key: bigint,
-		data: Uint8Array,
-		overwrite: boolean,
-	): Promise<boolean> {
-		const r = await fetch(`/api/kv/${key}?overwrite=${overwrite}`, {
-			method: "PUT",
-			body: data,
-			headers: {
-				Authorization: `Bearer ${this.accessToken}`,
-			},
-		});
-		return r.status === 201;
-	}
-
-	async remove(key: bigint): Promise<void> {
-		await fetch(`/api/kv/${key}`, {
-			method: "DELETE",
-			headers: {
-				Authorization: `Bearer ${this.accessToken}`,
-			},
-		});
-	}
-
-	async commit(): Promise<void> {
-		// throw new Error("Method not implemented.");
-	}
-	async abort(): Promise<void> {
-		// throw new Error("Method not implemented.");
-	}
-}
-
-interface KvFSOptions {
-	accessToken?: string;
-}
-
-const KvFS = {
-	name: "KvFS",
-	options: {
-		accessToken: {
-			type: "string",
-			required: false,
-			description: "Access Token (optional)",
-		},
-	},
-
-	isAvailable(): boolean {
-		return true;
-	},
-
-	create(opts: KvFSOptions) {
-		return new zenfs.AsyncStoreFS({ store: new KvStore(opts.accessToken) });
-	},
-} as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
+// class KvStore implements zenfs.AsyncStore {
+// 	get name() {
+// 		return "KvStore";
+// 	}
+//
+// 	constructor(readonly accessToken: string | undefined) {}
+//
+// 	async clear(): Promise<void> {
+// 		// throw new Error("Method not implemented.");
+// 	}
+// 	beginTransaction(): zenfs.AsyncTransaction {
+// 		return new KvTransaction(this.accessToken);
+// 	}
+// }
+//
+// class KvTransaction implements zenfs.AsyncTransaction {
+// 	constructor(readonly accessToken: string | undefined) {}
+//
+// 	async get(key: bigint): Promise<Uint8Array> {
+// 		const r = await fetch(`/api/kv/${key}`, {
+// 			method: "GET",
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 		if (r.ok) {
+// 			const blob = await r.blob();
+// 			return new Uint8Array(await blob.arrayBuffer());
+// 		}
+// 		return undefined as any;
+// 	}
+//
+// 	async put(
+// 		key: bigint,
+// 		data: Uint8Array,
+// 		overwrite: boolean,
+// 	): Promise<boolean> {
+// 		const r = await fetch(`/api/kv/${key}?overwrite=${overwrite}`, {
+// 			method: "PUT",
+// 			body: data,
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 		return r.status === 201;
+// 	}
+//
+// 	async remove(key: bigint): Promise<void> {
+// 		await fetch(`/api/kv/${key}`, {
+// 			method: "DELETE",
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 	}
+//
+// 	async commit(): Promise<void> {
+// 		// throw new Error("Method not implemented.");
+// 	}
+// 	async abort(): Promise<void> {
+// 		// throw new Error("Method not implemented.");
+// 	}
+// }
+//
+// interface KvFSOptions {
+// 	accessToken?: string;
+// }
+//
+// const KvFS = {
+// 	name: "KvFS",
+// 	options: {
+// 		accessToken: {
+// 			type: "string",
+// 			required: false,
+// 			description: "Access Token (optional)",
+// 		},
+// 	},
+//
+// 	isAvailable(): boolean {
+// 		return true;
+// 	},
+//
+// 	create(opts: KvFSOptions) {
+// 		return new zenfs.AsyncStoreFS({ store: new KvStore(opts.accessToken) });
+// 	},
+// } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
 
 // const zipFs = await zenfs.resolveMountConfig({
 // 	backend: Zip,
@@ -195,8 +193,8 @@ export default function PobWindow(props: {
 	return (
 		<div
 			ref={container}
-			className={`w-full h-full border border-neutral bg-black rounded-none ${
-				loading ? "skeleton" : ""
+			className={`w-full h-full border border-neutral focus:outline-none bg-black ${
+				loading ? "rounded-none skeleton" : ""
 			}`}
 		/>
 	);

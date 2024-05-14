@@ -3,21 +3,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@font-face {
-    font-family: "Liberation Sans";
-    src:
-        url("/LiberationSans-Regular.woff") format("woff");
-}
-
-@font-face {
-    font-family: "Liberation Sans Bold";
-    src:
-            url("/LiberationSans-Bold.woff") format("woff");
-}
-
-@font-face {
-    font-family: "Bitstream Vera Mono";
-    src:
-            url("/VeraMono.woff") format("woff");
-}
