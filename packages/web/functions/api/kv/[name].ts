@@ -13,9 +13,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 			const r = await context.env.KV.get(key, { type: "arrayBuffer" });
 			if (!r) {
 				return new Response(null, { status: 404 });
-			} else {
-				return new Response(r);
 			}
+			return new Response(r);
 		}
 		case "PUT": {
 			const overwrite =
@@ -24,10 +23,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 			const existing = await context.env.KV.get(key);
 			if (!overwrite && existing) {
 				return new Response(null, { status: 201 });
-			} else {
-				await context.env.KV.put(`user:${sub}:vfs:${path}`, body);
-				return new Response(null, { status: 204 });
 			}
+			const data = new Uint8Array(body);
+			await context.env.KV.put(`user:${sub}:vfs:${path}`, data);
+			return new Response(null, { status: 204 });
 		}
 		case "DELETE": {
 			await context.env.KV.delete(`user:${sub}:vfs:${path}`);

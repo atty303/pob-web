@@ -41,7 +41,7 @@ export class PobDriver {
 			Comlink.proxy(
 				async (key: string, data: Uint8Array, overwrite: boolean) => {
 					try {
-						if (overwrite || localStorage.getItem(key) !== null) {
+						if (overwrite || localStorage.getItem(key) === null) {
 							localStorage.setItem(key, zenfs.decode(data));
 							return true;
 						}

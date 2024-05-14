@@ -121,6 +121,7 @@ export class DriverWorker {
 			removeCallback,
 		);
 		const localFs = await zenfs.resolveMountConfig({
+			name: "LocalStorage",
 			backend: SimpleAsyncFS,
 			store: localStore,
 		});
@@ -146,10 +147,10 @@ export class DriverWorker {
 							headers,
 						},
 					);
-					console.log("GET", r);
 					if (r.ok) {
 						const blob = await r.blob();
-						return new Uint8Array(await blob.arrayBuffer());
+						const buf = await blob.arrayBuffer();
+						return new Uint8Array(buf);
 					}
 				},
 				async (key: string, data: Uint8Array, overwrite: boolean) => {
@@ -161,8 +162,7 @@ export class DriverWorker {
 							headers,
 						},
 					);
-					console.log("PUT", r);
-					return r.status === 201;
+					return r.status === 204;
 				},
 				async (key: string) => {
 					await fetch(`${fileSystemConfig.cloudflareKvPrefix}${key}`, {
@@ -171,13 +171,15 @@ export class DriverWorker {
 					});
 				},
 			);
-			const cloudFs = await zenfs.resolveMountConfig({
-				backend: SimpleAsyncFS,
-				store: cloudStore,
-				lruCacheSize: 100,
-			});
-			// zenfs.mkdirSync("/user/Path of Building/Builds/Cloud");
-			zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
+			// const cloudFs = await zenfs.resolveMountConfig({
+			// 	name: "Cloud",
+			// 	backend: SimpleAsyncFS,
+			// 	store: cloudStore,
+			// 	lruCacheSize: 1000,
+			// });
+			// if (!zenfs.existsSync("/user/Path of Building/Builds/Cloud"))
+			// 	zenfs.mkdirSync("/user/Path of Building/Builds/Cloud");
+			// zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
 		}
 
 		module.FS.mkdir("/app");
