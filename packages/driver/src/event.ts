@@ -75,7 +75,7 @@ export class UIEventManager {
 		readonly el: HTMLElement,
 		readonly callbacks: Callbacks,
 	) {
-		const handleContextMenu = this.handleContextMenu.bind(this);
+		const preventDefault = this.preventDefault.bind(this);
 		const handleMouseMove = this.handleMouseMove.bind(this);
 		const handleMouseDown = this.handleMouseDown.bind(this);
 		const handleMouseUp = this.handleMouseUp.bind(this);
@@ -85,7 +85,9 @@ export class UIEventManager {
 		const handleKeyPress = this.handleKeyPress.bind(this);
 		const handleKeyUp = this.handleKeyUp.bind(this);
 
-		el.addEventListener("contextmenu", handleContextMenu);
+		el.addEventListener("contextmenu", preventDefault);
+		el.addEventListener("copy", preventDefault);
+		el.addEventListener("paste", preventDefault);
 		el.addEventListener("mousemove", handleMouseMove);
 		el.addEventListener("mousedown", handleMouseDown);
 		el.addEventListener("mouseup", handleMouseUp);
@@ -96,7 +98,9 @@ export class UIEventManager {
 		el.addEventListener("keyup", handleKeyUp);
 
 		this.destroy = () => {
-			el.removeEventListener("contextmenu", handleContextMenu);
+			el.removeEventListener("contextmenu", preventDefault);
+			el.removeEventListener("copy", preventDefault);
+			el.removeEventListener("paste", preventDefault);
 			el.removeEventListener("mousemove", handleMouseMove);
 			el.removeEventListener("mousedown", handleMouseDown);
 			el.removeEventListener("mouseup", handleMouseUp);
@@ -108,6 +112,10 @@ export class UIEventManager {
 		};
 
 		el.focus();
+	}
+
+	private preventDefault(e: Event) {
+		e.preventDefault();
 	}
 
 	private handleContextMenu(e: MouseEvent) {
