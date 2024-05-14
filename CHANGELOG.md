@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0](https://github.com/atty303/pob-web/compare/v0.6.0...v0.7.0) (2024-05-14)
+
+
+### Features
+
+* run pob on web worker ([cd8b7e4](https://github.com/atty303/pob-web/commit/cd8b7e4b63dc4e0a76f9343fee2629e7f5ae4513))
+
+
+### Bug Fixes
+
+* **driver:** cloud storage on worker ([094ca1c](https://github.com/atty303/pob-web/commit/094ca1c27c2008132b42c551341aea8457e94f8e))
+* **driver:** font loading on worker ([2808c86](https://github.com/atty303/pob-web/commit/2808c86a19f822ff926cbbd1a021ea1a566711b3))
+* **driver:** local storage on worker ([f70c0ba](https://github.com/atty303/pob-web/commit/f70c0bae181a889399c25b0dd5611c439fe4347e))
+* **web:** auth error ([8e06d0e](https://github.com/atty303/pob-web/commit/8e06d0ed237fe4221133c02932b2f789c171e3b2))
+* **web:** pob window component cleanup ([5598f5a](https://github.com/atty303/pob-web/commit/5598f5a6295f615b78e3de086b31163bf1d99154))
+
 ## [0.6.0](https://github.com/atty303/pob-web/compare/v0.5.0...v0.6.0) (2024-05-13)
 
 
