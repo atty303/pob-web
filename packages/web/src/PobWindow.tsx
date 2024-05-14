@@ -1,9 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import * as zenfs from "@zenfs/core";
-import { WebStorage } from "@zenfs/dom";
-import { Zip } from "@zenfs/zip";
 import { PobDriver } from "pob-driver/src/main.ts";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAsync } from "react-use";
 import { log, tag } from "./logger.ts";
 
@@ -94,11 +92,52 @@ const KvFS = {
 	},
 } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
 
+// const zipFs = await zenfs.resolveMountConfig({
+// 	backend: Zip,
+// 	zipData: await rootZip.arrayBuffer(),
+// 	name: "root.zip",
+// });
+// if (zenfs.existsSync("/root")) {
+// 	zenfs.umount("/root");
+// }
+// zenfs.mount("/root", zipFs);
+
+// const browserFs = await zenfs.resolveMountConfig({
+// 	backend: WebStorage,
+// 	storage: localStorage,
+// });
+//
+// if (zenfs.existsSync("/user")) {
+// 	zenfs.umount("/user");
+// }
+// zenfs.mount("/user", browserFs);
+// log.info(tag.vfs, "WebStorage is mounted");
+
+// if (token) {
+// 	const kvfs = await zenfs.resolveMountConfig({
+// 		backend: KvFS,
+// 		accessToken: token,
+// 	});
+//
+// 	if (!zenfs.existsSync("/user/Path of Building"))
+// 		zenfs.mkdirSync("/user/Path of Building");
+// 	if (!zenfs.existsSync("/user/Path of Building/Builds")) {
+// 		zenfs.mkdirSync("/user/Path of Building/Builds");
+// 	}
+// 	if (zenfs.existsSync("/user/Path of Building/Builds/Cloud")) {
+// 		zenfs.umount("/user/Path of Building/Builds/Cloud");
+// 	}
+// 	zenfs.mount("/user/Path of Building/Builds/Cloud", kvfs);
+// 	log.info(tag.vfs, "KvFS is mounted");
+// }
+
 export default function PobWindow(props: {
 	version: string;
 	onFrame: (render: boolean, time: number) => void;
 }) {
 	const auth0 = useAuth0();
+
+	const container = useRef<HTMLDivElement>(null);
 
 	const [token, setToken] = useState<string>();
 	useEffect(() => {
@@ -109,56 +148,18 @@ export default function PobWindow(props: {
 		getToken();
 	}, [auth0]);
 
-	const driver = useAsync(async () => {
+	const onFrame = useCallback(props.onFrame, []);
+
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<any>();
+	useEffect(() => {
 		log.debug(tag.pob, "loading version", props.version);
-		const rootZip = await fetch(
-			`${__ASSET_PREFIX__}/v${props.version}/root.zip`,
-		);
-		const zipFs = await zenfs.resolveMountConfig({
-			backend: Zip,
-			zipData: await rootZip.arrayBuffer(),
-			name: "root.zip",
-		});
-		if (zenfs.existsSync("/root")) {
-			zenfs.umount("/root");
-		}
-		zenfs.mount("/root", zipFs);
 
-		const browserFs = await zenfs.resolveMountConfig({
-			backend: WebStorage,
-			storage: localStorage,
-		});
-
-		if (zenfs.existsSync("/user")) {
-			zenfs.umount("/user");
-		}
-		zenfs.mount("/user", browserFs);
-		log.info(tag.vfs, "WebStorage is mounted");
-
-		if (token) {
-			const kvfs = await zenfs.resolveMountConfig({
-				backend: KvFS,
-				accessToken: token,
-			});
-
-			if (!zenfs.existsSync("/user/Path of Building"))
-				zenfs.mkdirSync("/user/Path of Building");
-			if (!zenfs.existsSync("/user/Path of Building/Builds")) {
-				zenfs.mkdirSync("/user/Path of Building/Builds");
-			}
-			if (zenfs.existsSync("/user/Path of Building/Builds/Cloud")) {
-				zenfs.umount("/user/Path of Building/Builds/Cloud");
-			}
-			zenfs.mount("/user/Path of Building/Builds/Cloud", kvfs);
-			log.info(tag.vfs, "KvFS is mounted");
-		}
-
-		return new PobDriver({
-			assetPrefix: `${__ASSET_PREFIX__}/v${props.version}`,
+		const _driver = new PobDriver(`${__ASSET_PREFIX__}/v${props.version}`, {
 			onError: (message) => {
 				throw new Error(message);
 			},
-			onFrame: props.onFrame,
+			onFrame,
 			onFetch: async (url, headers, body) => {
 				const rep = await fetch("/api/fetch", {
 					method: "POST",
@@ -167,49 +168,29 @@ export default function PobWindow(props: {
 				return await rep.json();
 			},
 		});
-	}, [props.version, token]);
-
-	if (driver.error) {
-		log.error(tag.pob, driver.error);
-	}
-
-	const container = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		// log.debug(tag.pob, "hook started");
-
-		if (driver.loading || driver.error || !container.current) {
-			return;
-		}
-
-		if (!zenfs.existsSync("/root")) {
-			log.debug(tag.pob, "/root not mounted");
-			return;
-		}
-
-		driver.value?.attachToDOM(container.current);
 
 		(async () => {
-			await driver.value?.start(zenfs.fs);
+			try {
+				await _driver.start({});
+				log.debug(tag.pob, "started", container.current);
+				if (container.current) _driver.attachToDOM(container.current);
+				setLoading(false);
+			} catch (e) {
+				setError(e);
+				setLoading(false);
+			}
 		})();
 
 		return () => {
-			log.debug(tag.pob, "hook cleanup");
-			try {
-				driver.value?.detachFromDOM();
-			} catch (e: unknown) {
-				console.warn(e);
-			}
-			driver.value?.destroy();
+			_driver.detachFromDOM();
+			_driver.destory();
 		};
-	}, [driver]);
+	}, [props.version, onFrame]);
 
-	if (driver.loading) {
-		return <div>Loading...</div>;
+	if (error) {
+		log.error(tag.pob, error);
 	}
-	if (driver.error) {
-		return <div>Error: {driver.error.message}</div>;
-	}
+
 	return (
 		<div
 			ref={container}

@@ -97,11 +97,13 @@ export class DriverWorker {
 			printErr: console.warn,
 		});
 
+		const rootZip = await fetch(`${assetPrefix}/root.zip`);
+
 		await zenfs.configure({
 			mounts: {
 				"/root": {
 					backend: Zip,
-					zipData: fileSystemConfig.rootZip,
+					zipData: await rootZip.arrayBuffer(),
 					name: "root.zip",
 				},
 			},

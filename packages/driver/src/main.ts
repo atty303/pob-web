@@ -4,15 +4,14 @@ import { UIEventManager } from "./event.ts";
 import type { DriverWorker, HostCallbacks } from "./worker.ts";
 import WorkerObject from "./worker.ts?worker";
 
-export type FilesystemConfig = {
-	rootZip: ArrayBuffer;
-};
+export type FilesystemConfig = {};
 
 export class PobDriver {
 	private isStarted = false;
 	private uiEventManager: UIEventManager | undefined;
 	private root: HTMLElement | undefined;
-	private worker: Comlink.Remote<DriverWorker> | undefined;
+	private worker: Worker | undefined;
+	private driverWorker: Comlink.Remote<DriverWorker> | undefined;
 	private resizeObserver: ResizeObserver | undefined;
 
 	constructor(
@@ -24,8 +23,9 @@ export class PobDriver {
 		if (this.isStarted) throw new Error("Already started");
 		this.isStarted = true;
 
-		this.worker = Comlink.wrap<DriverWorker>(new WorkerObject());
-		return this.worker.start(
+		this.worker = new WorkerObject();
+		this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
+		return this.driverWorker.start(
 			this.assetPrefix,
 			fileSystemConfig,
 			Comlink.proxy(this.hostCallbacks.onError),
@@ -44,6 +44,12 @@ export class PobDriver {
 		);
 	}
 
+	destory() {
+		console.log("destroy");
+		this.driverWorker?.destroy();
+		this.worker?.terminate();
+	}
+
 	attachToDOM(root: HTMLElement) {
 		if (this.root) throw new Error("Already attached");
 		this.root = root;
@@ -55,7 +61,7 @@ export class PobDriver {
 		canvas.style.position = "absolute";
 
 		const offscreenCanvas = canvas.transferControlToOffscreen();
-		this.worker?.setCanvas(
+		this.driverWorker?.setCanvas(
 			Comlink.transfer(offscreenCanvas, [offscreenCanvas]),
 		);
 
@@ -67,18 +73,19 @@ export class PobDriver {
 		this.resizeObserver = new ResizeObserver((entries) => {
 			for (const entry of entries) {
 				const { width, height } = entry.contentRect;
-				this.worker?.resize({ width, height });
+				this.driverWorker?.resize({ width, height });
 			}
 		});
 		this.resizeObserver.observe(root);
 
 		this.uiEventManager = new UIEventManager(root, {
 			onKeyDown: (name, doubleClick) =>
-				this.worker?.handleKeyDown(name, doubleClick),
+				this.driverWorker?.handleKeyDown(name, doubleClick),
 			onKeyUp: (name, doubleClick) =>
-				this.worker?.handleKeyUp(name, doubleClick),
-			onChar: (char, doubleClick) => this.worker?.handleChar(char, doubleClick),
-			invalidate: () => this.worker?.invalidate(),
+				this.driverWorker?.handleKeyUp(name, doubleClick),
+			onChar: (char, doubleClick) =>
+				this.driverWorker?.handleChar(char, doubleClick),
+			invalidate: () => this.driverWorker?.invalidate(),
 		});
 	}
 
