@@ -1,5 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { PobDriver } from "pob-driver/src/js/main.ts";
+import { Driver } from "pob-driver/src/js/driver.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { log, tag } from "./logger.ts";
 
@@ -68,7 +68,7 @@ export default function PobWindow(props: {
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 
-    const _driver = new PobDriver(`${__ASSET_PREFIX__}/v${props.version}`, {
+    const _driver = new Driver(`${__ASSET_PREFIX__}/v${props.version}`, {
       onError: (message) => {
         throw new Error(message);
       },

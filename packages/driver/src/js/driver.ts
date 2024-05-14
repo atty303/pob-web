@@ -10,7 +10,7 @@ export type FilesystemConfig = {
   cloudflareKvAccessToken: string | undefined;
 };
 
-export class PobDriver {
+export class Driver {
   private isStarted = false;
   private uiEventManager: UIEventManager | undefined;
   private root: HTMLElement | undefined;
