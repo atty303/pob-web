@@ -1,8 +1,12 @@
 {
   "name": "@atty303/pob-web",
   "private": true,
-  "version": "0.7.0",
-  "workspaces": ["packages/driver", "packages/web", "packages/packer"],
+  "version": "0.7.1",
+  "workspaces": [
+    "packages/driver",
+    "packages/web",
+    "packages/packer"
+  ],
   "devDependencies": {
     "@biomejs/biome": "^1.7.3",
     "@cloudflare/workers-types": "^4.20240502.0",

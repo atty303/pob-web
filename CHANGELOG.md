@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/atty303/pob-web/compare/v0.7.0...v0.7.1) (2024-05-14)
+
+
+### Bug Fixes
+
+* added texture flags ([59d9148](https://github.com/atty303/pob-web/commit/59d9148d202b025d59021ac0813d6aa4608bd3c8))
+
 ## [0.7.0](https://github.com/atty303/pob-web/compare/v0.6.0...v0.7.0) (2024-05-14)
 
 
