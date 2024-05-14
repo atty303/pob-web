@@ -218,11 +218,14 @@ export class Renderer {
     }
   }
 
-  private drawStringLine(pos: { x: number; y: number }, align: number, height: number, font: number, text: string) {
+  private drawStringLine(pos: { x: number; y: number }, align: number, height: number, font: number, text0: string) {
     const segments = [];
 
-    let m;
-    while ((m = reColor.exec(text))) {
+    let text = text0;
+    while (true) {
+      const m = reColor.exec(text);
+      if (!m) break;
+
       const subtext = text.substring(0, m.index);
       text = text.substring(m.index + m[0].length);
       if (m[1]) {
