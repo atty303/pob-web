@@ -35,7 +35,7 @@ export class TextRasterizer {
     }
   }
 
-  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap }> = new Map();
+  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap | undefined }> = new Map();
   private readonly context;
 
   constructor() {
@@ -93,6 +93,11 @@ export class TextRasterizer {
           bitmap: { id: key, bitmap: canvas, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP },
         };
         this.cache.set(key, bitmap);
+      } else {
+        bitmap = {
+          width: 0,
+          bitmap: undefined,
+        };
       }
     }
     return bitmap;
