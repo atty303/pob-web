@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.2](https://github.com/atty303/pob-web/compare/v0.7.1...v0.7.2) (2024-05-14)
+
+
+### Bug Fixes
+
+* **driver:** blend func ([ad210a0](https://github.com/atty303/pob-web/commit/ad210a0d5396cd66056292b89285280febf48b3b)), closes [#40](https://github.com/atty303/pob-web/issues/40)
+* **driver:** dirty count ([1ab827e](https://github.com/atty303/pob-web/commit/1ab827e3264570c7ce02184bf9d80b6995e27f9f))
+* **driver:** text flickering ([6429b1f](https://github.com/atty303/pob-web/commit/6429b1f81c3db35309d827febcc84b44e101707e)), closes [#19](https://github.com/atty303/pob-web/issues/19)
+
 ## [0.7.1](https://github.com/atty303/pob-web/compare/v0.7.0...v0.7.1) (2024-05-14)
 
 
