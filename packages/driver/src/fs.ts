@@ -592,33 +592,23 @@ class SimpleAsyncTransaction implements zenfs.AsyncTransaction {
 	}
 }
 
-interface SimpleAsyncFSOptions {
-	getCallback: (key: string) => Promise<Uint8Array | undefined>;
-	putCallback: (
-		key: string,
-		data: Uint8Array,
-		overwrite: boolean,
-	) => Promise<boolean>;
-	removeCallback: (key: string) => Promise<void>;
-}
-
 export const SimpleAsyncFS = {
 	name: "SimpleAsyncFS",
 	options: {
-		getCallback: {
-			type: "function",
+		store: {
+			type: "object",
 			required: true,
-			description: "Function to get data from the store",
+			description: "Store to use for the filesystem",
 		},
-		putCallback: {
-			type: "function",
-			required: true,
-			description: "Function to put data into the store",
+		lruCacheSize: {
+			type: "number",
+			required: false,
+			description: "Size of the LRU cache to use",
 		},
-		removeCallback: {
-			type: "function",
-			required: true,
-			description: "Function to remove data from the store",
+		sync: {
+			type: "object",
+			required: false,
+			description: "Synchronous filesystem to use for the cache",
 		},
 	},
 
@@ -626,62 +616,11 @@ export const SimpleAsyncFS = {
 		return true;
 	},
 
-	create(opts: SimpleAsyncFSOptions) {
+	create(opts: zenfs.AsyncStoreOptions) {
 		return new zenfs.AsyncStoreFS({
-			store: new SimpleAsyncStore(
-				opts.getCallback,
-				opts.putCallback,
-				opts.removeCallback,
-			),
+			store: opts.store,
+			lruCacheSize: opts.lruCacheSize,
+			sync: opts.sync,
 		});
 	},
-} as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, SimpleAsyncFSOptions>;
-
-// class KvTransaction implements zenfs.AsyncTransaction {
-// 	constructor(readonly accessToken: string | undefined) {}
-//
-// 	async get(key: bigint): Promise<Uint8Array> {
-// 		const r = await fetch(`/api/kv/${key}`, {
-// 			method: "GET",
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 		if (r.ok) {
-// 			const blob = await r.blob();
-// 			return new Uint8Array(await blob.arrayBuffer());
-// 		}
-// 		return undefined as any;
-// 	}
-//
-// 	async put(
-// 		key: bigint,
-// 		data: Uint8Array,
-// 		overwrite: boolean,
-// 	): Promise<boolean> {
-// 		const r = await fetch(`/api/kv/${key}?overwrite=${overwrite}`, {
-// 			method: "PUT",
-// 			body: data,
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 		return r.status === 201;
-// 	}
-//
-// 	async remove(key: bigint): Promise<void> {
-// 		await fetch(`/api/kv/${key}`, {
-// 			method: "DELETE",
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 	}
-//
-// 	async commit(): Promise<void> {
-// 		// throw new Error("Method not implemented.");
-// 	}
-// 	async abort(): Promise<void> {
-// 		// throw new Error("Method not implemented.");
-// 	}
-// }
+} as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, zenfs.AsyncStoreOptions>;

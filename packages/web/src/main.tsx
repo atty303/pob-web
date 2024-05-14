@@ -33,6 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 				clientId="o8TOT9gDHzztbdIIIV54HxlfaSMFYTeH"
 				legacySameSiteCookie={false}
 				useRefreshTokens={true}
+				cacheLocation={"localstorage"}
 				authorizationParams={{
 					redirect_uri: window.location.origin,
 					audience: "https://pob.cool/api",

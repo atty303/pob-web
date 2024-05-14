@@ -3,30 +3,6 @@ import { PobDriver } from "pob-driver/src/main.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { log, tag } from "./logger.ts";
 
-//
-// interface KvFSOptions {
-// 	accessToken?: string;
-// }
-//
-// const KvFS = {
-// 	name: "KvFS",
-// 	options: {
-// 		accessToken: {
-// 			type: "string",
-// 			required: false,
-// 			description: "Access Token (optional)",
-// 		},
-// 	},
-//
-// 	isAvailable(): boolean {
-// 		return true;
-// 	},
-//
-// 	create(opts: KvFSOptions) {
-// 		return new zenfs.AsyncStoreFS({ store: new KvStore(opts.accessToken) });
-// 	},
-// } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, KvFSOptions>;
-
 // const zipFs = await zenfs.resolveMountConfig({
 // 	backend: Zip,
 // 	zipData: await rootZip.arrayBuffer(),
@@ -74,7 +50,7 @@ export default function PobWindow(props: {
 
 	const container = useRef<HTMLDivElement>(null);
 
-	const [_token, setToken] = useState<string>();
+	const [token, setToken] = useState<string>();
 	useEffect(() => {
 		async function getToken() {
 			if (auth0.isAuthenticated) {
@@ -83,7 +59,7 @@ export default function PobWindow(props: {
 			}
 		}
 		getToken();
-	}, [auth0]);
+	}, [auth0, auth0.isAuthenticated]);
 
 	const onFrame = useCallback(props.onFrame, []);
 
@@ -108,7 +84,10 @@ export default function PobWindow(props: {
 
 		(async () => {
 			try {
-				await _driver.start({});
+				await _driver.start({
+					cloudflareKvPrefix: "/api/kv/",
+					cloudflareKvAccessToken: token,
+				});
 				log.debug(tag.pob, "started", container.current);
 				if (container.current) _driver.attachToDOM(container.current);
 				setLoading(false);
@@ -123,7 +102,7 @@ export default function PobWindow(props: {
 			_driver.destory();
 			setLoading(true);
 		};
-	}, [props.version, onFrame]);
+	}, [props.version, onFrame, token]);
 
 	if (error) {
 		log.error(tag.pob, error);

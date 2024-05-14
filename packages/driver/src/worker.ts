@@ -4,7 +4,7 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 // @ts-ignore
 import { default as Module } from "../dist/driver.mjs";
-import { NodeEmscriptenFS, SimpleAsyncFS } from "./fs";
+import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
 import type { FilesystemConfig } from "./main.ts";
 import { Canvas, Renderer, TextRasterizer } from "./renderer";
@@ -67,7 +67,7 @@ export class DriverWorker {
 
 	async start(
 		assetPrefix: string,
-		_fileSystemConfig: FilesystemConfig,
+		fileSystemConfig: FilesystemConfig,
 		getCallback: (key: string) => Promise<Uint8Array | undefined>,
 		putCallback: (
 			key: string,
@@ -115,11 +115,14 @@ export class DriverWorker {
 			name: "root.zip",
 		});
 
-		const localFs = await zenfs.resolveMountConfig({
-			backend: SimpleAsyncFS,
+		const localStore = new SimpleAsyncStore(
 			getCallback,
 			putCallback,
 			removeCallback,
+		);
+		const localFs = await zenfs.resolveMountConfig({
+			backend: SimpleAsyncFS,
+			store: localStore,
 		});
 
 		await zenfs.configure({
@@ -128,6 +131,54 @@ export class DriverWorker {
 				"/user": localFs,
 			},
 		});
+
+		if (fileSystemConfig.cloudflareKvAccessToken) {
+			const headers = {
+				Authorization: `Bearer ${fileSystemConfig.cloudflareKvAccessToken}`,
+			};
+
+			const cloudStore = new SimpleAsyncStore(
+				async (key: string) => {
+					const r = await fetch(
+						`${fileSystemConfig.cloudflareKvPrefix}${key}`,
+						{
+							method: "GET",
+							headers,
+						},
+					);
+					console.log("GET", r);
+					if (r.ok) {
+						const blob = await r.blob();
+						return new Uint8Array(await blob.arrayBuffer());
+					}
+				},
+				async (key: string, data: Uint8Array, overwrite: boolean) => {
+					const r = await fetch(
+						`${fileSystemConfig.cloudflareKvPrefix}${key}?overwrite=${overwrite}`,
+						{
+							method: "PUT",
+							body: data,
+							headers,
+						},
+					);
+					console.log("PUT", r);
+					return r.status === 201;
+				},
+				async (key: string) => {
+					await fetch(`${fileSystemConfig.cloudflareKvPrefix}${key}`, {
+						method: "DELETE",
+						headers,
+					});
+				},
+			);
+			const cloudFs = await zenfs.resolveMountConfig({
+				backend: SimpleAsyncFS,
+				store: cloudStore,
+				lruCacheSize: 100,
+			});
+			// zenfs.mkdirSync("/user/Path of Building/Builds/Cloud");
+			zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
+		}
 
 		module.FS.mkdir("/app");
 		module.FS.mount(
