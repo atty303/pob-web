@@ -1,5 +1,4 @@
 import * as zenfs from "@zenfs/core";
-import { WebStorage } from "@zenfs/dom";
 import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 // @ts-ignore
@@ -134,43 +133,42 @@ export class DriverWorker {
 		});
 
 		if (fileSystemConfig.cloudflareKvAccessToken) {
-			const headers = {
-				Authorization: `Bearer ${fileSystemConfig.cloudflareKvAccessToken}`,
-			};
-
-			const cloudStore = new SimpleAsyncStore(
-				async (key: string) => {
-					const r = await fetch(
-						`${fileSystemConfig.cloudflareKvPrefix}${key}`,
-						{
-							method: "GET",
-							headers,
-						},
-					);
-					if (r.ok) {
-						const blob = await r.blob();
-						const buf = await blob.arrayBuffer();
-						return new Uint8Array(buf);
-					}
-				},
-				async (key: string, data: Uint8Array, overwrite: boolean) => {
-					const r = await fetch(
-						`${fileSystemConfig.cloudflareKvPrefix}${key}?overwrite=${overwrite}`,
-						{
-							method: "PUT",
-							body: data,
-							headers,
-						},
-					);
-					return r.status === 204;
-				},
-				async (key: string) => {
-					await fetch(`${fileSystemConfig.cloudflareKvPrefix}${key}`, {
-						method: "DELETE",
-						headers,
-					});
-				},
-			);
+			// const headers = {
+			// 	Authorization: `Bearer ${fileSystemConfig.cloudflareKvAccessToken}`,
+			// };
+			// const cloudStore = new SimpleAsyncStore(
+			// 	async (key: string) => {
+			// 		const r = await fetch(
+			// 			`${fileSystemConfig.cloudflareKvPrefix}${key}`,
+			// 			{
+			// 				method: "GET",
+			// 				headers,
+			// 			},
+			// 		);
+			// 		if (r.ok) {
+			// 			const blob = await r.blob();
+			// 			const buf = await blob.arrayBuffer();
+			// 			return new Uint8Array(buf);
+			// 		}
+			// 	},
+			// 	async (key: string, data: Uint8Array, overwrite: boolean) => {
+			// 		const r = await fetch(
+			// 			`${fileSystemConfig.cloudflareKvPrefix}${key}?overwrite=${overwrite}`,
+			// 			{
+			// 				method: "PUT",
+			// 				body: data,
+			// 				headers,
+			// 			},
+			// 		);
+			// 		return r.status === 204;
+			// 	},
+			// 	async (key: string) => {
+			// 		await fetch(`${fileSystemConfig.cloudflareKvPrefix}${key}`, {
+			// 			method: "DELETE",
+			// 			headers,
+			// 		});
+			// 	},
+			// );
 			// const cloudFs = await zenfs.resolveMountConfig({
 			// 	name: "Cloud",
 			// 	backend: SimpleAsyncFS,
