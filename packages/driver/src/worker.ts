@@ -249,8 +249,8 @@ export class DriverWorker {
       getCursorPosX: () => this.uiState.x,
       getCursorPosY: () => this.uiState.y,
       isKeyDown: (name: string) => this.uiState.keys.has(name),
-      imageLoad: (handle: number, filename: string) => {
-        this.imageRepo?.load(handle, filename).then(() => {
+      imageLoad: (handle: number, filename: string, flags: number) => {
+        this.imageRepo?.load(handle, filename, flags).then(() => {
           this.invalidate();
         });
       },

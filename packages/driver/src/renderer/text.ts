@@ -1,3 +1,4 @@
+import { TextureFlags } from "../image.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
@@ -92,7 +93,7 @@ export class TextRasterizer {
         context.textBaseline = "bottom";
         context.fillText(text, 0, size);
         createImageBitmap(canvas).then((b) => {
-          if (bitmap) bitmap.bitmap = { id: key, bitmap: b };
+          if (bitmap) bitmap.bitmap = { id: key, bitmap: b, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP };
           this.invalidate();
         });
       }

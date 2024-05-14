@@ -3,8 +3,13 @@
 #include <string.h>
 #include <stdio.h>
 #include "image.h"
-#include "lua.h"
 #include "util.h"
+
+enum TextureFlags {
+    TF_CLAMP = 0x01,
+    TF_NOMIPMAP = 0x02,
+    TF_NEAREST = 0x04,
+};
 
 // ---- VFS
 
@@ -107,9 +112,29 @@ static int ImageHandle_Load(lua_State *L) {
         image_handle->height = entry->height;
     }
 
+    int flags = TF_NOMIPMAP;
+    for (int f = 2; f <= n; ++f) {
+        if (!lua_isstring(L, f)) {
+            continue;
+        }
+
+        const char *flag = lua_tostring(L, f);
+        if (!strcmp(flag, "ASYNC")) {
+            // async texture loading removed
+        } else if (!strcmp(flag, "CLAMP")) {
+            flags |= TF_CLAMP;
+        } else if (!strcmp(flag, "MIPMAP")) {
+            flags &= ~TF_NOMIPMAP;
+        } else if (!strcmp(flag, "NEAREST")) {
+            flags |= TF_NEAREST;
+        } else {
+            assert(0);
+        }
+    }
+
     EM_ASM({
-               Module.imageLoad($0, UTF8ToString($1));
-           }, image_handle->handle, filename);
+               Module.imageLoad($0, UTF8ToString($1), $2);
+           }, image_handle->handle, filename, flags);
 
     return 0;
 }

@@ -1,17 +1,18 @@
 import { DrawCommandInterpreter } from "../draw.ts";
-import type { ImageRepository } from "../image.ts";
+import { type ImageRepository, TextureFlags } from "../image.ts";
 import type { TextRasterizer } from "./text.ts";
 import type { Canvas } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
   id: string;
   bitmap: ImageBitmap | ImageData;
+  flags: number;
 };
 
 const WHITE_TEXTURE_BITMAP = (() => {
-  const image = new ImageData(1, 1);
-  image.data.set([255, 255, 255, 255]);
-  return { id: "white", bitmap: image };
+  const image = new ImageData(8, 8);
+  image.data.set(Array(8 * 8 * 4).fill(255));
+  return { id: "@white", bitmap: image, flags: TextureFlags.TF_NOMIPMAP };
 })();
 
 const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/;
@@ -201,7 +202,7 @@ export class Renderer {
         this.backend?.drawQuad(
           [x1, y1, x2, y2, x3, y3, x4, y4],
           [s1, t1, s2, t2, s3, t3, s4, t4],
-          { id: handle.toString(), bitmap: image.bitmap },
+          { id: handle.toString(), bitmap: image.bitmap, flags: image.flags },
           this.currentColor,
         );
       }

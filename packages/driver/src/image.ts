@@ -1,6 +1,13 @@
 type ImageInfo = {
   bitmap: ImageBitmap | undefined;
+  flags: number;
 };
+
+export enum TextureFlags {
+  TF_CLAMP = 1,
+  TF_NOMIPMAP = 2,
+  TF_NEAREST = 4,
+}
 
 export class ImageRepository {
   private readonly prefix: string;
@@ -10,11 +17,12 @@ export class ImageRepository {
     this.prefix = prefix;
   }
 
-  async load(handle: number, src: string): Promise<void> {
+  async load(handle: number, src: string, flags: number): Promise<void> {
     if (this.images.has(handle)) return;
 
     const info: ImageInfo = {
       bitmap: undefined,
+      flags,
     };
     this.images.set(handle, info);
 
