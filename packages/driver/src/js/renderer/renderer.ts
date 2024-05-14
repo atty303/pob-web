@@ -1,7 +1,7 @@
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags } from "../image.ts";
 import type { TextRasterizer } from "./text.ts";
-import type { Canvas } from "./webgl_backend.ts";
+import type { WebGL1Backend } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
   id: string;
@@ -30,7 +30,7 @@ const colorEscape = [
 ];
 
 export class Renderer {
-  backend: Canvas | undefined;
+  backend: WebGL1Backend | undefined;
 
   private screenSize: { width: number; height: number };
   private currentColor: number[] = [0, 0, 0, 0];

@@ -174,7 +174,7 @@ class VertexBuffer {
   }
 }
 
-export class Canvas {
+export class WebGL1Backend {
   private readonly gl: WebGLRenderingContext;
 
   private readonly textureProgram: ShaderProgram<{
@@ -197,20 +197,20 @@ export class Canvas {
   private batchTextureCount = 0;
   private dispatchCount = 0;
 
-  get element(): OffscreenCanvas {
-    return this._element;
+  get canvas(): OffscreenCanvas {
+    return this._canvas;
   }
-  private readonly _element: OffscreenCanvas;
+  private readonly _canvas: OffscreenCanvas;
 
   constructor(canvas: OffscreenCanvas) {
-    this._element = canvas;
+    this._canvas = canvas;
 
     const gl = canvas.getContext("webgl");
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
     gl.clearColor(0, 0, 0, 1);
-    gl.depthMask(false);
+    gl.enable(gl.TEXTURE_2D);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
 
@@ -267,8 +267,8 @@ export class Canvas {
   }
 
   resize(width: number, height: number) {
-    this._element.width = width;
-    this._element.height = height;
+    this._canvas.width = width;
+    this._canvas.height = height;
     this.setViewport(0, 0, width, height);
   }
 
@@ -314,8 +314,8 @@ export class Canvas {
     gl.bufferData(gl.ARRAY_BUFFER, this.vertices.buffer, gl.STREAM_DRAW);
     this.textureProgram.use((p) => {
       // Set up the viewport
-      this.gl.viewport(0, 0, this.element.width, this.element.height);
-      const matrix = orthoMatrix(0, this.element.width, this.element.height, 0, -9999, 9999);
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
       this.gl.uniformMatrix4fv(p.mvpMatrix, false, new Float32Array(matrix));
 
       // Set up the texture

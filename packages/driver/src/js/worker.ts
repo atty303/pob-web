@@ -6,7 +6,7 @@ import { default as Module } from "../../dist/driver.mjs";
 import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
 import type { FilesystemConfig } from "./main.ts";
-import { Canvas, Renderer, TextRasterizer } from "./renderer";
+import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
 
 type Mod = {
   HEAPU8: Uint8Array;
@@ -185,7 +185,7 @@ export class DriverWorker {
   }
 
   setCanvas(canvas: OffscreenCanvas) {
-    const backend = new Canvas(canvas);
+    const backend = new WebGL1Backend(canvas);
     if (this.renderer) {
       this.renderer.backend = backend;
     }
