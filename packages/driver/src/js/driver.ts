@@ -59,14 +59,6 @@ export class Driver {
       Comlink.proxy(this.hostCallbacks.onError),
       Comlink.proxy(this.hostCallbacks.onFrame),
       Comlink.proxy(this.hostCallbacks.onFetch),
-      Comlink.proxy(async () => {
-        const pos = this.uiEventManager?.cursorPosition ?? { x: 0, y: 0 };
-        return {
-          x: pos.x,
-          y: pos.y,
-          keys: this.uiEventManager?.keyState ?? new Set(),
-        };
-      }),
       Comlink.proxy((text: string) => this.copy(text)),
       Comlink.proxy(() => this.paste()),
     );
@@ -109,10 +101,10 @@ export class Driver {
     this.resizeObserver.observe(root);
 
     this.uiEventManager = new UIEventManager(root, {
-      onKeyDown: (name, doubleClick) => this.driverWorker?.handleKeyDown(name, doubleClick),
-      onKeyUp: (name, doubleClick) => this.driverWorker?.handleKeyUp(name, doubleClick),
-      onChar: (char, doubleClick) => this.driverWorker?.handleChar(char, doubleClick),
-      invalidate: () => this.driverWorker?.invalidate(),
+      onMouseMove: (uiState) => this.driverWorker?.handleMouseMove(uiState),
+      onKeyDown: (name, doubleClick, uiState) => this.driverWorker?.handleKeyDown(name, doubleClick, uiState),
+      onKeyUp: (name, doubleClick, uiState) => this.driverWorker?.handleKeyUp(name, doubleClick, uiState),
+      onChar: (char, doubleClick, uiState) => this.driverWorker?.handleChar(char, doubleClick, uiState),
     });
   }
 

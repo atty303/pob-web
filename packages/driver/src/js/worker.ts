@@ -4,6 +4,7 @@ import * as Comlink from "comlink";
 // @ts-ignore
 import { default as Module } from "../../dist/driver.mjs";
 import type { FilesystemConfig } from "./driver.ts";
+import type { UIState } from "./event.ts";
 import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
@@ -30,7 +31,6 @@ export type HostCallbacks = {
 };
 
 type MainCallbacks = {
-  getUIState: () => Promise<{ x: number; y: number; keys: Set<string> }>;
   copy: (text: string) => void;
   paste: () => Promise<string>;
 };
@@ -53,7 +53,7 @@ export class DriverWorker {
     width: 800,
     height: 600,
   };
-  private uiState: { x: number; y: number; keys: Set<string> } = {
+  private uiState: UIState = {
     x: 0,
     y: 0,
     keys: new Set(),
@@ -73,7 +73,6 @@ export class DriverWorker {
     onError: HostCallbacks["onError"],
     onFrame: HostCallbacks["onFrame"],
     onFetch: HostCallbacks["onFetch"],
-    getUIState: MainCallbacks["getUIState"],
     copy: MainCallbacks["copy"],
     paste: MainCallbacks["paste"],
   ) {
@@ -89,7 +88,6 @@ export class DriverWorker {
       onFetch,
     };
     this.mainCallbacks = {
-      getUIState,
       copy,
       paste,
     };
@@ -201,30 +199,38 @@ export class DriverWorker {
     this.dirtyCount = 2;
   }
 
-  handleKeyDown(name: string, doubleClick: number) {
+  handleMouseMove(uiState: UIState) {
+    this.uiState = uiState;
+    this.invalidate();
+  }
+
+  handleKeyDown(name: string, doubleClick: number, uiState: UIState) {
+    this.uiState = uiState;
     this.imports?.onKeyDown(name, doubleClick);
+    this.invalidate();
   }
 
-  handleKeyUp(name: string, doubleClick: number) {
+  handleKeyUp(name: string, doubleClick: number, uiState: UIState) {
+    this.uiState = uiState;
     this.imports?.onKeyUp(name, doubleClick);
+    this.invalidate();
   }
 
-  handleChar(char: string, doubleClick: number) {
+  handleChar(char: string, doubleClick: number, uiState: UIState) {
+    this.uiState = uiState;
     this.imports?.onChar(char, doubleClick);
+    this.invalidate();
   }
 
   private tick() {
     const start = performance.now();
 
-    this.mainCallbacks?.getUIState().then((state) => {
-      this.uiState = state;
-      this.imports?.onFrame();
+    this.imports?.onFrame();
 
-      const time = performance.now() - start;
-      this.hostCallbacks?.onFrame(this.dirtyCount > 0, time);
-      this.dirtyCount -= 1;
-      if (this.isRunning) requestAnimationFrame(this.tick.bind(this));
-    });
+    const time = performance.now() - start;
+    this.hostCallbacks?.onFrame(this.dirtyCount > 0, time);
+    this.dirtyCount -= 1;
+    if (this.isRunning) requestAnimationFrame(this.tick.bind(this));
   }
 
   // js -> wasm

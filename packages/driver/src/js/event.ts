@@ -49,10 +49,16 @@ const EXTRA_KEY_MAP = new Map<string, string>([
 ]);
 
 type Callbacks = {
-  onKeyDown: (key: string, doubleClick: number) => void;
-  onKeyUp: (key: string, doubleClick: number) => void;
-  onChar: (char: string, doubleClick: number) => void;
-  invalidate: () => void;
+  onMouseMove: (uiState: UIState) => void;
+  onKeyDown: (key: string, doubleClick: number, uiState: UIState) => void;
+  onKeyUp: (key: string, doubleClick: number, uiState: UIState) => void;
+  onChar: (char: string, doubleClick: number, uiState: UIState) => void;
+};
+
+export type UIState = {
+  x: number;
+  y: number;
+  keys: Set<string>;
 };
 
 export class UIEventManager {
@@ -61,12 +67,12 @@ export class UIEventManager {
   private _cursorPosition: { x: number; y: number } = { x: 0, y: 0 };
   private _keyState: Set<string> = new Set();
 
-  get cursorPosition() {
-    return this._cursorPosition;
-  }
-
-  get keyState() {
-    return this._keyState;
+  get uiState() {
+    return {
+      x: this._cursorPosition.x,
+      y: this._cursorPosition.y,
+      keys: this._keyState,
+    };
   }
 
   constructor(
@@ -118,7 +124,7 @@ export class UIEventManager {
 
   private handleMouseMove(e: MouseEvent) {
     this._cursorPosition = { x: e.offsetX, y: e.offsetY };
-    this.callbacks.invalidate();
+    this.callbacks.onMouseMove(this.uiState);
   }
 
   private handleMouseDown(e: MouseEvent) {
@@ -126,8 +132,7 @@ export class UIEventManager {
     const name = mouseString(e);
     if (name) {
       this._keyState.add(name);
-      this.callbacks.onKeyDown(name, 0);
-      this.callbacks.invalidate();
+      this.callbacks.onKeyDown(name, 0, this.uiState);
     }
     this.el.focus();
   }
@@ -137,8 +142,7 @@ export class UIEventManager {
     const name = mouseString(e);
     if (name) {
       this._keyState.delete(name);
-      this.callbacks.onKeyUp(name, -1); // TODO: 0
-      this.callbacks.invalidate();
+      this.callbacks.onKeyUp(name, -1, this.uiState); // TODO: 0
     }
     this.el.focus();
   }
@@ -147,8 +151,7 @@ export class UIEventManager {
     e.preventDefault();
     const name = mouseString(e);
     if (name) {
-      this.callbacks.onKeyDown(name, 1);
-      this.callbacks.invalidate();
+      this.callbacks.onKeyDown(name, 1, this.uiState);
     }
     this.el.focus();
   }
@@ -156,8 +159,7 @@ export class UIEventManager {
   private handleWheel(e: WheelEvent) {
     e.preventDefault();
     const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
-    this.callbacks.onKeyUp(name, 0);
-    this.callbacks.invalidate();
+    this.callbacks.onKeyUp(name, 0, this.uiState);
     this.el.focus();
   }
 
@@ -165,19 +167,18 @@ export class UIEventManager {
     ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
     const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
     if (key) {
-      this.callbacks.onKeyDown(key, 0);
       this._keyState.add(key);
+      this.callbacks.onKeyDown(key, 0, this.uiState);
       const ex = EXTRA_KEY_MAP.get(e.key);
       if (ex) {
-        this.callbacks.onChar(ex, 0);
+        this.callbacks.onChar(ex, 0, this.uiState);
       }
-      this.callbacks.invalidate();
     }
   }
 
   private handleKeyPress(e: KeyboardEvent) {
     e.preventDefault();
-    this.callbacks.onChar(e.key, 0);
+    this.callbacks.onChar(e.key, 0, this.uiState);
   }
 
   private handleKeyUp(e: KeyboardEvent) {
@@ -185,9 +186,8 @@ export class UIEventManager {
     const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
     if (key) {
       // TODO: order is correct?
-      this.callbacks.onKeyUp(key, 0);
       this._keyState.delete(key);
-      this.callbacks.invalidate();
+      this.callbacks.onKeyUp(key, 0, this.uiState);
     }
   }
 }
