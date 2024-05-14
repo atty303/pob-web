@@ -61,7 +61,7 @@ export class DriverWorker {
   private hostCallbacks: HostCallbacks | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
-  private isDirty = false;
+  private dirtyCount = 0;
   private isRunning = true;
 
   async start(
@@ -198,7 +198,7 @@ export class DriverWorker {
   }
 
   invalidate() {
-    this.isDirty = true;
+    this.dirtyCount = 2;
   }
 
   handleKeyDown(name: string, doubleClick: number) {
@@ -221,8 +221,8 @@ export class DriverWorker {
       this.imports?.onFrame();
 
       const time = performance.now() - start;
-      this.hostCallbacks?.onFrame(this.isDirty, time);
-      this.isDirty = false;
+      this.hostCallbacks?.onFrame(this.dirtyCount > 0, time);
+      this.dirtyCount -= 1;
       if (this.isRunning) requestAnimationFrame(this.tick.bind(this));
     });
   }
@@ -255,7 +255,7 @@ export class DriverWorker {
         });
       },
       drawCommit: (bufferPtr: number, size: number) => {
-        if (this.isDirty) {
+        if (this.dirtyCount > 0) {
           this.renderer?.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
         }
       },
