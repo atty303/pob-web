@@ -6,9 +6,6 @@
 	"dependencies": {
 		"@auth0/auth0-react": "^2.2.4",
 		"@sentry/react": "^7.114.0",
-		"@zenfs/core": "github:atty303/zenfs-core#prepare",
-		"@zenfs/dom": "^0.2.7",
-		"@zenfs/zip": "github:atty303/zenfs-zip#prepare",
 		"jose": "^5.3.0",
 		"missionlog": "^1.8.8",
 		"pob-driver": "*",

@@ -1,3 +1,6 @@
+import * as zenfs from "@zenfs/core";
+import type { Ino } from "@zenfs/core";
+
 export interface EmscriptenStats {
 	dev: number;
 	ino: number;
@@ -483,3 +486,202 @@ export class NodeEmscriptenFS implements EmscriptenFS {
 		return this.path.join.apply(null, parts);
 	}
 }
+
+export class SimpleAsyncStore implements zenfs.AsyncStore {
+	get name() {
+		return "SimpleAsyncStore";
+	}
+
+	constructor(
+		readonly getCallback: (key: string) => Promise<Uint8Array | undefined>,
+		readonly putCallback: (
+			key: string,
+			data: Uint8Array,
+			overwrite: boolean,
+		) => Promise<boolean>,
+		readonly removeCallback: (key: string) => Promise<void>,
+	) {}
+
+	async clear(): Promise<void> {}
+
+	beginTransaction(): zenfs.AsyncTransaction {
+		return new SimpleAsyncTransaction(
+			this.getCallback,
+			this.putCallback,
+			this.removeCallback,
+		);
+	}
+}
+
+class SimpleAsyncTransaction implements zenfs.AsyncTransaction {
+	/**
+	 * Stores data in the keys we modify prior to modifying them.
+	 * Allows us to roll back commits.
+	 */
+	protected originalData: Map<Ino, Uint8Array | undefined> = new Map();
+	/**
+	 * List of keys modified in this transaction, if any.
+	 */
+	protected modifiedKeys: Set<Ino> = new Set();
+
+	constructor(
+		readonly getCallback: (key: string) => Promise<Uint8Array | undefined>,
+		readonly putCallback: (
+			key: string,
+			data: Uint8Array,
+			overwrite: boolean,
+		) => Promise<boolean>,
+		readonly removeCallback: (key: string) => Promise<void>,
+	) {}
+
+	async get(key: Ino): Promise<Uint8Array> {
+		const val = await this.getCallback(key.toString());
+		this.stashOldValue(key, val);
+		return val as Uint8Array;
+	}
+
+	async put(key: Ino, data: Uint8Array, overwrite: boolean): Promise<boolean> {
+		await this.markModified(key);
+		return await this.putCallback(key.toString(), data, overwrite);
+	}
+
+	async remove(key: Ino): Promise<void> {
+		await this.markModified(key);
+		await this.removeCallback(key.toString());
+	}
+
+	async commit(): Promise<void> {
+		/* NOP */
+	}
+	async abort(): Promise<void> {
+		// Rollback old values.
+		for (const key of this.modifiedKeys) {
+			const value = this.originalData.get(key);
+			if (!value) {
+				// Key didn't exist.
+				await this.removeCallback(key.toString());
+			} else {
+				// Key existed. Store old value.
+				await this.putCallback(key.toString(), value, true);
+			}
+		}
+	}
+
+	/**
+	 * Stashes given key value pair into `originalData` if it doesn't already
+	 * exist. Allows us to stash values the program is requesting anyway to
+	 * prevent needless `get` requests if the program modifies the data later
+	 * on during the transaction.
+	 */
+	protected stashOldValue(ino: Ino, value?: Uint8Array) {
+		// Keep only the earliest value in the transaction.
+		if (!this.originalData.has(ino)) {
+			this.originalData.set(ino, value);
+		}
+	}
+
+	/**
+	 * Marks the given key as modified, and stashes its value if it has not been
+	 * stashed already.
+	 */
+	protected async markModified(ino: Ino) {
+		this.modifiedKeys.add(ino);
+		if (!this.originalData.has(ino)) {
+			this.originalData.set(ino, await this.getCallback(ino.toString()));
+		}
+	}
+}
+
+interface SimpleAsyncFSOptions {
+	getCallback: (key: string) => Promise<Uint8Array | undefined>;
+	putCallback: (
+		key: string,
+		data: Uint8Array,
+		overwrite: boolean,
+	) => Promise<boolean>;
+	removeCallback: (key: string) => Promise<void>;
+}
+
+export const SimpleAsyncFS = {
+	name: "SimpleAsyncFS",
+	options: {
+		getCallback: {
+			type: "function",
+			required: true,
+			description: "Function to get data from the store",
+		},
+		putCallback: {
+			type: "function",
+			required: true,
+			description: "Function to put data into the store",
+		},
+		removeCallback: {
+			type: "function",
+			required: true,
+			description: "Function to remove data from the store",
+		},
+	},
+
+	isAvailable(): boolean {
+		return true;
+	},
+
+	create(opts: SimpleAsyncFSOptions) {
+		return new zenfs.AsyncStoreFS({
+			store: new SimpleAsyncStore(
+				opts.getCallback,
+				opts.putCallback,
+				opts.removeCallback,
+			),
+		});
+	},
+} as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, SimpleAsyncFSOptions>;
+
+// class KvTransaction implements zenfs.AsyncTransaction {
+// 	constructor(readonly accessToken: string | undefined) {}
+//
+// 	async get(key: bigint): Promise<Uint8Array> {
+// 		const r = await fetch(`/api/kv/${key}`, {
+// 			method: "GET",
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 		if (r.ok) {
+// 			const blob = await r.blob();
+// 			return new Uint8Array(await blob.arrayBuffer());
+// 		}
+// 		return undefined as any;
+// 	}
+//
+// 	async put(
+// 		key: bigint,
+// 		data: Uint8Array,
+// 		overwrite: boolean,
+// 	): Promise<boolean> {
+// 		const r = await fetch(`/api/kv/${key}?overwrite=${overwrite}`, {
+// 			method: "PUT",
+// 			body: data,
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 		return r.status === 201;
+// 	}
+//
+// 	async remove(key: bigint): Promise<void> {
+// 		await fetch(`/api/kv/${key}`, {
+// 			method: "DELETE",
+// 			headers: {
+// 				Authorization: `Bearer ${this.accessToken}`,
+// 			},
+// 		});
+// 	}
+//
+// 	async commit(): Promise<void> {
+// 		// throw new Error("Method not implemented.");
+// 	}
+// 	async abort(): Promise<void> {
+// 		// throw new Error("Method not implemented.");
+// 	}
+// }

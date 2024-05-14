@@ -1,9 +1,10 @@
 import * as zenfs from "@zenfs/core";
+import { WebStorage } from "@zenfs/dom";
 import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 // @ts-ignore
 import { default as Module } from "../dist/driver.mjs";
-import { NodeEmscriptenFS } from "./fs";
+import { NodeEmscriptenFS, SimpleAsyncFS } from "./fs";
 import { ImageRepository } from "./image";
 import type { FilesystemConfig } from "./main.ts";
 import { Canvas, Renderer, TextRasterizer } from "./renderer";
@@ -67,6 +68,13 @@ export class DriverWorker {
 	async start(
 		assetPrefix: string,
 		_fileSystemConfig: FilesystemConfig,
+		getCallback: (key: string) => Promise<Uint8Array | undefined>,
+		putCallback: (
+			key: string,
+			data: Uint8Array,
+			overwrite: boolean,
+		) => Promise<boolean>,
+		removeCallback: (key: string) => Promise<void>,
 		onError: HostCallbacks["onError"],
 		onFrame: HostCallbacks["onFrame"],
 		onFetch: HostCallbacks["onFetch"],
@@ -101,16 +109,23 @@ export class DriverWorker {
 		});
 
 		const rootZip = await fetch(`${assetPrefix}/root.zip`);
-
 		const rootFs = await zenfs.resolveMountConfig({
 			backend: Zip,
 			zipData: await rootZip.arrayBuffer(),
 			name: "root.zip",
 		});
 
+		const localFs = await zenfs.resolveMountConfig({
+			backend: SimpleAsyncFS,
+			getCallback,
+			putCallback,
+			removeCallback,
+		});
+
 		await zenfs.configure({
 			mounts: {
 				"/root": rootFs,
+				"/user": localFs,
 			},
 		});
 

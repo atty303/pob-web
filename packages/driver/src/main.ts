@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 
+import * as zenfs from "@zenfs/core";
 import { UIEventManager } from "./event.ts";
 import type { DriverWorker, HostCallbacks } from "./worker.ts";
 import WorkerObject from "./worker.ts?worker";
@@ -28,6 +29,33 @@ export class PobDriver {
 		return this.driverWorker.start(
 			this.assetPrefix,
 			fileSystemConfig,
+			Comlink.proxy((key: string) => {
+				const data = localStorage.getItem(key);
+				if (data !== null) {
+					return zenfs.encode(data);
+				}
+			}),
+			Comlink.proxy((key: string, data: Uint8Array, overwrite: boolean) => {
+				try {
+					if (overwrite || localStorage.getItem(key) !== null) {
+						localStorage.setItem(key, zenfs.decode(data));
+						return true;
+					}
+					return false;
+				} catch (e) {
+					throw new zenfs.ErrnoError(zenfs.Errno.ENOSPC, "Storage is full.");
+				}
+			}),
+			Comlink.proxy((key: string) => {
+				try {
+					localStorage.removeItem(key);
+				} catch (e) {
+					throw new zenfs.ErrnoError(
+						zenfs.Errno.EIO,
+						`Unable to delete key ${key}: ${e}`,
+					);
+				}
+			}),
 			Comlink.proxy(this.hostCallbacks.onError),
 			Comlink.proxy(this.hostCallbacks.onFrame),
 			Comlink.proxy(this.hostCallbacks.onFetch),

@@ -3,9 +3,7 @@
 	"private": true,
 	"version": "0.6.0",
 	"type": "module",
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"build": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
 		"dev": "vite",
@@ -14,6 +12,7 @@
 	"dependencies": {
 		"@zenfs/core": "github:atty303/zenfs-core#prepare",
 		"@zenfs/zip": "github:atty303/zenfs-zip#prepare",
+		"@zenfs/dom": "^0.2.7",
 		"comlink": "^4.4.1"
 	}
 }

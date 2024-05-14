@@ -3,69 +3,6 @@ import { PobDriver } from "pob-driver/src/main.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { log, tag } from "./logger.ts";
 
-// class KvStore implements zenfs.AsyncStore {
-// 	get name() {
-// 		return "KvStore";
-// 	}
-//
-// 	constructor(readonly accessToken: string | undefined) {}
-//
-// 	async clear(): Promise<void> {
-// 		// throw new Error("Method not implemented.");
-// 	}
-// 	beginTransaction(): zenfs.AsyncTransaction {
-// 		return new KvTransaction(this.accessToken);
-// 	}
-// }
-//
-// class KvTransaction implements zenfs.AsyncTransaction {
-// 	constructor(readonly accessToken: string | undefined) {}
-//
-// 	async get(key: bigint): Promise<Uint8Array> {
-// 		const r = await fetch(`/api/kv/${key}`, {
-// 			method: "GET",
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 		if (r.ok) {
-// 			const blob = await r.blob();
-// 			return new Uint8Array(await blob.arrayBuffer());
-// 		}
-// 		return undefined as any;
-// 	}
-//
-// 	async put(
-// 		key: bigint,
-// 		data: Uint8Array,
-// 		overwrite: boolean,
-// 	): Promise<boolean> {
-// 		const r = await fetch(`/api/kv/${key}?overwrite=${overwrite}`, {
-// 			method: "PUT",
-// 			body: data,
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 		return r.status === 201;
-// 	}
-//
-// 	async remove(key: bigint): Promise<void> {
-// 		await fetch(`/api/kv/${key}`, {
-// 			method: "DELETE",
-// 			headers: {
-// 				Authorization: `Bearer ${this.accessToken}`,
-// 			},
-// 		});
-// 	}
-//
-// 	async commit(): Promise<void> {
-// 		// throw new Error("Method not implemented.");
-// 	}
-// 	async abort(): Promise<void> {
-// 		// throw new Error("Method not implemented.");
-// 	}
-// }
 //
 // interface KvFSOptions {
 // 	accessToken?: string;
