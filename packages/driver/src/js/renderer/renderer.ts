@@ -5,7 +5,7 @@ import type { WebGL1Backend } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
   id: string;
-  bitmap: ImageBitmap | ImageData;
+  bitmap: ImageBitmap | ImageData | OffscreenCanvas;
   flags: number;
 };
 

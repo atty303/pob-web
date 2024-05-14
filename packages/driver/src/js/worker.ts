@@ -80,7 +80,7 @@ export class DriverWorker {
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
 
     await TextRasterizer.loadFonts();
-    this.textRasterizer = new TextRasterizer(this.invalidate);
+    this.textRasterizer = new TextRasterizer();
 
     this.renderer = new Renderer(this.imageRepo, this.textRasterizer, this.screenSize);
     this.hostCallbacks = {

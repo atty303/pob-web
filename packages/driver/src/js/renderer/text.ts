@@ -35,13 +35,10 @@ export class TextRasterizer {
     }
   }
 
-  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap | undefined }> = new Map();
+  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap }> = new Map();
   private readonly context;
-  private readonly invalidate: () => void;
 
-  constructor(invalidate: () => void) {
-    this.invalidate = invalidate;
-
+  constructor() {
     const canvas = new OffscreenCanvas(1, 1);
     const gl = canvas.getContext("webgl");
     if (gl) {
@@ -82,29 +79,20 @@ export class TextRasterizer {
     const key = `${size}:${font}:${text}`;
     let bitmap = this.cache.get(key);
     if (!bitmap) {
-      bitmap = {
-        width: 0,
-        bitmap: undefined as TextureBitmap | undefined,
-      };
-      this.cache.set(key, bitmap);
-
-      const canvas = new OffscreenCanvas(1, 1);
-      const context = canvas.getContext("2d");
-      if (!context) throw new Error("Failed to get 2D context");
-      context.font = TextRasterizer.font(size, font);
-      const metrics = context.measureText(text);
-      if (metrics.width > 0) {
-        bitmap.width = metrics.width;
-        canvas.width = metrics.width;
-        canvas.height = size;
+      const width = this.measureText(size, font, text);
+      if (width > 0) {
+        const canvas = new OffscreenCanvas(width, size);
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Failed to get 2D context");
         context.font = TextRasterizer.font(size, font);
         context.fillStyle = "white";
         context.textBaseline = "bottom";
         context.fillText(text, 0, size);
-        createImageBitmap(canvas).then((b) => {
-          if (bitmap) bitmap.bitmap = { id: key, bitmap: b, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP };
-          this.invalidate();
-        });
+        bitmap = {
+          width,
+          bitmap: { id: key, bitmap: canvas, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP },
+        };
+        this.cache.set(key, bitmap);
       }
     }
     return bitmap;
