@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <emscripten.h>
 #include "draw.h"
-#include "lua.h"
 #include "lauxlib.h"
 #include "image.h"
 

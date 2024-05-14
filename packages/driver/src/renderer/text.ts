@@ -7,11 +7,14 @@ export class TextRasterizer {
 		string,
 		{ width: number; bitmap: TextureBitmap | undefined }
 	> = new Map();
-	private readonly context = document.createElement("canvas").getContext("2d")!;
+	private readonly context;
 	private readonly invalidate: () => void;
 
 	constructor(invalidate: () => void) {
 		this.invalidate = invalidate;
+		const context = new OffscreenCanvas(1, 1).getContext("2d");
+		if (!context) throw new Error("Failed to get 2D context");
+		this.context = context;
 	}
 
 	static font(size: number, fontNum: number) {
@@ -67,7 +70,7 @@ export class TextRasterizer {
 			};
 			this.cache.set(key, bitmap);
 
-			const canvas = document.createElement("canvas");
+			const canvas = new OffscreenCanvas(1, 1);
 			const context = canvas.getContext("2d");
 			if (!context) throw new Error("Failed to get 2D context");
 			context.font = TextRasterizer.font(size, font);

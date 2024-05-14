@@ -187,7 +187,7 @@ export default function PobWindow(props: {
 			return;
 		}
 
-		driver.value?.mountToDOM(container.current);
+		driver.value?.attachToDOM(container.current);
 
 		(async () => {
 			await driver.value?.start(zenfs.fs);
@@ -196,7 +196,7 @@ export default function PobWindow(props: {
 		return () => {
 			log.debug(tag.pob, "hook cleanup");
 			try {
-				driver.value?.unmountFromDOM();
+				driver.value?.detachFromDOM();
 			} catch (e: unknown) {
 				console.warn(e);
 			}

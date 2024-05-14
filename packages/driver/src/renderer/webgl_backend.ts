@@ -221,16 +221,12 @@ export class Canvas {
 	private batchTextureCount = 0;
 	private dispatchCount = 0;
 
-	get element(): HTMLCanvasElement {
+	get element(): OffscreenCanvas {
 		return this._element;
 	}
-	private readonly _element: HTMLCanvasElement;
+	private readonly _element: OffscreenCanvas;
 
-	constructor(width: number, height: number) {
-		const canvas = document.createElement("canvas");
-		canvas.width = width;
-		canvas.height = height;
-		canvas.style.position = "absolute";
+	constructor(canvas: OffscreenCanvas) {
 		this._element = canvas;
 
 		const gl = canvas.getContext("webgl", { premultipliedAlpha: true });
@@ -297,7 +293,7 @@ export class Canvas {
 		this.vbo = vbo;
 
 		// Set up the viewport
-		this.setViewport(0, 0, width, height);
+		this.setViewport(0, 0, canvas.width, canvas.height);
 	}
 
 	resize(width: number, height: number) {

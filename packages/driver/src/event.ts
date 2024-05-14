@@ -67,6 +67,10 @@ export class UIEventManager {
 		return this._cursorPosition;
 	}
 
+	get keyState() {
+		return this._keyState;
+	}
+
 	constructor(
 		readonly el: HTMLElement,
 		readonly callbacks: Callbacks,
@@ -104,10 +108,6 @@ export class UIEventManager {
 		};
 
 		el.focus();
-	}
-
-	isKeyDown(name: string) {
-		return this._keyState.has(name);
 	}
 
 	private handleContextMenu(e: MouseEvent) {
