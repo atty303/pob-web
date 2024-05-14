@@ -210,7 +210,7 @@ export class WebGL1Backend {
     this.gl = gl;
 
     gl.clearColor(0, 0, 0, 1);
-    gl.enable(gl.TEXTURE_2D);
+    // gl.enable(gl.TEXTURE_2D);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
 
@@ -361,18 +361,19 @@ export class WebGL1Backend {
       texture = t;
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
-      // if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      // } else {
-      //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      //   gl.generateMipmap(gl.TEXTURE_2D);
-      // }
+      if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      } else {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.generateMipmap(gl.TEXTURE_2D);
+      }
       if (textureBitmap.flags & TextureFlags.TF_NEAREST) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       } else {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       }
 
+      // TODO: If commented out, the tree renders wrong
       // if (textureBitmap.flags & TextureFlags.TF_CLAMP) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -382,6 +383,9 @@ export class WebGL1Backend {
       // }
 
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
+      if ((textureBitmap.flags & TextureFlags.TF_NOMIPMAP) === 0) {
+        gl.generateMipmap(gl.TEXTURE_2D);
+      }
 
       this.textures.set(textureBitmap.id, texture);
     }
