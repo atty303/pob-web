@@ -205,7 +205,7 @@ export class Canvas {
   constructor(canvas: OffscreenCanvas) {
     this._element = canvas;
 
-    const gl = canvas.getContext("webgl", { premultipliedAlpha: true });
+    const gl = canvas.getContext("webgl");
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
@@ -215,7 +215,6 @@ export class Canvas {
     gl.enable(gl.BLEND);
 
     this.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number;
-    console.log(`Max textures: ${this.maxTextures}`);
 
     this.textureProgram = new ShaderProgram(
       gl,
@@ -327,7 +326,7 @@ export class Canvas {
       }
 
       // Draw
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       // TODO: Use bufferSubData
       // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
       gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
@@ -361,7 +360,6 @@ export class Canvas {
       if (!t) throw new Error("Failed to create texture");
       texture = t;
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
 
       // if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
