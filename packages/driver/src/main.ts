@@ -54,6 +54,10 @@ export class PobDriver {
 		if (this.root) throw new Error("Already attached");
 		this.root = root;
 
+		for (const child of [...this.root.children]) {
+			this.root.removeChild(child);
+		}
+
 		const r = root.getBoundingClientRect();
 		const canvas = document.createElement("canvas");
 		canvas.width = r.width;

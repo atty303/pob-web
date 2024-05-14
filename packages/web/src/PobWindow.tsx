@@ -139,7 +139,7 @@ export default function PobWindow(props: {
 
 	const container = useRef<HTMLDivElement>(null);
 
-	const [token, setToken] = useState<string>();
+	const [_token, setToken] = useState<string>();
 	useEffect(() => {
 		async function getToken() {
 			const t = await auth0.getAccessTokenSilently();
@@ -184,6 +184,7 @@ export default function PobWindow(props: {
 		return () => {
 			_driver.detachFromDOM();
 			_driver.destory();
+			setLoading(true);
 		};
 	}, [props.version, onFrame]);
 
@@ -194,7 +195,9 @@ export default function PobWindow(props: {
 	return (
 		<div
 			ref={container}
-			className="h-full border border-base-300 bg-base-300"
+			className={`w-full h-full border border-neutral bg-black rounded-none ${
+				loading ? "skeleton" : ""
+			}`}
 		/>
 	);
 }
