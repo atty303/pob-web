@@ -90,7 +90,7 @@ export class UIEventManager {
     el.addEventListener("mousedown", handleMouseDown);
     el.addEventListener("mouseup", handleMouseUp);
     el.addEventListener("dblclick", handleDblClick);
-    el.addEventListener("wheel", handleWheel);
+    el.addEventListener("wheel", handleWheel, { passive: false });
     el.addEventListener("keydown", handleKeyDown);
     el.addEventListener("keypress", handleKeyPress);
     el.addEventListener("keyup", handleKeyUp);
