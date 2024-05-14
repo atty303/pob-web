@@ -3,9 +3,9 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 // @ts-ignore
 import { default as Module } from "../../dist/driver.mjs";
+import type { FilesystemConfig } from "./driver.ts";
 import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
-import type { FilesystemConfig } from "./main.ts";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
 
 type Mod = {

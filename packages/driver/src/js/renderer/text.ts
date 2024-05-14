@@ -41,7 +41,16 @@ export class TextRasterizer {
 
   constructor(invalidate: () => void) {
     this.invalidate = invalidate;
-    const context = new OffscreenCanvas(1, 1).getContext("2d");
+
+    const canvas = new OffscreenCanvas(1, 1);
+    const gl = canvas.getContext("webgl");
+    if (gl) {
+      const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      console.log("maxTextureSize", maxTextureSize);
+    }
+
+    const canvas1 = new OffscreenCanvas(1, 1);
+    const context = canvas1.getContext("2d");
     if (!context) throw new Error("Failed to get 2D context");
     this.context = context;
   }
