@@ -140,8 +140,10 @@ export default function PobWindow(props: {
 	const [_token, setToken] = useState<string>();
 	useEffect(() => {
 		async function getToken() {
-			const t = await auth0.getAccessTokenSilently();
-			setToken(t);
+			if (auth0.isAuthenticated) {
+				const t = await auth0.getAccessTokenSilently();
+				setToken(t);
+			}
 		}
 		getToken();
 	}, [auth0]);

@@ -31,9 +31,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 			<Auth0Provider
 				domain="pob-web.us.auth0.com"
 				clientId="o8TOT9gDHzztbdIIIV54HxlfaSMFYTeH"
+				legacySameSiteCookie={false}
+				useRefreshTokens={true}
 				authorizationParams={{
 					redirect_uri: window.location.origin,
 					audience: "https://pob.cool/api",
+					scope: "openid profile email offline_access",
 				}}
 			>
 				<App />
