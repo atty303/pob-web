@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/atty303/pob-web/compare/v0.7.2...v0.7.3) (2024-05-14)
+
+
+### Bug Fixes
+
+* **web:** link to known missing feature ([559648b](https://github.com/atty303/pob-web/commit/559648b794df82b9073b2332f368e63de3028eec))
+
 ## [0.7.2](https://github.com/atty303/pob-web/compare/v0.7.1...v0.7.2) (2024-05-14)
 
 
