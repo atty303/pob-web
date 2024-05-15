@@ -3,8 +3,9 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
-import { NodeEmscriptenFS } from "./fs";
 import { ImageRepository } from "./image";
+// @ts-ignore
+import { createNODEFS } from "./nodefs.js";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
 
 interface DriverModule extends EmscriptenModule {
@@ -170,8 +171,10 @@ export class DriverWorker {
       // zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
     }
 
+    const nodeFS = createNODEFS(zenfs.fs, module.FS, module.PATH, module.ERRNO_CODES);
+
     module.FS.mkdir("/app");
-    module.FS.mount(new NodeEmscriptenFS(module.FS, module.PATH, module.ERRNO_CODES, zenfs.fs), { root: "." }, "/app");
+    module.FS.mount(nodeFS, { root: "." }, "/app");
 
     Object.assign(module, this.exports(module));
     this.imports = this.resolveImports(module);
