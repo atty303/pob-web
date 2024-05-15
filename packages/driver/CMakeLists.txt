@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.28)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(PROJECT_NAME "driver-debug")
+    project("driver-debug")
 else()
-    set(PROJECT_NAME "driver-release")
+    project("driver-release")
 endif()
-
-project(${PROJECT_NAME})
 
 add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/boot.c
@@ -28,7 +26,6 @@ set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/zlib-ng ${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib-ng)
 
 add_compile_options(-flto)
-
 set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 
 add_executable(${PROJECT_NAME}
