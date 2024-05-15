@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.28)
-project(driver)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(PROJECT_NAME "driver-debug")
+else()
+    set(PROJECT_NAME "driver-release")
+endif()
+
+project(${PROJECT_NAME})
 
 add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/boot.c
@@ -27,15 +34,15 @@ set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 add_executable(${PROJECT_NAME}
         ${LUA_SOURCES}
         ${CMAKE_BINARY_DIR}/boot.c
-        src/driver.c
-        src/draw.c
-        src/draw.h
-        src/image.c
-        src/image.h
-        src/fs.c
-        src/fs.h
-        src/util.c
-        src/util.h
+        src/c/driver.c
+        src/c/draw.c
+        src/c/draw.h
+        src/c/image.c
+        src/c/image.h
+        src/c/fs.c
+        src/c/fs.h
+        src/c/util.c
+        src/c/util.h
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE $<TARGET_FILE:zlib>)
