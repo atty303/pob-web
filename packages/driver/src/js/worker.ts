@@ -3,7 +3,7 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
-import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
+import { NodeEmscriptenFS } from "./fs";
 import { ImageRepository } from "./image";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
 
@@ -70,9 +70,6 @@ export class DriverWorker {
     build: "debug" | "release",
     assetPrefix: string,
     fileSystemConfig: FilesystemConfig,
-    getCallback: (key: string) => Promise<Uint8Array | undefined>,
-    putCallback: (key: string, data: Uint8Array, overwrite: boolean) => Promise<boolean>,
-    removeCallback: (key: string) => Promise<void>,
     onError: HostCallbacks["onError"],
     onFrame: HostCallbacks["onFrame"],
     onFetch: HostCallbacks["onFetch"],
@@ -110,19 +107,16 @@ export class DriverWorker {
       backend: Zip,
       zipData: await rootZip.arrayBuffer(),
       name: "root.zip",
-    });
-
-    const localStore = new SimpleAsyncStore(getCallback, putCallback, removeCallback);
-    const localFs = await zenfs.resolveMountConfig({
-      name: "LocalStorage",
-      backend: SimpleAsyncFS,
-      store: localStore,
-    });
+    } as any);
 
     await zenfs.configure({
       mounts: {
         "/root": rootFs,
-        "/user": localFs,
+        "/user": {
+          name: "LocalStorage",
+          backend: zenfs.Port,
+          port: self as unknown as any,
+        } as any,
       },
     });
 

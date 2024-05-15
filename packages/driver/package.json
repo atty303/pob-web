@@ -12,9 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@zenfs/core": "github:atty303/zenfs-core#prepare",
+    "@zenfs/core": "github:atty303/zenfs-core#f710bdd378bfbd8998c3669a725b783cd166fae1",
     "@zenfs/zip": "github:atty303/zenfs-zip#prepare",
-    "@zenfs/dom": "^0.2.7",
     "comlink": "^4.4.1"
   }
 }
