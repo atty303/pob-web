@@ -26,7 +26,7 @@ export class ImageRepository {
     };
     this.images.set(handle, info);
 
-    const r = await fetch(this.prefix + src);
+    const r = await fetch(this.prefix + src, { referrerPolicy: "no-referrer" });
     if (r.ok) {
       const blob = await r.blob();
       info.bitmap = await createImageBitmap(blob);
