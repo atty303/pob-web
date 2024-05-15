@@ -33,6 +33,7 @@ export type HostCallbacks = {
 type MainCallbacks = {
   copy: (text: string) => void;
   paste: () => Promise<string>;
+  openUrl: (url: string) => void;
 };
 
 type Imports = {
@@ -75,6 +76,7 @@ export class DriverWorker {
     onFetch: HostCallbacks["onFetch"],
     copy: MainCallbacks["copy"],
     paste: MainCallbacks["paste"],
+    openUrl: MainCallbacks["openUrl"],
   ) {
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
 
@@ -90,6 +92,7 @@ export class DriverWorker {
     this.mainCallbacks = {
       copy,
       paste,
+      openUrl,
     };
 
     const module = await Module({
@@ -271,6 +274,7 @@ export class DriverWorker {
         this.textRasterizer?.measureTextCursorIndex(size, font, text, cursorX, cursorY) ?? 0,
       copy: (text: string) => this.mainCallbacks?.copy(text),
       paste: () => this.mainCallbacks?.paste(),
+      openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
       fetch: async (url: string, header: string | undefined, body: string | undefined) => {
         try {
           const headers = header

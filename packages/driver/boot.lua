@@ -121,8 +121,6 @@ function ConClear()
 end
 function SpawnProcess(cmdName, args)
 end
-function OpenURL(url)
-end
 function SetProfiling(isEnabled)
 end
 function Restart()

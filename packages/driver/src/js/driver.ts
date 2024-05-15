@@ -61,6 +61,7 @@ export class Driver {
       Comlink.proxy(this.hostCallbacks.onFetch),
       Comlink.proxy((text: string) => this.copy(text)),
       Comlink.proxy(() => this.paste()),
+      Comlink.proxy((url) => window.open(url, "_black")),
     );
   }
 
