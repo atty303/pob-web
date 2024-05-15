@@ -109,14 +109,16 @@ export class DriverWorker {
       name: "root.zip",
     } as any);
 
+    const userFs = await zenfs.resolveMountConfig({
+      name: "LocalStorage",
+      backend: zenfs.Port,
+      port: self as unknown as any,
+    });
+
     await zenfs.configure({
       mounts: {
         "/root": rootFs,
-        "/user": {
-          name: "LocalStorage",
-          backend: zenfs.Port,
-          port: self as unknown as any,
-        } as any,
+        "/user": userFs,
       },
     });
 

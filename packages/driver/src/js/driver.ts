@@ -25,19 +25,15 @@ export class Driver {
     readonly hostCallbacks: HostCallbacks,
   ) {}
 
-  start(fileSystemConfig: FilesystemConfig) {
+  async start(fileSystemConfig: FilesystemConfig) {
     if (this.isStarted) throw new Error("Already started");
     this.isStarted = true;
 
     this.worker = new WorkerObject();
     this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
 
-    (async () => {
-      if (this.worker) {
-        const fs = await zenfs.resolveMountConfig({ backend: WebStorage });
-        zenfs.attachFS(this.worker as unknown as any, fs);
-      }
-    })();
+    const fs = await zenfs.resolveMountConfig({ backend: WebStorage });
+    zenfs.attachFS(this.worker as unknown as any, fs);
 
     return this.driverWorker.start(
       this.build,

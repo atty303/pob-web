@@ -1,5 +1,6 @@
 import * as zenfs from "@zenfs/core";
 import type { Ino } from "@zenfs/core";
+import { SimpleSyncStore } from "@zenfs/core/backends/store/simple";
 
 export interface EmscriptenStats {
   dev: number;
@@ -412,25 +413,17 @@ export class NodeEmscriptenFS implements EmscriptenFS, Emscripten.FileSystemType
   }
 }
 
-export class WebStorageStore implements zenfs.Store, zenfs.SimpleSyncStore {
-  constructor(readonly _storage: Storage) {}
+export class WebStorageStore extends SimpleSyncStore {
+  constructor(readonly _storage: Storage) {
+    super();
+  }
 
   get name(): string {
     return "WebStorageStore";
   }
 
-  get isSync(): boolean {
-    return true;
-  }
-
   clear(): void | Promise<void> {
     throw new Error("Method not implemented.");
-  }
-  clearSync(): void {
-    throw new Error("Method not implemented.");
-  }
-  beginTransaction(): zenfs.Transaction {
-    return new zenfs.SimpleSyncTransaction(this);
   }
 
   get(ino: Ino): Uint8Array | undefined {
@@ -450,7 +443,7 @@ export class WebStorageStore implements zenfs.Store, zenfs.SimpleSyncStore {
       throw new zenfs.ErrnoError(zenfs.Errno.ENOSPC, "Storage is full.");
     }
   }
-  remove(ino: Ino): void {
+  delete(ino: Ino): void {
     try {
       this._storage.removeItem(ino.toString());
     } catch (e) {
