@@ -1,6 +1,5 @@
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
-import babel from "vite-plugin-babel";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +10,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1024,
+    sourcemap: true,
   },
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
@@ -19,14 +19,5 @@ export default defineConfig({
   worker: {
     format: "es",
   },
-  plugins: [
-    react(),
-    babel({
-      babelConfig: {
-        babelrc: false,
-        configFile: false,
-        plugins: [["@simbathesailor/babel-plugin-use-what-changed", { active: true }]],
-      },
-    }),
-  ],
+  plugins: [react()],
 });
