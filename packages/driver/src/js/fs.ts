@@ -45,7 +45,7 @@ export interface EmscriptenStreamOps {
 export interface EmscriptenFS {
   node_ops: EmscriptenEntryOps;
   stream_ops: EmscriptenStreamOps;
-  mount(mount: { opts: { root: string } }): EmscriptenEntry;
+  // mount(mount: { opts: { root: string } }): EmscriptenEntry;
   createNode(parent: EmscriptenEntry, name: string, mode: number, dev?: any): EmscriptenEntry;
   getMode(path: string): number;
   realPath(node: EmscriptenEntry): string;
@@ -355,7 +355,7 @@ class NodeEmscriptenStreamOps implements EmscriptenStreamOps {
   }
 }
 
-export class NodeEmscriptenFS implements EmscriptenFS {
+export class NodeEmscriptenFS implements EmscriptenFS, Emscripten.FileSystemType {
   public node_ops: EmscriptenEntryOps;
   public stream_ops: EmscriptenStreamOps;
 
@@ -375,9 +375,11 @@ export class NodeEmscriptenFS implements EmscriptenFS {
     this.stream_ops = new NodeEmscriptenStreamOps(this, nodefs, fs, errnoCodes);
   }
 
-  mount(m: { opts: { root: string } }): EmscriptenEntry {
-    return this.createNode(null, "/", this.getMode(m.opts.root), 0);
+  mount(m: FS.Mount): FS.FSNode {
+    return this.createNode(null, "/", this.getMode((m.opts as any).root), 0) as unknown as FS.FSNode;
   }
+
+  syncfs(_mount: FS.Mount, _populate: () => unknown, _done: (err?: number | null) => unknown): void {}
 
   public createNode(parent: EmscriptenEntry | null, name: string, mode: number, _dev?: any): EmscriptenEntry {
     if (!this.fs.isDir(mode) && !this.fs.isFile(mode) && !this.fs.isLink(mode)) {

@@ -7,9 +7,12 @@ import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
 import { ImageRepository } from "./image";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
 
-type Mod = {
-  HEAPU8: Uint8Array;
-};
+interface DriverModule extends EmscriptenModule {
+  FS: typeof FS;
+  PATH: object;
+  ERRNO_CODES: object;
+  cwrap: typeof cwrap;
+}
 
 type OnFetchFunction = (
   url: string,
@@ -94,9 +97,10 @@ export class DriverWorker {
       openUrl,
     };
 
-    // @ts-ignore
-    const { default: Module } = await import(`../../dist/driver-${build}.mjs`);
-    const module = await Module({
+    const driver = (await import(`../../dist/driver-${build}.mjs`)) as {
+      default: EmscriptenModuleFactory<DriverModule>;
+    };
+    const module = await driver.default({
       print: console.log,
       printErr: console.warn,
     });
@@ -238,7 +242,7 @@ export class DriverWorker {
   }
 
   // js -> wasm
-  private resolveImports(module: any): Imports {
+  private resolveImports(module: DriverModule): Imports {
     return {
       init: module.cwrap("init", "number", []),
       start: module.cwrap("start", "number", []),
@@ -251,7 +255,7 @@ export class DriverWorker {
   }
 
   // wasm -> js
-  private exports(module: Mod) {
+  private exports(module: DriverModule) {
     return {
       onError: (message: string) => this.hostCallbacks?.onError(message),
       getScreenWidth: () => this.screenSize.width,
