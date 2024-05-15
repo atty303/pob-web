@@ -1,8 +1,6 @@
 import * as zenfs from "@zenfs/core";
 import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
-// @ts-ignore
-import { default as Module } from "../../dist/driver-release.mjs";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
 import { NodeEmscriptenFS, SimpleAsyncFS, SimpleAsyncStore } from "./fs";
@@ -66,6 +64,7 @@ export class DriverWorker {
   private isRunning = true;
 
   async start(
+    build: "debug" | "release",
     assetPrefix: string,
     fileSystemConfig: FilesystemConfig,
     getCallback: (key: string) => Promise<Uint8Array | undefined>,
@@ -95,6 +94,8 @@ export class DriverWorker {
       openUrl,
     };
 
+    // @ts-ignore
+    const { default: Module } = await import(`../../dist/driver-${build}.mjs`);
     const module = await Module({
       print: console.log,
       printErr: console.warn,

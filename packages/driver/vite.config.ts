@@ -6,4 +6,7 @@ export default defineConfig({
   define: {
     __ASSET_PREFIX__: JSON.stringify("https://pob-web-asset.atty303.ninja/versions"),
   },
+  worker: {
+    format: "es",
+  },
 });

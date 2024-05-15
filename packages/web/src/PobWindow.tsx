@@ -68,7 +68,7 @@ export default function PobWindow(props: {
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 
-    const _driver = new Driver(`${__ASSET_PREFIX__}/v${props.version}`, {
+    const _driver = new Driver("release", `${__ASSET_PREFIX__}/v${props.version}`, {
       onError: (message) => {
         throw new Error(message);
       },

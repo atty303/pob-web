@@ -19,6 +19,7 @@ export class Driver {
   private resizeObserver: ResizeObserver | undefined;
 
   constructor(
+    readonly build: "debug" | "release",
     readonly assetPrefix: string,
     readonly hostCallbacks: HostCallbacks,
   ) {}
@@ -30,6 +31,7 @@ export class Driver {
     this.worker = new WorkerObject();
     this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
     return this.driverWorker.start(
+      this.build,
       this.assetPrefix,
       fileSystemConfig,
       Comlink.proxy(async (key: string) => {

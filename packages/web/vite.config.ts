@@ -10,24 +10,14 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        assetFileNames: (assetInfo) => {
-          const noHash = [
-            // These files are loaded by the driver, and their names are hardcoded
-            "driver.wasm",
-          ];
-          if (noHash.some((_) => assetInfo.name?.includes(_))) {
-            return "assets/[name][extname]";
-          }
-          return "assets/[name]-[hash][extname]";
-        },
-      },
-    },
+    chunkSizeWarningLimit: 1024,
   },
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
     __ASSET_PREFIX__: JSON.stringify("https://pob-web-asset.atty303.ninja/versions"),
+  },
+  worker: {
+    format: "es",
   },
   plugins: [
     react(),
