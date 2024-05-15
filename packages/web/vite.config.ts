@@ -14,7 +14,7 @@ export default defineConfig({
   },
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
-    __ASSET_PREFIX__: JSON.stringify("https://pob-web-asset.atty303.ninja/versions"),
+    __ASSET_PREFIX__: JSON.stringify("https://asset.pob.cool/versions"),
   },
   worker: {
     format: "es",
