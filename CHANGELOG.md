@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.4](https://github.com/atty303/pob-web/compare/v0.7.3...v0.7.4) (2024-05-16)
+
+
+### Bug Fixes
+
+* **driver:** alpha ([835e1f3](https://github.com/atty303/pob-web/commit/835e1f3088817fd8f9deef301c5386bc78bf573b))
+* **driver:** bin packing text renderer ([617519f](https://github.com/atty303/pob-web/commit/617519f1d64227b4effa085e5e83939d953a1898))
+* **driver:** cors error ([eba2d9a](https://github.com/atty303/pob-web/commit/eba2d9a20f372a42f7ec47c0ff070e91d1f8c040))
+* **driver:** local storage ([d61bf30](https://github.com/atty303/pob-web/commit/d61bf30b59f988e4b160a2c63d96d83e6e987497)), closes [#42](https://github.com/atty303/pob-web/issues/42)
+* **driver:** nodefs ([fbd1fff](https://github.com/atty303/pob-web/commit/fbd1fffe1efac27704816ec90526cc078ec25048))
+* **driver:** open url ([1dca8f7](https://github.com/atty303/pob-web/commit/1dca8f712e38f7310125fb6debded729c4211b44)), closes [#44](https://github.com/atty303/pob-web/issues/44)
+* **driver:** shell ([8b85466](https://github.com/atty303/pob-web/commit/8b854660634ec9974f04cb25bfc9b9fab5d99c13))
+
 ## [0.7.3](https://github.com/atty303/pob-web/compare/v0.7.2...v0.7.3) (2024-05-14)
 
 
