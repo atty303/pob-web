@@ -192,7 +192,7 @@ export class WebGL1Backend {
   private drawCount = 0;
   private readonly vbo: WebGLBuffer;
   private readonly maxTextures: number;
-  private batchTextures: Map<string, TextureBitmap & { index: number }> = new Map();
+  private batchTextures: Map<string, { index: number; texture: WebGLTexture }> = new Map();
   private batchTextureCount = 0;
   private dispatchCount = 0;
 
@@ -276,12 +276,18 @@ export class WebGL1Backend {
   }
 
   begin() {
-    this.vertices = new VertexBuffer();
-    this.drawCount = 0;
-    this.dispatchCount = 0;
+    this.resetBatch();
   }
 
   end() {
+    // if (this.textures.get("@text:1")) {
+    //   this.drawQuad(
+    //     [0, 0, 1024, 0, 1024, 1024, 0, 1024],
+    //     [0, 0, 1, 0, 1, 1, 0, 1],
+    //     { id: "@text:1", bitmap: new ImageData(1024, 1024), flags: 0 },
+    //     [1, 1, 1, 1],
+    //   );
+    // }
     this.dispatch();
     // console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
   }
@@ -294,8 +300,15 @@ export class WebGL1Backend {
       if (this.batchTextures.size >= this.maxTextures) {
         this.dispatch();
       }
-      t = { ...textureBitmap, index: this.batchTextureCount++ };
+      const texture = this.getTexture(textureBitmap);
+      t = { index: this.batchTextureCount++, texture };
       this.batchTextures.set(textureBitmap.id, t);
+    }
+    if (textureBitmap.updateSubImage) {
+      const gl = this.gl;
+      gl.bindTexture(gl.TEXTURE_2D, t.texture);
+      const sub = textureBitmap.updateSubImage();
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, sub.x, sub.y, sub.width, sub.height, gl.RGBA, gl.UNSIGNED_BYTE, sub.source);
     }
 
     for (const i of [0, 1, 2, 0, 2, 3]) {
@@ -320,7 +333,7 @@ export class WebGL1Backend {
       // Set up the texture
       for (const t of this.batchTextures.values()) {
         gl.activeTexture(gl.TEXTURE0 + t.index);
-        gl.bindTexture(gl.TEXTURE_2D, this.getTexture(t));
+        gl.bindTexture(gl.TEXTURE_2D, t.texture);
         gl.uniform1i(p.textures[t.index], t.index);
       }
 
@@ -347,6 +360,10 @@ export class WebGL1Backend {
       // gl.disableVertexAttribArray(p.texId);
       // gl.bindBuffer(gl.ARRAY_BUFFER, null);
     });
+    this.resetBatch();
+  }
+
+  private resetBatch() {
     this.vertices = new VertexBuffer();
     this.batchTextures = new Map();
     this.batchTextureCount = 0;
@@ -385,10 +402,11 @@ export class WebGL1Backend {
 
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
       if ((textureBitmap.flags & TextureFlags.TF_NOMIPMAP) === 0) {
-        gl.generateMipmap(gl.TEXTURE_2D);
+        // gl.generateMipmap(gl.TEXTURE_2D);
       }
 
       this.textures.set(textureBitmap.id, texture);
+      // console.log("Created texture", textureBitmap.id, textureBitmap.bitmap.width, textureBitmap.bitmap.height);
     }
     return texture;
   }

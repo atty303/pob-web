@@ -7,6 +7,7 @@ export type TextureBitmap = {
   id: string;
   bitmap: ImageBitmap | ImageData | OffscreenCanvas;
   flags: number;
+  updateSubImage?: () => { x: number; y: number; width: number; height: number; source: ArrayBufferView };
 };
 
 const WHITE_TEXTURE_BITMAP = (() => {
@@ -241,7 +242,7 @@ export class Renderer {
         segments.push({
           text: subtext,
           color: this.currentColor,
-          bitmap: this.textRasterizer.get(height, font, subtext),
+          render: this.textRasterizer.get(height, font, subtext),
         });
       }
     }
@@ -249,11 +250,11 @@ export class Renderer {
       segments.push({
         text,
         color: this.currentColor,
-        bitmap: this.textRasterizer.get(height, font, text),
+        render: this.textRasterizer.get(height, font, text),
       });
     }
 
-    const width = segments.reduce((width, segment) => width + segment.bitmap.width, 0);
+    const width = segments.reduce((width, segment) => width + segment.render.width, 0);
 
     let x = pos.x;
     switch (align) {
@@ -272,15 +273,15 @@ export class Renderer {
     }
 
     for (const segment of segments) {
-      if (segment.bitmap.bitmap) {
+      if (segment.render.bitmap) {
         this.backend?.drawQuad(
-          [x, pos.y, x + segment.bitmap.width, pos.y, x + segment.bitmap.width, pos.y + height, x, pos.y + height],
-          [0, 0, 1, 0, 1, 1, 0, 1],
-          segment.bitmap.bitmap,
+          [x, pos.y, x + segment.render.width, pos.y, x + segment.render.width, pos.y + height, x, pos.y + height],
+          segment.render.coords,
+          segment.render.bitmap,
           segment.color,
         );
       }
-      x += segment.bitmap.width;
+      x += segment.render.width;
     }
 
     pos.y += height;
