@@ -189,7 +189,7 @@ export class BinPackingTextRasterizer {
     const gl = canvas.getContext("webgl");
     if (!gl) throw new Error("Failed to get WebGL context");
     const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
-    const size = 1024;
+    const size = 4096;
     this.size = { width: Math.min(size, maxTextureSize), height: Math.min(size, maxTextureSize) };
 
     this.reset();

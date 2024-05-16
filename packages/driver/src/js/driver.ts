@@ -1,8 +1,8 @@
 import * as Comlink from "comlink";
 
 import * as zenfs from "@zenfs/core";
+import { WebStorage } from "@zenfs/dom";
 import { UIEventManager } from "./event.ts";
-import { WebStorage } from "./fs.ts";
 import type { DriverWorker, HostCallbacks } from "./worker.ts";
 import WorkerObject from "./worker.ts?worker";
 
