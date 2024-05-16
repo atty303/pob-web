@@ -261,9 +261,14 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
         });
       },
       write(stream, buffer, offset, length, position) {
-        return NODEFS.tryFSOperation(() =>
-          fs.writeSync(stream.nfd, new Int8Array(buffer.buffer, offset, length), 0, length, position),
-        );
+        return NODEFS.tryFSOperation(() => {
+          // fs.writeSync(stream.nfd, new Int8Array(buffer.buffer, offset, length), 0, length, position),
+          if (length === 0) return 0;
+          const buf = new ArrayBuffer(length);
+          buf.set(buffer.subarray(offset, offset + length));
+          // console.log("write", new TextDecoder().decode(buf));
+          return fs.writeSync(stream.nfd, buf, 0, length, position);
+        });
       },
       llseek(stream, offset, whence) {
         var position = offset;

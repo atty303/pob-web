@@ -104,11 +104,11 @@ export class DriverWorker {
     });
 
     const rootZip = await fetch(`${assetPrefix}/root.zip`);
-    const rootFs = await zenfs.resolveMountConfig({
-      backend: Zip,
-      zipData: await rootZip.arrayBuffer(),
-      name: "root.zip",
-    } as any);
+    // const rootFs = await zenfs.resolveMountConfig({
+    //   backend: Zip,
+    //   zipData: await rootZip.arrayBuffer(),
+    //   name: "root.zip",
+    // } as any);
 
     const userFs = await zenfs.resolveMountConfig({
       name: "LocalStorage",
@@ -118,8 +118,16 @@ export class DriverWorker {
 
     await zenfs.configure({
       mounts: {
-        "/root": rootFs,
-        "/user": userFs,
+        "/root": {
+          backend: Zip,
+          zipData: await rootZip.arrayBuffer(),
+          name: "root.zip",
+        },
+        "/user": {
+          name: "LocalStorage",
+          backend: zenfs.Port,
+          port: self as unknown as any,
+        },
       },
     });
 

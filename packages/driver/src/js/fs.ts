@@ -1,10 +1,15 @@
 import * as zenfs from "@zenfs/core";
 import type { Ino } from "@zenfs/core";
-import { SimpleSyncStore } from "@zenfs/core/backends/store/simple";
 
-export class WebStorageStore extends SimpleSyncStore {
-  constructor(readonly _storage: Storage) {
-    super();
+export class WebStorageStore implements zenfs.SimpleSyncStore {
+  constructor(readonly _storage: Storage) {}
+
+  async sync(): Promise<void> {}
+  clearSync(): void {
+    throw new Error("Method not implemented.");
+  }
+  transaction(): zenfs.Transaction {
+    return new zenfs.SimpleTransaction(this);
   }
 
   get name(): string {
@@ -21,11 +26,8 @@ export class WebStorageStore extends SimpleSyncStore {
       return zenfs.encode(data);
     }
   }
-  put(ino: Ino, data: Uint8Array, overwrite: boolean): boolean {
+  set(ino: Ino, data: Uint8Array): boolean {
     try {
-      if (!overwrite && this._storage.getItem(ino.toString()) !== null) {
-        return false;
-      }
       this._storage.setItem(ino.toString(), zenfs.decode(data));
       return true;
     } catch (e) {
@@ -64,7 +66,7 @@ export const WebStorage = {
   },
 
   create({ storage = globalThis.localStorage }: WebStorageOptions) {
-    return new zenfs.StoreFS({ store: new WebStorageStore(storage) });
+    return new zenfs.StoreFS(new WebStorageStore(storage));
   },
 } as const satisfies zenfs.Backend<zenfs.StoreFS, WebStorageOptions>;
 
