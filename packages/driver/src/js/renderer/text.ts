@@ -42,7 +42,8 @@ export class TextMetrics {
 
   measure(size: number, fontNum: number, text: string) {
     this.context.font = font(size, fontNum);
-    return Math.ceil(this.context.measureText(text.replaceAll(reColorGlobal, "")).width);
+    const lines = text.replaceAll(reColorGlobal, "").split("\n");
+    return Math.ceil(Math.max(0, ...lines.map((line) => this.context.measureText(line).width)));
   }
 
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
