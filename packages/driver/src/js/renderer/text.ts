@@ -3,62 +3,50 @@ import type { TextureBitmap } from "./renderer.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 
-interface WorkerGlobalScope {
-  fonts: FontFaceSet;
+export async function loadFonts() {
+  await loadFont("/LiberationSans-Regular.woff", "Liberation Sans");
+  await loadFont("/LiberationSans-Bold.woff", "Liberation Sans Bold");
+  await loadFont("/VeraMono.woff", "Bitstream Vera Mono");
 }
 
-export class TextRasterizer {
-  static async loadFonts() {
-    await TextRasterizer.loadFont("/LiberationSans-Regular.woff", "Liberation Sans");
-    await TextRasterizer.loadFont("/LiberationSans-Bold.woff", "Liberation Sans Bold");
-    await TextRasterizer.loadFont("/VeraMono.woff", "Bitstream Vera Mono");
-  }
+async function loadFont(url: string, family: string) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Failed to load font: ${url}`);
+  const blob = await r.blob();
+  const fontFace = new FontFace(family, await blob.arrayBuffer());
+  await fontFace.load();
+  (self as unknown as { fonts: FontFaceSet }).fonts.add(fontFace);
+}
 
-  static async loadFont(url: string, family: string) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Failed to load font: ${url}`);
-    const blob = await r.blob();
-    const fontFace = new FontFace(family, await blob.arrayBuffer());
-    await fontFace.load();
-    (self as unknown as WorkerGlobalScope).fonts.add(fontFace);
+function font(size: number, fontNum: number) {
+  const fontSize = size - 2;
+  switch (fontNum) {
+    case 1:
+      return `${fontSize}px Liberation Sans`;
+    case 2:
+      return `${fontSize}px Liberation Sans Bold`;
+    default:
+      return `${fontSize}px Bitstream Vera Mono`;
   }
+}
 
-  private static font(size: number, fontNum: number) {
-    const fontSize = size - 2;
-    switch (fontNum) {
-      case 1:
-        return `${fontSize}px Liberation Sans`;
-      case 2:
-        return `${fontSize}px Liberation Sans Bold`;
-      default:
-        return `${fontSize}px Bitstream Vera Mono`;
-    }
-  }
-
-  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap | undefined }> = new Map();
+export class TextMetrics {
   private readonly context;
 
   constructor() {
     const canvas = new OffscreenCanvas(1, 1);
-    const gl = canvas.getContext("webgl");
-    if (gl) {
-      const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-      console.log("maxTextureSize", maxTextureSize);
-    }
-
-    const canvas1 = new OffscreenCanvas(1, 1);
-    const context = canvas1.getContext("2d");
+    const context = canvas.getContext("2d");
     if (!context) throw new Error("Failed to get 2D context");
     this.context = context;
   }
 
-  measureText(size: number, font: number, text: string) {
-    this.context.font = TextRasterizer.font(size, font);
+  measure(size: number, fontNum: number, text: string) {
+    this.context.font = font(size, fontNum);
     return this.context.measureText(text.replaceAll(reColorGlobal, "")).width;
   }
 
-  measureTextCursorIndex(size: number, font: number, text: string, cursorX: number, cursorY: number) {
-    this.context.font = TextRasterizer.font(size, font);
+  measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
+    this.context.font = font(size, fontNum);
     const lines = text.split("\n");
     const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
     const line = lines[y];
@@ -74,17 +62,30 @@ export class TextRasterizer {
     }
     return i;
   }
+}
 
-  get(size: number, font: number, text: string) {
-    const key = `${size}:${font}:${text}`;
+export class TextRasterizer {
+  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap | undefined }> = new Map();
+  private readonly maxTextureSize: number;
+
+  constructor(readonly textMetrics: TextMetrics) {
+    const canvas = new OffscreenCanvas(1, 1);
+    const gl = canvas.getContext("webgl");
+    if (gl) {
+      this.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+    }
+  }
+
+  get(size: number, fontNum: number, text: string) {
+    const key = `${size}:${fontNum}:${text}`;
     let bitmap = this.cache.get(key);
     if (!bitmap) {
-      const width = this.measureText(size, font, text);
+      const width = this.textMetrics.measure(size, fontNum, text);
       if (width > 0) {
         const canvas = new OffscreenCanvas(width, size);
         const context = canvas.getContext("2d");
         if (!context) throw new Error("Failed to get 2D context");
-        context.font = TextRasterizer.font(size, font);
+        context.font = font(size, fontNum);
         context.fillStyle = "white";
         context.textBaseline = "bottom";
         context.fillText(text, 0, size);

@@ -7,6 +7,7 @@ import { ImageRepository } from "./image";
 // @ts-ignore
 import { createNODEFS } from "./nodefs.js";
 import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
+import { TextMetrics, loadFonts } from "./renderer/text.ts";
 
 interface DriverModule extends EmscriptenModule {
   FS: typeof FS;
@@ -50,6 +51,7 @@ type Imports = {
 
 export class DriverWorker {
   private imageRepo: ImageRepository | undefined;
+  private textMetrics: TextMetrics | undefined;
   private textRasterizer: TextRasterizer | undefined;
   private renderer: Renderer | undefined;
   private screenSize: { width: number; height: number } = {
@@ -80,8 +82,9 @@ export class DriverWorker {
   ) {
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
 
-    await TextRasterizer.loadFonts();
-    this.textRasterizer = new TextRasterizer();
+    await loadFonts();
+    this.textMetrics = new TextMetrics();
+    this.textRasterizer = new TextRasterizer(this.textMetrics);
 
     this.renderer = new Renderer(this.imageRepo, this.textRasterizer, this.screenSize);
     this.hostCallbacks = {
@@ -280,10 +283,9 @@ export class DriverWorker {
           this.renderer?.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
         }
       },
-      getStringWidth: (size: number, font: number, text: string) =>
-        this.textRasterizer?.measureText(size, font, text) ?? 0,
+      getStringWidth: (size: number, font: number, text: string) => this.textMetrics?.measure(size, font, text) ?? 0,
       getStringCursorIndex: (size: number, font: number, text: string, cursorX: number, cursorY: number) =>
-        this.textRasterizer?.measureTextCursorIndex(size, font, text, cursorX, cursorY) ?? 0,
+        this.textMetrics?.measureCursorIndex(size, font, text, cursorX, cursorY) ?? 0,
       copy: (text: string) => this.mainCallbacks?.copy(text),
       paste: () => this.mainCallbacks?.paste(),
       openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
