@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.5](https://github.com/atty303/pob-web/compare/v0.7.4...v0.7.5) (2024-05-16)
+
+
+### Bug Fixes
+
+* **driver:** disable antialias ([7313473](https://github.com/atty303/pob-web/commit/7313473cfc71e7c5a37a220b9847a2be7f3e13bb)), closes [#6](https://github.com/atty303/pob-web/issues/6)
+* **driver:** measure multiline text ([4c42200](https://github.com/atty303/pob-web/commit/4c42200cc774ef3b0b49e253d7b2df1898557ed8)), closes [#21](https://github.com/atty303/pob-web/issues/21)
+
 ## [0.7.4](https://github.com/atty303/pob-web/compare/v0.7.3...v0.7.4) (2024-05-16)
 
 
