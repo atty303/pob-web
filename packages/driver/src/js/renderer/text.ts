@@ -64,17 +64,19 @@ export class TextMetrics {
   }
 }
 
-export class TextRasterizer {
-  private readonly cache: Map<string, { width: number; bitmap: TextureBitmap | undefined }> = new Map();
-  private readonly maxTextureSize: number;
+export interface TextRender {
+  width: number;
+  bitmap: TextureBitmap | undefined;
+}
 
-  constructor(readonly textMetrics: TextMetrics) {
-    const canvas = new OffscreenCanvas(1, 1);
-    const gl = canvas.getContext("webgl");
-    if (gl) {
-      this.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
-    }
-  }
+export interface TextRasterizer {
+  get(size: number, fontNum: number, text: string): TextRender;
+}
+
+export class SimpleTextRasterizer implements TextRasterizer {
+  private readonly cache: Map<string, TextRender> = new Map();
+
+  constructor(readonly textMetrics: TextMetrics) {}
 
   get(size: number, fontNum: number, text: string) {
     const key = `${size}:${fontNum}:${text}`;
@@ -102,5 +104,17 @@ export class TextRasterizer {
       }
     }
     return bitmap;
+  }
+}
+
+export class BinPackingTextRasterizer {
+  private readonly maxTextureSize: number;
+
+  constructor(readonly textMetrics: TextMetrics) {
+    const canvas = new OffscreenCanvas(1, 1);
+    const gl = canvas.getContext("webgl");
+    if (gl) {
+      this.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+    }
   }
 }

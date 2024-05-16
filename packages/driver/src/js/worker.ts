@@ -6,8 +6,7 @@ import type { UIState } from "./event.ts";
 import { ImageRepository } from "./image";
 // @ts-ignore
 import { createNODEFS } from "./nodefs.js";
-import { Renderer, TextRasterizer, WebGL1Backend } from "./renderer";
-import { TextMetrics, loadFonts } from "./renderer/text.ts";
+import { Renderer, SimpleTextRasterizer, TextMetrics, type TextRasterizer, WebGL1Backend, loadFonts } from "./renderer";
 
 interface DriverModule extends EmscriptenModule {
   FS: typeof FS;
@@ -84,7 +83,7 @@ export class DriverWorker {
 
     await loadFonts();
     this.textMetrics = new TextMetrics();
-    this.textRasterizer = new TextRasterizer(this.textMetrics);
+    this.textRasterizer = new SimpleTextRasterizer(this.textMetrics);
 
     this.renderer = new Renderer(this.imageRepo, this.textRasterizer, this.screenSize);
     this.hostCallbacks = {
