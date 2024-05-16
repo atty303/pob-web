@@ -204,7 +204,7 @@ export class WebGL1Backend {
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl", { antialias: false });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
