@@ -1,7 +1,7 @@
 import { TextureFlags } from "../image.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
-const vertexShaderSource = `
+const vertexShaderSource = `#version 100
 uniform mat4 u_MvpMatrix;
 
 attribute vec2 a_Position;
@@ -28,8 +28,7 @@ void main(void) {
     vec4 pos = u_MvpMatrix * vec4(a_Position + a_Viewport.xy, 0.0, 1.0);
     v_ScreenPos = pos.xy;
     gl_Position = pos;
-}
-`;
+}`;
 
 const textureFragmentShaderSource = (max: number) => {
   let switchCode = "";
@@ -43,7 +42,7 @@ const textureFragmentShaderSource = (max: number) => {
     }
     switchCode += `color = texture2D(u_Texture[${i}], v_TexCoord);\n`;
   }
-  return `
+  return `#version 100
 precision mediump float;
 
 uniform sampler2D u_Texture[${max}];
@@ -326,7 +325,8 @@ export class WebGL1Backend {
       }
 
       // Draw
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       // TODO: Use bufferSubData
       // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
       gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
@@ -360,6 +360,7 @@ export class WebGL1Backend {
       if (!t) throw new Error("Failed to create texture");
       texture = t;
       gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
       if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
