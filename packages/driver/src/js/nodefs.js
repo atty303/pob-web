@@ -195,8 +195,10 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
         var path = NODEFS.realPath(node);
         NODEFS.tryFSOperation(() => {
           if (FS.isDir(node.mode)) {
+            console.log("mkdirSync", path, node.mode);
             fs.mkdirSync(path, node.mode);
           } else {
+            console.log("writeFileSync", path, "", { mode: node.mode });
             fs.writeFileSync(path, "", { mode: node.mode });
           }
         });
@@ -235,6 +237,7 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
         NODEFS.tryFSOperation(() => {
           if (FS.isFile(stream.node.mode)) {
             stream.shared.refcount = 1;
+            console.log("openSync", path, NODEFS.flagsForNode(stream.flags));
             stream.nfd = fs.openSync(path, NODEFS.flagsForNode(stream.flags));
           }
         });
@@ -242,6 +245,7 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
       close(stream) {
         NODEFS.tryFSOperation(() => {
           if (FS.isFile(stream.node.mode) && stream.nfd && --stream.shared.refcount === 0) {
+            console.log("closeSync", stream.nfd);
             fs.closeSync(stream.nfd);
           }
         });
@@ -255,6 +259,7 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
         return NODEFS.tryFSOperation(() => {
           // fs.readSync(stream.nfd, new Int8Array(buffer.buffer, offset, length), 0, length, position),
           const buf = new Int8Array(length);
+          // console.log("readSync", 0, length, position);
           const bytesRead = fs.readSync(stream.nfd, buf, 0, length, position);
           buffer.set(buf, offset);
           return bytesRead;
@@ -264,8 +269,9 @@ export const createNODEFS = (fs, FS, PATH, ERRNO_CODES) => {
         return NODEFS.tryFSOperation(() => {
           // fs.writeSync(stream.nfd, new Int8Array(buffer.buffer, offset, length), 0, length, position),
           if (length === 0) return 0;
-          const buf = new ArrayBuffer(length);
+          const buf = new Uint8Array(length);
           buf.set(buffer.subarray(offset, offset + length));
+          console.log("write", 0, length, position);
           // console.log("write", new TextDecoder().decode(buf));
           return fs.writeSync(stream.nfd, buf, 0, length, position);
         });
