@@ -204,7 +204,7 @@ export class WebGL1Backend {
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 
-    const gl = canvas.getContext("webgl", { antialias: false });
+    const gl = canvas.getContext("webgl", { antialias: false, depth: false, premultipliedAlpha: true });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
@@ -338,8 +338,13 @@ export class WebGL1Backend {
       }
 
       // Draw
-      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+      // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
+      // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
+      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
+      // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
+
       // TODO: Use bufferSubData
       // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
       gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
