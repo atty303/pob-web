@@ -188,16 +188,16 @@ export class DriverWorker {
       // zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
     }
 
-    const nodeFS = createNODEFS(zenfs.fs, module.FS, module.PATH, module.ERRNO_CODES);
+    // const nodeFS = createNODEFS(zenfs.fs, module.FS, module.PATH, module.ERRNO_CODES);
 
-    module.FS.mkdir("/app");
-    module.FS.mount(nodeFS, { root: "." }, "/app");
+    // module.FS.mkdir("/app");
+    // module.FS.mount(nodeFS, { root: "." }, "/app");
 
     Object.assign(module, this.exports(module));
     this.imports = this.resolveImports(module);
 
-    this.imports?.init();
-    this.imports?.start();
+    await this.imports?.init();
+    await this.imports?.start();
 
     if (this.isRunning) this.tick();
   }
@@ -246,10 +246,10 @@ export class DriverWorker {
     this.invalidate();
   }
 
-  private tick() {
+  private async tick() {
     const start = performance.now();
 
-    this.imports?.onFrame();
+    await this.imports?.onFrame();
 
     const time = performance.now() - start;
     this.hostCallbacks?.onFrame(this.dirtyCount > 0, time);
@@ -260,9 +260,9 @@ export class DriverWorker {
   // js -> wasm
   private resolveImports(module: DriverModule): Imports {
     return {
-      init: module.cwrap("init", "number", []),
-      start: module.cwrap("start", "number", []),
-      onFrame: module.cwrap("on_frame", "number", []),
+      init: module.cwrap("init", "number", [], { async: true }),
+      start: module.cwrap("start", "number", [], { async: true }),
+      onFrame: module.cwrap("on_frame", "number", [], { async: true }),
       onKeyUp: module.cwrap("on_key_up", "number", ["string", "number"]),
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),
       onChar: module.cwrap("on_char", "number", ["string", "number"]),
@@ -273,6 +273,7 @@ export class DriverWorker {
   // wasm -> js
   private exports(module: DriverModule) {
     return {
+      fs: zenfs.fs,
       onError: (message: string) => this.hostCallbacks?.onError(message),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,

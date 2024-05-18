@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <emscripten.h>
+#include <emscripten/wasmfs.h>
 #include <assert.h>
 #include <string.h>
 #include <zlib.h>
@@ -9,6 +10,8 @@
 #include "draw.h"
 #include "image.h"
 #include "fs.h"
+
+extern backend_t wasmfs_create_nodefs_backend(const char* root);
 
 extern const char *boot_lua;
 static lua_State *GL;
@@ -267,7 +270,7 @@ static int OpenURL(lua_State *L) {
     EM_ASM({
                Module.openUrl(UTF8ToString($0));
            }, url);
-    
+
     return 0;
 }
 
@@ -291,6 +294,9 @@ static int DownloadPage(lua_State *L) {
 
 EMSCRIPTEN_KEEPALIVE
 int init() {
+    backend_t app = wasmfs_create_nodefs_backend("");
+    wasmfs_create_directory("/app", 0777, app);
+
     chdir("/app/root");
 
     GL = lua_newstate(my_alloc, NULL);
