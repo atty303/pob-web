@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/atty303/pob-web/compare/v0.7.6...v0.8.0) (2024-05-19)
+
+
+### Features
+
+* added cloudflare kv filesystem ([d2acef0](https://github.com/atty303/pob-web/commit/d2acef00c209d3fbf634aa94f43a29c5748d32b4)), closes [#48](https://github.com/atty303/pob-web/issues/48)
+
+
+### Bug Fixes
+
+* **driver:** don't clear cache ([dc1df89](https://github.com/atty303/pob-web/commit/dc1df89db8ac4e217b8c6cbc52fe1dde456762f7)), closes [#49](https://github.com/atty303/pob-web/issues/49)
+
 ## [0.7.6](https://github.com/atty303/pob-web/compare/v0.7.5...v0.7.6) (2024-05-19)
 
 
