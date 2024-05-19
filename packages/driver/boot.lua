@@ -54,7 +54,7 @@ end
 function ShowCursor(doShow)
 end
 function GetScriptPath()
-    return ""
+    return "."
 end
 function GetRuntimePath()
     return ""
