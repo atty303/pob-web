@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.6](https://github.com/atty303/pob-web/compare/v0.7.5...v0.7.6) (2024-05-19)
+
+
+### Bug Fixes
+
+* **driver:** rename file ([f65bd1d](https://github.com/atty303/pob-web/commit/f65bd1dec86f40d5743c7176727d0febf067c2e8))
+* **driver:** use opfs ([09329b6](https://github.com/atty303/pob-web/commit/09329b64c9c8be0a2acb5b65aa44607cd96a2cbf))
+* **driver:** wasmfs ([988c733](https://github.com/atty303/pob-web/commit/988c7332801b44b01b1bbb29a82874de240f19e7))
+
+
+### Performance Improvements
+
+* **driver:** load time ([967fec7](https://github.com/atty303/pob-web/commit/967fec7e969cdf12a1c237e312156bd1f74efca4))
+
 ## [0.7.5](https://github.com/atty303/pob-web/compare/v0.7.4...v0.7.5) (2024-05-16)
 
 
