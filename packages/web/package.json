@@ -12,8 +12,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-use": "^17.5.0",
-    "recoil": "^0.7.7",
-    "tailwindcss": "^3.4.3"
+    "recoil": "^0.7.7"
   },
   "scripts": {
     "dev": "concurrently vite \"wrangler pages dev . --compatibility-date=2024-05-11\"",

@@ -1,0 +1,15 @@
+#
+#   Refer for explanation to following link:
+#   https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+#
+pre-commit:
+  parallel: true
+  commands:
+    driver-tsc:
+      root: packages/driver
+      glob: "*.{js,ts,jsx,tsx}"
+      run: npx tsc --noEmit
+    web-tsc:
+      root: packages/web
+      glob: "*.{js,ts,jsx,tsx}"
+      run: npx tsc --noEmit
