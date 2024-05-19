@@ -51,8 +51,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:zlib,INCLUD
 set(DRIVER_LINK_FLAGS
         "-flto"
         "-sMODULARIZE"
+        "-sSTACK_SIZE=131072"
         "-sASYNCIFY"
-        "-sASYNCIFY_STACK_SIZE=524288"
+        "-sASYNCIFY_STACK_SIZE=131072"
         "-sENVIRONMENT=web"
         "-sALLOW_MEMORY_GROWTH"
         "-sWASMFS"

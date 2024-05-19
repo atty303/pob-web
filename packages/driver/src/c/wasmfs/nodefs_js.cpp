@@ -204,7 +204,12 @@ EM_ASYNC_JS(int, js_wasmfs_node_read, (int fd, void *buf, uint32_t len, uint32_t
 })
 
 int _wasmfs_node_read(int fd, void *buf, uint32_t len, uint32_t pos, uint32_t *nread) {
-    return js_wasmfs_node_read(fd, buf, len, pos, nread);
+    if (len > 0) {
+        return js_wasmfs_node_read(fd, buf, len, pos, nread);
+    } else {
+        *nread = 0;
+        return 0;
+    }
 }
 
 EM_ASYNC_JS(int, js_wasmfs_node_write, (int fd, const void *buf, uint32_t len, uint32_t pos, uint32_t *nwritten), {
@@ -229,7 +234,12 @@ EM_ASYNC_JS(int, js_wasmfs_node_write, (int fd, const void *buf, uint32_t len, u
 })
 
 int _wasmfs_node_write(int fd, const void* buf, uint32_t len, uint32_t pos, uint32_t* nwritten) {
-    return js_wasmfs_node_write(fd, buf, len, pos, nwritten);
+    if (len > 0) {
+        return js_wasmfs_node_write(fd, buf, len, pos, nwritten);
+    } else {
+        *nwritten = 0;
+        return 0;
+    }
 }
 
 EM_ASYNC_JS(int, js_wasmfs_node_rename, (const char *oldPath, const char *newPath), {
