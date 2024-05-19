@@ -1,6 +1,3 @@
-[submodule "vendor/PathOfBuilding"]
-	path = vendor/PathOfBuilding
-	url = https://github.com/PathOfBuildingCommunity/PathOfBuilding.git
 [submodule "vendor/zlib-ng"]
 	path = vendor/zlib-ng
 	url = https://github.com/zlib-ng/zlib-ng.git
