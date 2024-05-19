@@ -3,6 +3,7 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
+import { WebAccess } from "./fs.ts";
 import { ImageRepository } from "./image";
 // @ts-ignore
 import { createNODEFS } from "./nodefs.js";
@@ -133,9 +134,10 @@ export class DriverWorker {
           name: "root.zip",
         } as any,
         "/user": {
-          name: "LocalStorage",
-          backend: zenfs.Port,
-          port: self as unknown as any,
+          name: "OPFS",
+          backend: WebAccess,
+          handle: await navigator.storage.getDirectory(),
+          // port: self as unknown as any,
         } as any,
       },
     });

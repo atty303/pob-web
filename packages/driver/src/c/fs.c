@@ -52,7 +52,7 @@ static int NewFileSearch(lua_State *L) {
 
     DIR *dir = opendir(_dirname);
     if (dir == NULL) {
-        fprintf(stderr, "Failed to open directory: %s\n", path);
+        fprintf(stderr, "Failed to open directory: %s\n", _dirname);
         return 0;
     }
 

@@ -217,8 +217,10 @@ namespace wasmfs {
         }
 
         int insertMove(const std::string& name, std::shared_ptr<File> file) override {
-            // TODO
-            abort();
+            // TODO: move from different backends
+            printf("insertMove %s %s\n", name.c_str(), file->cast<NodeFile>()->state.path.c_str());
+            auto parent = file->locked().getParent()->cast<NodeDirectory>();
+            return _wasmfs_node_rename(file->cast<NodeFile>()->state.path.c_str(), parent->getChildPath(name).c_str());
         }
 
         ssize_t getNumEntries() override {

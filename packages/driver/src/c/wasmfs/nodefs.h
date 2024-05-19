@@ -43,4 +43,7 @@ int _wasmfs_node_read(
 int _wasmfs_node_write(
         int fd, const void* buf, uint32_t len, uint32_t pos, uint32_t* nwritten);
 
+int _wasmfs_node_rename(const char *oldPath, const char *newPath);
+
 }
+
