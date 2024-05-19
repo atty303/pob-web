@@ -22,6 +22,8 @@ jobs:
         id: release-please
         with:
           token: ${{ steps.app-token.outputs.token }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
 
       - uses: actions/checkout@v4
         with:
