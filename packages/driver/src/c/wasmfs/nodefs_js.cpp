@@ -5,7 +5,6 @@
 EM_ASYNC_JS(int, js_wasmfs_node_readdir, (const char *path, void *vec), {
     try {
         let entries = await Module.fs.promises.readdir(UTF8ToString(path), {withFileTypes: true});
-        console.log("readdir", path, entries);
         entries.forEach((entry) => {
                 let sp = stackSave();
                 let name = stringToUTF8OnStack(entry.name);
@@ -19,7 +18,6 @@ EM_ASYNC_JS(int, js_wasmfs_node_readdir, (const char *path, void *vec), {
                 } else {
                     type = 0;
                 }
-                console.log("readdir", entry.name, type);
                 __wasmfs_node_record_dirent(vec, name, type);
                 stackRestore(sp);
         });
@@ -141,9 +139,11 @@ int _wasmfs_node_rmdir(const char* path) {
 EM_ASYNC_JS(int, js_wasmfs_node_open, (const char *path, const char *mode), {
     let fd;
     try {
+//        console.log("Opening file: ", UTF8ToString(path), "with mode", UTF8ToString(mode));
         fd = await Module.fs.promises.open(UTF8ToString(path), UTF8ToString(mode));
-        console.log("Opened file", UTF8ToString(path), "with mode", UTF8ToString(mode), "fd", fd);
+//        console.log("Opened file", UTF8ToString(path), "with mode", UTF8ToString(mode), "fd", fd);
     } catch (e) {
+        console.error("open error", e);
         if (!e.code) throw e;
         return Module.ERRNO_CODES[e.code];
     }
@@ -162,7 +162,7 @@ EM_ASYNC_JS(int, js_wasmfs_node_close, (int fd), {
                     console.error("close: error", err);
                     reject(err);
                 } else {
-                    console.log("close(): ok");
+//                    console.log("close(): ok");
                     resolve();
                 }
             });

@@ -369,6 +369,11 @@ export class WebAccessFS extends FileSystem {
 
       writable.close();
       await this.unlink(oldPath);
+      for (const key of this._handles.keys()) {
+        if (key !== "/") {
+          this._handles.delete(key);
+        }
+      }
     } catch (ex) {
       throw convertException(ex as ConvertException, oldPath, "rename");
     }
