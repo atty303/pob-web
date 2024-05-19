@@ -204,7 +204,6 @@ export class BinPackingTextRasterizer {
     this.context.fillStyle = "white";
     this.context.textBaseline = "bottom";
     this.packer = new BinaryBinPack(this.size.width, this.size.height);
-    this.cache.clear();
     this.generation += 1;
     console.log("BinPackingTextRasterizer: reset");
   }
