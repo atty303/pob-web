@@ -45,5 +45,7 @@ int _wasmfs_node_write(
 
 int _wasmfs_node_rename(const char *oldPath, const char *newPath);
 
-}
+int _wasmfs_node_truncate(const char* path, uint32_t size);
+int _wasmfs_node_ftruncate(int fd, uint32_t size);
 
+}

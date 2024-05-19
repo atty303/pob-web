@@ -3,7 +3,7 @@ import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
-import { WebAccess } from "./fs.ts";
+import { CloudflareKV, WebAccess } from "./fs.ts";
 import { ImageRepository } from "./image";
 // @ts-ignore
 import { createNODEFS } from "./nodefs.js";
@@ -17,9 +17,6 @@ import {
 } from "./renderer";
 
 interface DriverModule extends EmscriptenModule {
-  FS: typeof FS;
-  PATH: object;
-  ERRNO_CODES: object;
   cwrap: typeof cwrap;
 }
 
@@ -114,18 +111,6 @@ export class DriverWorker {
     });
 
     const rootZip = await fetch(`${assetPrefix}/root.zip`);
-    // const rootFs = await zenfs.resolveMountConfig({
-    //   backend: Zip,
-    //   zipData: await rootZip.arrayBuffer(),
-    //   name: "root.zip",
-    // } as any);
-
-    // const userFs = await zenfs.resolveMountConfig({
-    //   name: "LocalStorage",
-    //   backend: zenfs.Port,
-    //   port: self as unknown as any,
-    // });
-
     await zenfs.configure({
       mounts: {
         "/root": {
@@ -143,57 +128,18 @@ export class DriverWorker {
     });
 
     if (fileSystemConfig.cloudflareKvAccessToken) {
-      // const headers = {
-      // 	Authorization: `Bearer ${fileSystemConfig.cloudflareKvAccessToken}`,
-      // };
-      // const cloudStore = new SimpleAsyncStore(
-      // 	async (key: string) => {
-      // 		const r = await fetch(
-      // 			`${fileSystemConfig.cloudflareKvPrefix}${key}`,
-      // 			{
-      // 				method: "GET",
-      // 				headers,
-      // 			},
-      // 		);
-      // 		if (r.ok) {
-      // 			const blob = await r.blob();
-      // 			const buf = await blob.arrayBuffer();
-      // 			return new Uint8Array(buf);
-      // 		}
-      // 	},
-      // 	async (key: string, data: Uint8Array, overwrite: boolean) => {
-      // 		const r = await fetch(
-      // 			`${fileSystemConfig.cloudflareKvPrefix}${key}?overwrite=${overwrite}`,
-      // 			{
-      // 				method: "PUT",
-      // 				body: data,
-      // 				headers,
-      // 			},
-      // 		);
-      // 		return r.status === 204;
-      // 	},
-      // 	async (key: string) => {
-      // 		await fetch(`${fileSystemConfig.cloudflareKvPrefix}${key}`, {
-      // 			method: "DELETE",
-      // 			headers,
-      // 		});
-      // 	},
-      // );
-      // const cloudFs = await zenfs.resolveMountConfig({
-      // 	name: "Cloud",
-      // 	backend: SimpleAsyncFS,
-      // 	store: cloudStore,
-      // 	lruCacheSize: 1000,
-      // });
-      // if (!zenfs.existsSync("/user/Path of Building/Builds/Cloud"))
-      // 	zenfs.mkdirSync("/user/Path of Building/Builds/Cloud");
-      // zenfs.mount("/user/Path of Building/Builds/Cloud", cloudFs);
+      const kvFs = await zenfs.resolveMountConfig({
+        backend: CloudflareKV,
+        prefix: fileSystemConfig.cloudflareKvPrefix,
+        token: fileSystemConfig.cloudflareKvAccessToken,
+      });
+      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud")))
+        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud");
+      zenfs.mount("/user/Path of Building/Builds/Cloud", kvFs);
+
+      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud/Public")))
+        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud/Public");
     }
-
-    // const nodeFS = createNODEFS(zenfs.fs, module.FS, module.PATH, module.ERRNO_CODES);
-
-    // module.FS.mkdir("/app");
-    // module.FS.mount(nodeFS, { root: "." }, "/app");
 
     Object.assign(module, this.exports(module));
     this.imports = this.resolveImports(module);

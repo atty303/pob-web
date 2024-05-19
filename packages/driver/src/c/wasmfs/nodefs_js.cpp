@@ -244,7 +244,6 @@ int _wasmfs_node_write(int fd, const void* buf, uint32_t len, uint32_t pos, uint
 
 EM_ASYNC_JS(int, js_wasmfs_node_rename, (const char *oldPath, const char *newPath), {
     try {
-        console.log("rename", UTF8ToString(oldPath), UTF8ToString(newPath));
         await Module.fs.promises.rename(UTF8ToString(oldPath), UTF8ToString(newPath));
     } catch (e) {
         if (!e.code) throw e;
@@ -255,4 +254,48 @@ EM_ASYNC_JS(int, js_wasmfs_node_rename, (const char *oldPath, const char *newPat
 
 int _wasmfs_node_rename(const char *oldPath, const char *newPath) {
     return js_wasmfs_node_rename(oldPath, newPath);
+}
+
+EM_ASYNC_JS(int, js_wasmfs_node_truncate, (const char *path, uint32_t size), {
+    try {
+        await new Promise((resolve, reject) => {
+            Module.fs.truncate(UTF8ToString(path), size, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    } catch (e) {
+        if (!e.code) throw e;
+        return Module.ERRNO_CODES[e.code];
+    }
+    return 0;
+})
+
+int _wasmfs_node_truncate(const char* path, uint32_t size) {
+    return js_wasmfs_node_truncate(path, size);
+}
+
+EM_ASYNC_JS(int, js_wasmfs_node_ftruncate, (int fd, uint32_t size), {
+    try {
+        await new Promise((resolve, reject) => {
+            Module.fs.ftruncate(fd, size, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    } catch (e) {
+        if (!e.code) throw e;
+        return Module.ERRNO_CODES[e.code];
+    }
+    return 0;
+})
+
+int _wasmfs_node_ftruncate(int fd, uint32_t size) {
+    return js_wasmfs_node_ftruncate(fd, size);
 }

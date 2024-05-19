@@ -118,7 +118,18 @@ namespace wasmfs {
         }
 
         int setSize(off_t size) override {
-            WASMFS_UNREACHABLE("TODO: implement NodeFile::setSize");
+            if (state.isOpen()) {
+                if (_wasmfs_node_ftruncate(state.getFD(), size)) {
+                    // TODO: Make this fallible.
+                    return 0;
+                }
+            } else {
+                if (_wasmfs_node_truncate(state.path.c_str(), size)) {
+                    // TODO: Make this fallible.
+                    return 0;
+                }
+            }
+            return 0;
         }
 
         int open(oflags_t flags) override { return state.open(flags); }

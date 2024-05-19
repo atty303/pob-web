@@ -3,45 +3,6 @@ import { Driver } from "pob-driver/src/js/driver.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { log, tag } from "./logger.ts";
 
-// const zipFs = await zenfs.resolveMountConfig({
-// 	backend: Zip,
-// 	zipData: await rootZip.arrayBuffer(),
-// 	name: "root.zip",
-// });
-// if (zenfs.existsSync("/root")) {
-// 	zenfs.umount("/root");
-// }
-// zenfs.mount("/root", zipFs);
-
-// const browserFs = await zenfs.resolveMountConfig({
-// 	backend: WebStorage,
-// 	storage: localStorage,
-// });
-//
-// if (zenfs.existsSync("/user")) {
-// 	zenfs.umount("/user");
-// }
-// zenfs.mount("/user", browserFs);
-// log.info(tag.vfs, "WebStorage is mounted");
-
-// if (token) {
-// 	const kvfs = await zenfs.resolveMountConfig({
-// 		backend: KvFS,
-// 		accessToken: token,
-// 	});
-//
-// 	if (!zenfs.existsSync("/user/Path of Building"))
-// 		zenfs.mkdirSync("/user/Path of Building");
-// 	if (!zenfs.existsSync("/user/Path of Building/Builds")) {
-// 		zenfs.mkdirSync("/user/Path of Building/Builds");
-// 	}
-// 	if (zenfs.existsSync("/user/Path of Building/Builds/Cloud")) {
-// 		zenfs.umount("/user/Path of Building/Builds/Cloud");
-// 	}
-// 	zenfs.mount("/user/Path of Building/Builds/Cloud", kvfs);
-// 	log.info(tag.vfs, "KvFS is mounted");
-// }
-
 export default function PobWindow(props: {
   version: string;
   onFrame: (render: boolean, time: number) => void;
@@ -85,7 +46,7 @@ export default function PobWindow(props: {
     (async () => {
       try {
         await _driver.start({
-          cloudflareKvPrefix: "/api/kv/",
+          cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
         });
         log.debug(tag.pob, "started", container.current);

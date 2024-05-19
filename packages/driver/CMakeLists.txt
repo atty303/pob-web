@@ -60,7 +60,7 @@ set(DRIVER_LINK_FLAGS
         "-sSTRICT"
         "-sINCOMING_MODULE_JS_API=[print,printErr]"
         "-sEXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result]"
-        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,FS,PATH,ERRNO_CODES,setValue,HEAPU8,Asyncify"
+        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8,Asyncify"
         "-sASYNCIFY_IMPORTS=js_wasmfs_node_read"
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

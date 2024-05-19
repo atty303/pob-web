@@ -7,6 +7,9 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:8788",
     },
+    sourcemapIgnoreList(file) {
+      return file.includes("node_modules") || file.includes("logger.ts");
+    },
   },
   build: {
     chunkSizeWarningLimit: 1024,

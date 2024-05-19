@@ -1,7 +1,5 @@
 import * as Comlink from "comlink";
 
-import * as zenfs from "@zenfs/core";
-import { WebStorage } from "@zenfs/dom";
 import { UIEventManager } from "./event.ts";
 import type { DriverWorker, HostCallbacks } from "./worker.ts";
 import WorkerObject from "./worker.ts?worker";
@@ -32,9 +30,6 @@ export class Driver {
     this.worker = new WorkerObject();
     this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
 
-    const fs = await zenfs.resolveMountConfig({ backend: WebStorage });
-    zenfs.attachFS(this.worker as unknown as any, fs);
-
     return this.driverWorker.start(
       this.build,
       this.assetPrefix,
@@ -44,7 +39,7 @@ export class Driver {
       Comlink.proxy(this.hostCallbacks.onFetch),
       Comlink.proxy((text: string) => this.copy(text)),
       Comlink.proxy(() => this.paste()),
-      Comlink.proxy((url) => window.open(url, "_black")),
+      Comlink.proxy((url) => window.open(url, "_blank")),
     );
   }
 

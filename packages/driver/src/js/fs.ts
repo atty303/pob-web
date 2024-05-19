@@ -1,202 +1,263 @@
-import type { Backend, FileSystemMetadata, Ino } from "@zenfs/core";
+import type { Backend, FileSystemMetadata } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
 import { Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
 import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
+import { log, tag } from "./logger.ts";
 
-export class WebStorageStore implements zenfs.SimpleSyncStore {
-  constructor(readonly _storage: Storage) {}
-
-  async sync(): Promise<void> {}
-  clearSync(): void {
-    throw new Error("Method not implemented.");
-  }
-  transaction(): zenfs.Transaction {
-    return new zenfs.SimpleTransaction(this);
-  }
-
-  get name(): string {
-    return "WebStorageStore";
-  }
-
-  clear(): void | Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  get(ino: Ino): Uint8Array | undefined {
-    const data = this._storage.getItem(ino.toString());
-    if (data) {
-      return zenfs.encode(data);
-    }
-  }
-  set(ino: Ino, data: Uint8Array): boolean {
-    try {
-      this._storage.setItem(ino.toString(), zenfs.decode(data));
-      return true;
-    } catch (e) {
-      throw new zenfs.ErrnoError(zenfs.Errno.ENOSPC, "Storage is full.");
-    }
-  }
-  delete(ino: Ino): void {
-    try {
-      this._storage.removeItem(ino.toString());
-    } catch (e) {
-      throw new zenfs.ErrnoError(zenfs.Errno.EIO, `Unable to delete key ${ino}: ${e}`);
-    }
+class FetchError extends Error {
+  constructor(
+    public readonly response: Response,
+    message?: string,
+  ) {
+    super(message || `${response.status}: ${response.statusText}`);
   }
 }
 
-export interface WebStorageOptions {
-  storage?: Storage;
+function statsToMetadata(stats: zenfs.StatsLike) {
+  return {
+    atimeMs: stats.atimeMs,
+    mtimeMs: stats.mtimeMs,
+    ctimeMs: stats.ctimeMs,
+    birthtimeMs: stats.birthtimeMs,
+    uid: stats.uid,
+    gid: stats.gid,
+    size: stats.size,
+    mode: stats.mode,
+    ino: stats.ino,
+  };
 }
 
-/**
- * A synchronous file system backed by a `Storage` (e.g. localStorage).
- */
-export const WebStorage = {
-  name: "WebStorage",
+export class CloudflareKVFileSystem extends zenfs.FileSystem {
+  private readonly fetch: (
+    method: string,
+    path: string,
+    body?: Uint8Array,
+    headers?: Record<string, string>,
+  ) => Promise<Response>;
+  private cache: Map<string, Stats> = new Map();
+
+  constructor(
+    readonly prefix: string,
+    readonly token: string,
+  ) {
+    super();
+    this.fetch = (method: string, path: string, body?: Uint8Array, headers?: Record<string, string>) => {
+      log.debug(tag.kvfs, "fetch", method, path);
+      const url = `${prefix}${path}`;
+      return fetch(url, {
+        method,
+        body,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(headers ?? {}),
+        },
+      });
+    };
+  }
+
+  async ready(): Promise<void> {
+    await this.reload();
+  }
+
+  async reload(): Promise<void> {
+    this.cache = new Map(await this.readList());
+  }
+
+  async rename(oldPath: string, newPath: string, cred: zenfs.Cred): Promise<void> {
+    log.debug(tag.kvfs, "rename", { oldPath, newPath });
+    const oldFile = await this.openFile(oldPath, "r", cred);
+    const stats = await oldFile.stat();
+    const buffer = new Uint8Array(stats.size);
+    await oldFile.read(buffer, 0, stats.size, 0);
+    await oldFile.close();
+
+    const newFile = await this.createFile(newPath, "w", stats.mode, cred);
+    await newFile.write(buffer, 0, buffer.length, 0);
+    await newFile.close();
+
+    await this.unlink(oldPath, cred);
+    this.cache.delete(oldPath);
+    this.cache.set(newPath, stats);
+  }
+  renameSync(_oldPath: string, _newPath: string, _cred: zenfs.Cred): void {
+    throw new Error("Method not implemented.");
+  }
+
+  async stat(path: string, _cred: zenfs.Cred): Promise<zenfs.Stats> {
+    // log.debug(tag.kvfs, "stat", path);
+    return this.statSync(path, _cred);
+  }
+  statSync(path: string, _cred: zenfs.Cred): zenfs.Stats {
+    const stats = this.cache.get(path);
+    if (!stats) {
+      throw new ErrnoError(Errno.ENOENT, "path", path, "stat");
+    }
+    return stats;
+  }
+
+  async openFile(path: string, flag: string, cred: zenfs.Cred): Promise<zenfs.File> {
+    log.debug(tag.kvfs, "openFile", { path, flag, cred });
+    let buffer: ArrayBufferLike;
+    let stats = this.cache.get(path);
+    if (zenfs.isWriteable(flag)) {
+      buffer = new ArrayBuffer(0);
+      stats = new zenfs.Stats({ mode: 0o777 | zenfs.FileType.FILE, size: 0 });
+      this.cache.set(path, stats);
+    } else {
+      if (!stats) {
+        throw ErrnoError.With("ENOENT", path, "openFile");
+      }
+      if (!stats.hasAccess(zenfs.flagToMode(flag), cred)) {
+        throw ErrnoError.With("EACCES", path, "openFile");
+      }
+      const r = await this.fetch("GET", path);
+      if (!r.ok) {
+        throw new FetchError(r);
+      }
+      buffer = await (await r.blob()).arrayBuffer();
+    }
+
+    return new zenfs.PreloadFile(this, path, flag, stats, new Uint8Array(buffer));
+  }
+  openFileSync(_path: string, _flag: string, _cred: zenfs.Cred): zenfs.File {
+    throw new Error("Method not implemented.");
+  }
+
+  async createFile(path: string, flag: string, mode: number, cred: zenfs.Cred): Promise<zenfs.File> {
+    log.debug(tag.kvfs, "createFile", { path, flag, mode, cred });
+    const data = new Uint8Array(0);
+    const r = await this.fetch("PUT", path, data);
+    if (!r.ok) {
+      throw new FetchError(r);
+    }
+    const stats = new zenfs.Stats({ mode: mode | zenfs.FileType.FILE, size: 0 });
+    this.cache.set(path, stats);
+    return new zenfs.PreloadFile(this, path, flag, stats, data);
+  }
+  createFileSync(_path: string, _flag: string, _mode: number, _cred: zenfs.Cred): zenfs.File {
+    throw new Error("Method not implemented.");
+  }
+
+  async unlink(path: string, _cred: zenfs.Cred): Promise<void> {
+    log.debug(tag.kvfs, "unlink", { path });
+    const r = await this.fetch("DELETE", path);
+    if (!r.ok) {
+      throw new FetchError(r);
+    }
+    this.cache.delete(path);
+  }
+  unlinkSync(_path: string, _cred: zenfs.Cred): void {
+    throw new Error("Method not implemented.");
+  }
+
+  async rmdir(path: string, _cred: zenfs.Cred): Promise<void> {
+    log.debug(tag.kvfs, "rmdir", { path });
+    const r = await this.fetch("DELETE", path);
+    if (!r.ok) {
+      throw new FetchError(r);
+    }
+    this.cache.delete(path);
+  }
+  rmdirSync(_path: string, _cred: zenfs.Cred): void {
+    throw new Error("Method not implemented.");
+  }
+
+  async mkdir(path: string, mode: number, _cred: zenfs.Cred): Promise<void> {
+    log.debug(tag.kvfs, "mkdir", { path, mode });
+    const stats = new zenfs.Stats({ mode: mode | zenfs.FileType.DIRECTORY, size: 4096 });
+    const r = await this.fetch("PUT", path, new Uint8Array(0), {
+      "x-metadata": JSON.stringify(statsToMetadata(stats)),
+    });
+    if (!r.ok) {
+      throw new FetchError(r);
+    }
+    this.cache.set(path, stats);
+  }
+  mkdirSync(_path: string, _mode: number, _cred: zenfs.Cred): void {
+    throw new Error("Method not implemented.");
+  }
+
+  async readdir(path: string, cred: zenfs.Cred): Promise<string[]> {
+    log.debug(tag.kvfs, "readdir", { path });
+    return this.readdirSync(path, cred);
+  }
+  readdirSync(path: string, _cred: zenfs.Cred): string[] {
+    const prefix = !path.endsWith("/") ? `${path}/` : path;
+    return [...this.cache.keys()]
+      .filter((_) => _.startsWith(prefix) && _.substring(prefix.length).split("/").length === 1)
+      .map((_) => _.substring(prefix.length))
+      .filter((_) => _.length > 0);
+  }
+
+  link(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  linkSync(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): void {
+    throw new Error("Method not implemented.");
+  }
+
+  async sync(path: string, data: Uint8Array, stats: Readonly<zenfs.Stats>): Promise<void> {
+    log.debug(tag.kvfs, "sync", { path, data, stats });
+    const metadata = statsToMetadata(stats);
+    const body = new Uint8Array(data.byteLength);
+    body.set(data);
+    const r = await this.fetch("PUT", path, body, { "x-metadata": JSON.stringify(metadata) });
+    if (!r.ok) {
+      log.error(tag.kvfs, "sync", path, r.status, r.statusText);
+      throw ErrnoError.With("EIO", path, "sync");
+    }
+    this.cache.set(path, new Stats(stats));
+  }
+  syncSync(_path: string, _data: Uint8Array, _stats: Readonly<zenfs.Stats>): void {
+    throw new Error("Method not implemented.");
+  }
+
+  protected async readList() {
+    const r = await this.fetch("GET", "");
+    if (!r.ok) {
+      throw new FetchError(r);
+    }
+    const list = [
+      ["/", new zenfs.Stats({ mode: 0o777 | zenfs.FileType.DIRECTORY, size: 4096 })],
+      ...(await r.json()).map((_: { name: string; metadata: { dir: boolean; size: number } }) => [
+        `/${_.name}`,
+        new zenfs.Stats(_.metadata),
+      ]),
+    ];
+    log.debug(tag.kvfs, "readList", { list });
+    return list;
+  }
+}
+
+export interface CloudflareKVOptions {
+  prefix: string;
+  token: string;
+}
+
+export const CloudflareKV = {
+  name: "CloudflareKV",
 
   options: {
-    storage: {
-      type: "object",
-      required: false,
-      description: "The Storage to use. Defaults to globalThis.localStorage.",
+    prefix: {
+      type: "string",
+      required: true,
+      description: "The URL prefix to use for requests",
+    },
+    token: {
+      type: "string",
+      required: true,
+      description: "The JWT token to use",
     },
   },
 
-  isAvailable(storage: Storage = globalThis.localStorage): boolean {
-    return storage instanceof globalThis.Storage;
+  isAvailable(): boolean {
+    return true;
   },
 
-  create({ storage = globalThis.localStorage }: WebStorageOptions) {
-    return new zenfs.StoreFS(new WebStorageStore(storage));
+  create(options: CloudflareKVOptions) {
+    return new CloudflareKVFileSystem(options.prefix, options.token);
   },
-} as const satisfies zenfs.Backend<zenfs.StoreFS, WebStorageOptions>;
-
-// export class SimpleAsyncStore implements zenfs.AsyncStore {
-//   get name() {
-//     return "SimpleAsyncStore";
-//   }
-//
-//   constructor(
-//     readonly getCallback: (key: string) => Promise<Uint8Array | undefined>,
-//     readonly putCallback: (key: string, data: Uint8Array, overwrite: boolean) => Promise<boolean>,
-//     readonly removeCallback: (key: string) => Promise<void>,
-//   ) {}
-//
-//   async clear(): Promise<void> {}
-//
-//   beginTransaction(): zenfs.AsyncTransaction {
-//     return new SimpleAsyncTransaction(this.getCallback, this.putCallback, this.removeCallback);
-//   }
-// }
-//
-// class SimpleAsyncTransaction implements zenfs.AsyncTransaction {
-//   /**
-//    * Stores data in the keys we modify prior to modifying them.
-//    * Allows us to roll back commits.
-//    */
-//   protected originalData: Map<Ino, Uint8Array | undefined> = new Map();
-//   /**
-//    * List of keys modified in this transaction, if any.
-//    */
-//   protected modifiedKeys: Set<Ino> = new Set();
-//
-//   constructor(
-//     readonly getCallback: (key: string) => Promise<Uint8Array | undefined>,
-//     readonly putCallback: (key: string, data: Uint8Array, overwrite: boolean) => Promise<boolean>,
-//     readonly removeCallback: (key: string) => Promise<void>,
-//   ) {}
-//
-//   async get(key: Ino): Promise<Uint8Array> {
-//     const val = await this.getCallback(key.toString());
-//     this.stashOldValue(key, val);
-//     return val as Uint8Array;
-//   }
-//
-//   async put(key: Ino, data: Uint8Array, overwrite: boolean): Promise<boolean> {
-//     await this.markModified(key);
-//     return await this.putCallback(key.toString(), data, overwrite);
-//   }
-//
-//   async remove(key: Ino): Promise<void> {
-//     await this.markModified(key);
-//     await this.removeCallback(key.toString());
-//   }
-//
-//   async commit(): Promise<void> {
-//     /* NOP */
-//   }
-//   async abort(): Promise<void> {
-//     // Rollback old values.
-//     for (const key of this.modifiedKeys) {
-//       const value = this.originalData.get(key);
-//       if (!value) {
-//         // Key didn't exist.
-//         await this.removeCallback(key.toString());
-//       } else {
-//         // Key existed. Store old value.
-//         await this.putCallback(key.toString(), value, true);
-//       }
-//     }
-//   }
-//
-//   /**
-//    * Stashes given key value pair into `originalData` if it doesn't already
-//    * exist. Allows us to stash values the program is requesting anyway to
-//    * prevent needless `get` requests if the program modifies the data later
-//    * on during the transaction.
-//    */
-//   protected stashOldValue(ino: Ino, value?: Uint8Array) {
-//     // Keep only the earliest value in the transaction.
-//     if (!this.originalData.has(ino)) {
-//       this.originalData.set(ino, value);
-//     }
-//   }
-//
-//   /**
-//    * Marks the given key as modified, and stashes its value if it has not been
-//    * stashed already.
-//    */
-//   protected async markModified(ino: Ino) {
-//     this.modifiedKeys.add(ino);
-//     if (!this.originalData.has(ino)) {
-//       this.originalData.set(ino, await this.getCallback(ino.toString()));
-//     }
-//   }
-// }
-
-// export const SimpleAsyncFS = {
-//   name: "SimpleAsyncFS",
-//   options: {
-//     store: {
-//       type: "object",
-//       required: true,
-//       description: "Store to use for the filesystem",
-//     },
-//     lruCacheSize: {
-//       type: "number",
-//       required: false,
-//       description: "Size of the LRU cache to use",
-//     },
-//     sync: {
-//       type: "object",
-//       required: false,
-//       description: "Synchronous filesystem to use for the cache",
-//     },
-//   },
-//
-//   isAvailable(): boolean {
-//     return true;
-//   },
-//
-//   create(opts: zenfs.AsyncStoreOptions) {
-//     return new zenfs.AsyncStoreFS({
-//       store: opts.store,
-//       lruCacheSize: opts.lruCacheSize,
-//       sync: opts.sync,
-//     });
-//   },
-// } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, zenfs.AsyncStoreOptions>;
+} as const satisfies Backend<CloudflareKVFileSystem, CloudflareKVOptions>;
 
 /**
  * Converts a DOMException into an Errno
@@ -344,7 +405,7 @@ export class WebAccessFS extends FileSystem {
         const files = await this.readdir(oldPath);
 
         await this.mkdir(newPath);
-        if (files.length == 0) {
+        if (files.length === 0) {
           await this.unlink(oldPath);
         } else {
           for (const file of files) {
@@ -356,8 +417,8 @@ export class WebAccessFS extends FileSystem {
       if (!(handle instanceof FileSystemFileHandle)) {
         return;
       }
-      const oldFile = await handle.getFile(),
-        destFolder = await this.getHandle(dirname(newPath));
+      const oldFile = await handle.getFile();
+      const destFolder = await this.getHandle(dirname(newPath));
       if (!(destFolder instanceof FileSystemDirectoryHandle)) {
         return;
       }
@@ -522,7 +583,7 @@ export const WebAccess = {
   },
 
   isAvailable(): boolean {
-    return typeof FileSystemHandle == "function";
+    return typeof FileSystemHandle === "function";
   },
 
   create(options: WebAccessOptions) {
