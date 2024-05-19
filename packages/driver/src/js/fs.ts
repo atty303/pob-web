@@ -1,5 +1,7 @@
+import type { Backend, FileSystemMetadata, Ino } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
-import type { Ino } from "@zenfs/core";
+import { Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
+import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
 
 export class WebStorageStore implements zenfs.SimpleSyncStore {
   constructor(readonly _storage: Storage) {}
@@ -196,10 +198,6 @@ export const WebStorage = {
 //   },
 // } as const satisfies zenfs.Backend<zenfs.AsyncStoreFS, zenfs.AsyncStoreOptions>;
 
-import type { Backend, FileSystemMetadata } from "@zenfs/core";
-import { Async, Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
-import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
-
 /**
  * Converts a DOMException into an Errno
  * @see https://developer.mozilla.org/Web/API/DOMException
@@ -264,7 +262,7 @@ export function convertException(ex: ConvertException, path?: string, syscall?: 
   const code = ex instanceof DOMException ? Errno[errnoForDOMException(ex)] : Errno.EIO;
   const error = new ErrnoError(code, ex.message, path, syscall);
   error.stack = ex.stack!;
-  error.cause = ex.cause;
+  (error as any).cause = (ex as any).cause;
   return error;
 }
 
@@ -282,34 +280,34 @@ export interface WebAccessOptions {
 }
 
 export class WebAccessFS extends FileSystem {
-  renameSync(oldPath: string, newPath: string, cred: zenfs.Cred): void {
+  renameSync(_oldPath: string, _newPath: string, _cred: zenfs.Cred): void {
     throw new Error("Method not implemented.");
   }
-  statSync(path: string, cred: zenfs.Cred): zenfs.Stats {
+  statSync(_path: string, _cred: zenfs.Cred): zenfs.Stats {
     throw new Error("Method not implemented.");
   }
-  openFileSync(path: string, flag: string, cred: zenfs.Cred): zenfs.File {
+  openFileSync(_path: string, _flag: string, _cred: zenfs.Cred): zenfs.File {
     throw new Error("Method not implemented.");
   }
-  createFileSync(path: string, flag: string, mode: number, cred: zenfs.Cred): zenfs.File {
+  createFileSync(_path: string, _flag: string, _mode: number, _cred: zenfs.Cred): zenfs.File {
     throw new Error("Method not implemented.");
   }
-  unlinkSync(path: string, cred: zenfs.Cred): void {
+  unlinkSync(_path: string, _cred: zenfs.Cred): void {
     throw new Error("Method not implemented.");
   }
-  rmdirSync(path: string, cred: zenfs.Cred): void {
+  rmdirSync(_path: string, _cred: zenfs.Cred): void {
     throw new Error("Method not implemented.");
   }
-  mkdirSync(path: string, mode: number, cred: zenfs.Cred): void {
+  mkdirSync(_path: string, _mode: number, _cred: zenfs.Cred): void {
     throw new Error("Method not implemented.");
   }
-  readdirSync(path: string, cred: zenfs.Cred): string[] {
+  readdirSync(_path: string, _cred: zenfs.Cred): string[] {
     throw new Error("Method not implemented.");
   }
-  linkSync(srcpath: string, dstpath: string, cred: zenfs.Cred): void {
+  linkSync(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): void {
     throw new Error("Method not implemented.");
   }
-  syncSync(path: string, data: Uint8Array, stats: Readonly<zenfs.Stats>): void {
+  syncSync(_path: string, _data: Uint8Array, _stats: Readonly<zenfs.Stats>): void {
     throw new Error("Method not implemented.");
   }
 
