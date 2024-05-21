@@ -68,13 +68,6 @@ end
 function GetWorkDir()
     return ""
 end
-function LaunchSubScript(scriptText, funcList, subList, ...)
-    error("SubScript is not implemented")
-end
-function AbortSubScript(ssID)
-end
-function IsSubScriptRunning(ssID)
-end
 function LoadModule(fileName, ...)
     if not fileName:match("%.lua") then
         fileName = fileName .. ".lua"
@@ -161,29 +154,5 @@ mainObject["OnInit"] = function(self)
     onInit(self)
     self.main.controls.checkUpdate.shown = function()
         return false
-    end
-end
-
-local dkjson = require "dkjson"
-local downloadHandle = nil
-mainObject["DownloadPage"] = function(self, url, callback, params)
-    params = params or {}
-    print(string.format("DownloadPage: url=[%s], header=[%s], body=[%s]", url, params.header, params.body))
-    if downloadHandle then
-        error("Download already in progress")
-    else
-        DownloadPage(url, params.header, params.body)
-        downloadHandle = callback
-    end
-end
-OnDownloadPageResult = function(resultJson)
-    print("OnDownloadPageResult")
-    if downloadHandle then
-        local callback = downloadHandle
-        downloadHandle = nil
-        local result = dkjson.decode(resultJson)
-        callback({header=result.header, body=result.body}, result.error)
-    else
-        error("No download handle")
     end
 end

@@ -10,6 +10,7 @@
 #include "draw.h"
 #include "image.h"
 #include "fs.h"
+#include "sub.h"
 
 extern backend_t wasmfs_create_nodefs_backend(const char* root);
 
@@ -338,6 +339,7 @@ int init() {
     image_init(L);
     draw_init(L);
     fs_init(L);
+    sub_init(L);
 
     //
     lua_pushcclosure(L, GetTime, 0);

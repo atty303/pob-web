@@ -36,6 +36,8 @@ add_executable(${PROJECT_NAME}
         src/c/wasmfs/nodefs.cpp
         src/c/wasmfs/nodefs.h
         src/c/wasmfs/nodefs_js.cpp
+        src/c/sub.c
+        src/c/sub.h
 )
 
 set(DRIVER_LINK_FLAGS

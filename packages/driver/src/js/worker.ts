@@ -6,7 +6,6 @@ import type { UIState } from "./event.ts";
 import { CloudflareKV, WebAccess } from "./fs.ts";
 import { ImageRepository } from "./image";
 // @ts-ignore
-import { createNODEFS } from "./nodefs.js";
 import {
   BinPackingTextRasterizer,
   Renderer,
@@ -15,6 +14,34 @@ import {
   WebGL1Backend,
   loadFonts,
 } from "./renderer";
+import type { SubScriptWorker } from "./sub.ts";
+import WorkerObject from "./sub.ts?worker";
+
+export class SubScriptHost {
+  private worker: Worker | undefined;
+  private subScriptWorker: Comlink.Remote<SubScriptWorker>;
+
+  constructor(
+    readonly script: string,
+    readonly onFinish: () => void,
+  ) {}
+
+  async start() {
+    this.worker = new WorkerObject();
+    this.subScriptWorker = Comlink.wrap<SubScriptWorker>(this.worker);
+    await this.subScriptWorker.start(this.script, Comlink.proxy(this.onFinish));
+  }
+
+  async terminate() {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.onFinish();
+  }
+
+  isRunning() {
+    return this.worker !== undefined;
+  }
+}
 
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;
@@ -72,6 +99,8 @@ export class DriverWorker {
   private imports: Imports | undefined;
   private dirtyCount = 0;
   private isRunning = true;
+  private subScriptIndex = 0;
+  private subScripts: SubScriptHost[] = [];
 
   async start(
     build: "debug" | "release",
@@ -244,6 +273,22 @@ export class DriverWorker {
       copy: (text: string) => this.mainCallbacks?.copy(text),
       paste: () => this.mainCallbacks?.paste(),
       openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
+      launchSubScript: async (script: string, funcs: string, subs: string) => {
+        const id = this.subScriptIndex;
+        const subScript = new SubScriptHost(script, () => {
+          this.subScripts[id]?.terminate();
+          delete this.subScripts[id];
+        });
+        this.subScripts[id] = subScript;
+        await subScript.start();
+        return this.subScriptIndex++;
+      },
+      abortSubScript: async (id: number) => {
+        await this.subScripts[id]?.terminate();
+      },
+      isSubScriptRunning: (id: number) => {
+        return this.subScripts[id]?.isRunning() ?? false;
+      },
       fetch: async (url: string, header: string | undefined, body: string | undefined) => {
         try {
           const headers = header
