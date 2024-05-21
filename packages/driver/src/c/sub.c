@@ -1,6 +1,7 @@
 #include "sub.h"
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lcurl.h"
 #include <emscripten.h>
 #include <assert.h>
 
@@ -101,7 +102,7 @@ DataItem* deserialize(const unsigned char *buffer, int *count) {
                 ptr += sizeof(size_t);
                 if (stringLen > 0) {
                     data[i].value.stringValue = (char *)malloc(stringLen);
-                    memcpy(data[i].value.stringValue, ptr, stringLen);
+                    memcpy((void *)data[i].value.stringValue, ptr, stringLen);
                     ptr += stringLen;
                 } else {
                     data[i].value.stringValue = NULL;
@@ -116,7 +117,7 @@ DataItem* deserialize(const unsigned char *buffer, int *count) {
 
 EM_ASYNC_JS(int, launch_sub_script, (const char *script, const char *funcs, const char *subs, size_t size, void *data), {
     try {
-        return await Module.bridge.launchSubScript(UTF8ToString(script), UTF8ToString(funcs), UTF8ToString(subs), size, data);
+        return await Module.launchSubScript(UTF8ToString(script), UTF8ToString(funcs), UTF8ToString(subs), size, data);
     } catch (e) {
         console.error("launch_sub_script error", e);
         return 0;
@@ -128,7 +129,7 @@ static size_t lua_serialize(lua_State *L, int offset, uint8_t **serializedData) 
     size_t dataCount = n - offset + 1;
     DataItem *data = (DataItem *)malloc(dataCount * sizeof(DataItem));
     for (int i = 0; i < dataCount; ++i) {
-        switch (lua_type(L, i + 4)) {
+        switch (lua_type(L, i + offset)) {
             case LUA_TNUMBER:
                 data[i].type = TYPE_DOUBLE;
                 data[i].value.doubleValue = lua_tonumber(L, i + offset);
@@ -154,7 +155,7 @@ static size_t lua_serialize(lua_State *L, int offset, uint8_t **serializedData) 
     return dataSize;
 }
 
-static int lua_deserialize(lua_State *L, const uint8_t *serializedData, size_t dataSize) {
+int sub_lua_deserialize(lua_State *L, const uint8_t *serializedData) {
     int dataCount;
     DataItem *data = deserialize(serializedData, &dataCount);
     for (int i = 0; i < dataCount; ++i) {
@@ -208,7 +209,7 @@ static int LaunchSubScript(lua_State *L) {
 
 EM_ASYNC_JS(void, abort_sub_script, (int id), {
     try {
-        await Module.bridge.abortSubScript(id);
+        await Module.abortSubScript(id);
     } catch (e) {
         console.error("abort_sub_script error", e);
     }
@@ -236,7 +237,7 @@ static int IsSubScriptRunning(lua_State *L) {
     int id = (int)lua_touserdata(L, 1);
 
     int r = EM_ASM_INT({
-        return Module.bridge.isSubScriptRunning($0);
+        return Module.isSubScriptRunning($0);
     }, id);
 
     lua_pushboolean(L, r);
@@ -257,6 +258,74 @@ void sub_init(lua_State *L) {
     lua_setglobal(L, "IsSubScriptRunning");
 }
 
+static int panic_func(lua_State *L) {
+    const char *msg = lua_tostring(L, -1);
+    fprintf(stderr, "PANIC: unprotected error in call to Lua API (%s)\n", msg);
+    return 0;
+}
+
+static int traceback (lua_State *L) {
+    if (!lua_isstring(L, 1))  /* 'message' not a string? */
+        return 1;  /* keep it intact */
+    lua_getglobal(L, "debug");
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        return 1;
+    }
+    lua_getfield(L, -1, "traceback");
+    if (!lua_isfunction(L, -1)) {
+        lua_pop(L, 2);
+        return 1;
+    }
+    lua_pushvalue(L, 1);  /* pass error message */
+    lua_pushinteger(L, 2);  /* skip this function and traceback */
+    lua_call(L, 2, 1);  /* call debug.traceback */
+    return 1;
+}
+
+// TODO: use main worker's ConPrintf
+static int ConPrintf(lua_State *L) {
+    int n = lua_gettop(L);
+    if (n < 1) {
+        return luaL_error(L, "ConPrintf needs at least one argument");
+    }
+
+    const char *fmt = luaL_checkstring(L, 1);
+
+    luaL_Buffer b;
+    luaL_buffinit(L, &b);
+
+    for (int i = 2; i <= n; i++) {
+        lua_pushvalue(L, i);
+        luaL_addvalue(&b);
+    }
+
+    luaL_pushresult(&b);
+    const char *args = lua_tostring(L, -1);
+
+    lua_getglobal(L, "string");
+    lua_getfield(L, -1, "format");
+    lua_remove(L, -2);  // remove the 'string' table from the stack
+
+    lua_pushstring(L, fmt);
+    lua_pushstring(L, args);
+
+    if (lua_pcall(L, 2, 1, 0) != LUA_OK) {
+        return luaL_error(L, "error calling 'string.format': %s", lua_tostring(L, -1));
+    }
+
+    const char *formatted = lua_tostring(L, -1);
+
+    lua_getglobal(L, "print");
+    lua_pushstring(L, formatted);
+
+    if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+        return luaL_error(L, "error calling 'print': %s", lua_tostring(L, -1));
+    }
+
+    return 0;
+}
+
 // Call from sub worker
 EMSCRIPTEN_KEEPALIVE
 int sub_start(const char *script, const char *funcs, const char *subs, size_t size, void *data) {
@@ -266,11 +335,14 @@ int sub_start(const char *script, const char *funcs, const char *subs, size_t si
         return 1;
     }
 
-    // TODO: lua_atpanic();
+    lua_atpanic(L, panic_func);
+    lua_pushcfunction(L, traceback);
 
     luaL_openlibs(L);
     // TODO: os.exit()
-    // TODO: ConPrintf
+    lua_register(L, "ConPrintf", ConPrintf);
+
+    lcurl_register(L);
 
     int err = luaL_loadstring(L, script);
     if (err != LUA_OK) {
@@ -278,15 +350,28 @@ int sub_start(const char *script, const char *funcs, const char *subs, size_t si
         return 2;
     }
 
-    int count = lua_deserialize(L, data, size);
+    int count = sub_lua_deserialize(L, data);
     free(data);
 
     if (lua_pcall(L, count, LUA_MULTRET, 1) != LUA_OK) {
         const char *msg = lua_tostring(L, -1);
-        fprintf(stderr, "sub_start error: %s", msg);
+        fprintf(stderr, "sub_start error: %s\n", msg);
+
+        EM_ASM({
+            Module.bridge.onSubScriptError(UTF8ToString($0));
+        }, msg);
+
         return 3;
     }
 
-    // finished
+    uint8_t *result;
+    size_t result_size = lua_serialize(L, 2, &result);
 
+    EM_ASM({
+        Module.bridge.onSubScriptFinished($0, $1);
+    }, result, result_size);
+
+    free(result);
+
+    return 0;
 }

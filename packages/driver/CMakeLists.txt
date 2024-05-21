@@ -38,6 +38,8 @@ add_executable(${PROJECT_NAME}
         src/c/wasmfs/nodefs_js.cpp
         src/c/sub.c
         src/c/sub.h
+        src/c/lcurl.c
+        src/c/lcurl.h
 )
 
 set(DRIVER_LINK_FLAGS
@@ -52,7 +54,7 @@ set(DRIVER_LINK_FLAGS
         "-sWASMFS"
         "-sSTRICT"
         "-sINCOMING_MODULE_JS_API=[print,printErr]"
-        "-sEXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result]"
+        "-sEXPORTED_FUNCTIONS=[_malloc,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result,_on_subscript_finished]"
         "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8,Asyncify"
         "-sASYNCIFY_IMPORTS=js_wasmfs_node_read"
 )

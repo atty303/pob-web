@@ -11,11 +11,11 @@ type Imports = {
 };
 
 export class SubScriptWorker {
-  private onFinish: () => void = () => {};
+  private onFinished: (data: Uint8Array) => void = () => {};
 
-  async start(script: string, data: Uint8Array, onFinish: () => void) {
+  async start(script: string, data: Uint8Array, onFinished: (data: Uint8Array) => void) {
     const build = "release"; // TODO: configurable
-    this.onFinish = onFinish;
+    this.onFinished = onFinished;
     log.debug(tag.subscript, "start", { script });
 
     const driver = (await import(`../../dist/driver-${build}.mjs`)) as {
@@ -32,17 +32,29 @@ export class SubScriptWorker {
     const wasmData = module._malloc(data.length);
     module.HEAPU8.set(data, wasmData);
 
-    await imports.subStart(script, "", "", data.length, wasmData);
+    const ret = await imports.subStart(script, "", "", data.length, wasmData);
+    log.info(tag.subscript, `finished: ret=${ret}`);
   }
 
   private resolveImports(module: DriverModule): Imports {
     return {
-      subStart: module.cwrap("sub_start", "number", ["string", "string", "string", "number", "number"], { async: true }),
+      subStart: module.cwrap("sub_start", "number", ["string", "string", "string", "number", "number"], {
+        async: true,
+      }),
     };
   }
 
   private resolveExports(module: DriverModule) {
-    return {};
+    return {
+      onSubScriptError: (message: string) => {
+        log.error(tag.subscript, "onSubScriptError", { message });
+      },
+      onSubScriptFinished: (data: number, size: number) => {
+        const result = module.HEAPU8.slice(data, data + size);
+        log.debug(tag.subscript, "onSubScriptFinished", { result });
+        this.onFinished(result);
+      },
+    };
   }
 }
 

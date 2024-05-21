@@ -488,3 +488,23 @@ int on_download_page_result(const char *json) {
     }
     return 0;
 }
+
+// Call from main worker
+EMSCRIPTEN_KEEPALIVE
+int on_subscript_finished(int id, const uint8_t *data) {
+    lua_State *L = GL;
+
+    int extra = push_callback(L, "OnSubFinished");
+    if (extra >= 0) {
+        lua_pushlightuserdata(L, (void *)id);
+        int count = sub_lua_deserialize(L, data);
+        printf("on_subscript_finished: extra=%d,count=%d,id=%d\n", extra, count, id);
+        if (lua_pcall(L, extra + 1 + count, 0, 0) != LUA_OK) {
+            const char *msg = lua_tostring(L, -1);
+            fprintf(stderr, "on_subscript_finished error: %s\n", msg);
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}

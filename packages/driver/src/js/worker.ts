@@ -5,6 +5,7 @@ import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
 import { CloudflareKV, WebAccess } from "./fs.ts";
 import { ImageRepository } from "./image";
+import { log, tag } from "./logger.ts";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
@@ -19,26 +20,25 @@ import WorkerObject from "./sub.ts?worker";
 
 export class SubScriptHost {
   private worker: Worker | undefined;
-  private subScriptWorker: Comlink.Remote<SubScriptWorker>;
+  private subScriptWorker: Comlink.Remote<SubScriptWorker> | undefined;
 
   constructor(
     readonly script: string,
     readonly funcs: string,
     readonly subs: string,
     readonly data: Uint8Array,
-    readonly onFinish: () => void,
+    readonly onFinished: (data: Uint8Array) => void,
   ) {}
 
   async start() {
     this.worker = new WorkerObject();
     this.subScriptWorker = Comlink.wrap<SubScriptWorker>(this.worker);
-    await this.subScriptWorker.start(this.script, this.data, Comlink.proxy(this.onFinish));
+    this.subScriptWorker.start(this.script, this.data, Comlink.proxy(this.onFinished)).then(() => {});
   }
 
   async terminate() {
     this.worker?.terminate();
     this.worker = undefined;
-    this.onFinish();
   }
 
   isRunning() {
@@ -81,6 +81,7 @@ type Imports = {
   onKeyDown: (name: string, doubleClick: number) => void;
   onChar: (char: string, doubleClick: number) => void;
   onDownloadPageResult: (result: string) => void;
+  onSubScriptFinished: (id: number, data: number) => number;
 };
 
 export class DriverWorker {
@@ -102,7 +103,7 @@ export class DriverWorker {
   private imports: Imports | undefined;
   private dirtyCount = 0;
   private isRunning = true;
-  private subScriptIndex = 0;
+  private subScriptIndex = 1;
   private subScripts: SubScriptHost[] = [];
 
   async start(
@@ -247,6 +248,7 @@ export class DriverWorker {
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),
       onChar: module.cwrap("on_char", "number", ["string", "number"]),
       onDownloadPageResult: module.cwrap("on_download_page_result", "number", ["string"]),
+      onSubScriptFinished: module.cwrap("on_subscript_finished", "number", ["number", "number"]),
     };
   }
 
@@ -280,9 +282,16 @@ export class DriverWorker {
         const id = this.subScriptIndex;
         const dataArray = new Uint8Array(size);
         dataArray.set(new Uint8Array(module.HEAPU8.buffer, data, size));
-        const subScript = new SubScriptHost(script, funcs, subs, dataArray, () => {
+        const subScript = new SubScriptHost(script, funcs, subs, dataArray, (data: Uint8Array) => {
           this.subScripts[id]?.terminate();
           delete this.subScripts[id];
+
+          const wasmData = module._malloc(data.length);
+          module.HEAPU8.set(data, wasmData);
+          const ret = this.imports?.onSubScriptFinished(id, wasmData);
+          module._free(wasmData);
+
+          log.debug(tag.subscript, "onSubScriptFinished callback done", { ret });
         });
         this.subScripts[id] = subScript;
         await subScript.start();
