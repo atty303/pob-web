@@ -76,14 +76,14 @@ size_t serialize(DataItem *data, size_t count, unsigned char **buffer) {
     return totalSize;
 }
 
-DataItem* deserialize(const unsigned char *buffer, size_t *count) {
+DataItem* deserialize(const unsigned char *buffer, int *count) {
     const unsigned char *ptr = buffer;
 
-    memcpy(count, ptr, sizeof(size_t));
-    ptr += sizeof(size_t);
+    memcpy(count, ptr, sizeof(int));
+    ptr += sizeof(int);
 
     DataItem *data = (DataItem *)malloc(*count * sizeof(DataItem));
-    for (size_t i = 0; i < *count; ++i) {
+    for (int i = 0; i < *count; ++i) {
         memcpy(&data[i].type, ptr, sizeof(DataType));
         ptr += sizeof(DataType);
         switch (data[i].type) {
@@ -116,7 +116,7 @@ DataItem* deserialize(const unsigned char *buffer, size_t *count) {
 
 EM_ASYNC_JS(int, launch_sub_script, (const char *script, const char *funcs, const char *subs, size_t size, void *data), {
     try {
-        return await Module.launchSubScript(UTF8ToString(script), UTF8ToString(funcs), UTF8ToString(subs), size, data);
+        return await Module.bridge.launchSubScript(UTF8ToString(script), UTF8ToString(funcs), UTF8ToString(subs), size, data);
     } catch (e) {
         console.error("launch_sub_script error", e);
         return 0;
@@ -154,8 +154,8 @@ static size_t lua_serialize(lua_State *L, int offset, uint8_t **serializedData) 
     return dataSize;
 }
 
-static void lua_deserialize(lua_State *L, const uint8_t *serializedData, size_t dataSize) {
-    size_t dataCount;
+static int lua_deserialize(lua_State *L, const uint8_t *serializedData, size_t dataSize) {
+    int dataCount;
     DataItem *data = deserialize(serializedData, &dataCount);
     for (int i = 0; i < dataCount; ++i) {
         lua_checkstack(L, 1);
@@ -176,8 +176,10 @@ static void lua_deserialize(lua_State *L, const uint8_t *serializedData, size_t 
         }
     }
     free(data);
+    return dataCount;
 }
 
+// Call from main worker
 static int LaunchSubScript(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 3);
@@ -206,12 +208,13 @@ static int LaunchSubScript(lua_State *L) {
 
 EM_ASYNC_JS(void, abort_sub_script, (int id), {
     try {
-        await Module.abortSubScript(id);
+        await Module.bridge.abortSubScript(id);
     } catch (e) {
         console.error("abort_sub_script error", e);
     }
 })
 
+// Call from main worker
 static int AbortSubScript(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
@@ -224,6 +227,7 @@ static int AbortSubScript(lua_State *L) {
     return 0;
 }
 
+// Call from main worker
 static int IsSubScriptRunning(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
@@ -232,7 +236,7 @@ static int IsSubScriptRunning(lua_State *L) {
     int id = (int)lua_touserdata(L, 1);
 
     int r = EM_ASM_INT({
-        return Module.isSubScriptRunning($0);
+        return Module.bridge.isSubScriptRunning($0);
     }, id);
 
     lua_pushboolean(L, r);
@@ -240,6 +244,7 @@ static int IsSubScriptRunning(lua_State *L) {
     return 1;
 }
 
+// Call from main worker
 void sub_init(lua_State *L) {
     // SubScript
     lua_pushcclosure(L, LaunchSubScript, 0);
@@ -257,6 +262,7 @@ EMSCRIPTEN_KEEPALIVE
 int sub_start(const char *script, const char *funcs, const char *subs, size_t size, void *data) {
     lua_State *L = luaL_newstate();
     if (L == NULL) {
+        free(data);
         return 1;
     }
 
@@ -268,8 +274,19 @@ int sub_start(const char *script, const char *funcs, const char *subs, size_t si
 
     int err = luaL_loadstring(L, script);
     if (err != LUA_OK) {
+        free(data);
         return 2;
     }
 
+    int count = lua_deserialize(L, data, size);
+    free(data);
+
+    if (lua_pcall(L, count, LUA_MULTRET, 1) != LUA_OK) {
+        const char *msg = lua_tostring(L, -1);
+        fprintf(stderr, "sub_start error: %s", msg);
+        return 3;
+    }
+
+    // finished
 
 }

@@ -23,13 +23,16 @@ export class SubScriptHost {
 
   constructor(
     readonly script: string,
+    readonly funcs: string,
+    readonly subs: string,
+    readonly data: Uint8Array,
     readonly onFinish: () => void,
   ) {}
 
   async start() {
     this.worker = new WorkerObject();
     this.subScriptWorker = Comlink.wrap<SubScriptWorker>(this.worker);
-    await this.subScriptWorker.start(this.script, Comlink.proxy(this.onFinish));
+    await this.subScriptWorker.start(this.script, this.data, Comlink.proxy(this.onFinish));
   }
 
   async terminate() {
@@ -273,9 +276,11 @@ export class DriverWorker {
       copy: (text: string) => this.mainCallbacks?.copy(text),
       paste: () => this.mainCallbacks?.paste(),
       openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
-      launchSubScript: async (script: string, funcs: string, subs: string) => {
+      launchSubScript: async (script: string, funcs: string, subs: string, size: number, data: number) => {
         const id = this.subScriptIndex;
-        const subScript = new SubScriptHost(script, () => {
+        const dataArray = new Uint8Array(size);
+        dataArray.set(new Uint8Array(module.HEAPU8.buffer, data, size));
+        const subScript = new SubScriptHost(script, funcs, subs, dataArray, () => {
           this.subScripts[id]?.terminate();
           delete this.subScripts[id];
         });

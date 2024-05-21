@@ -7,14 +7,14 @@ interface DriverModule extends EmscriptenModule {
 }
 
 type Imports = {
-  subStart: () => void;
+  subStart: (script: string, funcs: string, subs: string, size: number, data: number) => void;
 };
 
 export class SubScriptWorker {
   private onFinish: () => void = () => {};
 
-  async start(script: string, onFinish: () => void) {
-    const build = "release";
+  async start(script: string, data: Uint8Array, onFinish: () => void) {
+    const build = "release"; // TODO: configurable
     this.onFinish = onFinish;
     log.debug(tag.subscript, "start", { script });
 
@@ -22,18 +22,22 @@ export class SubScriptWorker {
       default: EmscriptenModuleFactory<DriverModule>;
     };
     const module = await driver.default({
-      print: console.log,
-      printErr: console.warn,
+      print: console.log, // TODO: log.info
+      printErr: console.warn, // TODO: log.info
     });
 
     module.bridge = this.resolveExports(module);
     const imports = this.resolveImports(module);
-    await imports.subStart();
+
+    const wasmData = module._malloc(data.length);
+    module.HEAPU8.set(data, wasmData);
+
+    await imports.subStart(script, "", "", data.length, wasmData);
   }
 
   private resolveImports(module: DriverModule): Imports {
     return {
-      subStart: module.cwrap("sub_start", "number", [], { async: true }),
+      subStart: module.cwrap("sub_start", "number", ["string", "string", "string", "number", "number"], { async: true }),
     };
   }
 
