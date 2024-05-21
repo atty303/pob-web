@@ -154,20 +154,22 @@ static int lcurl_easy_setopt_url(lua_State *L) {
     return 0;
 }
 
-EM_ASYNC_JS(const char *, fetch, (const char *url), {
-    const res = await Module.bridge.fetch(UTF8ToString(url));
-    const j = JSON.parse(res);
-    console.log(j);
+EM_ASYNC_JS(const char *, fetch, (const char *url, const char *headers, const char *body), {
+    const reqHeaders = headers ? UTF8ToString(headers) : undefined;
+    const reqBody = body ? UTF8ToString(body) : undefined;
 
-    const body = ""+j.body;
+    const res = await Module.bridge.fetch(UTF8ToString(url), reqHeaders, reqBody);
+    const j = JSON.parse(res);
+
+    const resBody = ""+j.body;
     const status = ""+j.status;
     const header = ""+j.header;
     const error = ""+j.error;
 
-    const buf = Module._malloc(body.length + status.length + header.length + error.length + 4);
+    const buf = Module._malloc(resBody.length + status.length + header.length + error.length + 4);
     let p = buf;
-    stringToUTF8(body, p, body.length + 1);
-    p += body.length + 1;
+    stringToUTF8(resBody, p, resBody.length + 1);
+    p += resBody.length + 1;
     stringToUTF8(status, p, status.length + 1);
     p += status.length + 1;
     stringToUTF8(header, p, header.length + 1);
@@ -187,7 +189,7 @@ static int lcurl_easy_perform(lua_State *L) {
         return 2;
     }
 
-    const char *response = fetch(le->url);
+    const char *response = fetch(le->url, le->headers, le->body);
 
     const char *p = response;
     const char *body = p;
@@ -260,6 +262,13 @@ static int lcurl_easy_getinfo(lua_State *L) {
     }
 }
 
+static int lcurl_easy_getinfo_response_code(lua_State *L) {
+    Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
+
+    lua_pushinteger(L, le->status_code);
+    return 1;
+}
+
 static int lcurl_easy_close(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
     if (le->url) {
@@ -300,6 +309,7 @@ static const struct luaL_Reg lcurl_easy_methods[] = {
         {"setopt_writefunction", lcurl_easy_setopt_writefunction},
         {"perform", lcurl_easy_perform},
         {"getinfo", lcurl_easy_getinfo},
+        {"getinfo_response_code", lcurl_easy_getinfo_response_code},
         {"close", lcurl_easy_close},
         {"__gc", lcurl_easy_gc},
         {NULL, NULL}
@@ -308,7 +318,7 @@ static const struct luaL_Reg lcurl_easy_methods[] = {
 static int lcurl_easy_new(lua_State *L) {
     Easy *le = (Easy *)lua_newuserdata(L, sizeof(Easy));
     le->url = NULL;
-    le->headers = NULL;
+    le->headers = strdup("");
     le->body = NULL;
     le->status_code = 0;
     le->header_function = LUA_REFNIL;

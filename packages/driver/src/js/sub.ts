@@ -85,13 +85,16 @@ export class SubScriptWorker {
       },
       fetch: async (url: string, header: string | undefined, body: string | undefined) => {
         try {
+          log.debug(tag.subscript, "fetch request", { url, header, body });
           const headers = header
             ? header
                 .split("\n")
                 .map((_) => _.split(":"))
-                .reduce((acc, [k, v]) => ({ ...acc, [k.trim()]: v.trim() }), {})
+                .filter((_) => _.length === 2)
+                .reduce((acc, [k, v]) => Object.assign(acc, { [k.trim()]: v.trim() }), {})
             : {};
           const r = await this.onFetch(url, headers, body);
+          log.debug(tag.subscript, "fetch", r.body, r.status, r.error);
           const headerText = Object.entries(r?.headers ?? {})
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n");
@@ -101,8 +104,8 @@ export class SubScriptWorker {
             header: headerText,
             error: r?.error,
           });
-        } catch (e: unknown) {
-          // console.error(e);
+        } catch (e) {
+          log.error(tag.subscript, "fetch error", { error: e });
           return JSON.stringify({ error: (e as Error).message });
         }
       },

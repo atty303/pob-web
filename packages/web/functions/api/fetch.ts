@@ -17,14 +17,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         method: "POST",
         body: req.body,
         headers: Object.assign({}, req.headers, {
-          "User-Agent": "pob.cool",
+          // "User-Agent": "pob.cool",
         }),
       });
     } else {
       r = new Request(req.url, {
         method: "GET",
         headers: Object.assign({}, req.headers, {
-          "User-Agent": "pob.cool",
+          // "User-Agent": "pob.cool",
         }),
       });
     }
