@@ -48,7 +48,7 @@ export class TextMetrics {
 
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
     this.context.font = font(size, fontNum);
-    const lines = text.split("\n");
+    const lines = text.replaceAll(reColorGlobal, "").split("\n");
     const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
     const line = lines[y];
     let i = 0;
@@ -63,6 +63,20 @@ export class TextMetrics {
     }
     return i;
   }
+
+  fittingText(size: number, fontNum: number, text: string, maxWidth: number) {
+    this.context.font = font(size, fontNum);
+    const line = text.replaceAll(reColorGlobal, "");
+    let width = 0;
+    for (let i = 0; i < line.length; i++) {
+      const w = this.context.measureText(line[i]).width;
+      if (width + w > maxWidth) {
+        return { width, head: line.substring(0, i), tail: line.substring(i) };
+      }
+      width += w;
+    }
+    return { width, head: line, tail: "" };
+  }
 }
 
 export interface TextRender {
@@ -72,7 +86,7 @@ export interface TextRender {
 }
 
 export interface TextRasterizer {
-  get(size: number, fontNum: number, text: string): TextRender;
+  get(size: number, fontNum: number, text: string): TextRender[];
 }
 
 export class SimpleTextRasterizer implements TextRasterizer {
@@ -107,7 +121,7 @@ export class SimpleTextRasterizer implements TextRasterizer {
         };
       }
     }
-    return render;
+    return [render];
   }
 }
 
@@ -182,7 +196,7 @@ export class BinPackingTextRasterizer {
   private context: OffscreenCanvasRenderingContext2D;
   // @ts-ignore
   private packer: BinPack;
-  private cache: Map<string, TextRender> = new Map();
+  private cache: Map<string, TextRender[]> = new Map();
   private generation = 0;
 
   constructor(readonly textMetrics: TextMetrics) {
@@ -214,51 +228,76 @@ export class BinPackingTextRasterizer {
     if (!render) {
       const width = this.textMetrics.measure(height, fontNum, text);
       if (width > 0) {
-        let rect = this.packer.add(width, height);
-        if (!rect) {
-          this.reset();
-          rect = this.packer.add(width, height);
-          if (!rect) throw new Error("Failed to add text to texture");
+        if (width > this.size.width) {
+          const renders = [];
+          let parts = { width: 0, head: "", tail: text };
+          while (parts.tail !== "") {
+            parts = this.textMetrics.fittingText(height, fontNum, parts.tail, this.size.width);
+            renders.push(this.drawText(parts.head, parts.width, height, fontNum));
+          }
+          render = renders.map((r) => r.forOnce);
+          this.cache.set(
+            key,
+            renders.map((r) => r.forCache),
+          );
+        } else {
+          const r = this.drawText(text, width, height, fontNum);
+          render = [r.forOnce];
+          this.cache.set(key, [r.forCache]);
         }
-
-        this.context.font = font(height, fontNum);
-        this.context.fillText(text, rect.x, rect.y + rect.height);
-
-        const u1 = rect.x / this.size.width;
-        const v1 = rect.y / this.size.height;
-        const u2 = (rect.x + rect.width) / this.size.width;
-        const v2 = (rect.y + rect.height) / this.size.height;
-        const bitmap = {
-          id: `@text:${this.generation}`,
-          bitmap: this.canvas,
-          flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP,
-        };
-        render = {
-          width,
-          bitmap,
-          coords: [u1, v1, u2, v1, u2, v2, u1, v2],
-        };
-        this.cache.set(key, render);
-        render = {
-          ...render,
-          bitmap: {
-            ...bitmap,
-            updateSubImage: () => {
-              return {
-                ...rect,
-                source: this.context.getImageData(rect.x, rect.y, rect.width, rect.height).data,
-              };
-            },
-          },
-        };
       } else {
-        render = {
-          width: 0,
-          bitmap: undefined,
-          coords: [0, 0, 1, 0, 1, 1, 0, 1],
-        };
+        render = [
+          {
+            width: 0,
+            bitmap: undefined,
+            coords: [0, 0, 1, 0, 1, 1, 0, 1],
+          },
+        ];
       }
     }
     return render;
+  }
+
+  private drawText(text: string, width: number, height: number, fontNum: number) {
+    let rect = this.packer.add(width, height);
+    if (!rect) {
+      this.reset();
+      rect = this.packer.add(width, height);
+      if (!rect) throw new Error("Failed to add text to texture");
+    }
+
+    this.context.font = font(height, fontNum);
+    this.context.fillText(text, rect.x, rect.y + rect.height);
+
+    const u1 = rect.x / this.size.width;
+    const v1 = rect.y / this.size.height;
+    const u2 = (rect.x + rect.width) / this.size.width;
+    const v2 = (rect.y + rect.height) / this.size.height;
+    const bitmap = {
+      id: `@text:${this.generation}`,
+      bitmap: this.canvas,
+      flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP,
+    };
+    const forCache = {
+      width,
+      coords: [u1, v1, u2, v1, u2, v2, u1, v2],
+      bitmap: {
+        ...bitmap,
+      },
+    };
+    const forOnce = {
+      ...forCache,
+      bitmap: {
+        ...forCache.bitmap,
+        updateSubImage: () => {
+          const context = this.context;
+          return {
+            ...rect,
+            source: context.getImageData(rect.x, rect.y, rect.width, rect.height).data,
+          };
+        },
+      },
+    };
+    return { forCache, forOnce };
   }
 }

@@ -1,6 +1,6 @@
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags } from "../image.ts";
-import type { TextRasterizer } from "./text.ts";
+import type { TextRasterizer, TextRender } from "./text.ts";
 import type { WebGL1Backend } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
@@ -212,15 +212,13 @@ export class Renderer {
 
   private drawString(x: number, y: number, align: number, height: number, font: number, text: string) {
     const pos = { x, y };
-    for (let line of text.split("\n")) {
-      // TODO: Implement multiple draw from a single string
-      if (line.length > 256) line = line.substring(0, 256);
+    for (const line of text.split("\n")) {
       this.drawStringLine(pos, align, height, font, line);
     }
   }
 
   private drawStringLine(pos: { x: number; y: number }, align: number, height: number, font: number, text0: string) {
-    const segments = [];
+    const segments: { color: number[]; render: TextRender }[] = [];
 
     let text = text0;
     while (true) {
@@ -239,19 +237,21 @@ export class Renderer {
       }
 
       if (subtext.length > 0) {
-        segments.push({
-          text: subtext,
-          color: this.currentColor,
-          render: this.textRasterizer.get(height, font, subtext),
-        });
+        for (const render of this.textRasterizer.get(height, font, subtext)) {
+          segments.push({
+            color: this.currentColor,
+            render,
+          });
+        }
       }
     }
     if (text.length > 0) {
-      segments.push({
-        text,
-        color: this.currentColor,
-        render: this.textRasterizer.get(height, font, text),
-      });
+      for (const render of this.textRasterizer.get(height, font, text)) {
+        segments.push({
+          color: this.currentColor,
+          render,
+        });
+      }
     }
 
     const width = segments.reduce((width, segment) => width + segment.render.width, 0);
