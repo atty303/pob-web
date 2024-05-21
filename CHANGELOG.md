@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/atty303/pob-web/compare/v0.8.0...v0.9.0) (2024-05-21)
+
+
+### Features
+
+* **driver:** implement subscript and lcurl.safe ([#57](https://github.com/atty303/pob-web/issues/57)) ([b108bef](https://github.com/atty303/pob-web/commit/b108befeaebcbc2880964525b39bfbebac059720))
+
+
+### Bug Fixes
+
+* **driver:** find timeless jewel ([17110fe](https://github.com/atty303/pob-web/commit/17110feff9c9be37e754a04ed66f666f629e207c)), closes [#16](https://github.com/atty303/pob-web/issues/16)
+
 ## [0.8.0](https://github.com/atty303/pob-web/compare/v0.7.6...v0.8.0) (2024-05-19)
 
 
