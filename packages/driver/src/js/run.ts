@@ -6,8 +6,8 @@ const versionPrefix = `${__ASSET_PREFIX__}/v${version}`;
 const driver = new Driver("release", versionPrefix, {
   onError: (message) => console.error(message),
   onFrame: (_render, _time) => {},
-  onFetch: async (url, _headers, _body) => {
-    throw new Error(`Fetch not implemented in shell: ${url}`);
+  onFetch: async (_url, _headers, _body) => {
+    throw new Error("Fetch not implemented in shell");
   },
 });
 await driver.start({ cloudflareKvPrefix: "/api/kv/", cloudflareKvAccessToken: undefined });

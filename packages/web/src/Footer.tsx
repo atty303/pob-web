@@ -8,7 +8,7 @@ export default function Footer(p: { frameTime: number }) {
             <a className="link" href="https://x.com/atty303" target="_blank" rel="noreferrer">
               @atty303
             </a>
-            ) - This site is not affiliated with Grinding Gear Games or Path of Exile.
+            ) - This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
           </span>
         </aside>
         <div className="flex-none">

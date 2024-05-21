@@ -150,6 +150,7 @@ const logger = {
 export const log = new Log().init(
   {
     kvfs: "INFO",
+    subscript: "DEBUG",
   },
   (level, tag, msg, params) => {
     logger[level as keyof typeof logger](tag, msg, params);

@@ -11,20 +11,20 @@ interface FetchRequest {
 export const onRequest: PagesFunction<Env> = async (context) => {
   const req: FetchRequest = await context.request.json();
   try {
-    let r;
+    let r: Request;
     if (req.body) {
       r = new Request(req.url, {
         method: "POST",
         body: req.body,
         headers: Object.assign({}, req.headers, {
-          "User-Agent": "pob.cool",
+          // "User-Agent": "pob.cool",
         }),
       });
     } else {
       r = new Request(req.url, {
         method: "GET",
         headers: Object.assign({}, req.headers, {
-          "User-Agent": "pob.cool",
+          // "User-Agent": "pob.cool",
         }),
       });
     }
@@ -37,7 +37,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         status: rep.status,
       }),
     );
-  } catch (e: any) {
+  } catch (e) {
     return new Response(
       JSON.stringify({
         body: undefined,

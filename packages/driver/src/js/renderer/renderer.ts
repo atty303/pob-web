@@ -214,7 +214,7 @@ export class Renderer {
     const pos = { x, y };
     for (let line of text.split("\n")) {
       // TODO: Implement multiple draw from a single string
-      if (line.length > 1024) line = line.substring(0, 1024);
+      if (line.length > 256) line = line.substring(0, 256);
       this.drawStringLine(pos, align, height, font, line);
     }
   }
