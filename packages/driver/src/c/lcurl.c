@@ -1,11 +1,17 @@
 #include "lcurl.h"
 
+#include <emscripten.h>
 #include <lauxlib.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct {
-    char *headers;
     const char *url;
+    char *headers;
+    const char *body;
+    int status_code;
+    int header_function;
+    int write_function;
 } Easy;
 
 typedef struct {
@@ -13,7 +19,6 @@ typedef struct {
 } Error;
 
 enum {
-    OPT_URL = 10002,
     OPT_HTTPHEADER = 10023,
     OPT_USERAGENT = 10018,
     OPT_ACCEPT_ENCODING = 10102,
@@ -50,33 +55,92 @@ static int lcurl_easy_setopt(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
     int option = luaL_checkinteger(L, 2);
 
-//    if (option == CURLOPT_HTTPHEADER) {
-//        luaL_checktype(L, 3, LUA_TTABLE);
-//        lua_pushnil(L);
-//        while (lua_next(L, 3) != 0) {
-//            const char *header = luaL_checkstring(L, -1);
-//            le->headers = curl_slist_append(le->headers, header);
-//            lua_pop(L, 1);
-//        }
-//        curl_easy_setopt(le->curl, CURLOPT_HTTPHEADER, le->headers);
-//    } else if (option == CURLOPT_URL) {
-//        const char *url = luaL_checkstring(L, 3);
-//        curl_easy_setopt(le->curl, CURLOPT_URL, url);
-//    } else {
-//        luaL_error(L, "Unsupported option");
-//    }
-
+    switch (option) {
+        case OPT_HTTPHEADER: {
+            luaL_checktype(L, 3, LUA_TTABLE);
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                const char *header = luaL_checkstring(L, -1);
+                if (le->headers) {
+                    size_t len = strlen(le->headers);
+                    size_t header_len = strlen(header);
+                    le->headers = realloc(le->headers, len + header_len + 3);
+                    strcat(le->headers, header);
+                    strcat(le->headers, "\r\n");
+                } else {
+                    le->headers = strdup(header);
+                }
+                lua_pop(L, 1);
+            }
+        }
+        case OPT_USERAGENT: {
+            const char *user_agent = luaL_checkstring(L, 3);
+            const char *line = "User-Agent: ";
+            le->headers = realloc(le->headers, strlen(le->headers) + strlen(user_agent) + strlen(line) + 3);
+            strcat(le->headers, line);
+            strcat(le->headers, user_agent);
+            strcat(le->headers, "\r\n");
+            break;
+        }
+        case OPT_ACCEPT_ENCODING: {
+            const char *accept_encoding = luaL_checkstring(L, 3);
+            if (strlen(accept_encoding) > 0) {
+                const char *line = "Accept-Encoding: ";
+                le->headers = realloc(le->headers, strlen(le->headers) + strlen(accept_encoding) + strlen(line) + 3);
+                strcat(le->headers, line);
+                strcat(le->headers, accept_encoding);
+                strcat(le->headers, "\r\n");
+            }
+            break;
+        }
+        case OPT_POST: {
+            // fetch will POST when the body is set
+            break;
+        }
+        case OPT_POSTFIELDS: {
+            const char *body = luaL_checkstring(L, 3);
+            le->body = body;
+            break;
+        }
+        case OPT_IPRESOLVE: {
+            // no-op
+            break;
+        }
+        case OPT_PROXY: {
+            // no-op
+            break;
+        }
+        default:
+            luaL_error(L, "Option not supported");
+            break;
+    }
     return 0;
 }
 
 static int lcurl_easy_setopt_headerfunction(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
 
+    if (!lua_isfunction(L, 2)) {
+        luaL_error(L, "Argument must be a function");
+        return 0;
+    }
+
+    lua_pushvalue(L, 2);
+    le->header_function = luaL_ref(L, LUA_REGISTRYINDEX);
+
     return 0;
 }
 
 static int lcurl_easy_setopt_writefunction(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
+
+    if (!lua_isfunction(L, 2)) {
+        luaL_error(L, "Argument must be a function");
+        return 0;
+    }
+
+    lua_pushvalue(L, 2);
+    le->write_function = luaL_ref(L, LUA_REGISTRYINDEX);
 
     return 0;
 }
@@ -90,32 +154,142 @@ static int lcurl_easy_setopt_url(lua_State *L) {
     return 0;
 }
 
+EM_ASYNC_JS(const char *, fetch, (const char *url), {
+    const res = await Module.bridge.fetch(UTF8ToString(url));
+    const j = JSON.parse(res);
+    console.log(j);
+
+    const body = ""+j.body;
+    const status = ""+j.status;
+    const header = ""+j.header;
+    const error = ""+j.error;
+
+    const buf = Module._malloc(body.length + status.length + header.length + error.length + 4);
+    let p = buf;
+    stringToUTF8(body, p, body.length + 1);
+    p += body.length + 1;
+    stringToUTF8(status, p, status.length + 1);
+    p += status.length + 1;
+    stringToUTF8(header, p, header.length + 1);
+    p += header.length + 1;
+    stringToUTF8(error, p, error.length + 1);
+    p += error.length + 1;
+    return buf;
+})
+
 static int lcurl_easy_perform(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
 
-    lcurl_error_new(L, "Not implemented");
+    if (!le->url) {
+        lcurl_error_new(L, "URL not set");
+        lua_pushnil(L);
+        lua_pushvalue(L, -2);
+        return 2;
+    }
+
+    const char *response = fetch(le->url);
+
+    const char *p = response;
+    const char *body = p;
+    p += strlen(p) + 1;
+    const char *status = p;
+    p += strlen(p) + 1;
+    const char *header = p;
+    p += strlen(p) + 1;
+    const char *error = p;
+
+//    printf("body: %s\nstatus: %s\nheader: %s\nerror: %s\n", body, status, header, error);
+
+    le->status_code = 0;
+
+    if (strcmp(error, "undefined") != 0) {
+        printf("error is defined, returning error\n");
+        lcurl_error_new(L, error);
+        lua_pushnil(L);
+        lua_pushvalue(L, -2);
+        free((void *)response);
+        return 2;
+    }
+
+    if (strlen(status) > 0) {
+        le->status_code = strtol(status, NULL, 10);
+        printf("status code: %d\n", le->status_code);
+    }
+
+    if (le->header_function != LUA_REFNIL) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, le->header_function);
+        lua_pushstring(L, header);
+        if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+            printf("error calling header function\n");
+            lcurl_error_new(L, lua_tostring(L, -1));
+            lua_pushnil(L);
+            lua_pushvalue(L, -2);
+            free((void *)response);
+            return 2;
+        }
+    }
+
+    if (le->write_function != LUA_REFNIL) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, le->write_function);
+        lua_pushstring(L, body);
+        if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+            printf("error calling write function\n");
+            lcurl_error_new(L, lua_tostring(L, -1));
+            lua_pushnil(L);
+            lua_pushvalue(L, -2);
+            free((void *)response);
+            return 2;
+        }
+    }
 
     lua_pushnil(L);
-    lua_pushvalue(L, -2);
-
+    lua_pushnil(L);
     return 2;
 }
 
 static int lcurl_easy_getinfo(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
 
-    return 0;
+    int option = luaL_checkinteger(L, 2);
+    switch (option) {
+        case INFO_RESPONSE_CODE:
+            lua_pushinteger(L, le->status_code);
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 static int lcurl_easy_close(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
+//    if (le->url) {
+//        free((void *)le->url);
+//        le->url = NULL;
+//    }
+//    if (le->headers) {
+//        free((void *)le->headers);
+//        le->headers = NULL;
+//    }
+//    if (le->body) {
+//        free((void *)le->body);
+//        le->body = NULL;
+//    }
+    if (le->header_function != LUA_REFNIL) {
+        luaL_unref(L, LUA_REGISTRYINDEX, le->header_function);
+        le->header_function = LUA_REFNIL;
+    }
+    if (le->write_function != LUA_REFNIL) {
+        luaL_unref(L, LUA_REGISTRYINDEX, le->write_function);
+        le->write_function = LUA_REFNIL;
+    }
     return 0;
 }
 
 static int lcurl_easy_gc(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
-    if (le->headers) {
-    }
+
+    lcurl_easy_close(L);
+
     return 0;
 }
 
@@ -133,7 +307,12 @@ static const struct luaL_Reg lcurl_easy_methods[] = {
 
 static int lcurl_easy_new(lua_State *L) {
     Easy *le = (Easy *)lua_newuserdata(L, sizeof(Easy));
+    le->url = NULL;
     le->headers = NULL;
+    le->body = NULL;
+    le->status_code = 0;
+    le->header_function = LUA_REFNIL;
+    le->write_function = LUA_REFNIL;
 
     luaL_getmetatable(L, "lcurl_easy");
     lua_setmetatable(L, -2);
@@ -167,8 +346,6 @@ int luaopen_lcurl(lua_State *L) {
 
     luaL_newlib(L, lcurl_functions);
 
-    lua_pushinteger(L, OPT_URL);
-    lua_setfield(L, -2, "OPT_URL");
     lua_pushinteger(L, OPT_HTTPHEADER);
     lua_setfield(L, -2, "OPT_HTTPHEADER");
     lua_pushinteger(L, OPT_USERAGENT);

@@ -12,10 +12,38 @@ type Imports = {
 
 export class SubScriptWorker {
   private onFinished: (data: Uint8Array) => void = () => {};
+  private onError: (message: string) => void = () => {};
+  private onFetch: (
+    url: string,
+    header: Record<string, string>,
+    body: string | undefined,
+  ) => Promise<{
+    body: string | undefined;
+    headers: Record<string, string>;
+    status: number | undefined;
+    error: string | undefined;
+  }> = async () => ({ body: undefined, headers: {}, status: undefined, error: undefined });
 
-  async start(script: string, data: Uint8Array, onFinished: (data: Uint8Array) => void) {
+  async start(
+    script: string,
+    data: Uint8Array,
+    onFinished: (data: Uint8Array) => void,
+    onError: (message: string) => void,
+    onFetch: (
+      url: string,
+      header: Record<string, string>,
+      body: string | undefined,
+    ) => Promise<{
+      body: string | undefined;
+      headers: Record<string, string>;
+      status: number | undefined;
+      error: string | undefined;
+    }>,
+  ) {
     const build = "release"; // TODO: configurable
     this.onFinished = onFinished;
+    this.onError = onError;
+    this.onFetch = onFetch;
     log.debug(tag.subscript, "start", { script });
 
     const driver = (await import(`../../dist/driver-${build}.mjs`)) as {
@@ -48,11 +76,35 @@ export class SubScriptWorker {
     return {
       onSubScriptError: (message: string) => {
         log.error(tag.subscript, "onSubScriptError", { message });
+        this.onError(message);
       },
       onSubScriptFinished: (data: number, size: number) => {
         const result = module.HEAPU8.slice(data, data + size);
         log.debug(tag.subscript, "onSubScriptFinished", { result });
         this.onFinished(result);
+      },
+      fetch: async (url: string, header: string | undefined, body: string | undefined) => {
+        try {
+          const headers = header
+            ? header
+                .split("\n")
+                .map((_) => _.split(":"))
+                .reduce((acc, [k, v]) => ({ ...acc, [k.trim()]: v.trim() }), {})
+            : {};
+          const r = await this.onFetch(url, headers, body);
+          const headerText = Object.entries(r?.headers ?? {})
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n");
+          return JSON.stringify({
+            body: r?.body,
+            status: r?.status,
+            header: headerText,
+            error: r?.error,
+          });
+        } catch (e: unknown) {
+          // console.error(e);
+          return JSON.stringify({ error: (e as Error).message });
+        }
       },
     };
   }

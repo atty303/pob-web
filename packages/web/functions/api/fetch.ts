@@ -11,7 +11,7 @@ interface FetchRequest {
 export const onRequest: PagesFunction<Env> = async (context) => {
   const req: FetchRequest = await context.request.json();
   try {
-    let r;
+    let r: Request;
     if (req.body) {
       r = new Request(req.url, {
         method: "POST",
@@ -37,7 +37,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         status: rep.status,
       }),
     );
-  } catch (e: any) {
+  } catch (e) {
     return new Response(
       JSON.stringify({
         body: undefined,

@@ -28,12 +28,22 @@ export class SubScriptHost {
     readonly subs: string,
     readonly data: Uint8Array,
     readonly onFinished: (data: Uint8Array) => void,
+    readonly onError: (message: string) => void,
+    readonly onFetch: HostCallbacks["onFetch"],
   ) {}
 
   async start() {
     this.worker = new WorkerObject();
     this.subScriptWorker = Comlink.wrap<SubScriptWorker>(this.worker);
-    this.subScriptWorker.start(this.script, this.data, Comlink.proxy(this.onFinished)).then(() => {});
+    this.subScriptWorker
+      .start(
+        this.script,
+        this.data,
+        Comlink.proxy(this.onFinished),
+        Comlink.proxy(this.onError),
+        Comlink.proxy(this.onFetch),
+      )
+      .then(() => {});
   }
 
   async terminate() {
@@ -82,6 +92,7 @@ type Imports = {
   onChar: (char: string, doubleClick: number) => void;
   onDownloadPageResult: (result: string) => void;
   onSubScriptFinished: (id: number, data: number) => number;
+  onSubScriptError: (id: number, message: string) => number;
 };
 
 export class DriverWorker {
@@ -249,6 +260,7 @@ export class DriverWorker {
       onChar: module.cwrap("on_char", "number", ["string", "number"]),
       onDownloadPageResult: module.cwrap("on_download_page_result", "number", ["string"]),
       onSubScriptFinished: module.cwrap("on_subscript_finished", "number", ["number", "number"]),
+      onSubScriptError: module.cwrap("on_subscript_error", "number", ["number", "string"]),
     };
   }
 
@@ -282,17 +294,35 @@ export class DriverWorker {
         const id = this.subScriptIndex;
         const dataArray = new Uint8Array(size);
         dataArray.set(new Uint8Array(module.HEAPU8.buffer, data, size));
-        const subScript = new SubScriptHost(script, funcs, subs, dataArray, (data: Uint8Array) => {
-          this.subScripts[id]?.terminate();
-          delete this.subScripts[id];
+        const subScript = new SubScriptHost(
+          script,
+          funcs,
+          subs,
+          dataArray,
+          (data: Uint8Array) => {
+            this.subScripts[id]?.terminate();
+            delete this.subScripts[id];
 
-          const wasmData = module._malloc(data.length);
-          module.HEAPU8.set(data, wasmData);
-          const ret = this.imports?.onSubScriptFinished(id, wasmData);
-          module._free(wasmData);
+            const wasmData = module._malloc(data.length);
+            module.HEAPU8.set(data, wasmData);
+            const ret = this.imports?.onSubScriptFinished(id, wasmData);
+            module._free(wasmData);
 
-          log.debug(tag.subscript, "onSubScriptFinished callback done", { ret });
-        });
+            log.debug(tag.subscript, "onSubScriptFinished callback done", { ret });
+            this.invalidate();
+          },
+          (message: string) => {
+            this.subScripts[id]?.terminate();
+            delete this.subScripts[id];
+
+            const ret = this.imports?.onSubScriptError(id, message);
+            log.debug(tag.subscript, "onSubScriptError callback done", { ret });
+            this.invalidate();
+          },
+          this.hostCallbacks?.onFetch ??
+            (() => Promise.resolve({ error: "onFetch not implemented", body: "", headers: {}, status: 500 })),
+        );
+
         this.subScripts[id] = subScript;
         await subScript.start();
         return this.subScriptIndex++;
@@ -302,38 +332,6 @@ export class DriverWorker {
       },
       isSubScriptRunning: (id: number) => {
         return this.subScripts[id]?.isRunning() ?? false;
-      },
-      fetch: async (url: string, header: string | undefined, body: string | undefined) => {
-        try {
-          const headers = header
-            ? header
-                .split("\n")
-                .map((_) => _.split(":"))
-                .reduce((acc, [k, v]) => ({ ...acc, [k.trim()]: v.trim() }), {})
-            : {};
-          const r = await this.hostCallbacks?.onFetch(url, headers, body);
-          const headerText = Object.entries(r?.headers ?? {})
-            .map(([k, v]) => `${k}: ${v}`)
-            .join("\n");
-          this.imports?.onDownloadPageResult(
-            JSON.stringify({
-              body: r?.body,
-              status: r?.status,
-              header: headerText,
-              error: r?.error,
-            }),
-          );
-        } catch (e: unknown) {
-          console.error(e);
-          this.imports?.onDownloadPageResult(
-            JSON.stringify({
-              body: undefined,
-              status: undefined,
-              header: undefined,
-              error: e,
-            }),
-          );
-        }
       },
     };
   }
