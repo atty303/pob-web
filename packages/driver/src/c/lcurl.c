@@ -99,7 +99,7 @@ static int lcurl_easy_setopt(lua_State *L) {
         }
         case OPT_POSTFIELDS: {
             const char *body = luaL_checkstring(L, 3);
-            le->body = body;
+            le->body = strdup(body);
             break;
         }
         case OPT_IPRESOLVE: {
@@ -149,7 +149,7 @@ static int lcurl_easy_setopt_url(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
 
     const char *url = luaL_checkstring(L, 2);
-    le->url = url;
+    le->url = strdup(url);
 
     return 0;
 }
@@ -203,7 +203,7 @@ static int lcurl_easy_perform(lua_State *L) {
     le->status_code = 0;
 
     if (strcmp(error, "undefined") != 0) {
-        printf("error is defined, returning error\n");
+//        printf("error is defined, returning error\n");
         lcurl_error_new(L, error);
         lua_pushnil(L);
         lua_pushvalue(L, -2);
@@ -213,14 +213,14 @@ static int lcurl_easy_perform(lua_State *L) {
 
     if (strlen(status) > 0) {
         le->status_code = strtol(status, NULL, 10);
-        printf("status code: %d\n", le->status_code);
+//        printf("status code: %d\n", le->status_code);
     }
 
     if (le->header_function != LUA_REFNIL) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, le->header_function);
         lua_pushstring(L, header);
         if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-            printf("error calling header function\n");
+//            printf("error calling header function\n");
             lcurl_error_new(L, lua_tostring(L, -1));
             lua_pushnil(L);
             lua_pushvalue(L, -2);
@@ -233,7 +233,7 @@ static int lcurl_easy_perform(lua_State *L) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, le->write_function);
         lua_pushstring(L, body);
         if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-            printf("error calling write function\n");
+//            printf("error calling write function\n");
             lcurl_error_new(L, lua_tostring(L, -1));
             lua_pushnil(L);
             lua_pushvalue(L, -2);
@@ -262,18 +262,18 @@ static int lcurl_easy_getinfo(lua_State *L) {
 
 static int lcurl_easy_close(lua_State *L) {
     Easy *le = luaL_checkudata(L, 1, "lcurl_easy");
-//    if (le->url) {
-//        free((void *)le->url);
-//        le->url = NULL;
-//    }
-//    if (le->headers) {
-//        free((void *)le->headers);
-//        le->headers = NULL;
-//    }
-//    if (le->body) {
-//        free((void *)le->body);
-//        le->body = NULL;
-//    }
+    if (le->url) {
+        free((void *)le->url);
+        le->url = NULL;
+    }
+    if (le->headers) {
+        free((void *)le->headers);
+        le->headers = NULL;
+    }
+    if (le->body) {
+        free((void *)le->body);
+        le->body = NULL;
+    }
     if (le->header_function != LUA_REFNIL) {
         luaL_unref(L, LUA_REGISTRYINDEX, le->header_function);
         le->header_function = LUA_REFNIL;
