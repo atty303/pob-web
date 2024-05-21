@@ -86,13 +86,16 @@ export class SubScriptWorker {
       fetch: async (url: string, header: string | undefined, body: string | undefined) => {
         try {
           log.debug(tag.subscript, "fetch request", { url, header, body });
-          const headers = header
+          const headers: Record<string, string> = header
             ? header
                 .split("\n")
                 .map((_) => _.split(":"))
                 .filter((_) => _.length === 2)
                 .reduce((acc, [k, v]) => Object.assign(acc, { [k.trim()]: v.trim() }), {})
             : {};
+          if (!headers["Content-Type"]) {
+            headers["Content-Type"] = "application/x-www-form-urlencoded";
+          }
           const r = await this.onFetch(url, headers, body);
           log.debug(tag.subscript, "fetch", r.body, r.status, r.error);
           const headerText = Object.entries(r?.headers ?? {})
