@@ -171,7 +171,9 @@ export class DriverWorker {
       },
     });
 
-    console.log(await zenfs.promises.exists("/root/.image.tsv"));
+    console.log(await zenfs.promises.exists("/root/changelog.txt"));
+    console.log(await zenfs.promises.exists("/root/lua/xml.lua"));
+    console.log(await zenfs.promises.exists("/root/Nodules/Build.lua"));
     // console.log(await zenfs.promises.readFile("/root/.image.tsv", { flag: "r" }));
 
     if (fileSystemConfig.cloudflareKvAccessToken) {
