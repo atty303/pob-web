@@ -1,9 +1,10 @@
 import * as zenfs from "@zenfs/core";
+import { WebAccess } from "@zenfs/dom";
 import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
-import { CloudflareKV, WebAccess } from "./fs.ts";
+import { CloudflareKV } from "./fs.ts";
 import { ImageRepository } from "./image";
 import { log, tag } from "./logger.ts";
 // @ts-ignore
@@ -159,15 +160,14 @@ export class DriverWorker {
       mounts: {
         "/root": {
           backend: Zip,
-          zipData: await rootZip.arrayBuffer(),
+          data: await rootZip.arrayBuffer(),
           name: "root.zip",
-        } as any,
+        },
         "/user": {
-          name: "OPFS",
           backend: WebAccess,
           handle: await navigator.storage.getDirectory(),
-          // port: self as unknown as any,
-        } as any,
+          disableAsyncCache: true,
+        },
       },
     });
 
