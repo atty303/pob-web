@@ -171,8 +171,6 @@ export class DriverWorker {
       },
     });
 
-    await zenfs.promises.readFile("/user/Path of Building/Settings.xml");
-
     if (fileSystemConfig.cloudflareKvAccessToken) {
       const kvFs = await zenfs.resolveMountConfig({
         backend: CloudflareKV,
