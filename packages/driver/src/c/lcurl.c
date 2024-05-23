@@ -29,6 +29,29 @@ enum {
     INFO_RESPONSE_CODE = 2097154,
 };
 
+void dump_stack(lua_State *L) {
+    int top = lua_gettop(L);
+    printf("stack:\n");
+    for (int i = 1; i <= top; i++) {
+        int t = lua_type(L, i);
+        switch (t) {
+            case LUA_TSTRING:
+                printf("  %d: '%s'\n", i, lua_tostring(L, i));
+                break;
+            case LUA_TBOOLEAN:
+                printf(  "%d: %s\n", i, lua_toboolean(L, i) ? "true" : "false");
+                break;
+            case LUA_TNUMBER:
+                printf("  %d: %g\n", i, lua_tonumber(L, i));
+                break;
+            default:
+                printf("  %d: %s\n", i, lua_typename(L, t));
+                break;
+        }
+    }
+    printf("\n");
+}
+
 static int lcurl_error_msg(lua_State *L) {
     Error *e = luaL_checkudata(L, 1, "lcurl_error");
     lua_pushstring(L, e->message);
@@ -58,20 +81,26 @@ static int lcurl_easy_setopt(lua_State *L) {
     switch (option) {
         case OPT_HTTPHEADER: {
             luaL_checktype(L, 3, LUA_TTABLE);
+            lua_pushvalue(L, 3);  // push table (key, value, key, value, ...
+            luaL_Buffer b;
+            luaL_buffinit(L, &b);
             lua_pushnil(L);
-            while (lua_next(L, 3) != 0) {
-                const char *header = luaL_checkstring(L, -1);
-                if (le->headers) {
-                    size_t len = strlen(le->headers);
-                    size_t header_len = strlen(header);
-                    le->headers = realloc(le->headers, len + header_len + 3);
-                    strcat(le->headers, header);
-                    strcat(le->headers, "\r\n");
-                } else {
-                    le->headers = strdup(header);
+            while (lua_next(L, -2) != 0) {
+                luaL_checkany(L, -2);
+                const char *value = luaL_checkstring(L, -1);
+                if (value) {
+                    luaL_addstring(&b, value);
+                    luaL_addstring(&b, "\r\n");
                 }
                 lua_pop(L, 1);
             }
+            luaL_pushresult(&b);
+            const char *text = lua_tostring(L, -1);
+            if (le->headers) {
+                free((void *)le->headers);
+            }
+            le->headers = strdup(text);
+            break;
         }
         case OPT_USERAGENT: {
             const char *user_agent = luaL_checkstring(L, 3);

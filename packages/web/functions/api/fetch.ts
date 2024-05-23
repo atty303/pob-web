@@ -30,10 +30,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
     const rep = await fetch(r);
 
+    const headers = {};
+    for (const [key, value] of rep.headers.entries()) {
+      headers[key] = value;
+    }
+
     return new Response(
       JSON.stringify({
         body: await rep.text(),
-        headers: rep.headers,
+        headers,
         status: rep.status,
       }),
     );
