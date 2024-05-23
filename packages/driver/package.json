@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@zenfs/core": "^0.12.2",
-    "@zenfs/zip": "^0.4.2",
+    "@zenfs/core": "^0.12.3",
+    "@zenfs/zip": "^0.4.4",
     "@zenfs/dom": "^0.2.10",
     "comlink": "^4.4.1"
   }

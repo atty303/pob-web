@@ -171,9 +171,8 @@ export class DriverWorker {
       },
     });
 
-    console.log(await zenfs.promises.exists("/root"));
     console.log(await zenfs.promises.exists("/root/.image.tsv"));
-    console.log(await zenfs.promises.exists("/"));
+    // console.log(await zenfs.promises.readFile("/root/.image.tsv", { flag: "r" }));
 
     if (fileSystemConfig.cloudflareKvAccessToken) {
       const kvFs = await zenfs.resolveMountConfig({
