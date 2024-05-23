@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@zenfs/core": "^0.12.4",
-    "@zenfs/zip": "^0.4.4",
+    "@zenfs/zip": "^0.4.5",
     "@zenfs/dom": "^0.2.10",
     "comlink": "^4.4.1"
   }
