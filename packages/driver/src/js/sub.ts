@@ -60,8 +60,12 @@ export class SubScriptWorker {
     const wasmData = module._malloc(data.length);
     module.HEAPU8.set(data, wasmData);
 
-    const ret = await imports.subStart(script, "", "", data.length, wasmData);
-    log.info(tag.subscript, `finished: ret=${ret}`);
+    try {
+      const ret = await imports.subStart(script, "", "", data.length, wasmData);
+      log.info(tag.subscript, `finished: ret=${ret}`);
+    } finally {
+      module._free(wasmData);
+    }
   }
 
   private resolveImports(module: DriverModule): Imports {

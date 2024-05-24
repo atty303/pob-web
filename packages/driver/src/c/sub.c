@@ -331,7 +331,6 @@ EMSCRIPTEN_KEEPALIVE
 int sub_start(const char *script, const char *funcs, const char *subs, size_t size, void *data) {
     lua_State *L = luaL_newstate();
     if (L == NULL) {
-        free(data);
         return 1;
     }
 
@@ -346,12 +345,10 @@ int sub_start(const char *script, const char *funcs, const char *subs, size_t si
 
     int err = luaL_loadstring(L, script);
     if (err != LUA_OK) {
-        free(data);
         return 2;
     }
 
     int count = sub_lua_deserialize(L, data);
-    free(data);
 
     if (lua_pcall(L, count, LUA_MULTRET, 1) != LUA_OK) {
         const char *msg = lua_tostring(L, -1);

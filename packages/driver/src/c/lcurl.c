@@ -191,20 +191,24 @@ EM_ASYNC_JS(const char *, fetch, (const char *url, const char *headers, const ch
     const j = JSON.parse(res);
 
     const resBody = ""+j.body;
+    const resBodyLen = lengthBytesUTF8(resBody);
     const status = ""+j.status;
+    const statusLen = lengthBytesUTF8(status);
     const header = ""+j.header;
+    const headerLen = lengthBytesUTF8(header);
     const error = ""+j.error;
+    const errorLen = lengthBytesUTF8(error);
 
-    const buf = Module._malloc(resBody.length + status.length + header.length + error.length + 4);
+    const buf = Module._malloc(resBodyLen + statusLen + headerLen + errorLen + 4);
     let p = buf;
-    stringToUTF8(resBody, p, resBody.length + 1);
-    p += resBody.length + 1;
-    stringToUTF8(status, p, status.length + 1);
-    p += status.length + 1;
-    stringToUTF8(header, p, header.length + 1);
-    p += header.length + 1;
-    stringToUTF8(error, p, error.length + 1);
-    p += error.length + 1;
+    stringToUTF8(resBody, p, resBodyLen + 1);
+    p += resBodyLen + 1;
+    stringToUTF8(status, p, statusLen + 1);
+    p += statusLen + 1;
+    stringToUTF8(header, p, headerLen + 1);
+    p += headerLen + 1;
+    stringToUTF8(error, p, errorLen + 1);
+    p += errorLen + 1;
     return buf;
 })
 
