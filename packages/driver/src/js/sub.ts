@@ -88,6 +88,9 @@ export class SubScriptWorker {
         this.onFinished(result);
       },
       fetch: async (url: string, header: string | undefined, body: string | undefined) => {
+        if (header?.includes("POESESSID")) {
+          return JSON.stringify({ error: "POESESSID is not allowed to be sent to the server" });
+        }
         try {
           log.debug(tag.subscript, "fetch request", { url, header, body });
           const headers: Record<string, string> = header
@@ -100,8 +103,10 @@ export class SubScriptWorker {
           if (!headers["Content-Type"]) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
           }
+
           const r = await this.onFetch(url, headers, body);
           log.debug(tag.subscript, "fetch", r.body, r.status, r.error);
+
           const headerText = Object.entries(r?.headers ?? {})
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n");
