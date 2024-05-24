@@ -114,9 +114,9 @@ export class DriverWorker {
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
   private dirtyCount = 0;
-  private isRunning = true;
   private subScriptIndex = 1;
   private subScripts: SubScriptHost[] = [];
+  private visible = false;
 
   async start(
     build: "debug" | "release",
@@ -191,12 +191,10 @@ export class DriverWorker {
     await this.imports?.init();
     await this.imports?.start();
 
-    if (this.isRunning) this.tick();
+    this.tick();
   }
 
-  destroy() {
-    this.isRunning = false;
-  }
+  destroy() {}
 
   setCanvas(canvas: OffscreenCanvas) {
     const backend = new WebGL1Backend(canvas);
@@ -238,15 +236,21 @@ export class DriverWorker {
     this.invalidate();
   }
 
+  handleVisibilityChange(visible: boolean) {
+    this.visible = visible;
+  }
+
   private async tick() {
-    const start = performance.now();
+    if (this.visible) {
+      const start = performance.now();
 
-    await this.imports?.onFrame();
+      await this.imports?.onFrame();
 
-    const time = performance.now() - start;
-    this.hostCallbacks?.onFrame(this.dirtyCount > 0, time);
-    this.dirtyCount -= 1;
-    if (this.isRunning) requestAnimationFrame(this.tick.bind(this));
+      const time = performance.now() - start;
+      this.hostCallbacks?.onFrame(true, time);
+      this.dirtyCount -= 1;
+    }
+    requestAnimationFrame(this.tick.bind(this));
   }
 
   // js -> wasm
@@ -280,9 +284,7 @@ export class DriverWorker {
         });
       },
       drawCommit: (bufferPtr: number, size: number) => {
-        if (this.dirtyCount > 0) {
-          this.renderer?.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
-        }
+        this.renderer?.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));
       },
       getStringWidth: (size: number, font: number, text: string) => this.textMetrics?.measure(size, font, text) ?? 0,
       getStringCursorIndex: (size: number, font: number, text: string, cursorX: number, cursorY: number) =>

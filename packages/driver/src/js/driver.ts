@@ -86,7 +86,9 @@ export class Driver {
       onKeyDown: (name, doubleClick, uiState) => this.driverWorker?.handleKeyDown(name, doubleClick, uiState),
       onKeyUp: (name, doubleClick, uiState) => this.driverWorker?.handleKeyUp(name, doubleClick, uiState),
       onChar: (char, doubleClick, uiState) => this.driverWorker?.handleChar(char, doubleClick, uiState),
+      onVisibilityChange: (visible) => this.driverWorker?.handleVisibilityChange(visible),
     });
+    this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
   }
 
   detachFromDOM() {

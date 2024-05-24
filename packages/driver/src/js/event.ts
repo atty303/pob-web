@@ -53,6 +53,7 @@ type Callbacks = {
   onKeyDown: (key: string, doubleClick: number, uiState: UIState) => void;
   onKeyUp: (key: string, doubleClick: number, uiState: UIState) => void;
   onChar: (char: string, doubleClick: number, uiState: UIState) => void;
+  onVisibilityChange: (visible: boolean) => void;
 };
 
 export type UIState = {
@@ -80,6 +81,7 @@ export class UIEventManager {
     readonly callbacks: Callbacks,
   ) {
     const preventDefault = this.preventDefault.bind(this);
+    const handleVisibilityChange = this.handleVisibilityChange.bind(this);
     const handleMouseMove = this.handleMouseMove.bind(this);
     const handleMouseDown = this.handleMouseDown.bind(this);
     const handleMouseUp = this.handleMouseUp.bind(this);
@@ -88,6 +90,8 @@ export class UIEventManager {
     const handleKeyDown = this.handleKeyDown.bind(this);
     const handleKeyPress = this.handleKeyPress.bind(this);
     const handleKeyUp = this.handleKeyUp.bind(this);
+
+    el.ownerDocument.addEventListener("visibilitychange", handleVisibilityChange);
 
     el.addEventListener("contextmenu", preventDefault);
     el.addEventListener("copy", preventDefault);
@@ -102,6 +106,8 @@ export class UIEventManager {
     el.addEventListener("keyup", handleKeyUp);
 
     this.destroy = () => {
+      el.ownerDocument.removeEventListener("visibilitychange", handleVisibilityChange);
+
       el.removeEventListener("contextmenu", preventDefault);
       el.removeEventListener("copy", preventDefault);
       el.removeEventListener("paste", preventDefault);
@@ -120,6 +126,10 @@ export class UIEventManager {
 
   private preventDefault(e: Event) {
     e.preventDefault();
+  }
+
+  private handleVisibilityChange() {
+    this.callbacks.onVisibilityChange(this.el.ownerDocument.visibilityState === "visible");
   }
 
   private handleMouseMove(e: MouseEvent) {
