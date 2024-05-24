@@ -121,15 +121,6 @@ end
 function Exit()
 end
 
-local l_require = require
-function require(name)
-    -- Hack to stop it looking for lcurl, which we don't really need
-    if name == "lcurl.safe" then
-        return
-    end
-    return l_require(name)
-end
-
 dofile("Launch.lua")
 
 --
@@ -155,4 +146,15 @@ mainObject["OnInit"] = function(self)
     self.main.controls.checkUpdate.shown = function()
         return false
     end
+end
+
+local function runCallback(name, ...)
+    local callback = GetCallback(name)
+    return callback(...)
+end
+
+function loadBuildFromCode(code)
+    mainObject.main:SetMode("BUILD", false, "")
+    mainObject.main.modes["BUILD"].importTab.controls.importCodeIn:SetText(code, true)
+    mainObject.main.modes["BUILD"].importTab.controls.importCodeGo.onClick()
 end

@@ -1,6 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Driver } from "pob-driver/src/js/driver.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHash } from "react-use";
 import { log, tag } from "./logger.ts";
 
 export default function PobWindow(props: {
@@ -23,6 +24,15 @@ export default function PobWindow(props: {
   }, [auth0, auth0.isAuthenticated]);
 
   const onFrame = useCallback(props.onFrame, []);
+
+  const [hash, _setHash] = useHash();
+  const [buildCode, setBuildCode] = useState("");
+  useEffect(() => {
+    if (hash.startsWith("#build=")) {
+      const code = hash.slice("#build=".length);
+      setBuildCode(code);
+    }
+  }, [hash]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>();
@@ -50,6 +60,10 @@ export default function PobWindow(props: {
           cloudflareKvAccessToken: token,
         });
         log.debug(tag.pob, "started", container.current);
+        if (buildCode) {
+          log.info(tag.pob, "loading build from ", buildCode);
+          await _driver.loadBuildFromCode(buildCode);
+        }
         if (container.current) _driver.attachToDOM(container.current);
         setLoading(false);
       } catch (e) {
@@ -63,7 +77,7 @@ export default function PobWindow(props: {
       _driver.destory();
       setLoading(true);
     };
-  }, [props.version, onFrame, token]);
+  }, [props.version, onFrame, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);

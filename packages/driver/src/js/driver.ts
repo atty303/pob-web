@@ -115,4 +115,8 @@ export class Driver {
     }
     return "";
   }
+
+  async loadBuildFromCode(code: string) {
+    return this.driverWorker?.loadBuildFromCode(code);
+  }
 }

@@ -11,6 +11,7 @@
 #include "image.h"
 #include "fs.h"
 #include "sub.h"
+#include "lcurl.h"
 
 extern backend_t wasmfs_create_nodefs_backend(const char* root);
 
@@ -340,6 +341,7 @@ int init() {
     draw_init(L);
     fs_init(L);
     sub_init(L);
+    lcurl_register(L);
 
     //
     lua_pushcclosure(L, GetTime, 0);
@@ -507,7 +509,6 @@ int on_subscript_finished(int id, const uint8_t *data) {
     return 1;
 }
 
-// Call from main worker
 EMSCRIPTEN_KEEPALIVE
 int on_subscript_error(int id, const char *message) {
     lua_State *L = GL;
@@ -524,4 +525,16 @@ int on_subscript_error(int id, const char *message) {
         return 0;
     }
     return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int load_build_from_code(const char *code) {
+    lua_State *L = GL;
+    lua_getglobal(L, "loadBuildFromCode");
+    lua_pushstring(L, code);
+    if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        return 1;
+    }
+    return 0;
 }

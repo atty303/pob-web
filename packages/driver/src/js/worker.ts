@@ -87,6 +87,7 @@ type MainCallbacks = {
 type Imports = {
   init: () => void;
   start: () => void;
+  loadBuildFromCode: (code: string) => void;
   onFrame: () => void;
   onKeyUp: (name: string, doubleClick: number) => void;
   onKeyDown: (name: string, doubleClick: number) => void;
@@ -240,6 +241,10 @@ export class DriverWorker {
     this.visible = visible;
   }
 
+  async loadBuildFromCode(code: string) {
+    await this.imports?.loadBuildFromCode(code);
+  }
+
   private async tick() {
     if (this.visible) {
       const start = performance.now();
@@ -258,6 +263,7 @@ export class DriverWorker {
     return {
       init: module.cwrap("init", "number", [], { async: true }),
       start: module.cwrap("start", "number", [], { async: true }),
+      loadBuildFromCode: module.cwrap("load_build_from_code", "number", ["string"], { async: true }),
       onFrame: module.cwrap("on_frame", "number", [], { async: true }),
       onKeyUp: module.cwrap("on_key_up", "number", ["string", "number"]),
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),
