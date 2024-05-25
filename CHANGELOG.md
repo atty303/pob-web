@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.10.0](https://github.com/atty303/pob-web/compare/v0.9.0...v0.10.0) (2024-05-25)
+
+
+### Features
+
+* **web:** load build from hash ([898dec8](https://github.com/atty303/pob-web/commit/898dec881e2ddce03dc28465d2c24ccdbb009f6e)), closes [#20](https://github.com/atty303/pob-web/issues/20)
+
+
+### Bug Fixes
+
+* **driver:** disallow POESESSID cookie ([1a8879e](https://github.com/atty303/pob-web/commit/1a8879e85d307861de5d4c2d94c4a316ba9d5016))
+* **driver:** fetch result length ([d43d131](https://github.com/atty303/pob-web/commit/d43d131880a8eb2d09eb4ec5c37c747aba1fe832)), closes [#62](https://github.com/atty303/pob-web/issues/62) [#60](https://github.com/atty303/pob-web/issues/60)
+* **driver:** lcurl header handling ([26a1b48](https://github.com/atty303/pob-web/commit/26a1b489ce4d8e7e02cabe201c0377472e65ed0b))
+* **driver:** rasterize text longer than texture width ([7fbc274](https://github.com/atty303/pob-web/commit/7fbc274b72b4bcba9357d0e9a7e2e4732e3c587a)), closes [#22](https://github.com/atty303/pob-web/issues/22)
+* **driver:** render always when window is visible ([44b0537](https://github.com/atty303/pob-web/commit/44b0537b50b6f7b8899575cf6dc13f098748e434)), closes [#63](https://github.com/atty303/pob-web/issues/63)
+
 ## [0.9.0](https://github.com/atty303/pob-web/compare/v0.8.0...v0.9.0) (2024-05-21)
 
 
