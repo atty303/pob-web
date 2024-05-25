@@ -76,6 +76,7 @@ export type HostCallbacks = {
   onError: (message: string) => void;
   onFrame: (render: boolean, time: number) => void;
   onFetch: OnFetchFunction;
+  onTitleChange: (title: string) => void;
 };
 
 type MainCallbacks = {
@@ -126,6 +127,7 @@ export class DriverWorker {
     onError: HostCallbacks["onError"],
     onFrame: HostCallbacks["onFrame"],
     onFetch: HostCallbacks["onFetch"],
+    onTitleChange: HostCallbacks["onTitleChange"],
     copy: MainCallbacks["copy"],
     paste: MainCallbacks["paste"],
     openUrl: MainCallbacks["openUrl"],
@@ -141,6 +143,7 @@ export class DriverWorker {
       onError,
       onFrame,
       onFetch,
+      onTitleChange,
     };
     this.mainCallbacks = {
       copy,
@@ -279,6 +282,7 @@ export class DriverWorker {
     return {
       fs: zenfs.fs,
       onError: (message: string) => this.hostCallbacks?.onError(message),
+      setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,
       getCursorPosX: () => this.uiState.x,

@@ -7,6 +7,7 @@ import { log, tag } from "./logger.ts";
 export default function PobWindow(props: {
   version: string;
   onFrame: (render: boolean, time: number) => void;
+  onTitleChange: (title: string) => void;
 }) {
   const auth0 = useAuth0();
 
@@ -24,6 +25,7 @@ export default function PobWindow(props: {
   }, [auth0, auth0.isAuthenticated]);
 
   const onFrame = useCallback(props.onFrame, []);
+  const onTitleChange = useCallback(props.onTitleChange, []);
 
   const [hash, _setHash] = useHash();
   const [buildCode, setBuildCode] = useState("");
@@ -51,6 +53,7 @@ export default function PobWindow(props: {
         });
         return await rep.json();
       },
+      onTitleChange,
     });
 
     (async () => {
@@ -77,7 +80,7 @@ export default function PobWindow(props: {
       _driver.destory();
       setLoading(true);
     };
-  }, [props.version, onFrame, token, buildCode]);
+  }, [props.version, onFrame, onTitleChange, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);

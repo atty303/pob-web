@@ -47,8 +47,6 @@ function GetAsyncCount()
 end
 
 -- General Functions
-function SetWindowTitle(title)
-end
 function SetCursorPos(x, y)
 end
 function ShowCursor(doShow)

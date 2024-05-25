@@ -37,6 +37,7 @@ export class Driver {
       Comlink.proxy(this.hostCallbacks.onError),
       Comlink.proxy(this.hostCallbacks.onFrame),
       Comlink.proxy(this.hostCallbacks.onFetch),
+      Comlink.proxy(this.hostCallbacks.onTitleChange),
       Comlink.proxy((text: string) => this.copy(text)),
       Comlink.proxy(() => this.paste()),
       Comlink.proxy((url) => {

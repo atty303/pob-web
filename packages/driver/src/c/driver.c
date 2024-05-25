@@ -262,6 +262,20 @@ static int Inflate(lua_State *L) {
     return 1;
 }
 
+static int SetWindowTitle(lua_State *L) {
+    int n = lua_gettop(L);
+    assert(n >= 1);
+    assert(lua_isstring(L, 1));
+
+    const char *title = lua_tostring(L, 1);
+
+    EM_ASM({
+        Module.setWindowTitle(UTF8ToString($0));
+    }, title);
+
+    return 0;
+}
+
 static int OpenURL(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
@@ -364,6 +378,9 @@ int init() {
 
     lua_pushcclosure(L, Inflate, 0);
     lua_setglobal(L, "Inflate");
+
+    lua_pushcclosure(L, SetWindowTitle, 0);
+    lua_setglobal(L, "SetWindowTitle");
 
     lua_pushcclosure(L, OpenURL, 0);
     lua_setglobal(L, "OpenURL");

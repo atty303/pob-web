@@ -13,14 +13,15 @@ export default function App() {
   };
 
   const [version, setVersion] = useState("2.42.0");
+  const [title, setTitle] = useState("");
 
   return (
     <>
       <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
-        <Header version={version} onVersionChange={setVersion} />
+        <Header version={version} onVersionChange={setVersion} title={title} />
 
         <div className="p-2">
-          <PobWindow onFrame={handleFrame} version={version} />
+          <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle} />
         </div>
 
         <Footer frameTime={frameTime} />

@@ -9,6 +9,7 @@ const driver = new Driver("release", versionPrefix, {
   onFetch: async (_url, _headers, _body) => {
     throw new Error("Fetch not implemented in shell");
   },
+  onTitleChange: (_title) => {},
 });
 await driver.start({ cloudflareKvPrefix: "/api/kv/", cloudflareKvAccessToken: undefined });
 const window = document.querySelector("#window") as HTMLElement;

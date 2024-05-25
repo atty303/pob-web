@@ -13,8 +13,11 @@ function SettingDialog(props: {
       <div className="modal-box">
         <DialogPanel>
           <form method="dialog">
-            {/* if there is a button in form, it will close the modal */}
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" type="submit">
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              type="submit"
+              onClick={props.onClose}
+            >
               ✕
             </button>
           </form>
@@ -126,6 +129,7 @@ function Auth() {
 export default function Header(props: {
   version: string;
   onVersionChange: (version: string) => void;
+  title: string;
 }) {
   const [settingDialogOpen, setSettingDialogOpen] = useState(false);
 
@@ -134,10 +138,13 @@ export default function Header(props: {
       <div className="navbar bg-neutral text-neutral-content">
         <div className="flex-1 gap-2">
           <img className="w-8 h-8 rounded-box" src="/favicon.png" alt="" />
-          <span className="text-xl font-bold font-['Poiret_One']">pob.cool</span>
-          <span className="badge badge-warning">This site is under development</span>
+          <span className="text-xl font-bold font-['Poiret_One'] pr-4 border-r border-r-neutral-content/50">
+            pob.cool
+          </span>
+          <span className="text-lg font-bold ml-2">{props.title}</span>
         </div>
         <div className="flex-none mr-4 gap-2">
+          <span className="badge badge-warning">This site is under testing. Your data may be lost.</span>
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setSettingDialogOpen(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
