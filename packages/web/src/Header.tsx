@@ -2,6 +2,62 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Dialog, DialogPanel, DialogTitle, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useState } from "react";
 
+function HelpDialog(props: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Dialog className="modal modal-open" open={props.isOpen} onClose={props.onClose}>
+      <div className="modal-box max-w-5xl">
+        <DialogPanel>
+          <form method="dialog">
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              type="submit"
+              onClick={props.onClose}
+            >
+              ✕
+            </button>
+          </form>
+
+          <DialogTitle className="text-lg font-bold">Help</DialogTitle>
+
+          <article className="prose max-w-none">
+            <p>This is browser version of Path of Building.</p>
+            <h3>Limitations</h3>
+            <ul>
+              <li>
+                <p>
+                  For security reasons, network requests containing the <code>POESESSID</code> cookie will be
+                  unconditionally rejected.
+                </p>
+                <p>
+                  <strong className="text-error">
+                    Do not enter <code>POESESSID</code> in the PoB of this site.
+                  </strong>
+                </p>
+              </li>
+              <li>
+                Network access is through our CORS proxy, so all users have the same source IP. This will likely cause
+                rate limiting.
+              </li>
+            </ul>
+            <h3>Features</h3>
+            <ul>
+              <li>Saved builds are stored in the browser's local storage.</li>
+              <li>
+                The <code>Cloud</code> folder appears when you are logged into the site. Builds saved there are stored
+                in the cloud and can be accessed from anywhere.
+              </li>
+              <li>
+                You can load a build by specifying a hash in the URL. eg.{" "}
+                <code>https://pob.cool/#build=https://pobb.in/WwTAYwulVav6</code>
+              </li>
+            </ul>
+          </article>
+        </DialogPanel>
+      </div>
+    </Dialog>
+  );
+}
+
 function SettingDialog(props: {
   isOpen: boolean;
   onClose: () => void;
@@ -132,6 +188,7 @@ export default function Header(props: {
   title: string;
 }) {
   const [settingDialogOpen, setSettingDialogOpen] = useState(false);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   return (
     <>
@@ -145,6 +202,7 @@ export default function Header(props: {
         </div>
         <div className="flex-none mr-4 gap-2">
           <span className="badge badge-warning">This site is under testing. Your data may be lost.</span>
+
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setSettingDialogOpen(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -163,7 +221,6 @@ export default function Header(props: {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             </svg>
           </button>
-
           <SettingDialog
             isOpen={settingDialogOpen}
             onClose={() => setSettingDialogOpen(false)}
@@ -171,7 +228,7 @@ export default function Header(props: {
             onVersionChange={props.onVersionChange}
           />
 
-          <button className="btn btn-ghost btn-circle btn-sm" type="button">
+          <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setHelpDialogOpen(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -188,6 +245,8 @@ export default function Header(props: {
               />
             </svg>
           </button>
+          <HelpDialog isOpen={helpDialogOpen} onClose={() => setHelpDialogOpen(false)} />
+
           <Auth />
         </div>
       </div>
