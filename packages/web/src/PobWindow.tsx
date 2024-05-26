@@ -52,11 +52,37 @@ export default function PobWindow(props: {
       },
       onFrame,
       onFetch: async (url, headers, body) => {
-        const rep = await fetch("/api/fetch", {
-          method: "POST",
-          body: JSON.stringify({ url, headers, body }),
-        });
-        return await rep.json();
+        let rep = undefined;
+
+        if (url.startsWith("https://pobb.in/")) {
+          try {
+            const r = await fetch(url, {
+              method: body ? "POST" : "GET",
+              body,
+              headers,
+            });
+            if (r.ok) {
+              rep = {
+                body: await r.text(),
+                headers: Object.fromEntries(r.headers.entries()),
+                status: r.status,
+              };
+              log.debug(tag.pob, "CORS fetch success", url, rep);
+            }
+          } catch (e) {
+            log.warn(tag.pob, "CORS fetch error", e);
+          }
+        }
+
+        if (!rep) {
+          const r = await fetch("/api/fetch", {
+            method: "POST",
+            body: JSON.stringify({ url, headers, body }),
+          });
+          rep = await r.json();
+        }
+
+        return rep;
       },
       onTitleChange,
     });
