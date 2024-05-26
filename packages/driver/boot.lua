@@ -153,6 +153,8 @@ end
 
 function loadBuildFromCode(code)
     mainObject.main:SetMode("BUILD", false, "")
-    mainObject.main.modes["BUILD"].importTab.controls.importCodeIn:SetText(code, true)
-    mainObject.main.modes["BUILD"].importTab.controls.importCodeGo.onClick()
+    local importTab = mainObject.main.modes["BUILD"].importTab
+    importTab.controls.importCodeIn:SetText(code, true)
+    importTab.controls.importCodeMode.selIndex = 2
+    importTab.controls.importCodeGo.onClick()
 end
