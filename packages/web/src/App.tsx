@@ -20,7 +20,7 @@ export default function App() {
       <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
         <Header version={version} onVersionChange={setVersion} title={title} />
 
-        <div className="p-2">
+        <div className="border-y border-neutral-content">
           <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle} />
         </div>
 
