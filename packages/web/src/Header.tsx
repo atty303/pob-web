@@ -1,6 +1,8 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Dialog, DialogPanel, DialogTitle, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useState } from "react";
+import { useRecoilState } from "recoil";
+import { isFullscreenState } from "./state.ts";
 
 function HelpDialog(props: { isOpen: boolean; onClose: () => void }) {
   return (
@@ -189,6 +191,7 @@ export default function Header(props: {
 }) {
   const [settingDialogOpen, setSettingDialogOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [_, setFullscreen] = useRecoilState(isFullscreenState);
 
   return (
     <>
@@ -202,6 +205,24 @@ export default function Header(props: {
         </div>
         <div className="flex-none mr-4 gap-2">
           <span className="badge badge-warning">This site is under testing. Your data may be lost.</span>
+
+          <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setFullscreen(true)}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <title>Fullscreen</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+              />
+            </svg>
+          </button>
 
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setSettingDialogOpen(true)}>
             <svg

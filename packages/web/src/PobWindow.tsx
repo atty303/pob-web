@@ -1,8 +1,10 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Driver } from "pob-driver/src/js/driver.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useHash } from "react-use";
+import { useFullscreen, useHash } from "react-use";
+import { useRecoilState } from "recoil";
 import { log, tag } from "./logger.ts";
+import { isFullscreenState } from "./state.ts";
 
 export default function PobWindow(props: {
   version: string;
@@ -12,6 +14,9 @@ export default function PobWindow(props: {
   const auth0 = useAuth0();
 
   const container = useRef<HTMLDivElement>(null);
+
+  const [isFullscreen, setFullscreen] = useRecoilState(isFullscreenState);
+  useFullscreen(container, isFullscreen, { onClose: () => setFullscreen(false) });
 
   const [token, setToken] = useState<string>();
   useEffect(() => {
