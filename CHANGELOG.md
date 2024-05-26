@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/atty303/pob-web/compare/v0.10.0...v0.11.0) (2024-05-26)
+
+
+### Features
+
+* **web:** fullscreen ([8a46eed](https://github.com/atty303/pob-web/commit/8a46eed0039175e9f64280c1e64dca641b582f89)), closes [#5](https://github.com/atty303/pob-web/issues/5)
+
+
+### Bug Fixes
+
+* **web:** Modal dialog adds a none existent scrollbar spacing to backdrop ([16c5cc4](https://github.com/atty303/pob-web/commit/16c5cc44c0cfa2148324fa94e3a83cd6cbfd7d3b)), closes [#65](https://github.com/atty303/pob-web/issues/65)
+
 ## [0.10.0](https://github.com/atty303/pob-web/compare/v0.9.0...v0.10.0) (2024-05-25)
 
 
