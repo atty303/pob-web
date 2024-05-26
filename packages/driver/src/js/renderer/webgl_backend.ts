@@ -1,4 +1,5 @@
 import { TextureFlags } from "../image.ts";
+import { log, tag } from "../logger.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
 const vertexShaderSource = `#version 100
@@ -188,6 +189,7 @@ export class WebGL1Backend {
 
   private readonly textures: Map<string, WebGLTexture> = new Map();
   private viewport: number[] = [];
+  private pixelRatio = 1;
   private vertices: VertexBuffer = new VertexBuffer();
   private drawCount = 0;
   private readonly vbo: WebGLBuffer;
@@ -265,10 +267,12 @@ export class WebGL1Backend {
     this.setViewport(0, 0, canvas.width, canvas.height);
   }
 
-  resize(width: number, height: number) {
+  resize(width: number, height: number, pixelRatio: number) {
     this._canvas.width = width;
     this._canvas.height = height;
+    this.pixelRatio = pixelRatio;
     this.setViewport(0, 0, width, height);
+    log.debug(tag.backend, `resize: ${width}x${height}(x${pixelRatio})`);
   }
 
   setViewport(x: number, y: number, width: number, height: number) {

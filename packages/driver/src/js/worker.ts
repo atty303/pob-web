@@ -103,9 +103,10 @@ export class DriverWorker {
   private textMetrics: TextMetrics | undefined;
   private textRasterizer: TextRasterizer | undefined;
   private renderer: Renderer | undefined;
-  private screenSize: { width: number; height: number } = {
+  private screenSize: { width: number; height: number; pixelRatio: number } = {
     width: 800,
     height: 600,
+    pixelRatio: 1,
   };
   private uiState: UIState = {
     x: 0,
@@ -207,7 +208,7 @@ export class DriverWorker {
     }
   }
 
-  resize(size: { width: number; height: number }) {
+  resize(size: { width: number; height: number; pixelRatio: number }) {
     this.screenSize = size;
     this.renderer?.resize(size);
     this.invalidate();

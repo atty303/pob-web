@@ -76,8 +76,9 @@ export class Driver {
 
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
+        const pixelRatio = document.defaultView?.devicePixelRatio ?? 1;
         const { width, height } = entry.contentRect;
-        this.driverWorker?.resize({ width, height });
+        this.driverWorker?.resize({ width, height, pixelRatio });
       }
     });
     this.resizeObserver.observe(root);

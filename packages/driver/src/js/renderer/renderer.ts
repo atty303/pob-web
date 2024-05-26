@@ -44,9 +44,9 @@ export class Renderer {
     this.screenSize = screenSize;
   }
 
-  resize(screenSize: { width: number; height: number }) {
+  resize(screenSize: { width: number; height: number; pixelRatio: number }) {
     this.screenSize = screenSize;
-    this.backend?.resize(screenSize.width, screenSize.height);
+    this.backend?.resize(screenSize.width, screenSize.height, screenSize.pixelRatio);
   }
 
   render(view: DataView) {
