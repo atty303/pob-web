@@ -48,12 +48,12 @@ export class TextMetrics {
 
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
     this.context.font = font(size, fontNum);
-    const lines = text.replaceAll(reColorGlobal, "").split("\n");
+    const lines = text.split("\n");
     const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
     const line = lines[y];
     let i = 0;
     for (; i <= line.length; i++) {
-      const w = this.context.measureText(line.substring(0, i)).width;
+      const w = this.context.measureText(line.substring(0, i).replaceAll(reColorGlobal, "")).width;
       if (w >= cursorX) {
         break;
       }

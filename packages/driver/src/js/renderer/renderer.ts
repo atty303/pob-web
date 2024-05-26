@@ -227,14 +227,6 @@ export class Renderer {
 
       const subtext = text.substring(0, m.index);
       text = text.substring(m.index + m[0].length);
-      if (m[1]) {
-        this.currentColor = colorEscape[Number.parseInt(m[1])];
-      } else {
-        const r = Number.parseInt(m[2].substring(0, 2), 16);
-        const g = Number.parseInt(m[2].substring(2, 4), 16);
-        const b = Number.parseInt(m[2].substring(4, 6), 16);
-        this.currentColor = [r / 255, g / 255, b / 255, 1];
-      }
 
       if (subtext.length > 0) {
         for (const render of this.textRasterizer.get(height, font, subtext)) {
@@ -243,6 +235,15 @@ export class Renderer {
             render,
           });
         }
+      }
+
+      if (m[1]) {
+        this.currentColor = colorEscape[Number.parseInt(m[1])];
+      } else {
+        const r = Number.parseInt(m[2].substring(0, 2), 16);
+        const g = Number.parseInt(m[2].substring(2, 4), 16);
+        const b = Number.parseInt(m[2].substring(4, 6), 16);
+        this.currentColor = [r / 255, g / 255, b / 255, 1];
       }
     }
     if (text.length > 0) {
