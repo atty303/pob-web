@@ -3,3 +3,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* https://github.com/saadeghi/daisyui/issues/3040 */
+html {
+    scrollbar-gutter: auto !important;
+}
