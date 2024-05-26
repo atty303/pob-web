@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/atty303/pob-web/compare/v0.11.0...v0.11.1) (2024-05-26)
+
+
+### Bug Fixes
+
+* **driver:** import to new build ([4784638](https://github.com/atty303/pob-web/commit/4784638a8398b5cf70246cef95612e7d8048a0dd))
+* **driver:** text color and measure cursor index ([93bfd1d](https://github.com/atty303/pob-web/commit/93bfd1d1b3f95028353aa5aad4c4824b3f73c012)), closes [#67](https://github.com/atty303/pob-web/issues/67)
+
 ## [0.11.0](https://github.com/atty303/pob-web/compare/v0.10.0...v0.11.0) (2024-05-26)
 
 
