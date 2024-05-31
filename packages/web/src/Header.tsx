@@ -204,8 +204,6 @@ export default function Header(props: {
           <span className="text-lg font-bold ml-2">{props.title}</span>
         </div>
         <div className="flex-none mr-4 gap-2">
-          <span className="badge badge-warning">This site is under testing. Your data may be lost.</span>
-
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setFullscreen(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
