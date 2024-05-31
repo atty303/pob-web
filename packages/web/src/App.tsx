@@ -17,8 +17,11 @@ export default function App() {
 
   return (
     <>
-      <div className="grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
-        <Header version={version} onVersionChange={setVersion} title={title} />
+      <div className="grid min-h-screen 2xl:hidden">
+        <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle}/>
+      </div>
+      <div className="hidden 2xl:grid grid-cols-1 grid-rows-[auto_1fr] min-h-screen">
+        <Header version={version} onVersionChange={setVersion} title={title}/>
 
         <div className="border-y border-neutral-content">
           <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle} />
