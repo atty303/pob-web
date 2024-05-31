@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/atty303/pob-web/compare/v0.11.1...v0.11.2) (2024-05-31)
+
+
+### Bug Fixes
+
+* **web:** mobile viewport ([91a87a5](https://github.com/atty303/pob-web/commit/91a87a54a60d216edcf7d2c858dd5e53d8e99af9))
+
 ## [0.11.1](https://github.com/atty303/pob-web/compare/v0.11.0...v0.11.1) (2024-05-26)
 
 
