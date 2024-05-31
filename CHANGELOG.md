@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.3](https://github.com/atty303/pob-web/compare/v0.11.2...v0.11.3) (2024-05-31)
+
+
+### Bug Fixes
+
+* **web:** double pob window ([b45bcdb](https://github.com/atty303/pob-web/commit/b45bcdba69a34141e1c95b512fc87a9e1e04dabb))
+
 ## [0.11.2](https://github.com/atty303/pob-web/compare/v0.11.1...v0.11.2) (2024-05-31)
 
 
