@@ -7,7 +7,7 @@ import { default as shelljs } from "shelljs";
 shelljs.config.verbose = true;
 
 const tag = process.argv[2];
-if (!tag || !tag.startsWith("v")) {
+if (!tag) {
   console.error("Invalid tag");
   process.exit(1);
 }
