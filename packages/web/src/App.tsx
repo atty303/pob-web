@@ -13,7 +13,7 @@ export default function App() {
     }
   };
 
-  const [version, setVersion] = useState("v2.42.0");
+  const [version, setVersion] = useState("v2.43.0");
   const [title, setTitle] = useState("");
 
   const is2XL = useMedia("(min-width: 1536px)");
