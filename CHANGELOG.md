@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/atty303/pob-web/compare/v0.15.0...v0.16.0) (2024-07-30)
+
+
+### Features
+
+* **web:** added version: v2.47.3 ([3010898](https://github.com/atty303/pob-web/commit/3010898c4fd9c1a0fc4521528892aeb6d872c2d8))
+
 ## [0.15.0](https://github.com/atty303/pob-web/compare/v0.14.0...v0.15.0) (2024-07-25)
 
 
