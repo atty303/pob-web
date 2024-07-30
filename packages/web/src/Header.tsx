@@ -91,6 +91,9 @@ function SettingDialog(props: {
               value={props.version}
               onChange={(e) => props.onVersionChange(e.target.value)}
             >
+              <option value="v2.47.3">2.47.3</option>
+              <option value="v2.47.1">2.47.1</option>
+              <option value="v2.47.0">2.47.0</option>
               <option value="v2.46.0">2.46.0</option>
               <option value="v2.45.0">2.45.0</option>
               <option value="v2.44.0">2.44.0</option>
