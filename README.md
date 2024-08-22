@@ -33,6 +33,18 @@ This is browser version of [Path of Building](https://pathofbuilding.community/)
 - [CMake](https://cmake.org/)
 - [Ninja](https://ninja-build.org/)
 
+### Clone the repository
+
+This repository include a [submodule](https://gist.github.com/gitaarik/8735255) in `vendor/lua`. To include the submodule when cloning the repository use the flag `--recurse-submodules`:
+```bash
+git clone --recurse-submodules
+```
+If you ommitted the flag, you can use the following commands to clone the submodule:
+```bash
+git submodule init
+git submodule update
+```
+
 ### Install dependencies
 
 ```bash
