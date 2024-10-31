@@ -1,6 +1,6 @@
 import type { Backend, FileSystemMetadata } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
-import { Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
+import { Errno, ErrnoError, FileSystem, InMemory, PreloadFile, Stats } from "@zenfs/core";
 import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
 import { log, tag } from "./logger.ts";
 
@@ -63,31 +63,31 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     this.cache = new Map(await this.readList());
   }
 
-  async rename(oldPath: string, newPath: string, cred: zenfs.Cred): Promise<void> {
+  async rename(oldPath: string, newPath: string): Promise<void> {
     log.debug(tag.kvfs, "rename", { oldPath, newPath });
-    const oldFile = await this.openFile(oldPath, "r", cred);
+    const oldFile = await this.openFile(oldPath, "r");
     const stats = await oldFile.stat();
     const buffer = new Uint8Array(stats.size);
     await oldFile.read(buffer, 0, stats.size, 0);
     await oldFile.close();
 
-    const newFile = await this.createFile(newPath, "w", stats.mode, cred);
+    const newFile = await this.createFile(newPath, "w", stats.mode);
     await newFile.write(buffer, 0, buffer.length, 0);
     await newFile.close();
 
-    await this.unlink(oldPath, cred);
+    await this.unlink(oldPath);
     this.cache.delete(oldPath);
     this.cache.set(newPath, stats);
   }
-  renameSync(_oldPath: string, _newPath: string, _cred: zenfs.Cred): void {
+  renameSync(_oldPath: string, _newPath: string): void {
     throw new Error("Method not implemented.");
   }
 
-  async stat(path: string, _cred: zenfs.Cred): Promise<zenfs.Stats> {
+  async stat(path: string): Promise<zenfs.Stats> {
     // log.debug(tag.kvfs, "stat", path);
-    return this.statSync(path, _cred);
+    return this.statSync(path);
   }
-  statSync(path: string, _cred: zenfs.Cred): zenfs.Stats {
+  statSync(path: string): zenfs.Stats {
     const stats = this.cache.get(path);
     if (!stats) {
       throw new ErrnoError(Errno.ENOENT, "path", path, "stat");
@@ -95,19 +95,19 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     return stats;
   }
 
-  async openFile(path: string, flag: string, cred: zenfs.Cred): Promise<zenfs.File> {
-    log.debug(tag.kvfs, "openFile", { path, flag, cred });
+  async openFile(path: string, flag: string): Promise<zenfs.File> {
+    log.debug(tag.kvfs, "openFile", { path, flag });
     let buffer: ArrayBufferLike;
     let stats = this.cache.get(path);
     if (zenfs.isWriteable(flag)) {
       buffer = new ArrayBuffer(0);
-      stats = new zenfs.Stats({ mode: 0o777 | zenfs.FileType.FILE, size: 0 });
+      stats = new zenfs.Stats({ mode: 0o777 | zenfs.constants.S_IFREG, size: 0 });
       this.cache.set(path, stats);
     } else {
       if (!stats) {
         throw ErrnoError.With("ENOENT", path, "openFile");
       }
-      if (!stats.hasAccess(zenfs.flagToMode(flag), cred)) {
+      if (!stats.hasAccess(zenfs.flagToMode(flag))) {
         throw ErrnoError.With("EACCES", path, "openFile");
       }
       const r = await this.fetch("GET", path);
@@ -119,26 +119,26 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
 
     return new zenfs.PreloadFile(this, path, flag, stats, new Uint8Array(buffer));
   }
-  openFileSync(_path: string, _flag: string, _cred: zenfs.Cred): zenfs.File {
+  openFileSync(_path: string, _flag: string): zenfs.File {
     throw new Error("Method not implemented.");
   }
 
-  async createFile(path: string, flag: string, mode: number, cred: zenfs.Cred): Promise<zenfs.File> {
-    log.debug(tag.kvfs, "createFile", { path, flag, mode, cred });
+  async createFile(path: string, flag: string, mode: number): Promise<zenfs.File> {
+    log.debug(tag.kvfs, "createFile", { path, flag, mode });
     const data = new Uint8Array(0);
     const r = await this.fetch("PUT", path, data);
     if (!r.ok) {
       throw new FetchError(r);
     }
-    const stats = new zenfs.Stats({ mode: mode | zenfs.FileType.FILE, size: 0 });
+    const stats = new zenfs.Stats({ mode: mode | zenfs.constants.S_IFREG, size: 0 });
     this.cache.set(path, stats);
     return new zenfs.PreloadFile(this, path, flag, stats, data);
   }
-  createFileSync(_path: string, _flag: string, _mode: number, _cred: zenfs.Cred): zenfs.File {
+  createFileSync(_path: string, _flag: string, _mode: number): zenfs.File {
     throw new Error("Method not implemented.");
   }
 
-  async unlink(path: string, _cred: zenfs.Cred): Promise<void> {
+  async unlink(path: string): Promise<void> {
     log.debug(tag.kvfs, "unlink", { path });
     const r = await this.fetch("DELETE", path);
     if (!r.ok) {
@@ -146,11 +146,11 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     }
     this.cache.delete(path);
   }
-  unlinkSync(_path: string, _cred: zenfs.Cred): void {
+  unlinkSync(_path: string): void {
     throw new Error("Method not implemented.");
   }
 
-  async rmdir(path: string, _cred: zenfs.Cred): Promise<void> {
+  async rmdir(path: string): Promise<void> {
     log.debug(tag.kvfs, "rmdir", { path });
     const r = await this.fetch("DELETE", path);
     if (!r.ok) {
@@ -158,13 +158,13 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     }
     this.cache.delete(path);
   }
-  rmdirSync(_path: string, _cred: zenfs.Cred): void {
+  rmdirSync(_path: string): void {
     throw new Error("Method not implemented.");
   }
 
-  async mkdir(path: string, mode: number, _cred: zenfs.Cred): Promise<void> {
+  async mkdir(path: string, mode: number): Promise<void> {
     log.debug(tag.kvfs, "mkdir", { path, mode });
-    const stats = new zenfs.Stats({ mode: mode | zenfs.FileType.DIRECTORY, size: 4096 });
+    const stats = new zenfs.Stats({ mode: mode | zenfs.constants.S_IFDIR, size: 4096 });
     const r = await this.fetch("PUT", path, new Uint8Array(0), {
       "x-metadata": JSON.stringify(statsToMetadata(stats)),
     });
@@ -173,15 +173,15 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     }
     this.cache.set(path, stats);
   }
-  mkdirSync(_path: string, _mode: number, _cred: zenfs.Cred): void {
+  mkdirSync(_path: string, _mode: number): void {
     throw new Error("Method not implemented.");
   }
 
-  async readdir(path: string, cred: zenfs.Cred): Promise<string[]> {
+  async readdir(path: string): Promise<string[]> {
     log.debug(tag.kvfs, "readdir", { path });
-    return this.readdirSync(path, cred);
+    return this.readdirSync(path);
   }
-  readdirSync(path: string, _cred: zenfs.Cred): string[] {
+  readdirSync(path: string): string[] {
     const prefix = !path.endsWith("/") ? `${path}/` : path;
     return [...this.cache.keys()]
       .filter((_) => _.startsWith(prefix) && _.substring(prefix.length).split("/").length === 1)
@@ -189,10 +189,10 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
       .filter((_) => _.length > 0);
   }
 
-  link(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): Promise<void> {
+  link(_srcpath: string, _dstpath: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  linkSync(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): void {
+  linkSync(_srcpath: string, _dstpath: string): void {
     throw new Error("Method not implemented.");
   }
 
@@ -218,7 +218,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
       throw new FetchError(r);
     }
     const list = [
-      ["/", new zenfs.Stats({ mode: 0o777 | zenfs.FileType.DIRECTORY, size: 4096 })],
+      ["/", new zenfs.Stats({ mode: 0o777 | zenfs.constants.S_IFDIR, size: 4096 })],
       ...(await r.json()).map((_: { name: string; metadata: { dir: boolean; size: number } }) => [
         `/${_.name}`,
         new zenfs.Stats(_.metadata),
@@ -341,31 +341,31 @@ export interface WebAccessOptions {
 }
 
 export class WebAccessFS extends FileSystem {
-  renameSync(_oldPath: string, _newPath: string, _cred: zenfs.Cred): void {
+  renameSync(_oldPath: string, _newPath: string): void {
     throw new Error("Method not implemented.");
   }
-  statSync(_path: string, _cred: zenfs.Cred): zenfs.Stats {
+  statSync(_path: string): zenfs.Stats {
     throw new Error("Method not implemented.");
   }
-  openFileSync(_path: string, _flag: string, _cred: zenfs.Cred): zenfs.File {
+  openFileSync(_path: string, _flag: string): zenfs.File {
     throw new Error("Method not implemented.");
   }
-  createFileSync(_path: string, _flag: string, _mode: number, _cred: zenfs.Cred): zenfs.File {
+  createFileSync(_path: string, _flag: string, _mode: number): zenfs.File {
     throw new Error("Method not implemented.");
   }
-  unlinkSync(_path: string, _cred: zenfs.Cred): void {
+  unlinkSync(_path: string): void {
     throw new Error("Method not implemented.");
   }
-  rmdirSync(_path: string, _cred: zenfs.Cred): void {
+  rmdirSync(_path: string): void {
     throw new Error("Method not implemented.");
   }
-  mkdirSync(_path: string, _mode: number, _cred: zenfs.Cred): void {
+  mkdirSync(_path: string, _mode: number): void {
     throw new Error("Method not implemented.");
   }
-  readdirSync(_path: string, _cred: zenfs.Cred): string[] {
+  readdirSync(_path: string): string[] {
     throw new Error("Method not implemented.");
   }
-  linkSync(_srcpath: string, _dstpath: string, _cred: zenfs.Cred): void {
+  linkSync(_srcpath: string, _dstpath: string): void {
     throw new Error("Method not implemented.");
   }
   syncSync(_path: string, _data: Uint8Array, _stats: Readonly<zenfs.Stats>): void {
@@ -463,11 +463,11 @@ export class WebAccessFS extends FileSystem {
       throw ErrnoError.With("ENOENT", path, "stat");
     }
     if (handle instanceof FileSystemDirectoryHandle) {
-      return new Stats({ mode: 0o777 | FileType.DIRECTORY, size: 4096 });
+      return new Stats({ mode: 0o777 | zenfs.constants.S_IFDIR, size: 4096 });
     }
     if (handle instanceof FileSystemFileHandle) {
       const { lastModified, size } = await handle.getFile();
-      return new Stats({ mode: 0o777 | FileType.FILE, size, mtimeMs: lastModified });
+      return new Stats({ mode: 0o777 | zenfs.constants.S_IFREG, size, mtimeMs: lastModified });
     }
     throw new ErrnoError(Errno.EBADE, "Handle is not a directory or file", path, "stat");
   }
@@ -480,7 +480,7 @@ export class WebAccessFS extends FileSystem {
     try {
       const file = await handle.getFile();
       const data = new Uint8Array(await file.arrayBuffer());
-      const stats = new Stats({ mode: 0o777 | FileType.FILE, size: file.size, mtimeMs: file.lastModified });
+      const stats = new Stats({ mode: 0o777 | zenfs.constants.S_IFREG, size: file.size, mtimeMs: file.lastModified });
       return new PreloadFile(this, path, flag, stats, data);
     } catch (ex) {
       throw convertException(ex as ConvertException, path, "openFile");
