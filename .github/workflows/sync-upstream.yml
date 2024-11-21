@@ -24,7 +24,7 @@ jobs:
               repo,
               per_page: 10
             });
-            const tagNames = releases.data.map(release => release.tag_name);
+            const tagNames = releases.data.map(release => release.tag_name).join('\n');
             console.log(tagNames);
             return tagNames;
 
@@ -39,7 +39,7 @@ jobs:
       - name: Determine new versions
         id: new_versions
         run: |
-          target_releases=$(echo "${{ steps.get_releases.outputs.result }}" | jq -r '.[]')
+          target_releases="${{ steps.get_releases.outputs.result }}"
           known_versions="${{ steps.read_versions.outputs.versions }}"
           new_versions=()
           for version in $target_releases; do
