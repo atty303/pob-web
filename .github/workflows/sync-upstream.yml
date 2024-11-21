@@ -25,13 +25,16 @@ jobs:
               per_page: 10
             });
             const tagNames = releases.data.map(release => release.tag_name);
+            console.log(tagNames);
             return tagNames;
 
       - name: Read known versions
         id: read_versions
         run: |
           versions=$(jq -r '.versions[]' $VERSION_FILE)
-          echo "versions=$versions" >> $GITHUB_OUTPUT
+          echo "versions<<EOF" >> $GITHUB_OUTPUT
+          echo "$versions" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Determine new versions
         id: new_versions
