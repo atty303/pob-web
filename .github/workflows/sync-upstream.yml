@@ -17,6 +17,7 @@ jobs:
         id: get_releases
         uses: actions/github-script@v7
         with:
+          result-encoding: string
           script: |
             const [owner, repo] = process.env.TARGET_REPO.split('/');
             const releases = await github.rest.repos.listReleases({
