@@ -39,7 +39,7 @@ jobs:
       - name: Determine new versions
         id: new_versions
         run: |
-          target_releases="${{ steps.get_releases.outputs.result }}"
+          target_releases=$(echo "${{ steps.get_releases.outputs.result }}" | jq -r '.[]')
           known_versions="${{ steps.read_versions.outputs.versions }}"
           new_versions=()
           for version in $target_releases; do
