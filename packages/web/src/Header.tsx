@@ -1,6 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Dialog, DialogPanel, DialogTitle, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRecoilState } from "recoil";
 import { isFullscreenState } from "./state.ts";
 
@@ -65,6 +65,7 @@ function SettingDialog(props: {
   onClose: () => void;
   version: string;
   onVersionChange: (version: string) => void;
+  versions: string[];
 }) {
   return (
     <Dialog className="modal modal-open" open={props.isOpen} onClose={props.onClose}>
@@ -91,19 +92,11 @@ function SettingDialog(props: {
               value={props.version}
               onChange={(e) => props.onVersionChange(e.target.value)}
             >
-              <option value="v2.49.0">2.49.0</option>
-              <option value="v2.48.2">2.48.2</option>
-              <option value="v2.48.1">2.48.1</option>
-              <option value="v2.48.0">2.48.0</option>
-              <option value="v2.47.3">2.47.3</option>
-              <option value="v2.47.1">2.47.1</option>
-              <option value="v2.47.0">2.47.0</option>
-              <option value="v2.46.0">2.46.0</option>
-              <option value="v2.45.0">2.45.0</option>
-              <option value="v2.44.0">2.44.0</option>
-              <option value="v2.43.0">2.43.0</option>
-              <option value="v2.42.0">2.42.0</option>
-              <option value="v2.41.1">2.41.1</option>
+              {props.versions.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
             </select>
           </label>
         </DialogPanel>
@@ -199,6 +192,7 @@ export default function Header(props: {
   version: string;
   onVersionChange: (version: string) => void;
   title: string;
+  versions: string[];
 }) {
   const [settingDialogOpen, setSettingDialogOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
@@ -256,6 +250,7 @@ export default function Header(props: {
             onClose={() => setSettingDialogOpen(false)}
             version={props.version}
             onVersionChange={props.onVersionChange}
+            versions={props.versions}
           />
 
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setHelpDialogOpen(true)}>
