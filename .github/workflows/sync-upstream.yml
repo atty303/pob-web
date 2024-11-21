@@ -1,0 +1,75 @@
+name: Check for new releases
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    env:
+        TARGET_REPO: "PathOfBuildingCommunity/PathOfBuilding"
+        VERSION_FILE: "version.json"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest releases
+        id: get_releases
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const [owner, repo] = process.env.TARGET_REPO.split('/');
+            const releases = await github.rest.repos.listReleases({
+              owner,
+              repo,
+              per_page: 10
+            });
+            const tagNames = releases.data.map(release => release.tag_name);
+            return tagNames;
+
+      - name: Read known versions
+        id: read_versions
+        run: |
+          versions=$(jq -r '.versions[]' $VERSION_FILE)
+          echo "versions=$versions" >> $GITHUB_OUTPUT
+
+      - name: Determine new versions
+        id: new_versions
+        run: |
+          target_releases="${{ steps.get_releases.outputs.result }}"
+          known_versions="${{ steps.read_versions.outputs.versions }}"
+          new_versions=()
+          for version in $target_releases; do
+            if ! echo "$known_versions" | grep -qx "$version"; then
+              new_versions+=("$version")
+            fi
+          done
+          if [ ${#new_versions[@]} -ne 0 ]; then
+            echo "new_versions=${new_versions[*]}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update version.json
+        if: steps.new_versions.outputs.new_versions != ''
+        run: |
+          new_versions=(${{ steps.new_versions.outputs.new_versions }})
+          known_versions="${{ steps.read_versions.outputs.versions }}"
+          for version in "${new_versions[@]}"; do
+             known_versions=$(echo "$known_versions" | sed "1s/^/\"$version\",\n/")
+          done
+          jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.versions = ($new_versions + .versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+
+      - name: Debug
+        run: |
+          echo "target_releases=${{ steps.get_releases.outputs.result }}"
+          echo "new_versions=${{ steps.new_versions.outputs.new_versions }}"
+          echo "known_versions=${{ steps.read_versions.outputs.versions }}"
+          cat $VERSION_FILE
+
+#      - name: Commit changes
+#        if: steps.new_versions.outputs.new_versions != ''
+#        run: |
+#          git config user.name "github-actions[bot]"
+#          git config user.email "github-actions[bot]@users.noreply.github.com"
+#          git add $VERSION_FILE
+#          git commit -m "Update version.json with new releases: ${{ steps.new_versions.outputs.new_versions }}"
+#          git push
