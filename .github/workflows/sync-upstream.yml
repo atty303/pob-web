@@ -11,7 +11,18 @@ jobs:
         TARGET_REPO: "PathOfBuildingCommunity/PathOfBuilding"
         VERSION_FILE: "version.json"
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.TOKEN_APP_ID }}
+          private-key: ${{ secrets.TOKEN_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.5.1'
+          cache: npm
 
       - name: Get latest releases
         id: get_releases
@@ -52,8 +63,28 @@ jobs:
             echo "new_versions=${new_versions[*]}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Install dependencies
+        if: steps.new_versions.outputs.new_versions != ''
+        run: npm ci
+
+      - name: Pack and sync new versions
+        if: steps.new_versions.outputs.new_versions != ''
+        env:
+          R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          for version in "${new_versions[@]}"; do
+            npm run -w packages/packer pack $version
+            npm run -w packages/packer sync $version
+          done
+
       - name: Update version.json
         if: steps.new_versions.outputs.new_versions != ''
+        env:
+          R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           new_versions=(${{ steps.new_versions.outputs.new_versions }})
           known_versions="${{ steps.read_versions.outputs.versions }}"
@@ -64,13 +95,9 @@ jobs:
           
           head_version=${new_versions[0]}
           jq --arg head "$head_version" '.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
-
-      - name: Debug
-        run: |
-          echo "target_releases=${{ steps.get_releases.outputs.result }}"
-          echo "new_versions=${{ steps.new_versions.outputs.new_versions }}"
-          echo "known_versions=${{ steps.read_versions.outputs.versions }}"
+          
           cat $VERSION_FILE
+          aws s3 sync --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json
 
 #      - name: Commit changes
 #        if: steps.new_versions.outputs.new_versions != ''
