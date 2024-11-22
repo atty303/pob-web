@@ -61,6 +61,9 @@ jobs:
              known_versions=$(echo "$known_versions" | sed "1s/^/\"$version\",\n/")
           done
           jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.versions = ($new_versions + .versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+          
+          head_version=$new_versions[0]
+          jq --argjson head "$head_version" '.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
 
       - name: Debug
         run: |
