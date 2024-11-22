@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.0](https://github.com/atty303/pob-web/compare/v0.17.0...v0.18.0) (2024-11-22)
+
+
+### Features
+
+* **web:** added version.json ([5135afd](https://github.com/atty303/pob-web/commit/5135afd11dd481d4c3091c99c81d0ff7ca39b42d))
+* **web:** automatic version sync with upstream ([d759034](https://github.com/atty303/pob-web/commit/d7590346e9df42c401bbcbd49f25da79144db29f))
+
 ## [0.17.0](https://github.com/atty303/pob-web/compare/v0.16.0...v0.17.0) (2024-11-21)
 
 
