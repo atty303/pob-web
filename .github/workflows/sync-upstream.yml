@@ -100,11 +100,13 @@ jobs:
           cat $VERSION_FILE
           aws s3 cp --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json
 
-#      - name: Commit changes
-#        if: steps.new_versions.outputs.new_versions != ''
-#        run: |
-#          git config user.name "github-actions[bot]"
-#          git config user.email "github-actions[bot]@users.noreply.github.com"
-#          git add $VERSION_FILE
-#          git commit -m "Update version.json with new releases: ${{ steps.new_versions.outputs.new_versions }}"
-#          git push
+      - name: Commit changes
+        if: steps.new_versions.outputs.new_versions != ''
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config user.name "atty303-bot[bot]"
+          git config user.email "atty303-bot[bot]@users.noreply.github.com"
+          git add $VERSION_FILE
+          git commit -m "Update version.json with new releases: ${{ steps.new_versions.outputs.new_versions }}"
+          git push
