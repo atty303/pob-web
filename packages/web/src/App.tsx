@@ -18,7 +18,7 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const rep = await fetch("/version.json");
+      const rep = await fetch(__VERSION_URL__);
       const json = await rep.json();
       setVersions(json.versions);
       setVersion(json.head);
