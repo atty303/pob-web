@@ -74,6 +74,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          new_versions=(${{ steps.new_versions.outputs.new_versions }})
           for version in "${new_versions[@]}"; do
             npm run -w packages/packer pack $version
             npm run -w packages/packer sync $version
@@ -97,7 +98,7 @@ jobs:
           jq --arg head "$head_version" '.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
           
           cat $VERSION_FILE
-          aws s3 sync --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json
+          aws s3 cp --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json
 
 #      - name: Commit changes
 #        if: steps.new_versions.outputs.new_versions != ''
