@@ -33,12 +33,12 @@ jobs:
           result-encoding: string
           script: |
             const [owner, repo] = process.env.TARGET_REPO.split('/');
-            const releases = await github.rest.repos.listTags({
+            const tags = await github.rest.repos.listTags({
               owner,
               repo,
               per_page: 10
             });
-            const tagNames = releases.data.map(release => release.tag_name).join('\n');
+            const tagNames = tags.data.map(tag => tag.name).join('\n');
             console.log(tagNames);
             return tagNames;
 
