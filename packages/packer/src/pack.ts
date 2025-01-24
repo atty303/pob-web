@@ -12,14 +12,22 @@ if (!tag) {
   process.exit(1);
 }
 
-const buildDir = `build/${tag}`;
+const product = process.argv[3] === "1" ? 1 : process.argv[3] === "2" ? 2 : undefined;
+if (!product) {
+  console.error("Invalid target");
+  process.exit(1);
+}
+
+const buildDir = `build/${product}/${tag}`;
 
 shelljs.rm("-rf", buildDir);
 shelljs.mkdir("-p", buildDir);
-shelljs.exec(
-  `git clone --depth 1 --branch=${tag} https://github.com/PathOfBuildingCommunity/PathOfBuilding.git ${buildDir}/repo`,
-  { fatal: true },
-);
+const remote =
+  product === 1
+    ? "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git"
+    : "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
+const repoDir = `${buildDir}/repo`;
+shelljs.exec(`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`, { fatal: true });
 
 const rootDir = `${buildDir}/root`;
 shelljs.rm("-rf", rootDir);
@@ -30,7 +38,7 @@ const outputFile = [];
 
 const zip = new AdmZip();
 
-const basePath = `${buildDir}/repo/src`;
+const basePath = `${repoDir}/src`;
 for (const file of shelljs.find(basePath)) {
   const relPath = path.relative(basePath, file).replace(/\\/g, "/");
 
@@ -55,7 +63,7 @@ for (const file of shelljs.find(basePath)) {
   }
 }
 
-const basePath2 = `${buildDir}/repo/runtime/lua`;
+const basePath2 = `${repoDir}/runtime/lua`;
 for (const file of shelljs.find(basePath2)) {
   const relPath = path.relative(basePath2, file).replace(/\\/g, "/");
   if (path.extname(file) === ".lua") {
@@ -68,12 +76,12 @@ zip.addFile(".image.tsv", Buffer.from(outputFile.join("\n")));
 const manifest = shelljs.sed(
   /<Version number="([0-9.]+)" \/>/,
   `<Version number="$1" platform="win32" branch="master" />`,
-  `${buildDir}/repo/manifest.xml`,
+  `${repoDir}/manifest.xml`,
 );
 zip.addFile("installed.cfg", Buffer.from(""));
 zip.addFile("manifest.xml", Buffer.from(manifest));
-zip.addFile("changelog.txt", fs.readFileSync(`${buildDir}/repo/changelog.txt`));
-zip.addFile("help.txt", fs.readFileSync(`${buildDir}/repo/help.txt`));
-zip.addFile("LICENSE.md", fs.readFileSync(`${buildDir}/repo/LICENSE.md`));
+zip.addFile("changelog.txt", fs.readFileSync(`${repoDir}/changelog.txt`));
+zip.addFile("help.txt", fs.readFileSync(`${repoDir}/help.txt`));
+zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
 
 zip.writeZip(`${buildDir}/r2/root.zip`);
