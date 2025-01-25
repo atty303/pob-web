@@ -215,6 +215,8 @@ export class WebGL1Backend {
     // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc
     this.extTextureBptc = gl.getExtension("EXT_texture_compression_bptc");
     this.extTextureS3tc = gl.getExtension("WEBGL_compressed_texture_s3tc");
+    log.info(tag.backend, "EXT_texture_compression_bptc", this.extTextureBptc);
+    log.info(tag.backend, "WEBGL_compressed_texture_s3tc", this.extTextureS3tc);
 
     gl.clearColor(0, 0, 0, 1);
     // gl.enable(gl.TEXTURE_2D);
@@ -420,7 +422,7 @@ export class WebGL1Backend {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap.bitmap);
         } else if (textureBitmap.bitmap.type === "DDSImage") {
           const image = textureBitmap.bitmap.bitmap;
-          switch (textureBitmap.bitmap.dxgiFormat) {
+          switch (image.dxgiFormat) {
             case 28: // DXGI_FORMAT_R8G8B8A8_UNORM
               gl.texImage2D(
                 gl.TEXTURE_2D,
@@ -436,6 +438,7 @@ export class WebGL1Backend {
               break;
             case 71: // DXGI_FORMAT_BC1_UNORM
               if (this.extTextureS3tc) {
+                log.debug(tag.backend, "Loading DXGI_FORMAT_BC1_UNORM", image.width, image.height);
                 gl.compressedTexImage2D(
                   gl.TEXTURE_2D,
                   0,
@@ -449,6 +452,7 @@ export class WebGL1Backend {
               break;
             case 98: // DXGI_FORMAT_BC7_UNORM
               if (this.extTextureBptc) {
+                log.debug(tag.backend, "Loading DXGI_FORMAT_BC7_UNORM", image.width, image.height);
                 gl.compressedTexImage2D(
                   gl.TEXTURE_2D,
                   0,
@@ -459,6 +463,9 @@ export class WebGL1Backend {
                   image.data,
                 );
               }
+              break;
+            default:
+              log.error(tag.backend, "Unknown DXGI format", image.dxgiFormat);
               break;
           }
         } else {

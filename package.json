@@ -2,7 +2,7 @@
   "name": "@atty303/pob-web",
   "private": true,
   "version": "0.18.0",
-  "workspaces": ["packages/driver", "packages/web", "packages/packer"],
+  "workspaces": ["packages/dds", "packages/driver", "packages/web", "packages/packer"],
   "devDependencies": {
     "@biomejs/biome": "^1.7.3",
     "@cloudflare/workers-types": "^4.20240502.0",
@@ -14,6 +14,7 @@
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@types/shelljs": "^0.8.15",
+    "@types/adm-zip": "^0.5.7",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react-swc": "^3.7.2",

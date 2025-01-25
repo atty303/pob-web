@@ -1,0 +1,10 @@
+{
+  "name": "dds",
+  "private": true,
+  "version": "",
+  "type": "module",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc"
+  }
+}

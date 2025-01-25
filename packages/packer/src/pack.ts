@@ -1,8 +1,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as zstd from "@bokuweb/zstd-wasm";
 import AdmZip from "adm-zip";
+import { type DDSImage, parseDDSDX10 } from "dds/src";
 import imageSize from "image-size";
 import { default as shelljs } from "shelljs";
+
+await zstd.init();
 
 shelljs.config.verbose = true;
 
@@ -49,23 +53,17 @@ for (const file of shelljs.find(basePath)) {
   if (relPath.startsWith("Export")) continue;
   if (fs.statSync(file).isDirectory()) {
     if (relPath.length > 0) {
-      zip.addFile(`${relPath}/`, null);
+      zip.addFile(`${relPath}/`, null as unknown as Buffer);
     }
     continue;
   }
 
-  if (path.extname(file) === ".png" || path.extname(file) === ".jpg") {
-    const { width, height } = imageSize(file);
+  const isImage = path.extname(file) === ".png" || path.extname(file) === ".jpg";
+  const isDDS = file.endsWith(".dds.zst");
+  if (isImage || isDDS) {
+    const { width, height } = isDDS ? ddsSize(file) : imageSize(file);
     outputFile.push(`${relPath}\t${width}\t${height}`);
 
-    zip.addFile(relPath, Buffer.of());
-
-    const dest = `${buildDir}/r2/root/${relPath}`;
-    shelljs.mkdir("-p", path.dirname(dest));
-    shelljs.cp(file, dest);
-  } else if (path.extname(file) === ".zst") {
-    const { width, height } = { width: 1, height: 1 }; // TODO: extract width and height from DDS
-    outputFile.push(`${relPath}\t${width}\t${height}`);
     zip.addFile(relPath, Buffer.of());
 
     const dest = `${buildDir}/r2/root/${relPath}`;
@@ -101,3 +99,8 @@ zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
 
 zip.writeZip(`${buildDir}/r2/root.zip`);
 zip.extractAllTo(rootDir, true);
+
+function ddsSize(file: string) {
+  const data = zstd.decompress(fs.readFileSync(file));
+  return parseDDSDX10(data);
+}
