@@ -6,6 +6,8 @@ import { default as shelljs } from "shelljs";
 
 shelljs.config.verbose = true;
 
+const clone = true;
+
 const tag = process.argv[2];
 if (!tag) {
   console.error("Invalid tag");
@@ -19,15 +21,17 @@ if (!product) {
 }
 
 const buildDir = `build/${product}/${tag}`;
-
-shelljs.rm("-rf", buildDir);
-shelljs.mkdir("-p", buildDir);
 const remote =
   product === 1
     ? "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git"
     : "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
 const repoDir = `${buildDir}/repo`;
-shelljs.exec(`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`, { fatal: true });
+
+if (clone) {
+  shelljs.rm("-rf", buildDir);
+  shelljs.mkdir("-p", buildDir);
+  shelljs.exec(`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`, { fatal: true });
+}
 
 const rootDir = `${buildDir}/root`;
 shelljs.rm("-rf", rootDir);
@@ -44,6 +48,9 @@ for (const file of shelljs.find(basePath)) {
 
   if (relPath.startsWith("Export")) continue;
   if (fs.statSync(file).isDirectory()) {
+    if (relPath.length > 0) {
+      zip.addFile(`${relPath}/`, null);
+    }
     continue;
   }
 
@@ -85,3 +92,4 @@ zip.addFile("help.txt", fs.readFileSync(`${repoDir}/help.txt`));
 zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
 
 zip.writeZip(`${buildDir}/r2/root.zip`);
+zip.extractAllTo(rootDir, true);
