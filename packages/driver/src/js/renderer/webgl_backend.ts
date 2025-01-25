@@ -2,20 +2,20 @@ import { TextureFlags } from "../image.ts";
 import { log, tag } from "../logger.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
-const vertexShaderSource = `#version 100
+const vertexShaderSource = `#version 300 es
 uniform mat4 u_MvpMatrix;
 
-attribute vec2 a_Position;
-attribute vec2 a_TexCoord;
-attribute vec4 a_TintColor;
-attribute vec4 a_Viewport;
-attribute float a_TexId;
+in vec2 a_Position;
+in vec2 a_TexCoord;
+in vec4 a_TintColor;
+in vec4 a_Viewport;
+in float a_TexId;
 
-varying vec2 v_ScreenPos;
-varying vec2 v_TexCoord;
-varying vec4 v_TintColor;
-varying vec4 v_Viewport;
-varying float v_TexId;
+out vec2 v_ScreenPos;
+out vec2 v_TexCoord;
+out vec4 v_TintColor;
+out vec4 v_Viewport;
+out float v_TexId;
 
 void main(void) {
     v_TexCoord = a_TexCoord;
@@ -41,18 +41,20 @@ const textureFragmentShaderSource = (max: number) => {
     } else {
       switchCode += `else if (v_TexId < ${i}.5) `;
     }
-    switchCode += `color = texture2D(u_Texture[${i}], v_TexCoord);\n`;
+    switchCode += `color = texture(u_Texture[${i}], v_TexCoord);\n`;
   }
-  return `#version 100
+  return `#version 300 es
 precision mediump float;
 
 uniform sampler2D u_Texture[${max}];
 
-varying vec2 v_ScreenPos;
-varying vec2 v_TexCoord;
-varying vec4 v_TintColor;
-varying vec4 v_Viewport;
-varying float v_TexId;
+in vec2 v_ScreenPos;
+in vec2 v_TexCoord;
+in vec4 v_TintColor;
+in vec4 v_Viewport;
+in float v_TexId;
+
+out vec4 fragColor;
 
 void main(void) {
     float x = v_ScreenPos[0], y = v_ScreenPos[1];
@@ -61,18 +63,18 @@ void main(void) {
     }
     vec4 color;
     ${switchCode}
-    gl_FragColor = color * v_TintColor;
+    fragColor = color * v_TintColor;
 }
 `;
 };
 
 class ShaderProgram<T> {
-  private readonly gl: WebGLRenderingContext;
+  private readonly gl: WebGL2RenderingContext;
   private readonly program: WebGLProgram;
   private readonly locations: T;
 
   constructor(
-    gl: WebGLRenderingContext,
+    gl: WebGL2RenderingContext,
     vertexShaderSource: string,
     fragmentShaderSource: string,
     bindLocations: (_: WebGLProgram) => T,
@@ -175,7 +177,7 @@ class VertexBuffer {
 }
 
 export class WebGL1Backend {
-  private readonly gl: WebGLRenderingContext;
+  private readonly gl: WebGL2RenderingContext;
   private readonly extTextureBptc: EXT_texture_compression_bptc | null;
   private readonly extTextureS3tc: WEBGL_compressed_texture_s3tc | null;
 
@@ -208,7 +210,7 @@ export class WebGL1Backend {
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 
-    const gl = canvas.getContext("webgl", { antialias: false, depth: false, premultipliedAlpha: true });
+    const gl = canvas.getContext("webgl2", { antialias: false, depth: false, premultipliedAlpha: true });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
