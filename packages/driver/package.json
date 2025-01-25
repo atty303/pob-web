@@ -17,6 +17,7 @@
     "@zenfs/core": "^0.12.5",
     "@zenfs/zip": "^0.4.5",
     "@zenfs/dom": "^0.2.11",
-    "comlink": "^4.4.1"
+    "comlink": "^4.4.1",
+    "@bokuweb/zstd-wasm": "^0.0.22"
   }
 }

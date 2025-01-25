@@ -176,6 +176,8 @@ class VertexBuffer {
 
 export class WebGL1Backend {
   private readonly gl: WebGLRenderingContext;
+  private readonly extTextureBptc: EXT_texture_compression_bptc | null;
+  private readonly extTextureS3tc: WEBGL_compressed_texture_s3tc | null;
 
   private readonly textureProgram: ShaderProgram<{
     position: number;
@@ -209,6 +211,10 @@ export class WebGL1Backend {
     const gl = canvas.getContext("webgl", { antialias: false, depth: false, premultipliedAlpha: true });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc
+    this.extTextureBptc = gl.getExtension("EXT_texture_compression_bptc");
+    this.extTextureS3tc = gl.getExtension("WEBGL_compressed_texture_s3tc");
 
     gl.clearColor(0, 0, 0, 1);
     // gl.enable(gl.TEXTURE_2D);
@@ -388,13 +394,13 @@ export class WebGL1Backend {
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
-      if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
+      if (textureBitmap.bitmap.flags & TextureFlags.TF_NOMIPMAP) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       } else {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
+        // gl.generateMipmap(gl.TEXTURE_2D);
       }
-      if (textureBitmap.flags & TextureFlags.TF_NEAREST) {
+      if (textureBitmap.bitmap.flags & TextureFlags.TF_NEAREST) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       } else {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -409,9 +415,58 @@ export class WebGL1Backend {
       //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
       // }
 
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
-      if ((textureBitmap.flags & TextureFlags.TF_NOMIPMAP) === 0) {
-        // gl.generateMipmap(gl.TEXTURE_2D);
+      if (textureBitmap.bitmap.bitmap) {
+        if (textureBitmap.bitmap.type === "ImageLike") {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap.bitmap);
+        } else if (textureBitmap.bitmap.type === "DDSImage") {
+          const image = textureBitmap.bitmap.bitmap;
+          switch (textureBitmap.bitmap.dxgiFormat) {
+            case 28: // DXGI_FORMAT_R8G8B8A8_UNORM
+              gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                gl.RGBA,
+                image.width,
+                image.height,
+                0,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                image.data,
+              );
+              break;
+            case 71: // DXGI_FORMAT_BC1_UNORM
+              if (this.extTextureS3tc) {
+                gl.compressedTexImage2D(
+                  gl.TEXTURE_2D,
+                  0,
+                  this.extTextureS3tc.COMPRESSED_RGBA_S3TC_DXT1_EXT,
+                  image.width,
+                  image.height,
+                  0,
+                  image.data,
+                );
+              }
+              break;
+            case 98: // DXGI_FORMAT_BC7_UNORM
+              if (this.extTextureBptc) {
+                gl.compressedTexImage2D(
+                  gl.TEXTURE_2D,
+                  0,
+                  this.extTextureBptc.COMPRESSED_RGBA_BPTC_UNORM_EXT,
+                  image.width,
+                  image.height,
+                  0,
+                  image.data,
+                );
+              }
+              break;
+          }
+        } else {
+          const _: never = textureBitmap.bitmap;
+        }
+        if ((textureBitmap.bitmap.flags & TextureFlags.TF_NOMIPMAP) === 0) {
+          // gl.generateMipmap(gl.TEXTURE_2D);
+        }
       }
 
       this.textures.set(textureBitmap.id, texture);

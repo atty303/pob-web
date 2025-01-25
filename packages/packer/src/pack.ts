@@ -6,7 +6,7 @@ import { default as shelljs } from "shelljs";
 
 shelljs.config.verbose = true;
 
-const clone = true;
+const clone = process.argv[4] === "clone";
 
 const tag = process.argv[2];
 if (!tag) {
@@ -58,6 +58,14 @@ for (const file of shelljs.find(basePath)) {
     const { width, height } = imageSize(file);
     outputFile.push(`${relPath}\t${width}\t${height}`);
 
+    zip.addFile(relPath, Buffer.of());
+
+    const dest = `${buildDir}/r2/root/${relPath}`;
+    shelljs.mkdir("-p", path.dirname(dest));
+    shelljs.cp(file, dest);
+  } else if (path.extname(file) === ".zst") {
+    const { width, height } = { width: 1, height: 1 }; // TODO: extract width and height from DDS
+    outputFile.push(`${relPath}\t${width}\t${height}`);
     zip.addFile(relPath, Buffer.of());
 
     const dest = `${buildDir}/r2/root/${relPath}`;

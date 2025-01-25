@@ -109,7 +109,10 @@ export class SimpleTextRasterizer implements TextRasterizer {
         context.fillText(text, 0, size);
         render = {
           width,
-          bitmap: { id: key, bitmap: canvas, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP },
+          bitmap: {
+            id: key,
+            bitmap: { type: "ImageLike", bitmap: canvas, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP },
+          },
           coords: [0, 0, 1, 0, 1, 1, 0, 1],
         };
         this.cache.set(key, render);
@@ -275,7 +278,7 @@ export class BinPackingTextRasterizer {
     const v2 = (rect.y + rect.height) / this.size.height;
     const bitmap = {
       id: `@text:${this.generation}`,
-      bitmap: this.canvas,
+      bitmap: { type: "ImageLike" as const, bitmap: this.canvas, flags: TextureFlags.TF_NOMIPMAP },
       flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP,
     };
     const forCache = {

@@ -23,5 +23,11 @@ export default defineConfig(({ mode }) => ({
   worker: {
     format: "es",
   },
+  optimizeDeps: {
+    exclude: ["@bokuweb/zstd-wasm"],
+    esbuildOptions: {
+      target: "es2020",
+    },
+  },
   plugins: [Inspect()],
 }));
