@@ -67,8 +67,15 @@ export class Renderer {
     if (!this.backend) return;
 
     const layers = DrawCommandInterpreter.sort(view);
+    // console.log(
+    //   "layers",
+    //   layers.map((_) => ({ layer: _.layer, sublayer: _.sublayer })),
+    // );
     for (const layer of layers) {
-      this.setColor(1, 1, 1, 1);
+      // this.setColor(1, 1, 1, 1);
+      // if (!(layer.layer === 0 && layer.sublayer === 0)) {
+      //   continue;
+      // }
       this.backend.begin();
       for (const buffer of layer.commands) {
         DrawCommandInterpreter.run(buffer, {

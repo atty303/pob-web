@@ -232,7 +232,7 @@ export class WebGL1Backend {
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 
-    const gl = canvas.getContext("webgl2", { antialias: false, depth: false, premultipliedAlpha: true });
+    const gl = canvas.getContext("webgl2", { alpha: false });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
 
@@ -388,20 +388,21 @@ export class WebGL1Backend {
       const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
       this.gl.uniformMatrix4fv(p.mvpMatrix, false, new Float32Array(matrix));
 
-      // Set up the texture
-      for (const t of this.batchTextures.values()) {
-        gl.activeTexture(gl.TEXTURE0 + t.index);
-        gl.bindTexture(t.texture.target, t.texture.gl);
-        gl.uniform1i(p.textures[t.index], t.index);
-      }
-
-      // Draw
-
       // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
       // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
       // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
       // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
+
+      // Set up the texture
+      for (const t of this.batchTextures.values()) {
+        gl.uniform1i(p.textures[t.index], t.index);
+        gl.activeTexture(gl.TEXTURE0 + t.index);
+        gl.bindTexture(t.texture.target, t.texture.gl);
+      }
+      gl.activeTexture(gl.TEXTURE0);
+
+      // Draw
 
       // TODO: Use bufferSubData
       // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
@@ -449,7 +450,6 @@ export class WebGL1Backend {
       gl.bindTexture(target, t);
 
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
       gl.texParameteri(target, gl.TEXTURE_BASE_LEVEL, 0);
       gl.texParameteri(target, gl.TEXTURE_MAX_LEVEL, textureBitmap.source.levels);
@@ -476,7 +476,6 @@ export class WebGL1Backend {
         gl.texParameterf(target, this.extTextureAnisotropic.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
 
-      // TODO: If commented out, the tree renders wrong
       if (textureBitmap.source.flags & TextureFlags.TF_CLAMP) {
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
