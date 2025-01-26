@@ -1,9 +1,9 @@
 import { Format } from "dds/src/format.ts";
 
 export type FormatDesc = {
-  internal: number;
-  external: number;
-  type: number;
+  internal: GLenum;
+  external: GLenum;
+  type: GLenum;
   properties: number;
 };
 

@@ -392,8 +392,8 @@ export class WebGL1Backend {
 
       // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
       // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
-      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
+      // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
       // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
 
       // TODO: Use bufferSubData
