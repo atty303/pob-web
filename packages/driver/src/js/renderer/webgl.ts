@@ -20,6 +20,7 @@ const formatDescTable: Record<number, FormatDesc> = {
   [Format.RGBA8_UNORM_PACK8]: { internal: GL.RGBA8, external: GL.RGBA, type: GL.UNSIGNED_BYTE, properties: 0 },
   [Format.RGBA_DXT1_UNORM_BLOCK8]: { internal: 0x83F1/*COMPRESSED_RGBA_S3TC_DXT1_EXT*/, external: 0, type: 0, properties: 0 },
   [Format.RGBA_BP_UNORM_BLOCK16]: { internal: 0x8E8C/*EXT_texture_compression_bptc*/, external: 0, type: 0, properties: 0 },
+  [Format.L8_UNORM_PACK8]: { internal: 0x8040, external: GL.LUMINANCE, type: GL.UNSIGNED_BYTE, properties: 0 },
     // [Format.UNDEFINED]: ,
     //
     // [Format.RG4_UNORM_PACK8]: { internal: GL., external: GL., type: GL., properties: 0 },

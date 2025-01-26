@@ -1,3 +1,5 @@
+import { Target, Texture } from "dds/src";
+import { Format } from "dds/src/format.ts";
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
 import type { TextRasterizer, TextRender } from "./text.ts";
@@ -10,10 +12,20 @@ export type TextureBitmap = {
 };
 
 const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
-  const image = new ImageData(8, 8);
-  image.data.set(Array(8 * 8 * 4).fill(255));
+  const tex = new Texture(Target.TARGET_2D_ARRAY, Format.L8_UNORM_PACK8, [8, 8, 1], 1, 1, 1);
+  const arr = new Uint8Array(8 * 8).fill(255);
+  tex.data = new DataView(arr.buffer);
   return {
     id: "@white",
+    source: TextureSource.newTexture(tex, TextureFlags.TF_NOMIPMAP),
+  };
+})();
+
+const BLACK_TEXTURE_BITMAP: TextureBitmap = (() => {
+  const image = new ImageData(8, 8);
+  image.data.set(Array(8 * 8 * 4).fill(0));
+  return {
+    id: "@black",
     source: TextureSource.newImage(image, TextureFlags.TF_NOMIPMAP),
   };
 })();

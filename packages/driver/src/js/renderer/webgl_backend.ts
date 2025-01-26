@@ -556,10 +556,20 @@ export class WebGL1Backend {
                   1,
                   format.external,
                   format.type,
-                  data,
+                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
                 );
               } else {
-                gl.texSubImage2D(target, level, 0, 0, extent[0], extent[1], format.external, format.type, data);
+                gl.texSubImage2D(
+                  target,
+                  level,
+                  0,
+                  0,
+                  extent[0],
+                  extent[1],
+                  format.external,
+                  format.type,
+                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                );
               }
             }
           } else {
