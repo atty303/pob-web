@@ -1,5 +1,4 @@
-import { Format } from "dds/src/format.ts";
-import { Target } from "dds/src/index.ts";
+import { Format, Target } from "dds/src";
 import { TextureFlags } from "../image.ts";
 import { log, tag } from "../logger.ts";
 import type { TextureBitmap } from "./renderer.ts";

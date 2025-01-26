@@ -5,6 +5,7 @@
   "workspaces": ["packages/dds", "packages/driver", "packages/web", "packages/packer"],
   "devDependencies": {
     "@biomejs/biome": "^1.7.3",
+    "@bokuweb/zstd-wasm": "^0.0.22",
     "@cloudflare/workers-types": "^4.20240502.0",
     "@simbathesailor/babel-plugin-use-what-changed": "^2.1.0",
     "@simbathesailor/use-what-changed": "^2.0.0",

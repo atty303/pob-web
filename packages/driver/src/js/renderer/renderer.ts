@@ -1,5 +1,4 @@
-import { Target, Texture } from "dds/src";
-import { Format } from "dds/src/format.ts";
+import { Format, Target, Texture } from "dds/src";
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
 import type { TextRasterizer, TextRender } from "./text.ts";

@@ -1,4 +1,4 @@
-import { Format } from "dds/src/format.ts";
+import { Format } from "dds/src";
 
 export type FormatDesc = {
   internal: GLenum;
