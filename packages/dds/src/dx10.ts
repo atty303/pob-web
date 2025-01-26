@@ -6,6 +6,7 @@ export class Texture {
   private maxLayer: number;
   private baseFace: number;
   private maxFace: number;
+  private baseLevel: number;
   private maxLevel: number;
   private cache: Cache;
   public data: DataView = new DataView(new ArrayBuffer(0));
@@ -23,6 +24,7 @@ export class Texture {
     this.maxLayer = this.layers - 1;
     this.baseFace = 0;
     this.maxFace = this.faces - 1;
+    this.baseLevel = 0;
     this.maxLevel = this.levels - 1;
     this.cache = new Cache(
       new StorageLinear(this.format, this.extent, this.layers, this.faces, this.levels),
@@ -31,7 +33,7 @@ export class Texture {
       this.layers,
       this.baseFace,
       this.maxFace,
-      0,
+      this.baseLevel,
       this.maxLevel,
     );
   }

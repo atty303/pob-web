@@ -49,6 +49,8 @@ typedef struct {
     int image_handle;
     float x, y, w, h;
     float s1, t1, s2, t2;
+    int stackLayer;
+    int maskLayer;
 } DrawImageCommand;
 
 typedef struct {
@@ -56,6 +58,8 @@ typedef struct {
     int image_handle;
     float x1, y1, x2, y2, x3, y3, x4, y4;
     float s1, t1, s2, t2, s3, t3, s4, t4;
+    int stackLayer;
+    int maskLayer;
 } DrawImageQuadCommand;
 
 typedef struct {
@@ -204,8 +208,8 @@ static int SetDrawColor(lua_State *L) {
     return 0;
 }
 
-static void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2) {
-    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2};
+static void draw_image(int image_handle, float x, float y, float w, float h, float s1, float t1, float s2, float t2, int stack_layer, int mask_layer) {
+    DrawImageCommand cmd = {DRAW_IMAGE, image_handle, x, y, w, h, s1, t1, s2, t2, stack_layer, mask_layer};
     draw_push(&cmd, sizeof(cmd));
 }
 
@@ -213,23 +217,79 @@ static int DrawImage(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 5);
 
+    // | n  |img| corners | uvs | stack | mask |
+    // | 5  | X | X       |	    |       |      |
+    // | 6  | X | X       |     | X     |      |
+    // | 7  | X | X       |     | X     | X    |
+    // | 9  | X | X       | X   |       |      |
+    // | 10 | X | X       | X   | X     |      |
+    // | 11 | X | X       | X   | X     | X    |
+
+    enum ArgFlag : uint8_t { AF_IMG = 0x1, AF_XY = 0x2, AF_UV = 0x4, AF_STACK = 0x8, AF_MASK = 0x10 };
+    enum ArgFlag af = (enum ArgFlag)0;
+    switch (n) {
+        case 11: af = (enum ArgFlag)(af | AF_MASK);
+        case 10: af = (enum ArgFlag)(af | AF_STACK);
+        case 9: af = (enum ArgFlag)(af | AF_IMG | AF_XY | AF_UV); break;
+        case 7: af = (enum ArgFlag)(af | AF_MASK);
+        case 6: af = (enum ArgFlag)(af | AF_STACK);
+        case 5: af = (enum ArgFlag)(af | AF_IMG | AF_XY); break;
+        default: assert(0);
+    }
+
+    int k = 1;
+
     int handle = 0;
-    if (!lua_isnil(L, 1)) {
-        ImageHandle *image_handle = lua_touserdata(L, 1);
-        handle = image_handle->handle;
+    if (af & AF_IMG) {
+        if (!lua_isnil(L, k)) {
+            ImageHandle *image_handle = lua_touserdata(L, 1);
+            handle = image_handle->handle;
+        }
+        k += 1;
     }
-    if (n > 5) {
-        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
-                   lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9));
-    } else {
-        draw_image(handle, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), 0.0f, 0.0f, 1.0f, 1.0f);
+
+    float xys[2][2] = { { 0, 0 }, { 0, 0 } };
+    if (af & AF_XY) {
+        for (int i = k; i < k + 4; i++) {
+            const int idx = i - k;
+            xys[idx/2][idx%2] = (float)lua_tonumber(L, i);
+        }
+        k += 4;
     }
+
+    float uvs[2][2] = { { 0, 0 }, { 1, 1 } };
+    if (af & AF_UV) {
+        for (int i = k; i < k + 4; i++) {
+            int idx = i - k;
+            uvs[idx/2][idx%2] = (float)lua_tonumber(L, i);
+        }
+        k += 4;
+    }
+
+    int stackLayer = 0;
+    if (af & AF_STACK) {
+        const int val = (int)lua_tointeger(L, k);
+        stackLayer = val - 1;
+        k += 1;
+    }
+
+    int maskLayer = -1;
+    if (af & AF_MASK) {
+        if (lua_isnumber(L, k)) {
+            const int val = (int)lua_tointeger(L, k);
+            maskLayer = val - 1;
+        }
+        k += 1;
+    }
+
+    draw_image(handle, xys[0][0], xys[0][1], xys[1][0], xys[1][1], uvs[0][0], uvs[0][1], uvs[1][0], uvs[1][1], stackLayer, maskLayer);
+
     return 0;
 }
 
 static void draw_image_quad(int image_handle, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,
-                            float s1, float t1, float s2, float t2, float s3, float t3, float s4, float t4) {
-    DrawImageQuadCommand cmd = {DRAW_IMAGE_QUAD, image_handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4};
+                            float s1, float t1, float s2, float t2, float s3, float t3, float s4, float t4, int stack_layer, int mask_layer) {
+    DrawImageQuadCommand cmd = {DRAW_IMAGE_QUAD, image_handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4, stack_layer, mask_layer};
     draw_push(&cmd, sizeof(cmd));
 }
 
@@ -237,25 +297,74 @@ static int DrawImageQuad(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 9);
 
+    // | n  |img| corners | uvs | stack | mask |
+    // | 9  | X | X       |	    |       |      |
+    // | 10 | X | X       |     | X     |      |
+    // | 11 | X | X       |     | X     | X    |
+    // | 17 | X | X       | X   |       |      |
+    // | 18 | X | X       | X   | X     |      |
+    // | 19 | X | X       | X   | X     | X    |
+
+    enum ArgFlag : uint8_t { AF_IMG = 0x1, AF_XY = 0x2, AF_UV = 0x4, AF_STACK = 0x8, AF_MASK = 0x10 };
+    enum ArgFlag af = (enum ArgFlag)0;
+    switch (n) {
+        case 19: af = (enum ArgFlag)(af | AF_MASK);
+        case 18: af = (enum ArgFlag)(af | AF_STACK);
+        case 17: af = (enum ArgFlag)(af | AF_IMG | AF_XY | AF_UV); break;
+        case 11: af = (enum ArgFlag)(af | AF_MASK);
+        case 10: af = (enum ArgFlag)(af | AF_STACK);
+        case 9: af = (enum ArgFlag)(af | AF_IMG | AF_XY); break;
+        default: assert(0);
+    }
+
+    int k = 1;
+
     int handle = 0;
-    if (!lua_isnil(L, 1)) {
-        ImageHandle *image_handle = lua_touserdata(L, 1);
-        handle = image_handle->handle;
+    if (af & AF_IMG) {
+        if (!lua_isnil(L, k)) {
+            ImageHandle *image_handle = lua_touserdata(L, 1);
+            handle = image_handle->handle;
+        }
+        k += 1;
     }
-    if (n > 9) {
-        draw_image_quad(
-                handle,
-                lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
-                lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9),
-                lua_tonumber(L, 10), lua_tonumber(L, 11), lua_tonumber(L, 12), lua_tonumber(L, 13),
-                lua_tonumber(L, 14), lua_tonumber(L, 15), lua_tonumber(L, 16), lua_tonumber(L, 17));
-    } else {
-        draw_image_quad(
-                handle,
-                lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
-                lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8), lua_tonumber(L, 9),
-                0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+
+    float xys[4][2] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
+    if (af & AF_XY) {
+        for (int i = k; i < k + 8; i++) {
+            const int idx = i - k;
+            xys[idx/2][idx%2] = (float)lua_tonumber(L, i);
+        }
+        k += 8;
     }
+
+    float uvs[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+    if (af & AF_UV) {
+        for (int i = k; i < k + 8; i++) {
+            int idx = i - k;
+            uvs[idx/2][idx%2] = (float)lua_tonumber(L, i);
+        }
+        k += 8;
+    }
+
+    int stackLayer = 0;
+    if (af & AF_STACK) {
+        const int val = (int)lua_tointeger(L, k);
+        stackLayer = val - 1;
+        k += 1;
+    }
+
+    int maskLayer = -1;
+    if (af & AF_MASK) {
+        if (lua_isnumber(L, k)) {
+            const int val = (int)lua_tointeger(L, k);
+            maskLayer = val - 1;
+        }
+        k += 1;
+    }
+
+    draw_image_quad(handle, xys[0][0], xys[0][1], xys[1][0], xys[1][1], xys[2][0], xys[2][1], xys[3][0], xys[3][1],
+                    uvs[0][0], uvs[0][1], uvs[1][0], uvs[1][1], uvs[2][0], uvs[2][1], uvs[3][0], uvs[3][1], stackLayer, maskLayer);
+
     return 0;
 }
 

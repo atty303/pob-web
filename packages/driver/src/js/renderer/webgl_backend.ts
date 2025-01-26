@@ -330,7 +330,14 @@ export class WebGL1Backend {
     // console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
   }
 
-  drawQuad(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
+  drawQuad(
+    coords: number[],
+    texCoords: number[],
+    textureBitmap: TextureBitmap,
+    tintColor: number[],
+    stackLayer: number,
+    maskLayer: number,
+  ) {
     this.drawCount++;
 
     let t = this.batchTextures.get(textureBitmap.id);
@@ -363,7 +370,7 @@ export class WebGL1Backend {
     }
 
     for (const i of [0, 1, 2, 0, 2, 3]) {
-      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index, 0, -1); // FIXME: stackLayer, maskLayer
+      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index, stackLayer, maskLayer);
     }
   }
 

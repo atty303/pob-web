@@ -83,8 +83,10 @@ export class Renderer {
             t1: number,
             s2: number,
             t2: number,
+            stackLayer: number,
+            maskLayer: number,
           ) => {
-            this.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
+            this.drawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
           },
           onDrawImageQuad: (
             handle: number,
@@ -104,8 +106,30 @@ export class Renderer {
             t3: number,
             s4: number,
             t4: number,
+            stackLayer: number,
+            maskLayer: number,
           ) => {
-            this.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
+            this.drawImageQuad(
+              handle,
+              x1,
+              y1,
+              x2,
+              y2,
+              x3,
+              y3,
+              x4,
+              y4,
+              s1,
+              t1,
+              s2,
+              t2,
+              s3,
+              t3,
+              s4,
+              t4,
+              stackLayer,
+              maskLayer,
+            );
           },
           onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
             this.drawString(x, y, align, height, font, text);
@@ -151,6 +175,8 @@ export class Renderer {
     t1: number,
     s2: number,
     t2: number,
+    stackLayer: number,
+    maskLayer: number,
   ) {
     this.drawImageQuad(
       handle,
@@ -170,6 +196,8 @@ export class Renderer {
       t2,
       s1,
       t2,
+      stackLayer,
+      maskLayer,
     );
   }
 
@@ -191,6 +219,8 @@ export class Renderer {
     t3: number,
     s4: number,
     t4: number,
+    stackLayer: number,
+    maskLayer: number,
   ) {
     if (handle === 0) {
       this.backend?.drawQuad(
@@ -198,6 +228,8 @@ export class Renderer {
         [0, 0, 1, 0, 1, 1, 0, 1],
         WHITE_TEXTURE_BITMAP,
         this.currentColor,
+        0,
+        -1,
       );
     } else {
       const texSource = this.imageRepo.get(handle);
@@ -207,6 +239,8 @@ export class Renderer {
           [s1, t1, s2, t2, s3, t3, s4, t4],
           { id: handle.toString(), source: texSource },
           this.currentColor,
+          stackLayer,
+          maskLayer,
         );
       }
     }
@@ -282,6 +316,8 @@ export class Renderer {
           segment.render.coords,
           segment.render.bitmap,
           segment.color,
+          0,
+          -1,
         );
       }
       x += segment.render.width;
