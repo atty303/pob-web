@@ -8,6 +8,7 @@
   },
   "javascript": {
     "formatter": {
+      "arrowParentheses": "asNeeded",
       "semicolons": "always"
     }
   },
