@@ -78,7 +78,7 @@ jobs:
         run: |
           new_versions=(${{ steps.new_versions.outputs.new_versions }})
           for version in "${new_versions[@]}"; do
-            npm run -w packages/packer pack $version
+            npm run -w packages/packer pack $version 1 clone
             npm run -w packages/packer sync $version
           done
 
