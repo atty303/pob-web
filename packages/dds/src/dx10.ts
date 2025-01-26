@@ -6,6 +6,7 @@ export class Texture {
   private maxLayer: number;
   private baseFace: number;
   private maxFace: number;
+  private maxLevel: number;
   private cache: Cache;
   public data: DataView = new DataView(new ArrayBuffer(0));
 
@@ -22,6 +23,7 @@ export class Texture {
     this.maxLayer = this.layers - 1;
     this.baseFace = 0;
     this.maxFace = this.faces - 1;
+    this.maxLevel = this.levels - 1;
     this.cache = new Cache(
       new StorageLinear(this.format, this.extent, this.layers, this.faces, this.levels),
       this.format,
@@ -30,7 +32,7 @@ export class Texture {
       this.baseFace,
       this.maxFace,
       0,
-      this.levels,
+      this.maxLevel,
     );
   }
 
@@ -367,14 +369,14 @@ export const parseDDSDX10 = (data: Uint8Array): Texture => {
     faceCount,
     mipMapCount,
   );
+  console.log("DDS texture created", texture);
 
   const sourceSize = offset + texture.size;
-  if (data.length !== sourceSize) {
-    throw new Error(`Invalid DDS size: ${data.length} !== ${sourceSize}`);
+  if (data.byteLength !== sourceSize) {
+    throw new Error(`Invalid DDS size: actual ${data.byteLength} !== expected ${sourceSize}`);
   }
 
   texture.data = new DataView(data.buffer, data.byteOffset + offset, texture.size);
-  console.log("DDS loaded", texture);
 
   return texture;
 };

@@ -886,7 +886,7 @@ const formatInfos: Record<Format, FormatInfo> = {
 
     [Format.RGB_BP_UFLOAT_BLOCK16]: { blockSize: 16, blockExtent: [4, 4, 1], component: 3, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ONE], flags: Cap.COMPRESSED_BIT | Cap.FLOAT_BIT | Cap.UNSIGNED_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatDds.BC6H_UF16, mask: [0, 0, 0, 0] },
     [Format.RGB_BP_SFLOAT_BLOCK16]: { blockSize: 16, blockExtent: [4, 4, 1], component: 3, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ONE], flags: Cap.COMPRESSED_BIT | Cap.FLOAT_BIT | Cap.SIGNED_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatDds.BC6H_SF16, mask: [0, 0, 0, 0] },
-    [Format.RGBA_BP_UNORM_BLOCK16]: { blockSize: 16, blockExtent: [4, 4, 1], component: 4, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ALPHA], flags: Cap.COMPRESSED_BIT | Cap.NORMALIZED_BIT | Cap.UNSIGNED_BIT | Cap.DDS_GLI_EXT_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatDds.BC7_UNORM, mask: [0, 0, 0, 0] },
+    [Format.RGBA_BP_UNORM_BLOCK16]: { blockSize: 16, blockExtent: [4, 4, 1], component: 4, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ALPHA], flags: Cap.COMPRESSED_BIT | Cap.NORMALIZED_BIT | Cap.UNSIGNED_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatDds.BC7_UNORM, mask: [0, 0, 0, 0] },
     [Format.RGBA_BP_SRGB_BLOCK16]: { blockSize: 16, blockExtent: [4, 4, 1], component: 4, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ALPHA], flags: Cap.COMPRESSED_BIT | Cap.COLORSPACE_SRGB_BIT | Cap.NORMALIZED_BIT | Cap.UNSIGNED_BIT | Cap.DDS_GLI_EXT_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatDds.BC7_UNORM_SRGB, mask: [0, 0, 0, 0] },
 
     [Format.RGB_ETC2_UNORM_BLOCK8]: { blockSize: 8, blockExtent: [4, 4, 1], component: 3, swizzles: [Swizzle.RED, Swizzle.GREEN, Swizzle.BLUE, Swizzle.ONE], flags: Cap.COMPRESSED_BIT | Cap.NORMALIZED_BIT | Cap.UNSIGNED_BIT | Cap.DDS_GLI_EXT_BIT, ddPixelFormat: Ddpf.FOURCC, d3dFormat: D3dFmt.GLI1, dxgiFormat: DxgiFormatGli.RGB_ETC2_UNORM_GLI, mask: [0, 0, 0, 0] },
@@ -973,7 +973,7 @@ export namespace Format {
         if (info.d3dFormat === fourCC) return i;
       } else {
         if (fourCC === D3dFmt.GLI1 && info.flags & Cap.DDS_GLI_EXT_BIT && info.dxgiFormat === dxgiFormat) return i;
-        if (fourCC === D3dFmt.DX10 && info.flags & Cap.DDS_GLI_EXT_BIT && info.dxgiFormat === dxgiFormat) return i;
+        if (fourCC === D3dFmt.DX10 && !(info.flags & Cap.DDS_GLI_EXT_BIT) && info.dxgiFormat === dxgiFormat) return i;
       }
     }
     return Format.UNDEFINED;

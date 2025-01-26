@@ -21,7 +21,7 @@ export class StorageLinear {
       ceilMultiple(e[0], this.blockExtent[0]) / this.blockExtent[0],
       ceilMultiple(e[1], this.blockExtent[1]) / this.blockExtent[1],
       ceilMultiple(e[2], this.blockExtent[2]) / this.blockExtent[2],
-    ];
+    ] as const;
   }
 
   extent(level: number) {

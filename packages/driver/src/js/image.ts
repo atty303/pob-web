@@ -1,6 +1,7 @@
 import * as zstd from "@bokuweb/zstd-wasm";
 import { Target, type Texture, parseDDSDX10 } from "dds/src";
 import { Format } from "dds/src/format.ts";
+import { log, tag } from "./logger.ts";
 
 export type TextureSource = {
   flags: number;
@@ -91,8 +92,13 @@ export class ImageRepository {
           zstdInitialized = true;
         }
         const data = zstd.decompress(new Uint8Array(await blob.arrayBuffer()));
-        const texture = parseDDSDX10(data);
-        holder.textureSource = TextureSource.newTexture(texture, flags);
+        log.debug(tag.texture, "Loading DDS", src);
+        try {
+          const texture = parseDDSDX10(data);
+          holder.textureSource = TextureSource.newTexture(texture, flags);
+        } catch (e) {
+          log.warn(tag.texture, `Failed to load DDS: src=${src}`, e);
+        }
       } else {
         holder.textureSource = TextureSource.newImage(await createImageBitmap(blob), flags);
       }
