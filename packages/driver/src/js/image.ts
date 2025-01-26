@@ -1,5 +1,5 @@
 import * as zstd from "@bokuweb/zstd-wasm";
-import { Target, type Texture, parseDDSDX10 } from "dds/src";
+import { Target, Texture, parseDDSDX10 } from "dds/src";
 import { Format } from "dds/src/format.ts";
 import { log, tag } from "./logger.ts";
 
@@ -94,7 +94,16 @@ export class ImageRepository {
         const data = zstd.decompress(new Uint8Array(await blob.arrayBuffer()));
         log.debug(tag.texture, "Loading DDS", src);
         try {
-          const texture = parseDDSDX10(data);
+          const texture0 = parseDDSDX10(data);
+          const texture = new Texture(
+            Target.TARGET_2D_ARRAY,
+            texture0.format,
+            texture0.extent,
+            texture0.layers,
+            texture0.faces,
+            texture0.levels,
+          );
+          texture.data = texture0.data;
           holder.textureSource = TextureSource.newTexture(texture, flags);
         } catch (e) {
           log.warn(tag.texture, `Failed to load DDS: src=${src}`, e);
