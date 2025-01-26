@@ -1,18 +1,21 @@
 import { DrawCommandInterpreter } from "../draw.ts";
-import { type ImageInfo, type ImageRepository, TextureFlags } from "../image.ts";
+import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
 import type { TextRasterizer, TextRender } from "./text.ts";
 import type { WebGL1Backend } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
   id: string;
-  bitmap: ImageInfo;
+  source: TextureSource;
   updateSubImage?: () => { x: number; y: number; width: number; height: number; source: ArrayBufferView };
 };
 
-const WHITE_TEXTURE_BITMAP = (() => {
+const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
   const image = new ImageData(8, 8);
   image.data.set(Array(8 * 8 * 4).fill(255));
-  return { id: "@white", bitmap: { type: "ImageLike" as const, bitmap: image, flags: TextureFlags.TF_NOMIPMAP } };
+  return {
+    id: "@white",
+    source: TextureSource.newImage(image, TextureFlags.TF_NOMIPMAP),
+  };
 })();
 
 const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/;
@@ -197,12 +200,12 @@ export class Renderer {
         this.currentColor,
       );
     } else {
-      const image = this.imageRepo.get(handle);
-      if (image?.bitmap) {
+      const texSource = this.imageRepo.get(handle);
+      if (texSource) {
         this.backend?.drawQuad(
           [x1, y1, x2, y2, x3, y3, x4, y4],
           [s1, t1, s2, t2, s3, t3, s4, t4],
-          { id: handle.toString(), bitmap: image },
+          { id: handle.toString(), source: texSource },
           this.currentColor,
         );
       }

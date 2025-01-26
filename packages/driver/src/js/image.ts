@@ -1,19 +1,60 @@
 import * as zstd from "@bokuweb/zstd-wasm";
-import { type DDSImage, parseDDSDX10 } from "dds/src";
+import { Target, type Texture, parseDDSDX10 } from "dds/src";
+import { Format } from "dds/src/format.ts";
 
-export type ImageInfo = {
+export type TextureSource = {
   flags: number;
+  target: Target;
+  format: Format;
+  width: number;
+  height: number;
+  layers: number;
+  levels: number;
 } & (
   | {
-      type: "ImageLike";
-      bitmap: ImageBitmap | ImageData | OffscreenCanvas | undefined;
+      type: "Image";
+      texture: ImageBitmap | ImageData | OffscreenCanvas;
     }
   | {
-      type: "DDSImage";
-      bitmap: DDSImage | undefined;
-      dxgiFormat: number | undefined;
+      type: "Texture";
+      texture: Texture;
     }
 );
+
+export namespace TextureSource {
+  export function newImage(texture: ImageBitmap | ImageData | OffscreenCanvas, flags: number): TextureSource {
+    return {
+      flags,
+      target: Target.TARGET_2D_ARRAY,
+      format: Format.RGBA8_UNORM_PACK8,
+      width: texture.width,
+      height: texture.height,
+      layers: 1,
+      levels: 1,
+      type: "Image",
+      texture,
+    };
+  }
+
+  export function newTexture(texture: Texture, flags: number): TextureSource {
+    return {
+      flags,
+      target: texture.target,
+      format: texture.format,
+      width: texture.extent[0],
+      height: texture.extent[1],
+      layers: texture.layers,
+      levels: texture.levels,
+      type: "Texture",
+      texture,
+    };
+  }
+}
+
+type TextureHolder = {
+  flags: number;
+  textureSource: TextureSource | undefined;
+};
 
 export enum TextureFlags {
   TF_CLAMP = 1,
@@ -25,7 +66,7 @@ let zstdInitialized = false;
 
 export class ImageRepository {
   private readonly prefix: string;
-  private images: Map<number, ImageInfo> = new Map();
+  private images: Map<number, TextureHolder> = new Map();
 
   constructor(prefix: string) {
     this.prefix = prefix;
@@ -34,32 +75,31 @@ export class ImageRepository {
   async load(handle: number, src: string, flags: number): Promise<void> {
     if (this.images.has(handle)) return;
 
-    const type = src.endsWith(".dds.zst") ? "DDSImage" : "ImageLike";
-    const info: ImageInfo = {
-      type,
-      bitmap: undefined,
+    const type = src.endsWith(".dds.zst") ? "Texture" : "Image";
+    const holder: TextureHolder = {
       flags,
-      dxgiFormat: undefined,
+      textureSource: undefined,
     };
-    this.images.set(handle, info);
+    this.images.set(handle, holder);
 
     const r = await fetch(this.prefix + src, { referrerPolicy: "no-referrer" });
     if (r.ok) {
       const blob = await r.blob();
-      if (type === "DDSImage") {
+      if (type === "Texture") {
         if (!zstdInitialized) {
           await zstd.init();
           zstdInitialized = true;
         }
         const data = zstd.decompress(new Uint8Array(await blob.arrayBuffer()));
-        info.bitmap = parseDDSDX10(data);
+        const texture = parseDDSDX10(data);
+        holder.textureSource = TextureSource.newTexture(texture, flags);
       } else {
-        info.bitmap = await createImageBitmap(blob);
+        holder.textureSource = TextureSource.newImage(await createImageBitmap(blob), flags);
       }
     }
   }
 
-  get(handle: number): ImageInfo | undefined {
-    return this.images.get(handle);
+  get(handle: number): TextureSource | undefined {
+    return this.images.get(handle)?.textureSource;
   }
 }

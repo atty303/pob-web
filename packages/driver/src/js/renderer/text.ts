@@ -1,4 +1,4 @@
-import { TextureFlags } from "../image.ts";
+import { TextureFlags, TextureSource } from "../image.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
@@ -111,7 +111,7 @@ export class SimpleTextRasterizer implements TextRasterizer {
           width,
           bitmap: {
             id: key,
-            bitmap: { type: "ImageLike", bitmap: canvas, flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP },
+            source: TextureSource.newImage(canvas, TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP),
           },
           coords: [0, 0, 1, 0, 1, 1, 0, 1],
         };
@@ -278,7 +278,7 @@ export class BinPackingTextRasterizer {
     const v2 = (rect.y + rect.height) / this.size.height;
     const bitmap = {
       id: `@text:${this.generation}`,
-      bitmap: { type: "ImageLike" as const, bitmap: this.canvas, flags: TextureFlags.TF_NOMIPMAP },
+      source: TextureSource.newImage(this.canvas, TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP),
       flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP,
     };
     const forCache = {

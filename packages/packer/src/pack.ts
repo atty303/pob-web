@@ -102,5 +102,9 @@ zip.extractAllTo(rootDir, true);
 
 function ddsSize(file: string) {
   const data = zstd.decompress(fs.readFileSync(file));
-  return parseDDSDX10(data);
+  const tex = parseDDSDX10(data);
+  return {
+    width: tex.extent[0],
+    height: tex.extent[1],
+  };
 }
