@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/atty303/pob-web/compare/v0.19.0...v0.19.1) (2025-01-27)
+
+
+### Performance Improvements
+
+* **driver:** fix performance in zenfs ([1cbcaff](https://github.com/atty303/pob-web/commit/1cbcaffdcf5a01ca990248420e95dfc6a4eebc62))
+
 ## [0.19.0](https://github.com/atty303/pob-web/compare/v0.18.0...v0.19.0) (2025-01-27)
 
 
