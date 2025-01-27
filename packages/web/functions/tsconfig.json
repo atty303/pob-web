@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "moduleResolution": "bundler",
     "lib": ["esnext"],
     "types": ["@cloudflare/workers-types"]
   }

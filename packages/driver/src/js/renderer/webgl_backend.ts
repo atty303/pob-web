@@ -1,21 +1,23 @@
+import { Format, Target } from "dds/src";
 import { TextureFlags } from "../image.ts";
 import { log, tag } from "../logger.ts";
 import type { TextureBitmap } from "./renderer.ts";
+import { type FormatDesc, glFormatFor } from "./webgl.ts";
 
-const vertexShaderSource = `#version 100
+const vertexShaderSource = `#version 300 es
 uniform mat4 u_MvpMatrix;
 
-attribute vec2 a_Position;
-attribute vec2 a_TexCoord;
-attribute vec4 a_TintColor;
-attribute vec4 a_Viewport;
-attribute float a_TexId;
+in vec2 a_Position;
+in vec2 a_TexCoord;
+in vec4 a_TintColor;
+in vec4 a_Viewport;
+in vec3 a_TexId;
 
-varying vec2 v_ScreenPos;
-varying vec2 v_TexCoord;
-varying vec4 v_TintColor;
-varying vec4 v_Viewport;
-varying float v_TexId;
+out vec2 v_ScreenPos;
+out vec2 v_TexCoord;
+out vec4 v_TintColor;
+out vec4 v_Viewport;
+out vec3 v_TexId;
 
 void main(void) {
     v_TexCoord = a_TexCoord;
@@ -25,7 +27,7 @@ void main(void) {
     vec2 vp1 = a_Viewport.xy + vec2(a_Viewport.z, 0.0);
     v_Viewport = vec4(
       (u_MvpMatrix * vec4(vp0, 0.0, 1.0)).xy,
-     (u_MvpMatrix * vec4(vp1, 0.0, 1.0)).xy);
+      (u_MvpMatrix * vec4(vp1, 0.0, 1.0)).xy);
     vec4 pos = u_MvpMatrix * vec4(a_Position + a_Viewport.xy, 0.0, 1.0);
     v_ScreenPos = pos.xy;
     gl_Position = pos;
@@ -35,24 +37,30 @@ const textureFragmentShaderSource = (max: number) => {
   let switchCode = "";
   for (let i = 0; i < max; ++i) {
     if (i === 0) {
-      switchCode += `if (v_TexId < ${i}.5) `;
+      switchCode += `if (v_TexId.x < ${i}.5) `;
     } else if (i === max - 1) {
       switchCode += "else ";
     } else {
-      switchCode += `else if (v_TexId < ${i}.5) `;
+      switchCode += `else if (v_TexId.x < ${i}.5) `;
     }
-    switchCode += `color = texture2D(u_Texture[${i}], v_TexCoord);\n`;
+    switchCode += `{
+    color = texture(u_Texture[${i}], vec3(v_TexCoord, v_TexId.y));
+    if (v_TexId.z > -0.5)
+      color *= texture(u_Texture[${i}], vec3(v_TexCoord, v_TexId.z));
+    }`;
   }
-  return `#version 100
+  return `#version 300 es
 precision mediump float;
 
-uniform sampler2D u_Texture[${max}];
+uniform highp sampler2DArray u_Texture[${max}];
 
-varying vec2 v_ScreenPos;
-varying vec2 v_TexCoord;
-varying vec4 v_TintColor;
-varying vec4 v_Viewport;
-varying float v_TexId;
+in vec2 v_ScreenPos;
+in vec2 v_TexCoord;
+in vec4 v_TintColor;
+in vec4 v_Viewport;
+in vec3 v_TexId;
+
+out vec4 f_fragColor;
 
 void main(void) {
     float x = v_ScreenPos[0], y = v_ScreenPos[1];
@@ -61,18 +69,18 @@ void main(void) {
     }
     vec4 color;
     ${switchCode}
-    gl_FragColor = color * v_TintColor;
+    f_fragColor = color * v_TintColor;
 }
 `;
 };
 
 class ShaderProgram<T> {
-  private readonly gl: WebGLRenderingContext;
+  private readonly gl: WebGL2RenderingContext;
   private readonly program: WebGLProgram;
   private readonly locations: T;
 
   constructor(
-    gl: WebGLRenderingContext,
+    gl: WebGL2RenderingContext,
     vertexShaderSource: string,
     fragmentShaderSource: string,
     bindLocations: (_: WebGLProgram) => T,
@@ -153,10 +161,19 @@ class VertexBuffer {
   }
 
   get length() {
-    return this.offset / 13;
+    return this.offset / 15;
   }
 
-  push(i: number, coords: number[], texCoords: number[], tintColor: number[], viewport: number[], textureSlot: number) {
+  push(
+    i: number,
+    coords: number[],
+    texCoords: number[],
+    tintColor: number[],
+    viewport: number[],
+    textureSlot: number,
+    stackLayer: number,
+    maskLayer: number,
+  ) {
     const b = this._buffer;
     b[this.offset++] = coords[i * 2];
     b[this.offset++] = coords[i * 2 + 1];
@@ -171,11 +188,16 @@ class VertexBuffer {
     b[this.offset++] = viewport[2];
     b[this.offset++] = viewport[3];
     b[this.offset++] = textureSlot;
+    b[this.offset++] = stackLayer;
+    b[this.offset++] = maskLayer;
   }
 }
 
 export class WebGL1Backend {
-  private readonly gl: WebGLRenderingContext;
+  private readonly gl: WebGL2RenderingContext;
+  private readonly extTextureBptc: EXT_texture_compression_bptc | null;
+  private readonly extTextureS3tc: WEBGL_compressed_texture_s3tc | null;
+  private readonly extTextureAnisotropic: EXT_texture_filter_anisotropic | null;
 
   private readonly textureProgram: ShaderProgram<{
     position: number;
@@ -187,14 +209,17 @@ export class WebGL1Backend {
     textures: WebGLUniformLocation[];
   }>;
 
-  private readonly textures: Map<string, WebGLTexture> = new Map();
+  private readonly textures: Map<string, { target: GLenum; format: FormatDesc; gl: WebGLTexture }> = new Map();
   private viewport: number[] = [];
   private pixelRatio = 1;
   private vertices: VertexBuffer = new VertexBuffer();
   private drawCount = 0;
   private readonly vbo: WebGLBuffer;
   private readonly maxTextures: number;
-  private batchTextures: Map<string, { index: number; texture: WebGLTexture }> = new Map();
+  private batchTextures: Map<
+    string,
+    { index: number; texture: { target: GLenum; format: FormatDesc; gl: WebGLTexture } }
+  > = new Map();
   private batchTextureCount = 0;
   private dispatchCount = 0;
 
@@ -206,9 +231,17 @@ export class WebGL1Backend {
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 
-    const gl = canvas.getContext("webgl", { antialias: false, depth: false, premultipliedAlpha: true });
+    const gl = canvas.getContext("webgl2", { alpha: false });
     if (!gl) throw new Error("Failed to get WebGL context");
     this.gl = gl;
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc
+    this.extTextureBptc = gl.getExtension("EXT_texture_compression_bptc");
+    log.info(tag.backend, "EXT_texture_compression_bptc", this.extTextureBptc);
+    this.extTextureS3tc = gl.getExtension("WEBGL_compressed_texture_s3tc");
+    log.info(tag.backend, "WEBGL_compressed_texture_s3tc", this.extTextureS3tc);
+    this.extTextureAnisotropic = gl.getExtension("EXT_texture_filter_anisotropic");
+    log.info(tag.backend, "EXT_texture_filter_anisotropic", this.extTextureAnisotropic);
 
     gl.clearColor(0, 0, 0, 1);
     // gl.enable(gl.TEXTURE_2D);
@@ -296,7 +329,14 @@ export class WebGL1Backend {
     // console.log(`Draw count: ${this.drawCount}, Dispatch count: ${this.dispatchCount}`);
   }
 
-  drawQuad(coords: number[], texCoords: number[], textureBitmap: TextureBitmap, tintColor: number[]) {
+  drawQuad(
+    coords: number[],
+    texCoords: number[],
+    textureBitmap: TextureBitmap,
+    tintColor: number[],
+    stackLayer: number,
+    maskLayer: number,
+  ) {
     this.drawCount++;
 
     let t = this.batchTextures.get(textureBitmap.id);
@@ -310,13 +350,26 @@ export class WebGL1Backend {
     }
     if (textureBitmap.updateSubImage) {
       const gl = this.gl;
-      gl.bindTexture(gl.TEXTURE_2D, t.texture);
+      gl.bindTexture(t.texture.target, t.texture.gl);
+
       const sub = textureBitmap.updateSubImage();
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, sub.x, sub.y, sub.width, sub.height, gl.RGBA, gl.UNSIGNED_BYTE, sub.source);
+      gl.texSubImage3D(
+        t.texture.target,
+        0,
+        sub.x,
+        sub.y,
+        0,
+        sub.width,
+        sub.height,
+        1,
+        t.texture.format.external,
+        t.texture.format.type,
+        sub.source,
+      );
     }
 
     for (const i of [0, 1, 2, 0, 2, 3]) {
-      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index);
+      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index, stackLayer, maskLayer);
     }
   }
 
@@ -334,28 +387,29 @@ export class WebGL1Backend {
       const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
       this.gl.uniformMatrix4fv(p.mvpMatrix, false, new Float32Array(matrix));
 
+      // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
+      // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
+      // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
+      // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
+
       // Set up the texture
       for (const t of this.batchTextures.values()) {
-        gl.activeTexture(gl.TEXTURE0 + t.index);
-        gl.bindTexture(gl.TEXTURE_2D, t.texture);
         gl.uniform1i(p.textures[t.index], t.index);
+        gl.activeTexture(gl.TEXTURE0 + t.index);
+        gl.bindTexture(t.texture.target, t.texture.gl);
       }
+      gl.activeTexture(gl.TEXTURE0);
 
       // Draw
 
-      // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
-      // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
-      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
-      // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
-
       // TODO: Use bufferSubData
       // gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.buffer);
-      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 52, 0);
-      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 52, 8);
-      gl.vertexAttribPointer(p.tintColor, 4, gl.FLOAT, false, 52, 16);
-      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, 52, 32);
-      gl.vertexAttribPointer(p.texId, 1, gl.FLOAT, false, 52, 48);
+      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 60, 0);
+      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 60, 8);
+      gl.vertexAttribPointer(p.tintColor, 4, gl.FLOAT, false, 60, 16);
+      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, 60, 32);
+      gl.vertexAttribPointer(p.texId, 3, gl.FLOAT, false, 60, 48);
       gl.enableVertexAttribArray(p.position);
       gl.enableVertexAttribArray(p.texCoord);
       gl.enableVertexAttribArray(p.tintColor);
@@ -378,45 +432,165 @@ export class WebGL1Backend {
     this.batchTextureCount = 0;
   }
 
-  private getTexture(textureBitmap: TextureBitmap): WebGLTexture {
+  private getTexture(textureBitmap: TextureBitmap): { target: GLenum; format: FormatDesc; gl: WebGLTexture } {
     const gl = this.gl;
     let texture = this.textures.get(textureBitmap.id);
     if (!texture) {
       const t = gl.createTexture();
       if (!t) throw new Error("Failed to create texture");
-      texture = t;
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
-      if (textureBitmap.flags & TextureFlags.TF_NOMIPMAP) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      const target = targetTable[textureBitmap.source.target];
+      if (!target) throw new Error(`Unsupported target: ${textureBitmap.source.target}`);
+
+      const format = glFormatFor(textureBitmap.source.format);
+
+      texture = { target, format, gl: t };
+
+      gl.bindTexture(target, t);
+
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+      gl.texParameteri(target, gl.TEXTURE_BASE_LEVEL, 0);
+      gl.texParameteri(target, gl.TEXTURE_MAX_LEVEL, textureBitmap.source.levels);
+      // No texture swizzles: https://registry.khronos.org/webgl/specs/latest/2.0/#5.18
+      // gl.texParameteri(target, gl.TEXTURE_SWIZZLE_R, format.Swizzles.r);
+      // gl.texParameteri(target, gl.TEXTURE_SWIZZLE_G, format.Swizzles.g);
+      // gl.texParameteri(target, gl.TEXTURE_SWIZZLE_B, format.Swizzles.b);
+      // gl.texParameteri(target, gl.TEXTURE_SWIZZLE_A, format.Swizzles.a);
+
+      if (textureBitmap.source.levels === 1) {
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       } else {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       }
-      if (textureBitmap.flags & TextureFlags.TF_NEAREST) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+      if (textureBitmap.source.flags & TextureFlags.TF_NEAREST) {
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       } else {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       }
 
-      // TODO: If commented out, the tree renders wrong
-      // if (textureBitmap.flags & TextureFlags.TF_CLAMP) {
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      // } else {
-      //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-      //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-      // }
+      if (this.extTextureAnisotropic) {
+        const max = gl.getParameter(this.extTextureAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number;
+        gl.texParameterf(target, this.extTextureAnisotropic.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      }
 
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureBitmap.bitmap);
-      if ((textureBitmap.flags & TextureFlags.TF_NOMIPMAP) === 0) {
-        // gl.generateMipmap(gl.TEXTURE_2D);
+      if (textureBitmap.source.flags & TextureFlags.TF_CLAMP) {
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      } else {
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      }
+
+      if (target === gl.TEXTURE_2D_ARRAY) {
+        gl.texStorage3D(
+          target,
+          textureBitmap.source.levels,
+          format.internal,
+          textureBitmap.source.width,
+          textureBitmap.source.height,
+          textureBitmap.source.layers,
+        );
+      } else {
+        gl.texStorage2D(
+          target,
+          textureBitmap.source.levels,
+          format.internal,
+          textureBitmap.source.width,
+          textureBitmap.source.height,
+        );
+      }
+
+      for (let layer = 0; layer < textureBitmap.source.layers; ++layer) {
+        for (let level = 0; level < textureBitmap.source.levels; ++level) {
+          if (textureBitmap.source.type === "Image") {
+            if (target === gl.TEXTURE_2D_ARRAY) {
+              gl.texSubImage3D(
+                target,
+                level,
+                0,
+                0,
+                layer,
+                textureBitmap.source.width,
+                textureBitmap.source.height,
+                1,
+                format.external,
+                format.type,
+                textureBitmap.source.texture,
+              );
+            } else {
+              gl.texSubImage2D(
+                target,
+                level,
+                0,
+                0,
+                textureBitmap.source.width,
+                textureBitmap.source.height,
+                format.external,
+                format.type,
+                textureBitmap.source.texture,
+              );
+            }
+          } else if (textureBitmap.source.type === "Texture") {
+            const extent = textureBitmap.source.texture.extentOf(level);
+            const data = textureBitmap.source.texture.dataOf(layer, 0, level);
+            if (Format.isCompressed(textureBitmap.source.texture.format)) {
+              if (target === gl.TEXTURE_2D_ARRAY) {
+                gl.compressedTexSubImage3D(target, level, 0, 0, layer, extent[0], extent[1], 1, format.internal, data);
+              } else {
+                gl.compressedTexSubImage2D(target, level, 0, 0, extent[0], extent[1], format.internal, data);
+              }
+            } else {
+              if (target === gl.TEXTURE_2D_ARRAY) {
+                gl.texSubImage3D(
+                  target,
+                  level,
+                  0,
+                  0,
+                  layer,
+                  extent[0],
+                  extent[1],
+                  1,
+                  format.external,
+                  format.type,
+                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                );
+              } else {
+                gl.texSubImage2D(
+                  target,
+                  level,
+                  0,
+                  0,
+                  extent[0],
+                  extent[1],
+                  format.external,
+                  format.type,
+                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                );
+              }
+            }
+          } else {
+            const _: never = textureBitmap.source;
+          }
+        }
       }
 
       this.textures.set(textureBitmap.id, texture);
-      // console.log("Created texture", textureBitmap.id, textureBitmap.bitmap.width, textureBitmap.bitmap.height);
+      // console.log("Created texture", textureBitmap.id, textureBitmap.source);
     }
     return texture;
   }
 }
+
+const targetTable: Record<Target, number | undefined> = {
+  [Target.TARGET_1D]: undefined,
+  [Target.TARGET_1D_ARRAY]: undefined,
+  [Target.TARGET_2D]: WebGL2RenderingContext.TEXTURE_2D,
+  [Target.TARGET_2D_ARRAY]: WebGL2RenderingContext.TEXTURE_2D_ARRAY,
+  [Target.TARGET_3D]: WebGL2RenderingContext.TEXTURE_3D,
+  [Target.TARGET_RECT]: undefined,
+  [Target.TARGET_RECT_ARRAY]: undefined,
+  [Target.TARGET_CUBE]: WebGL2RenderingContext.TEXTURE_CUBE_MAP,
+  [Target.TARGET_CUBE_ARRAY]: undefined,
+};

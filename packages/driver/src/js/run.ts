@@ -1,7 +1,7 @@
 import { Driver } from "./driver.ts";
 
-const version = "2.42.0";
-const versionPrefix = `${__ASSET_PREFIX__}/v${version}`;
+const version = "2/v0.3.0/r2";
+const versionPrefix = `${__ASSET_PREFIX__}/${version}`;
 
 const driver = new Driver("release", versionPrefix, {
   onError: (message) => console.error(message),

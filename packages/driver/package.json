@@ -3,9 +3,7 @@
   "private": true,
   "version": "0.18.0",
   "type": "module",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "npm run build:debug && npm run build:release",
     "build:debug": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && emmake ninja -C build",
@@ -17,6 +15,8 @@
     "@zenfs/core": "^0.12.5",
     "@zenfs/zip": "^0.4.5",
     "@zenfs/dom": "^0.2.11",
-    "comlink": "^4.4.1"
+    "comlink": "^4.4.1",
+    "@bokuweb/zstd-wasm": "^0.0.22",
+    "dds": "*"
   }
 }

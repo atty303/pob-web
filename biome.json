@@ -8,6 +8,7 @@
   },
   "javascript": {
     "formatter": {
+      "arrowParentheses": "asNeeded",
       "semicolons": "always"
     }
   },
@@ -17,7 +18,8 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": { "noUselessElse": "off" }
     }
   }
 }

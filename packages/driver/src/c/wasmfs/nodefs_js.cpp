@@ -35,8 +35,10 @@ int _wasmfs_node_readdir(const char* path, void* entries) {
 EM_ASYNC_JS(int, js_wasmfs_node_get_mode, (const char *path, mode_t *mode), {
     let stat;
     try {
+        // console.log("Stat file: ", UTF8ToString(path));
         stat = await Module.fs.promises.lstat(UTF8ToString(path));
     } catch (e) {
+        // console.error("stat error", e);
         if (!e.code) throw e;
         return 1;
     }

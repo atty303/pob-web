@@ -78,8 +78,8 @@ jobs:
         run: |
           new_versions=(${{ steps.new_versions.outputs.new_versions }})
           for version in "${new_versions[@]}"; do
-            npm run -w packages/packer pack $version
-            npm run -w packages/packer sync $version
+            npm run -w packages/packer pack $version 1 clone
+            npm run -w packages/packer sync $version 1
           done
 
       - name: Update version.json
@@ -94,10 +94,10 @@ jobs:
           for version in "${new_versions[@]}"; do
              known_versions=$(echo "$known_versions" | sed "1s/^/\"$version\",\n/")
           done
-          jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.versions = ($new_versions + .versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+          jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.poe1.versions = ($new_versions + .poe1.versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
           
           head_version=${new_versions[0]}
-          jq --arg head "$head_version" '.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+          jq --arg head "$head_version" '.poe1.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
           
           cat $VERSION_FILE
           aws s3 cp --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json

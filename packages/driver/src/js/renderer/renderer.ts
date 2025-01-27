@@ -1,19 +1,32 @@
+import { Format, Target, Texture } from "dds/src";
 import { DrawCommandInterpreter } from "../draw.ts";
-import { type ImageRepository, TextureFlags } from "../image.ts";
+import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
 import type { TextRasterizer, TextRender } from "./text.ts";
 import type { WebGL1Backend } from "./webgl_backend.ts";
 
 export type TextureBitmap = {
   id: string;
-  bitmap: ImageBitmap | ImageData | OffscreenCanvas;
-  flags: number;
+  source: TextureSource;
   updateSubImage?: () => { x: number; y: number; width: number; height: number; source: ArrayBufferView };
 };
 
-const WHITE_TEXTURE_BITMAP = (() => {
+const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
+  const tex = new Texture(Target.TARGET_2D_ARRAY, Format.L8_UNORM_PACK8, [8, 8, 1], 1, 1, 1);
+  const arr = new Uint8Array(8 * 8).fill(255);
+  tex.data = new DataView(arr.buffer);
+  return {
+    id: "@white",
+    source: TextureSource.newTexture(tex, TextureFlags.TF_NOMIPMAP),
+  };
+})();
+
+const BLACK_TEXTURE_BITMAP: TextureBitmap = (() => {
   const image = new ImageData(8, 8);
-  image.data.set(Array(8 * 8 * 4).fill(255));
-  return { id: "@white", bitmap: image, flags: TextureFlags.TF_NOMIPMAP };
+  image.data.set(Array(8 * 8 * 4).fill(0));
+  return {
+    id: "@black",
+    source: TextureSource.newImage(image, TextureFlags.TF_NOMIPMAP),
+  };
 })();
 
 const reColor = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/;
@@ -53,8 +66,15 @@ export class Renderer {
     if (!this.backend) return;
 
     const layers = DrawCommandInterpreter.sort(view);
+    // console.log(
+    //   "layers",
+    //   layers.map((_) => ({ layer: _.layer, sublayer: _.sublayer })),
+    // );
     for (const layer of layers) {
-      this.setColor(1, 1, 1, 1);
+      // this.setColor(1, 1, 1, 1);
+      // if (!(layer.layer === 0 && layer.sublayer === 0)) {
+      //   continue;
+      // }
       this.backend.begin();
       for (const buffer of layer.commands) {
         DrawCommandInterpreter.run(buffer, {
@@ -81,8 +101,10 @@ export class Renderer {
             t1: number,
             s2: number,
             t2: number,
+            stackLayer: number,
+            maskLayer: number,
           ) => {
-            this.drawImage(handle, x, y, width, height, s1, t1, s2, t2);
+            this.drawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
           },
           onDrawImageQuad: (
             handle: number,
@@ -102,8 +124,30 @@ export class Renderer {
             t3: number,
             s4: number,
             t4: number,
+            stackLayer: number,
+            maskLayer: number,
           ) => {
-            this.drawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
+            this.drawImageQuad(
+              handle,
+              x1,
+              y1,
+              x2,
+              y2,
+              x3,
+              y3,
+              x4,
+              y4,
+              s1,
+              t1,
+              s2,
+              t2,
+              s3,
+              t3,
+              s4,
+              t4,
+              stackLayer,
+              maskLayer,
+            );
           },
           onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
             this.drawString(x, y, align, height, font, text);
@@ -149,6 +193,8 @@ export class Renderer {
     t1: number,
     s2: number,
     t2: number,
+    stackLayer: number,
+    maskLayer: number,
   ) {
     this.drawImageQuad(
       handle,
@@ -168,6 +214,8 @@ export class Renderer {
       t2,
       s1,
       t2,
+      stackLayer,
+      maskLayer,
     );
   }
 
@@ -189,6 +237,8 @@ export class Renderer {
     t3: number,
     s4: number,
     t4: number,
+    stackLayer: number,
+    maskLayer: number,
   ) {
     if (handle === 0) {
       this.backend?.drawQuad(
@@ -196,15 +246,19 @@ export class Renderer {
         [0, 0, 1, 0, 1, 1, 0, 1],
         WHITE_TEXTURE_BITMAP,
         this.currentColor,
+        0,
+        -1,
       );
     } else {
-      const image = this.imageRepo.get(handle);
-      if (image?.bitmap) {
+      const texSource = this.imageRepo.get(handle);
+      if (texSource) {
         this.backend?.drawQuad(
           [x1, y1, x2, y2, x3, y3, x4, y4],
           [s1, t1, s2, t2, s3, t3, s4, t4],
-          { id: handle.toString(), bitmap: image.bitmap, flags: image.flags },
+          { id: handle.toString(), source: texSource },
           this.currentColor,
+          stackLayer,
+          maskLayer,
         );
       }
     }
@@ -280,6 +334,8 @@ export class Renderer {
           segment.render.coords,
           segment.render.bitmap,
           segment.color,
+          0,
+          -1,
         );
       }
       x += segment.render.width;

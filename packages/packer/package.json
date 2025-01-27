@@ -3,6 +3,10 @@
   "private": true,
   "version": "",
   "type": "module",
+  "dependencies": {
+    "@bokuweb/zstd-wasm": "^0.0.22",
+    "dds": "*"
+  },
   "scripts": {
     "pack": "tsx src/pack.ts",
     "sync": "tsx src/sync.ts",

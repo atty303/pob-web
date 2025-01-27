@@ -152,6 +152,7 @@ export const log = new Log().init(
     kvfs: "INFO",
     subscript: "INFO",
     backend: "DEBUG",
+    texture: "DEBUG",
   },
   (level, tag, msg, params) => {
     logger[level as keyof typeof logger](tag, msg, params);

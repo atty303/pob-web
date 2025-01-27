@@ -32,8 +32,8 @@ class Layer {
   }
 }
 
-export class DrawCommandInterpreter {
-  static sort(view: DataView) {
+export namespace DrawCommandInterpreter {
+  export function sort(view: DataView) {
     const layers = new Map<number, Layer>([[0, new Layer(0, 0)]]);
     let currentLayer = layers.get(0)!;
     let currentViewport: Uint8Array | undefined = undefined;
@@ -42,12 +42,12 @@ export class DrawCommandInterpreter {
     while (i < view.byteLength) {
       const commandType = view.getUint8(i);
       switch (commandType) {
-        case DrawCommandType.SetLayer:
+        case DrawCommandType.SetLayer: {
           const layer = view.getInt16(i + 1, true);
           const sublayer = view.getInt16(i + 3, true);
           i += 5;
 
-          if (currentLayer.layer != layer || currentLayer.sublayer != sublayer) {
+          if (currentLayer.layer !== layer || currentLayer.sublayer !== sublayer) {
             const l = layers.get(Layer.idOf(layer, sublayer));
             if (l) {
               currentLayer = l;
@@ -61,34 +61,41 @@ export class DrawCommandInterpreter {
             currentLayer.push(currentViewport);
           }
           break;
-        case DrawCommandType.SetViewport:
+        }
+        case DrawCommandType.SetViewport: {
           const c = new Uint8Array(view.buffer, view.byteOffset + i, 17);
           currentViewport = c;
           currentLayer.push(c);
           i += 17;
           break;
-        case DrawCommandType.SetColor:
+        }
+        case DrawCommandType.SetColor: {
           currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 5));
           i += 5;
           break;
-        case DrawCommandType.SetColorEscape:
+        }
+        case DrawCommandType.SetColorEscape: {
           const textSize0 = view.getUint16(i + 1, true);
           currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 3 + textSize0));
           i += 3 + textSize0;
           break;
-        case DrawCommandType.DrawImage:
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 37));
-          i += 37;
+        }
+        case DrawCommandType.DrawImage: {
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 45));
+          i += 45;
           break;
-        case DrawCommandType.DrawImageQuad:
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 69));
-          i += 69;
+        }
+        case DrawCommandType.DrawImageQuad: {
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 77));
+          i += 77;
           break;
-        case DrawCommandType.DrawString:
+        }
+        case DrawCommandType.DrawString: {
           const textSize = view.getUint16(i + 12, true);
           currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 14 + textSize));
           i += 14 + textSize;
           break;
+        }
         default:
           throw new Error(`Unknown command type: ${commandType}`);
       }
@@ -119,7 +126,7 @@ export class DrawCommandInterpreter {
     });
   }
 
-  static run(
+  export function run(
     command: Uint8Array,
     cb: {
       onSetViewport: (x: number, y: number, width: number, height: number) => void;
@@ -135,6 +142,8 @@ export class DrawCommandInterpreter {
         t1: number,
         s2: number,
         t2: number,
+        stackLayer: number,
+        maskLayer: number,
       ) => void;
       onDrawImageQuad: (
         handle: number,
@@ -154,6 +163,8 @@ export class DrawCommandInterpreter {
         t3: number,
         s4: number,
         t4: number,
+        stackLayer: number,
+        maskLayer: number,
       ) => void;
       onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => void;
     },
@@ -198,7 +209,9 @@ export class DrawCommandInterpreter {
           const t1 = view.getFloat32(25, true);
           const s2 = view.getFloat32(29, true);
           const t2 = view.getFloat32(33, true);
-          cb.onDrawImage(handle, x, y, width, height, s1, t1, s2, t2);
+          const stackLayer = view.getInt32(37, true);
+          const maskLayer = view.getInt32(41, true);
+          cb.onDrawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
         }
         break;
       case DrawCommandType.DrawImageQuad:
@@ -220,7 +233,29 @@ export class DrawCommandInterpreter {
           const t3 = view.getFloat32(57, true);
           const s4 = view.getFloat32(61, true);
           const t4 = view.getFloat32(65, true);
-          cb.onDrawImageQuad(handle, x1, y1, x2, y2, x3, y3, x4, y4, s1, t1, s2, t2, s3, t3, s4, t4);
+          const stackLayer = view.getInt32(69, true);
+          const maskLayer = view.getInt32(73, true);
+          cb.onDrawImageQuad(
+            handle,
+            x1,
+            y1,
+            x2,
+            y2,
+            x3,
+            y3,
+            x4,
+            y4,
+            s1,
+            t1,
+            s2,
+            t2,
+            s3,
+            t3,
+            s4,
+            t4,
+            stackLayer,
+            maskLayer,
+          );
         }
         break;
       case DrawCommandType.DrawString:
