@@ -3,9 +3,7 @@
   "private": true,
   "version": "0.19.0",
   "type": "module",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "npm run build:debug && npm run build:release",
     "build:debug": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && emmake ninja -C build",
@@ -14,9 +12,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@zenfs/core": "^0.12.5",
-    "@zenfs/zip": "^0.4.5",
-    "@zenfs/dom": "^0.2.11",
+    "@zenfs/core": "^1.8.8",
+    "@zenfs/archives": "1.0.1",
+    "@zenfs/dom": "^1.1.3",
     "comlink": "^4.4.1",
     "@bokuweb/zstd-wasm": "^0.0.22",
     "dds": "*"
