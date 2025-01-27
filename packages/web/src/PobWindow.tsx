@@ -7,6 +7,7 @@ import { log, tag } from "./logger.ts";
 import { isFullscreenState } from "./state.ts";
 
 export default function PobWindow(props: {
+  product: "poe1" | "poe2";
   version: string;
   onFrame: (render: boolean, time: number) => void;
   onTitleChange: (title: string) => void;
@@ -46,8 +47,9 @@ export default function PobWindow(props: {
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 
-    const _driver = new Driver("release", `${__ASSET_PREFIX__}/${props.version}`, {
-      onError: (message) => {
+    const assetPrefix = `${__ASSET_PREFIX__}${props.product === "poe2" ? ".2" : ""}/${props.version}`;
+    const _driver = new Driver("release", assetPrefix, {
+      onError: message => {
         throw new Error(message);
       },
       onFrame,
@@ -111,7 +113,7 @@ export default function PobWindow(props: {
       _driver.destory();
       setLoading(true);
     };
-  }, [props.version, onFrame, onTitleChange, token, buildCode]);
+  }, [props.product, props.version, onFrame, onTitleChange, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);

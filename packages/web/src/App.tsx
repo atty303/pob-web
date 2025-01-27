@@ -13,6 +13,11 @@ export default function App() {
     }
   };
 
+  const [product, setProduct] = useState<"poe1" | "poe2">("poe1");
+  useEffect(() => {
+    setProduct(location.pathname.startsWith("/poe2-preview/") ? "poe2" : "poe1");
+  }, []);
+
   const [versions, setVersions] = useState<string[]>([]);
   const [version, setVersion] = useState("v2.49.0");
 
@@ -20,10 +25,10 @@ export default function App() {
     (async () => {
       const rep = await fetch(__VERSION_URL__);
       const json = await rep.json();
-      setVersions(json.versions);
-      setVersion(json.head);
+      setVersions(json[product].versions);
+      setVersion(json[product].head);
     })();
-  }, []);
+  }, [product]);
 
   const [title, setTitle] = useState("");
 
@@ -35,7 +40,7 @@ export default function App() {
         <Header version={version} onVersionChange={setVersion} title={title} versions={versions} />
 
         <div className="border-y border-neutral-content">
-          <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle} />
+          <PobWindow onFrame={handleFrame} product={product} version={version} onTitleChange={setTitle} />
         </div>
 
         <Footer frameTime={frameTime} />
@@ -44,7 +49,7 @@ export default function App() {
   } else {
     return (
       <div className="grid min-h-screen 2xl:hidden">
-        <PobWindow onFrame={handleFrame} version={version} onTitleChange={setTitle} />
+        <PobWindow onFrame={handleFrame} product={product} version={version} onTitleChange={setTitle} />
       </div>
     );
   }

@@ -4,7 +4,7 @@ export default function Footer(p: { frameTime: number }) {
       <footer className="footer flex items-center p-4 bg-neutral text-neutral-content">
         <aside className="flex-1">
           <span>
-            © 2024 Koji AGAWA (
+            © 2025 Koji AGAWA (
             <a className="link" href="https://x.com/atty303" target="_blank" rel="noreferrer">
               @atty303
             </a>
