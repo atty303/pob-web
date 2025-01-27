@@ -1,6 +1,6 @@
+import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
-import { Zip } from "@zenfs/zip";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import type { UIState } from "./event.ts";
@@ -162,6 +162,12 @@ export class DriverWorker {
 
     const rootZip = await fetch(`${assetPrefix}/root.zip`);
     await zenfs.configure({
+      // cacheStats: true,
+      // cachePaths: true,
+      // disableAccessChecks: true,
+      // disableAsyncCache: true,
+      // disableUpdateOnRead: true,
+      // onlySyncOnClose: true,
       mounts: {
         "/root": {
           backend: Zip,

@@ -184,10 +184,14 @@ EM_ASYNC_JS(int, js_wasmfs_node_read, (int fd, void *buf, uint32_t len, uint32_t
     try {
         const r = await new Promise((resolve, reject) => {
         const buffer = new Uint8Array(len);
+        let now = Date.now();
+        console.log("Reading", len, "bytes from", fd, "at", pos);
         Module.fs.read(fd,
                            buffer,
                            0, len, pos,
                            (err, bytesRead, buffer) => {
+                               let elapsed = Date.now() - now;
+                               console.log("Read", bytesRead, "bytes from", fd, "at", pos, "in", elapsed, "ms");
                                if (err) {
                                     console.error("Read error", err.code, err.message, err);
                                     resolve(err);
