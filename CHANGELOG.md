@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.19.0](https://github.com/atty303/pob-web/compare/v0.18.0...v0.19.0) (2025-01-27)
+
+
+### Features
+
+* **driver:** add dds texture support ([166f15e](https://github.com/atty303/pob-web/commit/166f15e50c5b0c2d3bf879c92bc8867031d8f495))
+* **driver:** add dds texture support at packer ([c4f1cc0](https://github.com/atty303/pob-web/commit/c4f1cc063f24fc60f85b9ef9f44f785e6b81348b))
+* **driver:** Add stackLayer and maskLayer support for draw commands ([cc885eb](https://github.com/atty303/pob-web/commit/cc885eb6e092d7ca38592c93063c3448e9ff7f48))
+* **driver:** update TEXTURE_2D_ARRAY ([650e0c6](https://github.com/atty303/pob-web/commit/650e0c6f4f3c93dcbfd78f052fbb034819c6225f))
+* **driver:** using webgl2 ([ae715e8](https://github.com/atty303/pob-web/commit/ae715e81b05538f8c846c306e34131bf73fd6681))
+* **web:** Add multi-product support for PoE1 and PoE2 integration ([ab9477f](https://github.com/atty303/pob-web/commit/ab9477f611a2cfbe3891bf78813facbe31a0a4ee))
+
+
+### Bug Fixes
+
+* **driver:** Add improvements for DDS texture handling and logging ([2c774b4](https://github.com/atty303/pob-web/commit/2c774b42b4238c1fcd03db1fd83385d9fc8b9f41))
+* **driver:** blend function ([cd2e5c4](https://github.com/atty303/pob-web/commit/cd2e5c4b56d82a14d52a793a68e401d717d82717))
+* **driver:** correct alpha blending ([04bb1b1](https://github.com/atty303/pob-web/commit/04bb1b17a51fff47542e29b4ea324a1eb0fd9890)), closes [#40](https://github.com/atty303/pob-web/issues/40) [#39](https://github.com/atty303/pob-web/issues/39)
+* **driver:** invalid texture target ([a327792](https://github.com/atty303/pob-web/commit/a32779202b1f5428ad24f3bf7f09d3f1fb7f42f0))
+* **packer:** add directory entry ([c876973](https://github.com/atty303/pob-web/commit/c8769733478d5316b78a6e3be33106a00e9fee98))
+* **packer:** case insensitive ([da0ac77](https://github.com/atty303/pob-web/commit/da0ac77aa1ab7601c2f04466f787e1e5f8a39737))
+
 ## [0.18.0](https://github.com/atty303/pob-web/compare/v0.17.0...v0.18.0) (2024-11-22)
 
 
