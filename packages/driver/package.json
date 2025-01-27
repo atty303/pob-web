@@ -1,9 +1,11 @@
 {
   "name": "pob-driver",
   "private": true,
-  "version": "0.19.0",
+  "version": "0.19.1",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm run build:debug && npm run build:release",
     "build:debug": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && emmake ninja -C build",
