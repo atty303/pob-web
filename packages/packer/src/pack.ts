@@ -72,7 +72,21 @@ for (const file of shelljs.find(basePath)) {
   }
 
   if (path.extname(file) === ".lua" || path.extname(file) === ".zip" || path.extname(file).startsWith(".part")) {
-    zip.addFile(relPath, fs.readFileSync(file));
+    const content = fs.readFileSync(file);
+
+    // patching
+    const newRelPath = relPath.replace(/Specific_Skill_Stat_Descriptions/g, "specific_skill_stat_descriptions");
+    const newContent = (() => {
+      if (relPath.endsWith("StatDescriber.lua")) {
+        return Buffer.from(
+          content.toString().replace(/Specific_Skill_Stat_Descriptions/g, "specific_skill_stat_descriptions"),
+        );
+      } else {
+        return content;
+      }
+    })();
+
+    zip.addFile(newRelPath, newContent);
   }
 }
 
