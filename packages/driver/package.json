@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@zenfs/core": "^1.8.8",
-    "@zenfs/archives": "^1.0.2",
+    "@zenfs/archives": "1.0.1",
     "@zenfs/dom": "^1.1.3",
     "comlink": "^4.4.1",
     "@bokuweb/zstd-wasm": "^0.0.22",
