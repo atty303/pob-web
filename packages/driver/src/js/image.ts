@@ -14,7 +14,7 @@ export type TextureSource = {
 } & (
   | {
       type: "Image";
-      texture: ImageBitmap | ImageData | OffscreenCanvas;
+      texture: (ImageBitmap | OffscreenCanvas | ImageData)[];
     }
   | {
       type: "Texture";
@@ -23,7 +23,7 @@ export type TextureSource = {
 );
 
 export namespace TextureSource {
-  export function newImage(texture: ImageBitmap | ImageData | OffscreenCanvas, flags: number): TextureSource {
+  export function newImage(texture: ImageBitmap | OffscreenCanvas | ImageData, flags: number): TextureSource {
     return {
       flags,
       target: Target.TARGET_2D_ARRAY,
@@ -33,7 +33,7 @@ export namespace TextureSource {
       layers: 1,
       levels: 1,
       type: "Image",
-      texture,
+      texture: [texture],
     };
   }
 
@@ -109,7 +109,23 @@ export class ImageRepository {
           log.warn(tag.texture, `Failed to load DDS: src=${src}`, e);
         }
       } else {
-        holder.textureSource = TextureSource.newImage(await createImageBitmap(blob), flags);
+        const image = await createImageBitmap(blob);
+        if (flags & TextureFlags.TF_NOMIPMAP) {
+          holder.textureSource = TextureSource.newImage(image, flags);
+        } else {
+          const { levels, mipmaps } = generateMipMap(image);
+          holder.textureSource = {
+            flags,
+            target: Target.TARGET_2D_ARRAY,
+            format: Format.RGBA8_UNORM_PACK8,
+            width: image.width,
+            height: image.height,
+            layers: 1,
+            levels,
+            type: "Image",
+            texture: mipmaps,
+          };
+        }
       }
     }
   }
@@ -117,4 +133,30 @@ export class ImageRepository {
   get(handle: number): TextureSource | undefined {
     return this.images.get(handle)?.textureSource;
   }
+}
+
+function generateMipMap(image: ImageBitmap) {
+  const levels = Math.floor(Math.log2(Math.max(image.width, image.height))) + 1;
+
+  const canvas = new OffscreenCanvas(image.width, image.height);
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("Failed to get 2D context");
+
+  let width = image.width;
+  let height = image.height;
+  const mipmaps: ImageData[] = [];
+
+  for (let i = 0; i < levels; i++) {
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, image.width, image.height, 0, 0, width, height);
+    const next = context.getImageData(0, 0, width, height);
+    mipmaps.push(next);
+    width = Math.max(1, width >> 1);
+    height = Math.max(1, height >> 1);
+  }
+
+  return {
+    levels,
+    mipmaps,
+  };
 }

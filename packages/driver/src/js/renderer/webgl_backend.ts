@@ -254,7 +254,7 @@ export class WebGL1Backend {
       gl,
       vertexShaderSource,
       textureFragmentShaderSource(this.maxTextures),
-      (program) => {
+      program => {
         const position = gl.getAttribLocation(program, "a_Position");
         if (position < 0) throw new Error("Failed to get attribute location");
 
@@ -381,14 +381,12 @@ export class WebGL1Backend {
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     gl.bufferData(gl.ARRAY_BUFFER, this.vertices.buffer, gl.STREAM_DRAW);
-    this.textureProgram.use((p) => {
+    this.textureProgram.use(p => {
       // Set up the viewport
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
       const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
       this.gl.uniformMatrix4fv(p.mvpMatrix, false, new Float32Array(matrix));
 
-      // https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic/blob/v2.0.2/engine/render/r_main.cpp#L430-L434
-      // NOTE: SimpleGraphic's default should be PB_ALPHA, but it doesn't draw correctly unless RB_PRE_ALPHA
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // RB_ALPHA
       // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // RB_PRE_ALPHA
       // gl.blendFunc(gl.ONE, gl.ONE); // RB_ADDITIVE
@@ -505,6 +503,7 @@ export class WebGL1Backend {
       for (let layer = 0; layer < textureBitmap.source.layers; ++layer) {
         for (let level = 0; level < textureBitmap.source.levels; ++level) {
           if (textureBitmap.source.type === "Image") {
+            const image = textureBitmap.source.texture[level];
             if (target === gl.TEXTURE_2D_ARRAY) {
               gl.texSubImage3D(
                 target,
@@ -512,25 +511,15 @@ export class WebGL1Backend {
                 0,
                 0,
                 layer,
-                textureBitmap.source.width,
-                textureBitmap.source.height,
+                image.width,
+                image.height,
                 1,
                 format.external,
                 format.type,
-                textureBitmap.source.texture,
+                image,
               );
             } else {
-              gl.texSubImage2D(
-                target,
-                level,
-                0,
-                0,
-                textureBitmap.source.width,
-                textureBitmap.source.height,
-                format.external,
-                format.type,
-                textureBitmap.source.texture,
-              );
+              gl.texSubImage2D(target, level, 0, 0, image.width, image.height, format.external, format.type, image);
             }
           } else if (textureBitmap.source.type === "Texture") {
             const extent = textureBitmap.source.texture.extentOf(level);
