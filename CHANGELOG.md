@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.2](https://github.com/atty303/pob-web/compare/v0.19.1...v0.19.2) (2025-01-28)
+
+
+### Bug Fixes
+
+* **driver:** generate mipmaps for image ([9fe51fe](https://github.com/atty303/pob-web/commit/9fe51fe3114cbcce43a871317a8978f4d9b6907c))
+* **driver:** generate mipmaps for image ([#90](https://github.com/atty303/pob-web/issues/90)) ([957f295](https://github.com/atty303/pob-web/commit/957f295ba633c5eca77d752131baf77ab911f56d))
+
 ## [0.19.1](https://github.com/atty303/pob-web/compare/v0.19.0...v0.19.1) (2025-01-27)
 
 
