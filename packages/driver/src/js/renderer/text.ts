@@ -43,7 +43,7 @@ export class TextMetrics {
   measure(size: number, fontNum: number, text: string) {
     this.context.font = font(size, fontNum);
     const lines = text.replaceAll(reColorGlobal, "").split("\n");
-    return Math.ceil(Math.max(0, ...lines.map((line) => this.context.measureText(line).width)));
+    return Math.ceil(Math.max(0, ...lines.map(line => this.context.measureText(line).width)));
   }
 
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
@@ -238,10 +238,10 @@ export class BinPackingTextRasterizer {
             parts = this.textMetrics.fittingText(height, fontNum, parts.tail, this.size.width);
             renders.push(this.drawText(parts.head, parts.width, height, fontNum));
           }
-          render = renders.map((r) => r.forOnce);
+          render = renders.map(r => r.forOnce);
           this.cache.set(
             key,
-            renders.map((r) => r.forCache),
+            renders.map(r => r.forCache),
           );
         } else {
           const r = this.drawText(text, width, height, fontNum);

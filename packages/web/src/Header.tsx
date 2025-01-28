@@ -90,9 +90,9 @@ function SettingDialog(props: {
             <select
               className="select select-bordered"
               value={props.version}
-              onChange={(e) => props.onVersionChange(e.target.value)}
+              onChange={e => props.onVersionChange(e.target.value)}
             >
-              {props.versions.map((v) => (
+              {props.versions.map(v => (
                 <option key={v} value={v}>
                   {v}
                 </option>
