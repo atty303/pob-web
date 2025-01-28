@@ -40,7 +40,7 @@ export class Driver {
       Comlink.proxy(this.hostCallbacks.onTitleChange),
       Comlink.proxy((text: string) => this.copy(text)),
       Comlink.proxy(() => this.paste()),
-      Comlink.proxy((url) => {
+      Comlink.proxy(url => {
         window.open(url, "_blank");
       }),
     );
@@ -74,7 +74,7 @@ export class Driver {
     root.tabIndex = 0;
     root.focus();
 
-    this.resizeObserver = new ResizeObserver((entries) => {
+    this.resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const pixelRatio = document.defaultView?.devicePixelRatio ?? 1;
         const { width, height } = entry.contentRect;
@@ -84,11 +84,11 @@ export class Driver {
     this.resizeObserver.observe(root);
 
     this.uiEventManager = new UIEventManager(root, {
-      onMouseMove: (uiState) => this.driverWorker?.handleMouseMove(uiState),
+      onMouseMove: uiState => this.driverWorker?.handleMouseMove(uiState),
       onKeyDown: (name, doubleClick, uiState) => this.driverWorker?.handleKeyDown(name, doubleClick, uiState),
       onKeyUp: (name, doubleClick, uiState) => this.driverWorker?.handleKeyUp(name, doubleClick, uiState),
       onChar: (char, doubleClick, uiState) => this.driverWorker?.handleChar(char, doubleClick, uiState),
-      onVisibilityChange: (visible) => this.driverWorker?.handleVisibilityChange(visible),
+      onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
     });
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
   }

@@ -96,8 +96,8 @@ export class SubScriptWorker {
           const headers: Record<string, string> = header
             ? header
                 .split("\n")
-                .map((_) => _.split(":"))
-                .filter((_) => _.length === 2)
+                .map(_ => _.split(":"))
+                .filter(_ => _.length === 2)
                 .reduce((acc, [k, v]) => Object.assign(acc, { [k.trim()]: v.trim() }), {})
             : {};
           if (!headers["Content-Type"]) {

@@ -6,13 +6,13 @@ interface Metadata {
   dir: boolean;
 }
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequest: PagesFunction<Env> = async context => {
   const sub = context.data.sub;
   const path = Array.isArray(context.params.name) ? context.params.name.join("/") : context.params.name;
   if (!path) {
     const prefix = `user:${sub}:vfs:`;
     const l = await context.env.KV.list({ prefix });
-    const r = l.keys.map((k) => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
+    const r = l.keys.map(k => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
     return new Response(JSON.stringify(r));
   }
 

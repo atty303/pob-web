@@ -8,7 +8,7 @@ interface FetchRequest {
   headers: Record<string, string>;
 }
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequest: PagesFunction<Env> = async context => {
   const req: FetchRequest = await context.request.json();
   try {
     let r: Request;

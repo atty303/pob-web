@@ -118,7 +118,7 @@ export namespace DrawCommandInterpreter {
       //     return 1;
       // }
     });
-    return keys.flatMap((key) => {
+    return keys.flatMap(key => {
       const l = layers.get(key)!;
       // console.log(l);
       // return (l.layer === 5 && l.sublayer === 0) ? [l] : [];
