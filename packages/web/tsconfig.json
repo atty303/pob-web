@@ -7,9 +7,6 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "noEmit": true,
-    "paths": {
-      "~/*": ["./src/*"]
-    },
     "resolveJsonModule": true,
     "rootDirs": [".", "./.react-router/types"],
     "skipLibCheck": true,
@@ -19,5 +16,6 @@
     "verbatimModuleSyntax": true
   },
   "exclude": ["functions/**/*"],
-  "include": ["src", "**/.client/**/*", ".react-router/types/**/*"]
+  "include": ["src", "**/.client/**/*", ".react-router/types/**/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

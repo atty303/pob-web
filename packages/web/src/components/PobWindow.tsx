@@ -3,8 +3,8 @@ import { Driver } from "pob-driver/src/js/driver";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { useRecoilState } from "recoil";
-import { log, tag } from "./logger";
-import { isFullscreenState } from "./state";
+import { log, tag } from "../lib/logger";
+import { isFullscreenState } from "../state";
 
 const { useFullscreen, useHash } = use;
 
@@ -45,7 +45,7 @@ export default function PobWindow(props: {
   }, [hash]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>();
+  const [error, setError] = useState<unknown>();
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 

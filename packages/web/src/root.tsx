@@ -4,7 +4,7 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import * as Sentry from "@sentry/react";
 import type React from "react";
 
-import "./logger";
+import "./lib/logger";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { RecoilRoot } from "recoil";
 import type { Route } from "./+types/root";

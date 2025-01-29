@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "esnext",
+    "moduleResolution": "nodenext"
+  },
+  "include": ["react-router.config.ts", "vite.config.ts"]
+}
