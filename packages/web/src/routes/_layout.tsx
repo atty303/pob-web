@@ -265,14 +265,14 @@ function Header(props: {
   return (
     <>
       <div className="navbar bg-neutral text-neutral-content">
-        <div className="flex-1 gap-2">
+        <div className="flex-1 flex gap-2">
           <img className="w-8 h-8 rounded-box" src="/favicon.png" alt="" />
           <span className="text-xl font-bold font-['Poiret_One'] pr-4 border-r border-r-neutral-content/50">
             pob.cool
           </span>
           <span className="text-lg font-bold ml-2">{props.title}</span>
         </div>
-        <div className="flex-none mr-4 gap-2">
+        <div className="flex-none mr-4 flex gap-2">
           <button className="btn btn-ghost btn-circle btn-sm" type="button" onClick={() => setFullscreen(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"

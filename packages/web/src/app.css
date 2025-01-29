@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@plugin "daisyui";
+@plugin "daisyui" {
+  theme: dark --default;
+  logs: false;
+}
 
 /* https://github.com/saadeghi/daisyui/issues/3040 */
 html {
