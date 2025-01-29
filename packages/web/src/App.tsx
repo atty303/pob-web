@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { useMedia } from "react-use";
-import Footer from "./Footer.tsx";
-import Header from "./Header.tsx";
-import PobWindow from "./PobWindow.tsx";
+import * as use from "react-use";
+import Footer from "./Footer";
+import Header from "./Header";
+import PobWindow from "./PobWindow";
+
+const { useMedia } = use;
 
 export default function App() {
   const [frameTime, setFrameTime] = useState(0);

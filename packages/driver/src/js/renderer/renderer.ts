@@ -1,8 +1,8 @@
 import { Format, Target, Texture } from "dds/src";
-import { DrawCommandInterpreter } from "../draw.ts";
-import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
-import type { TextRasterizer, TextRender } from "./text.ts";
-import type { WebGL1Backend } from "./webgl_backend.ts";
+import { DrawCommandInterpreter } from "../draw";
+import { type ImageRepository, TextureFlags, TextureSource } from "../image";
+import type { TextRasterizer, TextRender } from "./text";
+import type { WebGL1Backend } from "./webgl_backend";
 
 export type TextureBitmap = {
   id: string;

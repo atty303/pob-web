@@ -1,4 +1,4 @@
-import { Driver } from "./driver.ts";
+import { Driver } from "./driver";
 
 const version = "2/v0.3.0/r2";
 const versionPrefix = `${__ASSET_PREFIX__}/${version}`;

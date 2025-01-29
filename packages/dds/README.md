@@ -1,3 +1,3 @@
-# pob-driver
+# dds
 
-This emulates PoB window with vanilla JS.
+This is for parsing Microsoft DirectDraw Surface (.DDS) files.

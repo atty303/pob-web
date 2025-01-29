@@ -1,8 +1,8 @@
 import * as Comlink from "comlink";
 
-import { UIEventManager } from "./event.ts";
-import type { DriverWorker, HostCallbacks } from "./worker.ts";
-import WorkerObject from "./worker.ts?worker";
+import { UIEventManager } from "./event";
+import type { DriverWorker, HostCallbacks } from "./worker";
+import WorkerObject from "./worker?worker";
 
 export type FilesystemConfig = {
   cloudflareKvPrefix: string;

@@ -2,7 +2,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Dialog, DialogPanel, DialogTitle, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useEffect, useState } from "react";
 import { useRecoilState } from "recoil";
-import { isFullscreenState } from "./state.ts";
+import { isFullscreenState } from "./state";
 
 function HelpDialog(props: { isOpen: boolean; onClose: () => void }) {
   return (

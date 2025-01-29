@@ -1,5 +1,6 @@
 import * as path from "node:path";
-import react from "@vitejs/plugin-react-swc";
+import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, searchForWorkspaceRoot } from "vite";
 
 const rootDir = path.resolve(__dirname, "../..");
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     chunkSizeWarningLimit: 1024,
     sourcemap: true,
+    ssr: false,
   },
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
@@ -38,5 +40,5 @@ export default defineConfig(({ mode }) => ({
       target: "es2020",
     },
   },
-  plugins: [react()],
+  plugins: [reactRouter(), tailwindcss()],
 }));

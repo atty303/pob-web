@@ -1,10 +1,12 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { Driver } from "pob-driver/src/js/driver.ts";
+import { Driver } from "pob-driver/src/js/driver";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFullscreen, useHash } from "react-use";
+import * as use from "react-use";
 import { useRecoilState } from "recoil";
-import { log, tag } from "./logger.ts";
-import { isFullscreenState } from "./state.ts";
+import { log, tag } from "./logger";
+import { isFullscreenState } from "./state";
+
+const { useFullscreen, useHash } = use;
 
 export default function PobWindow(props: {
   product: "poe1" | "poe2";

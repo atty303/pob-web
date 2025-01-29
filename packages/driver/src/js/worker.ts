@@ -1,12 +1,14 @@
+/// <reference types="emscripten" />
+
 import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
-import type { FilesystemConfig } from "./driver.ts";
-import type { UIState } from "./event.ts";
-import { CloudflareKV } from "./fs.ts";
+import type { FilesystemConfig } from "./driver";
+import type { UIState } from "./event";
+import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
-import { log, tag } from "./logger.ts";
+import { log, tag } from "./logger";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
@@ -16,8 +18,8 @@ import {
   WebGL1Backend,
   loadFonts,
 } from "./renderer";
-import type { SubScriptWorker } from "./sub.ts";
-import WorkerObject from "./sub.ts?worker";
+import type { SubScriptWorker } from "./sub";
+import WorkerObject from "./sub?worker";
 
 export class SubScriptHost {
   private worker: Worker | undefined;

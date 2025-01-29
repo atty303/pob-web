@@ -1,8 +1,7 @@
-import type { Backend, FileSystemMetadata } from "@zenfs/core";
+import type { Backend } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
-import { Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
-import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
-import { log, tag } from "./logger.ts";
+import { Errno, ErrnoError, Stats } from "@zenfs/core";
+import { log, tag } from "./logger";
 
 class FetchError extends Error {
   constructor(
