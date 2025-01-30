@@ -11,8 +11,8 @@ export type TextureBitmap = {
 };
 
 const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
-  const tex = new Texture(Target.TARGET_2D_ARRAY, Format.L8_UNORM_PACK8, [8, 8, 1], 1, 1, 1);
-  const arr = new Uint8Array(8 * 8).fill(255);
+  const tex = new Texture(Target.TARGET_2D_ARRAY, Format.RGBA8_UNORM_PACK8, [8, 8, 1], 1, 1, 1);
+  const arr = new Uint8Array(8 * 8 * 4).fill(255);
   tex.data = new DataView(arr.buffer);
   return {
     id: "@white",

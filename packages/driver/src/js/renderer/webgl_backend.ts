@@ -195,9 +195,11 @@ class VertexBuffer {
 
 export class WebGL1Backend {
   private readonly gl: WebGL2RenderingContext;
-  private readonly extTextureBptc: EXT_texture_compression_bptc | null;
-  private readonly extTextureS3tc: WEBGL_compressed_texture_s3tc | null;
-  private readonly extTextureAnisotropic: EXT_texture_filter_anisotropic | null;
+  private readonly ext: {
+    textureBptc: EXT_texture_compression_bptc | null;
+    textureS3tc: WEBGL_compressed_texture_s3tc | null;
+    textureAnisotropic: EXT_texture_filter_anisotropic | null;
+  };
 
   private readonly textureProgram: ShaderProgram<{
     position: number;
@@ -236,12 +238,13 @@ export class WebGL1Backend {
     this.gl = gl;
 
     // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc
-    this.extTextureBptc = gl.getExtension("EXT_texture_compression_bptc");
-    log.info(tag.backend, "EXT_texture_compression_bptc", this.extTextureBptc);
-    this.extTextureS3tc = gl.getExtension("WEBGL_compressed_texture_s3tc");
-    log.info(tag.backend, "WEBGL_compressed_texture_s3tc", this.extTextureS3tc);
-    this.extTextureAnisotropic = gl.getExtension("EXT_texture_filter_anisotropic");
-    log.info(tag.backend, "EXT_texture_filter_anisotropic", this.extTextureAnisotropic);
+    this.ext = {
+      textureBptc: gl.getExtension("EXT_texture_compression_bptc"),
+      textureS3tc: gl.getExtension("WEBGL_compressed_texture_s3tc"),
+      textureAnisotropic: gl.getExtension("EXT_texture_filter_anisotropic"),
+    };
+
+    log.info(tag.backend, "WebGL extensions", this.ext);
 
     gl.clearColor(0, 0, 0, 1);
     // gl.enable(gl.TEXTURE_2D);
@@ -440,7 +443,7 @@ export class WebGL1Backend {
       const target = targetTable[textureBitmap.source.target];
       if (!target) throw new Error(`Unsupported target: ${textureBitmap.source.target}`);
 
-      const format = glFormatFor(textureBitmap.source.format);
+      const format = glFormatFor(textureBitmap.source.format, this.gl, this.ext);
 
       texture = { target, format, gl: t };
 
@@ -468,9 +471,9 @@ export class WebGL1Backend {
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       }
 
-      if (this.extTextureAnisotropic) {
-        const max = gl.getParameter(this.extTextureAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number;
-        gl.texParameterf(target, this.extTextureAnisotropic.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      if (this.ext.textureAnisotropic) {
+        const max = gl.getParameter(this.ext.textureAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number;
+        gl.texParameterf(target, this.ext.textureAnisotropic.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
 
       if (textureBitmap.source.flags & TextureFlags.TF_CLAMP) {

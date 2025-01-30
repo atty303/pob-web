@@ -7,20 +7,35 @@ export type FormatDesc = {
   properties: number;
 };
 
-export function glFormatFor(format: Format): FormatDesc {
-  const desc = formatDescTable[format];
+export function glFormatFor(
+  format: Format,
+  gl: WebGL2RenderingContext,
+  ext: {
+    textureBptc: EXT_texture_compression_bptc | null;
+    textureS3tc: WEBGL_compressed_texture_s3tc | null;
+  },
+): FormatDesc {
+  const desc = formatDescTable(gl, ext)[format];
   if (!desc) throw new Error(`Unsupported format: ${format}`);
   return desc;
 }
 
-const GL = WebGLRenderingContext;
-
 // biome-ignore format: compact
-const formatDescTable: Record<number, FormatDesc> = {
-  [Format.RGBA8_UNORM_PACK8]: { internal: GL.RGBA8, external: GL.RGBA, type: GL.UNSIGNED_BYTE, properties: 0 },
-  [Format.RGBA_DXT1_UNORM_BLOCK8]: { internal: 0x83F1/*COMPRESSED_RGBA_S3TC_DXT1_EXT*/, external: 0, type: 0, properties: 0 },
-  [Format.RGBA_BP_UNORM_BLOCK16]: { internal: 0x8E8C/*EXT_texture_compression_bptc*/, external: 0, type: 0, properties: 0 },
-  [Format.L8_UNORM_PACK8]: { internal: 0x8040, external: GL.LUMINANCE, type: GL.UNSIGNED_BYTE, properties: 0 },
+function formatDescTable(gl: WebGL2RenderingContext, ext: Parameters<typeof glFormatFor>[2]): Record<number, FormatDesc> {
+  return {
+    [Format.RGBA8_UNORM_PACK8]: {internal: gl.RGBA8, external: gl.RGBA, type: gl.UNSIGNED_BYTE, properties: 0},
+    [Format.RGBA_DXT1_UNORM_BLOCK8]: {
+      internal: ext.textureS3tc?.COMPRESSED_RGBA_S3TC_DXT1_EXT ?? 0,
+      external: 0,
+      type: 0,
+      properties: 0
+    },
+    [Format.RGBA_BP_UNORM_BLOCK16]: {
+      internal: ext.textureBptc?.COMPRESSED_RGBA_BPTC_UNORM_EXT ?? 0,
+      external: 0,
+      type: 0,
+      properties: 0
+    },
     // [Format.UNDEFINED]: ,
     //
     // [Format.RG4_UNORM_PACK8]: { internal: GL., external: GL., type: GL., properties: 0 },
@@ -265,4 +280,5 @@ const formatDescTable: Record<number, FormatDesc> = {
     // [Format.BGR8_SRGB_PACK32]:
     //
     // [Format.RG3B2_UNORM_PACK8]:
-};
+  };
+}
