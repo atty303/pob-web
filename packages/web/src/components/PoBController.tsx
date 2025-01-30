@@ -12,7 +12,7 @@ import {
   UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -80,7 +80,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
             </label>
           </div>
           {showPerformance && (
-            <div className="absolute bottom-2 right-2">
+            <div className="absolute bottom-2 right-2 pointer-events-none">
               <PerformanceView frames={frames} />
             </div>
           )}
@@ -258,32 +258,77 @@ function Auth(p: { tutorial: boolean }) {
 }
 
 function PerformanceView(p: { frames: { at: number; renderTime: number }[] }) {
-  const data = p.frames.map(frame => frame.renderTime);
   return (
-    <div className="bg-base-100/50 p-2 rounded-box">
-      {/*<LineChart data={data} />*/}
-      <span className="badge badge-sm badge-ghost">Render: {data.slice(-1)[0]?.toFixed(1)}ms</span>
+    <div className="bg-base-100 p-2 rounded-box opacity-75">
+      <LineChart data={p.frames} />
     </div>
   );
 }
 
-function LineChart(props: { data: number[] }) {
-  const lines = props.data.reduce(
-    (acc, value, index) => {
-      if (index > 0) {
-        acc.push({ x1: index - 1, y1: props.data[index - 1], x2: index, y2: props.data[index] });
-      }
-      return acc;
-    },
-    [] as { x1: number; y1: number; x2: number; y2: number }[],
-  );
+function LineChart(p: { data: { at: number; renderTime: number }[] }) {
+  const scaleX = 1;
+  const scaleY = 1;
+
+  const chart = useMemo(() => {
+    const ats = p.data.map(_ => _.at);
+    const renderTimes = p.data.map(_ => _.renderTime);
+    const minX = Math.min(...ats);
+    const maxX = Math.max(...ats);
+    const minY = 0;
+    const maxY = Math.max(...renderTimes);
+
+    const series = p.data.reduce(
+      (acc, value, index) => {
+        if (index > 0) {
+          acc.push({
+            x1: p.data[index - 1].at,
+            y1: maxY - p.data[index - 1].renderTime,
+            x2: p.data[index].at,
+            y2: maxY - p.data[index].renderTime,
+          });
+        }
+        return acc;
+      },
+      [] as { x1: number; y1: number; x2: number; y2: number }[],
+    );
+    return {
+      svg: (
+        <svg
+          className="absolute top-0 left-0 w-full h-full bg-neutral text-neutral-content border border-neutral-content py-2"
+          viewBox={
+            p.data.length > 0
+              ? `${minX * scaleX} ${minY * scaleY} ${(maxX - minX) * scaleX} ${(maxY - minY) * scaleY}`
+              : "0 0 0 0"
+          }
+          preserveAspectRatio="none"
+        >
+          <title>Render performance</title>
+          {series.map(_ => (
+            <line
+              key={_.x1}
+              x1={_.x1 * scaleX}
+              y1={_.y1 * scaleY}
+              x2={_.x2 * scaleX}
+              y2={_.y2 * scaleY}
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          ))}
+        </svg>
+      ),
+      max: maxY,
+      avg: renderTimes.reduce((acc, value) => acc + value, 0) / renderTimes.length,
+    };
+  }, [p.data]);
 
   return (
-    <svg viewBox={`0 0 ${props.data.length} ${Math.max(...props.data)}`}>
-      <title>Line Chart</title>
-      {lines.map((line, index) => (
-        <line key={line.x1} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} stroke="blue" strokeWidth="2" />
-      ))}
-    </svg>
+    <div className="relative w-64 h-16">
+      {chart.svg}
+      {Number.isFinite(chart.max) && (
+        <span className="absolute bottom-1 left-1 p-1 badge-xs badge-neutral">
+          Max {chart.max.toFixed(1)}ms Avg {chart.avg.toFixed(1)}ms
+        </span>
+      )}
+    </div>
   );
 }
