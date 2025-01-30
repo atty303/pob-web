@@ -9,8 +9,6 @@ import { ServerRouter } from "react-router";
 
 export const streamTimeout = 5_000;
 
-console.log("server.tsx");
-
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,

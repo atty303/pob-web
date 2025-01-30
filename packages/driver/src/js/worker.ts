@@ -76,7 +76,7 @@ type OnFetchFunction = (
 
 export type HostCallbacks = {
   onError: (message: string) => void;
-  onFrame: (render: boolean, time: number) => void;
+  onFrame: (at: number, time: number) => void;
   onFetch: OnFetchFunction;
   onTitleChange: (title: string) => void;
 };
@@ -264,7 +264,7 @@ export class DriverWorker {
       await this.imports?.onFrame();
 
       const time = performance.now() - start;
-      this.hostCallbacks?.onFrame(true, time);
+      this.hostCallbacks?.onFrame(start, time);
       this.dirtyCount -= 1;
     }
     requestAnimationFrame(this.tick.bind(this));
