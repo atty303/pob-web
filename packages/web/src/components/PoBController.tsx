@@ -11,7 +11,7 @@ import {
   PresentationChartLineIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/solid";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -27,7 +27,18 @@ export default function PoBController(p: { game: keyof Games; version: string; i
 
   const [optOutTutorial, setOptOutTutorial] = useLocalStorage("optOutTutorial", false);
   const [tutorial, setTutorial] = useState(true);
-  useTimeoutFn(() => setTutorial(false), 3000);
+  useTimeoutFn(() => {
+    setTutorial(false);
+    setNotFirstVisit(true);
+  }, 3000);
+
+  const [notFirstVisit, setNotFirstVisit] = useLocalStorage("notFirstVisit", false);
+  const [drawer, setDrawer] = useState(false);
+  useEffect(() => {
+    if (!notFirstVisit) {
+      setDrawer(true);
+    }
+  }, [notFirstVisit]);
 
   const [frames, setFrames] = useState<{ at: number; renderTime: number }[]>([]);
   const pushFrame = (at: number, time: number) => {
@@ -41,7 +52,13 @@ export default function PoBController(p: { game: keyof Games; version: string; i
 
   return (
     <div ref={container} className="drawer">
-      <input id="drawer" type="checkbox" className="drawer-toggle" />
+      <input
+        id="drawer"
+        type="checkbox"
+        className="drawer-toggle"
+        checked={drawer}
+        onChange={e => setDrawer(e.target.checked)}
+      />
       <div className="drawer-content">
         <div className="relative l-lvw h-lvh">
           <div className="absolute top-0 left-0 right-0 bottom-0">
