@@ -25,6 +25,6 @@
     "build": "react-router typegen && tsc && react-router build",
     "preview": "react-router preview",
     "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages",
-    "deploy:pages": "wrangler pages deploy dist --project-name pob-web"
+    "deploy:pages": "wrangler pages deploy build/client --project-name pob-web"
   }
 }
