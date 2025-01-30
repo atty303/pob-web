@@ -10,6 +10,7 @@ import {
   LightBulbIcon,
   PresentationChartLineIcon,
   UserCircleIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
@@ -88,6 +89,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       <Sidebar
         game={p.game}
         isHead={p.isHead}
+        setDrawer={setDrawer}
         fullscreen={fullscreen}
         setFullscreen={setFullscreen}
         showPerformance={showPerformance}
@@ -102,6 +104,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
 function Sidebar(p: {
   game: keyof Games;
   isHead: boolean;
+  setDrawer: (value: boolean) => void;
   fullscreen: boolean;
   setFullscreen: (value: boolean) => void;
   showPerformance: boolean | undefined;
@@ -116,16 +119,10 @@ function Sidebar(p: {
         <header className="flex items-center gap-2 p-4">
           <img className="w-6 h-6 rounded-box" src="/favicon.png" alt="" />
           <span className="text-xl font-['Poiret_One'] ">pob.cool</span>
-          <span className="grow place-items-end">
-            <a
-              href="https://github.com/atty303/pob-web/blob/main/CHANGELOG.md"
-              target="_blank"
-              rel="noreferrer"
-              className="link text-xs flex items-center gap-1"
-            >
-              v {APP_VERSION}
-              <ArrowTopRightOnSquareIcon className="size-4" />
-            </a>
+          <span className="flex-1 text-right">
+            <button className="btn btn-circle btn-xs btn-ghost" type="button" onClick={() => p.setDrawer(false)}>
+              <XMarkIcon className="size-6" />
+            </button>
           </span>
         </header>
         <ul className="menu w-full">
@@ -193,6 +190,18 @@ function Sidebar(p: {
           </li>
         </ul>
         <footer className="footer gap-2 p-4 border-t border-base-content/50 text-base-content/50">
+          <span className="block">
+            Web site version is {APP_VERSION}
+            <a
+              href={`https://github.com/atty303/pob-web/blob/v${APP_VERSION}/CHANGELOG.md`}
+              target="_blank"
+              rel="noreferrer"
+              className="link inline-flex items-center ml-2"
+            >
+              (ChangeLog
+              <ArrowTopRightOnSquareIcon className="size-4" />)
+            </a>
+          </span>
           <p>This product isn't affiliated with or endorsed by Grinding Gear Games in any way.</p>
           <aside>
             <p>
