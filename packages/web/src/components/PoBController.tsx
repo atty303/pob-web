@@ -218,7 +218,11 @@ function Auth(p: { tutorial: boolean }) {
         className={`tooltip tooltip-right tooltip-info ${p.tutorial && "tooltip-open"}`}
         data-tip="You can save your builds to the cloud by logging in."
       >
-        <button className="btn btn-primary btn-block" type="button" onClick={() => loginWithRedirect()}>
+        <button
+          className="btn btn-primary btn-block pointer-events-auto"
+          type="button"
+          onClick={() => loginWithRedirect()}
+        >
           <ArrowRightEndOnRectangleIcon className="size-4" />
           Login
         </button>
