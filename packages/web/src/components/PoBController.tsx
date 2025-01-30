@@ -138,7 +138,7 @@ function Sidebar(p: {
             </Link>
           </li>
           <li className={p.isHead ? "menu-disabled" : undefined}>
-            <Link to={`/${p.game}/versions/head/}`}>
+            <Link to={`/${p.game}/`}>
               <ArrowUpIcon className="size-4" /> Change to latest version
             </Link>
           </li>

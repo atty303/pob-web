@@ -5,7 +5,7 @@ import type { Games } from "./_game";
 export async function clientLoader(args: Route.ClientLoaderArgs) {
   // Redirect if the landing from the pobb.in
   if (location.hash.startsWith("#build=")) {
-    return redirect(`/poe/1/versions/head/run${location.hash}`);
+    return redirect(`/poe1/${location.hash}`);
   }
 
   const rep = await fetch(__VERSION_URL__);
@@ -49,7 +49,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             <h3 className="font-bold text-xl">{games[game].name}</h3>
             <p>
               Most recent version: {loaderData[game].head}
-              <Link to={`/${game}/versions/head/`} className="btn btn-primary btn-sm">
+              <Link to={`/${game}/`} className="btn btn-primary btn-sm">
                 Open
               </Link>
             </p>
