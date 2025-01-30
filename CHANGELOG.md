@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.20.0](https://github.com/atty303/pob-web/compare/v0.19.2...v0.20.0) (2025-01-30)
+
+
+### Features
+
+* **web:** add close button to Sidebar for improved user experience ([4a9b760](https://github.com/atty303/pob-web/commit/4a9b760900c0cfefc8dfd8788939ccb65583b8df))
+* **web:** add PoBController and routing for Path of Exile versions ([53ef093](https://github.com/atty303/pob-web/commit/53ef09317d922a3736af6550eef60f9e9d6f8d4e))
+* **web:** add user namespace support for Cloudflare KV integration ([0881765](https://github.com/atty303/pob-web/commit/08817657a166ef20e271dec2595b8b4fe8dcd937))
+* **web:** enhance PerformanceView and LineChart for improved render time visualization ([a455312](https://github.com/atty303/pob-web/commit/a455312fdd20d2e4ef57bc2ba53d485959b2d86e))
+* **web:** enhance PoBController to manage tutorial and drawer state ([6b0ae4d](https://github.com/atty303/pob-web/commit/6b0ae4d05241e42afee1747ce9ac25dddfe83c25))
+* **web:** integrate dayjs for date handling and update version data structure ([07bdb1b](https://github.com/atty303/pob-web/commit/07bdb1b28a89167d053867a8f7019d8f4deea09c))
+* **web:** re-bumped ([#94](https://github.com/atty303/pob-web/issues/94)) ([a581e85](https://github.com/atty303/pob-web/commit/a581e851df8950296baba16fb721361e53fda62f))
+* **web:** refactor routing for Path of Exile versions and update PoBController links ([f0c3f12](https://github.com/atty303/pob-web/commit/f0c3f12a37080950d4639a982eada321f7457ef9))
+* **web:** update redirect logic for build hash handling in routes and PoBWindow ([5f4df34](https://github.com/atty303/pob-web/commit/5f4df342d9dac52d93ade91b4cdcdf720da3d2e8))
+
+
+### Bug Fixes
+
+* **web:** enhance WebGL backend with improved texture handling and format support ([5a77c4c](https://github.com/atty303/pob-web/commit/5a77c4c70a32909731e229405307cf711bf74ab3))
+* **web:** implement error boundary for route error handling ([9829ffb](https://github.com/atty303/pob-web/commit/9829ffb7a6884cd9f6bdf0ab2908b00520dfaf92))
+* **web:** update hero background image path and adjust deployment script for build output ([097868b](https://github.com/atty303/pob-web/commit/097868b9f70d8238002ac283ca4bc5d7af93469d))
+
 ## [0.19.2](https://github.com/atty303/pob-web/compare/v0.19.1...v0.19.2) (2025-01-28)
 
 
