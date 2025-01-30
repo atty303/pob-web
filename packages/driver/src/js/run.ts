@@ -11,7 +11,11 @@ const driver = new Driver("release", versionPrefix, {
   },
   onTitleChange: _title => {},
 });
-await driver.start({ cloudflareKvPrefix: "/api/kv/", cloudflareKvAccessToken: undefined });
+await driver.start({
+  cloudflareKvPrefix: "/api/kv/",
+  cloudflareKvAccessToken: undefined,
+  cloudflareKvUserNamespace: undefined,
+});
 const window = document.querySelector("#window") as HTMLElement;
 if (window) {
   driver.attachToDOM(window);

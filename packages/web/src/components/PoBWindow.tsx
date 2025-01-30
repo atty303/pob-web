@@ -94,6 +94,7 @@ export default function PoBWindow(props: {
         await _driver.start({
           cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
+          cloudflareKvUserNamespace: props.product === "poe2" ? "poe2" : undefined,
         });
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {

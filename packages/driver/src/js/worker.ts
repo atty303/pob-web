@@ -189,13 +189,20 @@ export class DriverWorker {
         backend: CloudflareKV,
         prefix: fileSystemConfig.cloudflareKvPrefix,
         token: fileSystemConfig.cloudflareKvAccessToken,
+        namespace: fileSystemConfig.cloudflareKvUserNamespace,
       });
-      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud")))
-        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud");
-      zenfs.mount("/user/Path of Building/Builds/Cloud", kvFs);
 
-      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud/Public")))
-        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud/Public");
+      const pobUserDir =
+        fileSystemConfig.cloudflareKvUserNamespace === undefined
+          ? "/user/Path of Building"
+          : "/user/Path of Building (PoE2)";
+
+      const cloudDir = `${pobUserDir}/Builds/Cloud`;
+      if (!(await zenfs.promises.exists(cloudDir))) await zenfs.promises.mkdir(cloudDir, { recursive: true });
+      zenfs.mount(cloudDir, kvFs);
+
+      const publicDir = `${cloudDir}/Public`;
+      if (!(await zenfs.promises.exists(publicDir))) await zenfs.promises.mkdir(publicDir);
     }
 
     Object.assign(module, this.exports(module));

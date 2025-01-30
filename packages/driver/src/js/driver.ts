@@ -7,6 +7,7 @@ import WorkerObject from "./worker?worker";
 export type FilesystemConfig = {
   cloudflareKvPrefix: string;
   cloudflareKvAccessToken: string | undefined;
+  cloudflareKvUserNamespace: string | undefined;
 };
 
 export class Driver {
