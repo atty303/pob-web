@@ -24,7 +24,7 @@ dayjs.extend(localizedFormat);
 export async function clientLoader(args: Route.ClientLoaderArgs) {
   // Redirect if the landing from the pobb.in
   if (location.hash.startsWith("#build=")) {
-    return redirect(`/poe1${location.hash}`);
+    return redirect(`/poe1#${location.hash.slice("#build".length)}`);
   }
 
   const rep = await fetch(__VERSION_URL__);

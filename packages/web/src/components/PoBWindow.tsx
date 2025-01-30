@@ -36,6 +36,9 @@ export default function PoBWindow(props: {
     if (hash.startsWith("#build=")) {
       const code = hash.slice("#build=".length);
       setBuildCode(code);
+    } else if (hash.startsWith("#=")) {
+      const code = hash.slice("#=".length);
+      setBuildCode(code);
     }
   }, [hash]);
 
