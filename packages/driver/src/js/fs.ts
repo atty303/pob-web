@@ -1,8 +1,7 @@
-import type { Backend, FileSystemMetadata } from "@zenfs/core";
+import type { Backend } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
-import { Errno, ErrnoError, FileSystem, FileType, InMemory, PreloadFile, Stats } from "@zenfs/core";
-import { basename, dirname, join } from "@zenfs/core/emulation/path.js";
-import { log, tag } from "./logger.ts";
+import { Errno, ErrnoError, Stats } from "@zenfs/core";
+import { log, tag } from "./logger";
 
 class FetchError extends Error {
   constructor(
@@ -39,6 +38,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   constructor(
     readonly prefix: string,
     readonly token: string,
+    readonly ns: string | undefined,
   ) {
     super();
     this.fetch = (method: string, path: string, body?: Uint8Array, headers?: Record<string, string>) => {
@@ -49,6 +49,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
         body,
         headers: {
           Authorization: `Bearer ${token}`,
+          ...(ns ? { "x-user-namespace": ns } : {}),
           ...(headers ?? {}),
         },
       });
@@ -248,6 +249,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
 export interface CloudflareKVOptions {
   prefix: string;
   token: string;
+  namespace?: string;
 }
 
 export const CloudflareKV = {
@@ -264,6 +266,11 @@ export const CloudflareKV = {
       required: true,
       description: "The JWT token to use",
     },
+    namespace: {
+      type: "string",
+      required: false,
+      description: "The user namespace to use",
+    },
   },
 
   isAvailable(): boolean {
@@ -271,6 +278,6 @@ export const CloudflareKV = {
   },
 
   create(options: CloudflareKVOptions) {
-    return new CloudflareKVFileSystem(options.prefix, options.token);
+    return new CloudflareKVFileSystem(options.prefix, options.token, options.namespace);
   },
 } as const satisfies Backend<CloudflareKVFileSystem, CloudflareKVOptions>;

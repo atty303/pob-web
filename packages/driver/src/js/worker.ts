@@ -1,12 +1,14 @@
+/// <reference types="emscripten" />
+
 import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
-import type { FilesystemConfig } from "./driver.ts";
-import type { UIState } from "./event.ts";
-import { CloudflareKV } from "./fs.ts";
+import type { FilesystemConfig } from "./driver";
+import type { UIState } from "./event";
+import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
-import { log, tag } from "./logger.ts";
+import { log, tag } from "./logger";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
@@ -16,8 +18,8 @@ import {
   WebGL1Backend,
   loadFonts,
 } from "./renderer";
-import type { SubScriptWorker } from "./sub.ts";
-import WorkerObject from "./sub.ts?worker";
+import type { SubScriptWorker } from "./sub";
+import WorkerObject from "./sub?worker";
 
 export class SubScriptHost {
   private worker: Worker | undefined;
@@ -74,7 +76,7 @@ type OnFetchFunction = (
 
 export type HostCallbacks = {
   onError: (message: string) => void;
-  onFrame: (render: boolean, time: number) => void;
+  onFrame: (at: number, time: number) => void;
   onFetch: OnFetchFunction;
   onTitleChange: (title: string) => void;
 };
@@ -187,13 +189,20 @@ export class DriverWorker {
         backend: CloudflareKV,
         prefix: fileSystemConfig.cloudflareKvPrefix,
         token: fileSystemConfig.cloudflareKvAccessToken,
+        namespace: fileSystemConfig.cloudflareKvUserNamespace,
       });
-      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud")))
-        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud");
-      zenfs.mount("/user/Path of Building/Builds/Cloud", kvFs);
 
-      if (!(await zenfs.promises.exists("/user/Path of Building/Builds/Cloud/Public")))
-        await zenfs.promises.mkdir("/user/Path of Building/Builds/Cloud/Public");
+      const pobUserDir =
+        fileSystemConfig.cloudflareKvUserNamespace === undefined
+          ? "/user/Path of Building"
+          : "/user/Path of Building (PoE2)";
+
+      const cloudDir = `${pobUserDir}/Builds/Cloud`;
+      if (!(await zenfs.promises.exists(cloudDir))) await zenfs.promises.mkdir(cloudDir, { recursive: true });
+      zenfs.mount(cloudDir, kvFs);
+
+      const publicDir = `${cloudDir}/Public`;
+      if (!(await zenfs.promises.exists(publicDir))) await zenfs.promises.mkdir(publicDir);
     }
 
     Object.assign(module, this.exports(module));
@@ -262,7 +271,7 @@ export class DriverWorker {
       await this.imports?.onFrame();
 
       const time = performance.now() - start;
-      this.hostCallbacks?.onFrame(true, time);
+      this.hostCallbacks?.onFrame(start, time);
       this.dirtyCount -= 1;
     }
     requestAnimationFrame(this.tick.bind(this));

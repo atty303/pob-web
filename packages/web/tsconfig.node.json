@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
     "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true,
-    "strict": true
+    "module": "esnext",
+    "moduleResolution": "nodenext"
   },
-  "include": ["vite.config.ts"]
+  "include": ["react-router.config.ts", "vite.config.ts"]
 }

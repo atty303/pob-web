@@ -1,5 +1,5 @@
-import { TextureFlags, TextureSource } from "../image.ts";
-import type { TextureBitmap } from "./renderer.ts";
+import { TextureFlags, TextureSource } from "../image";
+import type { TextureBitmap } from "./renderer";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 

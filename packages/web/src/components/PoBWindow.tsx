@@ -1,23 +1,20 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { Driver } from "pob-driver/src/js/driver.ts";
+import { Driver } from "pob-driver/src/js/driver";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFullscreen, useHash } from "react-use";
-import { useRecoilState } from "recoil";
-import { log, tag } from "./logger.ts";
-import { isFullscreenState } from "./state.ts";
+import * as use from "react-use";
+import { log, tag } from "../lib/logger";
 
-export default function PobWindow(props: {
+const { useHash } = use;
+
+export default function PoBWindow(props: {
   product: "poe1" | "poe2";
   version: string;
-  onFrame: (render: boolean, time: number) => void;
+  onFrame: (at: number, time: number) => void;
   onTitleChange: (title: string) => void;
 }) {
   const auth0 = useAuth0();
 
   const container = useRef<HTMLDivElement>(null);
-
-  const [isFullscreen, setFullscreen] = useRecoilState(isFullscreenState);
-  useFullscreen(container, isFullscreen, { onClose: () => setFullscreen(false) });
 
   const [token, setToken] = useState<string>();
   useEffect(() => {
@@ -39,11 +36,14 @@ export default function PobWindow(props: {
     if (hash.startsWith("#build=")) {
       const code = hash.slice("#build=".length);
       setBuildCode(code);
+    } else if (hash.startsWith("#=")) {
+      const code = hash.slice("#=".length);
+      setBuildCode(code);
     }
   }, [hash]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>();
+  const [error, setError] = useState<unknown>();
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 
@@ -94,6 +94,7 @@ export default function PobWindow(props: {
         await _driver.start({
           cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
+          cloudflareKvUserNamespace: props.product === "poe2" ? "poe2" : undefined,
         });
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {

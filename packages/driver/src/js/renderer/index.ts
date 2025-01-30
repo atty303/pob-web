@@ -1,3 +1,3 @@
-export { Renderer } from "./renderer.ts";
-export * from "./text.ts";
-export { WebGL1Backend } from "./webgl_backend.ts";
+export { Renderer } from "./renderer";
+export * from "./text";
+export { WebGL1Backend } from "./webgl_backend";
