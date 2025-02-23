@@ -318,7 +318,8 @@ int init() {
     GL = lua_newstate(my_alloc, NULL);
     lua_State *L = GL;
 
-    luaL_openlibs(GL);  // 標準ライブラリを開く
+    // Open standard libraries
+    luaL_openlibs(GL);
 
     // Handle lua errors
     lua_atpanic(L, at_panic);
@@ -388,6 +389,8 @@ int init() {
     // pob-web specific
     lua_pushcclosure(L, DownloadPage, 0);
     lua_setglobal(L, "DownloadPage");
+
+    luaL_dostring(L, "package.cpath = '/app/lib/lua/?.wasm;' .. package.cpath");
 
     return 0;
 }

@@ -284,10 +284,10 @@ namespace wasmfs {
         return wasmFS.addBackend(std::make_unique<NodeBackend>(root));
     }
 
-    void EMSCRIPTEN_KEEPALIVE _wasmfs_node_record_dirent(
-            std::vector<Directory::Entry>* entries, const char* name, int type) {
-        entries->push_back({name, File::FileKind(type), 0});
-    }
+    // void EMSCRIPTEN_KEEPALIVE _wasmfs_node_record_dirent(
+    //         std::vector<Directory::Entry>* entries, const char* name, int type) {
+    //     entries->push_back({name, File::FileKind(type), 0});
+    // }
 
 } // extern "C"
 

@@ -68,7 +68,16 @@ int _wasmfs_node_stat_size(const char* path, uint32_t* size) {
 
 EM_ASYNC_JS(int, js_wasmfs_node_fstat_size, (int fd, uint32_t *size), {
     try {
-        const stat = await Module.fs.promises.fstat(fd);
+        const stat = await new Promise((resolve, reject) => {
+            Module.fs.fstat(fd, (err, ok) => {
+                if (err) {
+                    console.error("fstat: error", err);
+                    reject(err);
+                } else {
+                    resolve(ok);
+                }
+            });
+        });
         Module.setValue(size, stat.size, "i32");
     } catch (e) {
         if (!e.code) throw e;
@@ -141,9 +150,7 @@ int _wasmfs_node_rmdir(const char* path) {
 EM_ASYNC_JS(int, js_wasmfs_node_open, (const char *path, const char *mode), {
     let fd;
     try {
-//        console.log("Opening file: ", UTF8ToString(path), "with mode", UTF8ToString(mode));
-        fd = await Module.fs.promises.open(UTF8ToString(path), UTF8ToString(mode));
-//        console.log("Opened file", UTF8ToString(path), "with mode", UTF8ToString(mode), "fd", fd);
+        fd = (await Module.fs.promises.open(UTF8ToString(path), UTF8ToString(mode)));
     } catch (e) {
         console.error("open error", e);
         if (!e.code) throw e;

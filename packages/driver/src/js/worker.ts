@@ -2,6 +2,7 @@
 
 import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
+import { fs, Fetch } from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
@@ -20,6 +21,14 @@ import {
 } from "./renderer";
 import type { SubScriptWorker } from "./sub";
 import WorkerObject from "./sub?worker";
+
+import indexDebug from "../../dist/index-debug.json";
+import indexRelease from "../../dist/index-release.json";
+
+const fetchIndex = {
+  debug: indexDebug,
+  release: indexRelease,
+};
 
 export class SubScriptHost {
   private worker: Worker | undefined;
@@ -154,7 +163,7 @@ export class DriverWorker {
       openUrl,
     };
 
-    const driver = (await import(`../../dist/driver-${build}.mjs`)) as {
+    const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
       default: EmscriptenModuleFactory<DriverModule>;
     };
     const module = await driver.default({
@@ -162,19 +171,19 @@ export class DriverWorker {
       printErr: console.warn,
     });
 
+    const fetchBase = import.meta.resolve(`../../dist/${build}/`);
     const rootZip = await fetch(`${assetPrefix}/root.zip`);
     await zenfs.configure({
-      // cacheStats: true,
-      // cachePaths: true,
-      // disableAccessChecks: true,
-      // disableAsyncCache: true,
-      // disableUpdateOnRead: true,
-      // onlySyncOnClose: true,
       mounts: {
         "/root": {
           backend: Zip,
           data: await rootZip.arrayBuffer(),
           name: "root.zip",
+        },
+        "/lib/lua": {
+          backend: Fetch,
+          index: fetchIndex[build],
+          baseUrl: fetchBase,
         },
         "/user": {
           backend: WebAccess,
@@ -183,6 +192,8 @@ export class DriverWorker {
         },
       },
     });
+
+    await printFileSystemTree("/lib");
 
     if (fileSystemConfig.cloudflareKvAccessToken) {
       const kvFs = await zenfs.resolveMountConfig({
@@ -362,6 +373,32 @@ export class DriverWorker {
         return this.subScripts[id]?.isRunning() ?? false;
       },
     };
+  }
+}
+
+async function printFileSystemTree(path: string) {
+  async function buildTree(currentPath: string, depth = 0): Promise<string> {
+    const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
+    const indent = " ".repeat(depth * 2);
+    let tree = "";
+
+    for (const entry of entries) {
+      const entryPath = `${currentPath}/${entry.name}`;
+      if (entry.isDirectory()) {
+        tree += `${indent}📁 ${entry.name}\n` + (await buildTree(entryPath, depth + 1));
+      } else {
+        tree += `${indent}📄 ${entry.name}\n`;
+      }
+    }
+
+    return tree;
+  }
+
+  try {
+    const tree = await buildTree(path);
+    console.log(tree);
+  } catch (error) {
+    console.error(`Error reading file system at ${path}:`, error);
   }
 }
 
