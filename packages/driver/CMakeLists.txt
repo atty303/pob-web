@@ -67,3 +67,26 @@ set_target_properties(${PROJECT_NAME}
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dist
 )
+
+
+# Add for building `vendor/luautf8` as a SIDE_MODULE and outputting `luautf8.so`
+add_executable(luautf8
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/luautf8/lutf8lib.c
+)
+
+set_target_properties(luautf8
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist
+        OUTPUT_NAME "lua-utf8"
+        SUFFIX ".so"
+)
+
+target_compile_options(luautf8 PRIVATE
+        "-flto" "-g" "-gsource-map" "-sSIDE_MODULE"
+)
+
+target_link_options(luautf8 PRIVATE
+        "-flto"
+        "-sSIDE_MODULE"
+        "-sSTRICT"
+)
