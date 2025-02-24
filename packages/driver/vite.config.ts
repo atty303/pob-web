@@ -4,7 +4,7 @@ import Inspect from "vite-plugin-inspect";
 
 const packerBuildDir = path.resolve(__dirname, "../packer/build");
 
-// // https://vitejs.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   logLevel: "info",
   server: {

@@ -1,6 +1,6 @@
-[submodule "vendor/zlib-ng"]
-	path = vendor/zlib-ng
-	url = https://github.com/zlib-ng/zlib-ng.git
 [submodule "vendor/lua"]
 	path = vendor/lua
 	url = https://github.com/atty303/lua.git
+[submodule "vendor/luautf8"]
+	path = vendor/luautf8
+	url = https://github.com/starwing/luautf8.git
