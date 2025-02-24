@@ -229,10 +229,19 @@ namespace wasmfs {
 
         int insertMove(const std::string& name, std::shared_ptr<File> file) override {
             // TODO: move from different backends
-            printf("insertMove %s %s\n", name.c_str(), file->cast<NodeFile>()->state.path.c_str());
-            auto parent = file->locked().getParent()->cast<NodeDirectory>();
-            auto r = _wasmfs_node_rename(file->cast<NodeFile>()->state.path.c_str(), parent->getChildPath(name).c_str());
-            file->cast<NodeFile>()->state.path = parent->getChildPath(name);
+            NodeState* state = nullptr;
+            if (file->is<DataFile>()) {
+                state = &file->cast<NodeFile>()->state;
+            } else if (file->is<Directory>()) {
+                state = &file->cast<NodeDirectory>()->state;
+            } else {
+                return -EINVAL;
+            }
+
+            auto r = _wasmfs_node_rename(state->path.c_str(), getChildPath(name).c_str());
+            if (r == 0) {
+                state->path = getChildPath(name);
+            }
             return r;
         }
 
