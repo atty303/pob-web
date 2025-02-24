@@ -40,7 +40,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     readonly token: string,
     readonly ns: string | undefined,
   ) {
-    super();
+    super(0x43464b56 /*CFKV*/, "cloudflare-kvfs");
     this.fetch = (method: string, path: string, body?: Uint8Array, headers?: Record<string, string>) => {
       log.debug(tag.kvfs, "fetch", method, path);
       const url = `${prefix}${path}`;

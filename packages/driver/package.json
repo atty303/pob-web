@@ -10,7 +10,7 @@
     "build:release": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && emmake ninja -C build",
     "dev": "vite",
     "preview": "vite preview",
-    "make-index": "node -e \"require('shelljs/global'); const p = exec('npm prefix', {silent: true}).stdout.trim(); const s = `node ${p}/node_modules/@zenfs/core/scripts/make-index.js`; exec(`${s} -o dist/index-release.json dist/release`); exec(`${s} -o dist/index-debug.json dist/debug`);"
+    "make-index": "node -e \"require('shelljs/global'); const p = exec('npm prefix', {silent: true}).stdout.trim(); const s = `node ${p}/node_modules/@zenfs/core/scripts/make-index.js`; exec(`${s} -o dist/index-release.json dist/release`); exec(`${s} -o dist/index-debug.json dist/debug`);\""
   },
   "dependencies": {
     "@zenfs/core": "^1.11.3",
