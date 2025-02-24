@@ -158,8 +158,9 @@ static int MakeDir(lua_State *L) {
 
     const char *path = lua_tostring(L, 1);
 
-    if (mkdir(path, 0777) != 0) {
-        fprintf(stderr, "Failed to create directory: %s\n", path);
+    int ret = mkdir(path, 0777);
+    if (ret != 0) {
+        fprintf(stderr, "Failed to create directory: (%d) %s\n", ret, path);
         lua_pushnil(L);
         lua_pushstring(L, "Failed to create directory");
         return 2;
