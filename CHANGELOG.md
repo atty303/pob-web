@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/atty303/pob-web/compare/v0.21.0...v0.21.1) (2025-02-24)
+
+
+### Bug Fixes
+
+* build ([80c83a2](https://github.com/atty303/pob-web/commit/80c83a2efc70a25fe6acc7c06eeccffdb77ca2da))
+
 ## [0.21.0](https://github.com/atty303/pob-web/compare/v0.20.0...v0.21.0) (2025-02-24)
 
 
