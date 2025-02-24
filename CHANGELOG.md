@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.21.0](https://github.com/atty303/pob-web/compare/v0.20.0...v0.21.0) (2025-02-24)
+
+
+### Features
+
+* **driver:** add lua-utf8.wasm loading ([1eda6b0](https://github.com/atty303/pob-web/commit/1eda6b0a6ac5a2ee9b845f45f0bcb27065496c99))
+* **driver:** add support for building lua-utf8 module ([9be9ce5](https://github.com/atty303/pob-web/commit/9be9ce552df83993be5eb4f97e5622fea2d3d743))
+* **driver:** add support for building lua-utf8 module  ([#100](https://github.com/atty303/pob-web/issues/100)) ([c240c3d](https://github.com/atty303/pob-web/commit/c240c3d1f786877b1ea171ed8f7e36aeef4523ff)), closes [#98](https://github.com/atty303/pob-web/issues/98)
+
+
+### Bug Fixes
+
+* **driver:** build ([01b07bd](https://github.com/atty303/pob-web/commit/01b07bd9a1b8c1361e9369478ef29f5d96c22e7e))
+* **driver:** mkdir and rename dir ([8b45a98](https://github.com/atty303/pob-web/commit/8b45a98e2e943a9e564cb036811bf3c3b279b6e5))
+* **driver:** mkdir and rename dir ([#101](https://github.com/atty303/pob-web/issues/101)) ([b4c10ee](https://github.com/atty303/pob-web/commit/b4c10ee883e814c8224d6dd674dbc793ff6c3df0))
+* **packer:** sync v1 path ([6a5331d](https://github.com/atty303/pob-web/commit/6a5331d57a97fd07bd54130d07e5c16c0512d618))
+
 ## [0.20.0](https://github.com/atty303/pob-web/compare/v0.19.2...v0.20.0) (2025-01-30)
 
 
