@@ -1,7 +1,8 @@
 import * as path from "node:path";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig, searchForWorkspaceRoot } from "vite";
+import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const rootDir = path.resolve(__dirname, "../..");
 
@@ -40,5 +41,11 @@ export default defineConfig(({ mode }) => ({
       target: "es2020",
     },
   },
-  plugins: [reactRouter(), tailwindcss()],
+  plugins: [
+    reactRouter(),
+    tailwindcss(),
+    viteStaticCopy({
+      targets: [{ src: normalizePath(path.join(rootDir, "packages/driver/dist/*")), dest: "dist/" }],
+    }),
+  ],
 }));
