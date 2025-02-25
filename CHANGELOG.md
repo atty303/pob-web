@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.21.2](https://github.com/atty303/pob-web/compare/v0.21.1...v0.21.2) (2025-02-25)
+
+
+### Bug Fixes
+
+* **driver:** update exported functions and dynamic import path ([d0cc76c](https://github.com/atty303/pob-web/commit/d0cc76c5887ee652c2e739e7f2029367d2fee661))
+* **driver:** update exported functions and dynamic import path ([#105](https://github.com/atty303/pob-web/issues/105)) ([99b64e2](https://github.com/atty303/pob-web/commit/99b64e218cef772e8eb40cd3bc1f32fc4a30ca49)), closes [#104](https://github.com/atty303/pob-web/issues/104)
+
 ## [0.21.1](https://github.com/atty303/pob-web/compare/v0.21.0...v0.21.1) (2025-02-24)
 
 
