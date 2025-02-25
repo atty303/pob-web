@@ -48,7 +48,7 @@ export class SubScriptWorker {
     this.onFetch = onFetch;
     log.debug(tag.subscript, "start", { script });
 
-    const driver = (await import(`../../dist/driver-${build}.mjs`)) as {
+    const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
       default: EmscriptenModuleFactory<DriverModule>;
     };
     const module = await driver.default({

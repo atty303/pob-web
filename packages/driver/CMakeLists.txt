@@ -53,6 +53,7 @@ set(DRIVER_LINK_FLAGS
         "-sWASMFS"
         "-sSTRICT"
         "-sINCOMING_MODULE_JS_API=[print,printErr]"
+        "-sEXPORTED_FUNCTIONS=[_malloc,_free,_init,_start,_on_frame,_on_key_down,_on_key_up,_on_char,_on_download_page_result,_on_subscript_finished,_load_build_from_code]"
         "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8,Asyncify"
         "-sASYNCIFY_IMPORTS=js_wasmfs_node_read"
         "-sMAIN_MODULE"
