@@ -1,6 +1,9 @@
 {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-        "ghcr.io/devcontainers/features/sshd:1": {}
+        "ghcr.io/devcontainers/features/sshd:1": {},
+        "ghcr.io/atty303/devcontainer-features/mise:1": {
+          "systemActivate": "shims"
+        }
     }
 }
