@@ -54,10 +54,9 @@ jobs:
             const tags = await github.rest.repos.listTags({
               owner,
               repo,
-              per_page: 5,
-              page: 1,
             });
             core.info(`Latest tags: ${JSON.stringify(tags.data, null, 2)}`);
+            process.exit(1);
 
             const tagsWithCommit = [];
             for (const tag of tags.data) {
