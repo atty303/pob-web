@@ -10,6 +10,8 @@ jobs:
     env:
         TARGET_REPO: "PathOfBuildingCommunity/PathOfBuilding"
         VERSION_FILE: "version.json"
+        GAME: poe1
+        UPDATE_HEAD: "false"
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -23,7 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.5.1'
+          node-version: '22.x'
           cache: npm
 
       - name: Get latest releases
@@ -45,10 +47,12 @@ jobs:
       - name: Read known versions
         id: read_versions
         run: |
-          versions=$(jq -r '.versions[]' $VERSION_FILE)
-          echo "versions<<EOF" >> $GITHUB_OUTPUT
-          echo "$versions" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          versions=$(jq -r '.${{ env.GAME }}.versions[]' $VERSION_FILE)
+          {
+            echo "versions<<EOF"
+            echo "$versions"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Determine new versions
         id: new_versions
@@ -78,8 +82,8 @@ jobs:
         run: |
           new_versions=(${{ steps.new_versions.outputs.new_versions }})
           for version in "${new_versions[@]}"; do
-            npm run -w packages/packer pack $version 1 clone
-            npm run -w packages/packer sync $version 1
+            npm run -w packages/packer pack $version ${{ env.GAME }} clone
+            npm run -w packages/packer sync $version ${{ env.GAME }}
           done
 
       - name: Update version.json
@@ -94,11 +98,13 @@ jobs:
           for version in "${new_versions[@]}"; do
              known_versions=$(echo "$known_versions" | sed "1s/^/\"$version\",\n/")
           done
-          jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.poe1.versions = ($new_versions + .poe1.versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
-          
-          head_version=${new_versions[0]}
-          jq --arg head "$head_version" '.poe1.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
-          
+          jq --argjson new_versions "$(printf '%s\n' "${new_versions[@]}" | jq -R . | jq -s .)" '.${{ env.GAME }}.versions = ($new_versions + .${{ env.GAME }}.versions)' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+
+          if [[ "${{ env.UPDATE_HEAD }}" == "true" ]]; then
+            head_version=${new_versions[0]}
+            jq --arg head "$head_version" '.${{ env.GAME }}.head = $head' $VERSION_FILE > tmp.json && mv tmp.json $VERSION_FILE
+          fi
+
           cat $VERSION_FILE
           aws s3 cp --region auto --endpoint-url ${R2_ENDPOINT_URL} version.json s3://pob-web/version.json
 
