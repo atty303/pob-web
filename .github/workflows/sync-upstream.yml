@@ -78,6 +78,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+
             const latestTags = JSON.parse(process.env.LATEST_TAGS);
 
             const versions = JSON.parse(fs.readFileSync(process.env.VERSION_FILE, 'utf8'));
@@ -119,6 +121,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+
             const newTags = JSON.parse(process.env.NEW_TAGS);
             const versions = JSON.parse(fs.readFileSync(process.env.VERSION_FILE, 'utf8'));
 
