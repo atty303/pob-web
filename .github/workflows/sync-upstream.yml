@@ -55,7 +55,10 @@ jobs:
               owner,
               repo,
               per_page: 5,
+              page: 1,
             });
+            core.info(`Latest tags: ${JSON.stringify(tags.data, null, 2)}`);
+
             const tagsWithCommit = [];
             for (const tag of tags.data) {
               const commit = await github.rest.git.getCommit({
@@ -68,7 +71,7 @@ jobs:
                 commit: commit.data,
               });
             }
-            core.info(`Latest tags: ${JSON.stringify(tagsWithCommit, null, 2)}`);
+            core.info(`Latest tags with commit: ${JSON.stringify(tagsWithCommit, null, 2)}`);
             return tagsWithCommit;
 
       - name: Determine new versions
