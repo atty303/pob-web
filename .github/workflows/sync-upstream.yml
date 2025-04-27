@@ -87,14 +87,14 @@ jobs:
 
             const newTags = latestTags.filter(tag => !knownVersions.some(known => known.value === tag.name));
             core.info(`New tags: ${JSON.stringify(newTags, null, 2)}`);
-            return newTags.length > 0 ? newTags : "";
+            return newTags.length > 0 ? newTags : null;
 
       - name: Install dependencies
-        if: steps.new_versions.outputs.result != ''
+        if: steps.new_versions.outputs.result != 'null'
         run: npm ci
 
       - name: Pack and sync new versions
-        if: steps.new_versions.outputs.result != ''
+        if: steps.new_versions.outputs.result != 'null'
         env:
           NEW_TAGS: ${{ steps.new_versions.outputs.result }}
           R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
@@ -112,7 +112,7 @@ jobs:
             }
 
       - name: Update version.json
-        if: steps.new_versions.outputs.result != ''
+        if: steps.new_versions.outputs.result != 'null'
         env:
           NEW_TAGS: ${{ steps.new_versions.outputs.result }}
           R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
@@ -143,7 +143,7 @@ jobs:
             }
 
       - name: Commit changes
-        if: steps.new_versions.outputs.result != '' && env.DRY_RUN != 'true'
+        if: steps.new_versions.outputs.result != 'null' && env.DRY_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
