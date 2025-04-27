@@ -64,11 +64,11 @@ jobs:
                 commit_sha: tag.commit.sha,
               });
               tagsWithCommit.push({
-                ...tag.data,
+                ...tag,
                 commit: commit.data,
               });
             }
-            core.info(`Latest tags: ${JSON.stringify(tagsWithCommit)}`);
+            core.info(`Latest tags: ${JSON.stringify(tagsWithCommit, null, 2)}`);
             return tagsWithCommit;
 
       - name: Determine new versions
