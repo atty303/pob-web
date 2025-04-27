@@ -54,7 +54,7 @@ jobs:
             const tags = await github.rest.repos.listTags({
               owner,
               repo,
-              per_page: 10,
+              per_page: 5,
             });
             const tagsWithCommit = [];
             for (const tag of tags.data) {
