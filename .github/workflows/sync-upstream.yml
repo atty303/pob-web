@@ -4,14 +4,6 @@ on:
 #    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
-      game:
-        description: Game to check for new releases (poe1 or poe2)
-        type: choice
-        required: true
-        default: 'poe1'
-        options:
-          - poe1
-          - poe2
       dry_run:
         description: 'Perform a dry run without making any changes'
         required: false
@@ -20,9 +12,12 @@ on:
 jobs:
   check-release:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        game: [ poe1, poe2 ]
     env:
         VERSION_FILE: "version.json"
-        GAME: "${{ github.event.inputs.game || 'poe1' }}"
+        GAME: ${{ matrix.game }}
         UPDATE_HEAD: "true"
         DRY_RUN: "${{ github.event.inputs.dry_run || 'false' }}"
     steps:
