@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.2](https://github.com/atty303/pob-web/compare/v0.22.1...v0.22.2) (2025-04-28)
+
+
+### Bug Fixes
+
+* **workflow:** enable schedule for checking new releases ([a598013](https://github.com/atty303/pob-web/commit/a5980137c7303153d37f083b75bbc7a1022b96ad))
+* **workflow:** remove game input and use matrix for game selection ([16b7432](https://github.com/atty303/pob-web/commit/16b7432fcc683894e38951d755843a9e6381b23d))
+
 ## [0.22.1](https://github.com/atty303/pob-web/compare/v0.22.0...v0.22.1) (2025-04-28)
 
 
