@@ -36,11 +36,6 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
-          cache: npm
-
       - name: Get latest releases
         id: get_releases
         uses: actions/github-script@v7
@@ -134,6 +129,8 @@ jobs:
             const newTags = latestTags.filter(tag => !knownVersions.some(known => known.value === tag.name));
             core.info(`New tags: ${JSON.stringify(newTags, null, 2)}`);
             return newTags.length > 0 ? newTags : null;
+
+      - uses: jdx/mise-action@v2
 
       - name: Install dependencies
         if: steps.new_versions.outputs.result != 'null'
