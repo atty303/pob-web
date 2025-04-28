@@ -127,6 +127,25 @@ jobs:
 
             const newTags = latestTags.filter(tag => !knownVersions.some(known => known.value === tag.name));
             core.info(`New tags: ${JSON.stringify(newTags, null, 2)}`);
+
+            if (newTags.length === 0) {
+              core.notice(`No new tags found for ${process.env.GAME}.`);
+              return null;
+            } else {
+              core.summary.addHeading(`New tags for ${process.env.GAME}`, '2');
+              const table = [
+                [
+                  { data: "Tag", header: true },
+                  { data: "Date", header: true },
+                ],
+                newTags.flatMap(tag => [
+                  { data: tag.name },
+                  { data: tag.committedDate },
+                ]),
+              ];
+              core.summary.addTable(table);
+            }
+
             return newTags.length > 0 ? newTags : null;
 
       - uses: jdx/mise-action@v2
