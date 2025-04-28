@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.22.0](https://github.com/atty303/pob-web/compare/v0.21.2...v0.22.0) (2025-04-28)
+
+
+### Features
+
+* devcontainer and mise for dev environment ([4011521](https://github.com/atty303/pob-web/commit/40115214fbf91f1bfb9256d4bd0d367227f53d9f))
+* **driver:** enhance dev server configuration with environment variables ([b4db2b1](https://github.com/atty303/pob-web/commit/b4db2b1f40963c334910aaf7207b2670371b3e81))
+
+
+### Bug Fixes
+
+* **dds.test.ts:** update file path for reading DDS data ([2d16e3a](https://github.com/atty303/pob-web/commit/2d16e3a237728eba08df1a9c7e38a2e7301903db))
+* **driver:** increase  buffer size ([fe43dec](https://github.com/atty303/pob-web/commit/fe43deca77285f7d13a2ee36960b3497ff80b9a6))
+* **sync-upstream:** add checksum algorithm to S3 upload command for version.json ([79e32f9](https://github.com/atty303/pob-web/commit/79e32f90e137879a3ac1545ea2020effe85691e9))
+* **sync-upstream:** add notification for no new tags found and display new tags in summary ([26ab1fd](https://github.com/atty303/pob-web/commit/26ab1fdaba2cfef126f214d40aa2e8ff2ed1879c))
+* **sync-upstream:** add pagination and improve logging for latest tags retrieval ([ba53459](https://github.com/atty303/pob-web/commit/ba534599ff5eef3ecc031572024a1281ee94cad7))
+* **sync-upstream:** await exec command for S3 version.json upload ([e51255d](https://github.com/atty303/pob-web/commit/e51255dd6ef0f356d172341cc4f9cf3fd1b58120))
+* **sync-upstream:** await exec commands for packing and syncing new tags ([02aed0a](https://github.com/atty303/pob-web/commit/02aed0a811e9ccd8cfdf30a26a5ef235f62eb1eb))
+* **sync-upstream:** improve logging format for latest tags output ([c66fea2](https://github.com/atty303/pob-web/commit/c66fea2747687acca18f0694544889aa450bb010))
+* **sync-upstream:** optimize tag retrieval using GraphQL and improve sorting of latest tags ([c99dc2c](https://github.com/atty303/pob-web/commit/c99dc2ce0e56ea3c16671795d74780e1f8b0b21c))
+* **sync-upstream:** reduce the number of tags fetched to improve performance ([31b092c](https://github.com/atty303/pob-web/commit/31b092c8b9701e0b358472b5cd5fd6c6d948f0f3))
+* **sync-upstream:** remove exit on error in tag retrieval script ([ea354ed](https://github.com/atty303/pob-web/commit/ea354ed70ca8567a1b968b9179485ac304f1353e))
+* **sync-upstream:** remove pagination for tag retrieval and add exit on error ([155fce0](https://github.com/atty303/pob-web/commit/155fce029008b2e2dd1cba5166fbae0a9e7c4d75))
+* **sync-upstream:** remove setup-node action and adjust job steps for better clarity ([cafb415](https://github.com/atty303/pob-web/commit/cafb41564787eab8bab6cb644fc665c384c6b755))
+* **sync-upstream:** update condition checks for new versions to handle null values ([0abe35c](https://github.com/atty303/pob-web/commit/0abe35c19363497260a7da78f0ad84f604991fc5))
+* **version.json:** reorder version entries for consistency ([3c181d0](https://github.com/atty303/pob-web/commit/3c181d0c1c8434e38ebfca36c823ed06a20d621f))
+* **version.json:** update poe2 head version to v0.5.0 ([b53160d](https://github.com/atty303/pob-web/commit/b53160d9936d4b1207eaca323083b3418efb101e))
+
 ## [0.21.2](https://github.com/atty303/pob-web/compare/v0.21.1...v0.21.2) (2025-02-25)
 
 
