@@ -147,9 +147,9 @@ jobs:
           script: |
             const newTags = JSON.parse(process.env.NEW_TAGS);
             for (const tag of newTags) {
-              exec.exec(`npm run -w packages/packer pack ${tag.name} ${process.env.GAME} clone`);
+              await exec.exec(`npm run -w packages/packer pack ${tag.name} ${process.env.GAME} clone`);
               if (process.env.DRY_RUN !== 'true') {
-                exec.exec(`npm run -w packages/packer sync ${tag.name} ${process.env.GAME}`);
+                await exec.exec(`npm run -w packages/packer sync ${tag.name} ${process.env.GAME}`);
               }
             }
 
