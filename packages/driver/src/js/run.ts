@@ -1,10 +1,10 @@
 import { Driver } from "./driver";
 
 (async () => {
-  const version = "2/v0.8.0/r2";
+  const version = `${__RUN_GAME__ === "poe2" ? "2" : "1"}/${__RUN_VERSION__}/r2`;
   const versionPrefix = `${__ASSET_PREFIX__}/${version}`;
 
-  const driver = new Driver("release", versionPrefix, {
+  const driver = new Driver(__RUN_BUILD__, versionPrefix, {
     onError: message => console.error(message),
     onFrame: (_render, _time) => {},
     onFetch: async (_url, _headers, _body) => {

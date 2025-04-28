@@ -25,7 +25,12 @@ run = """npm run -w packages/packer sync {{option(name="tag")}} {{option(name="g
 
 [tasks."driver:dev"]
 description = "Start dev server for driver"
-run = "npm run -w packages/driver dev"
+run = """
+export RUN_GAME={{option(name="game", default="poe2")}}
+export RUN_VERSION={{option(name="version", default="v0.8.0")}}
+export RUN_BUILD={{option(name="build", default="release")}}
+npm run -w packages/driver dev
+"""
 
 [tasks."driver:build"]
 description = "Build driver"

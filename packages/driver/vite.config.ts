@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
     __ASSET_PREFIX__: JSON.stringify(
       mode === "development" ? `/@fs/${packerBuildDir}` : "https://asset.pob.cool/versions",
     ),
+    __RUN_GAME__: JSON.stringify(process.env.RUN_GAME ?? "poe2"),
+    __RUN_VERSION__: JSON.stringify(process.env.RUN_VERSION ?? "v0.8.0"),
+    __RUN_BUILD__: JSON.stringify(process.env.RUN_BUILD ?? "release"),
   },
   build: {
     sourcemap: true,
