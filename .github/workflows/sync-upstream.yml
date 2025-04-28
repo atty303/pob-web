@@ -109,7 +109,6 @@ jobs:
             const latestTags = tags.slice(0, 10);
 
             core.info(`Latest 10 tags: ${JSON.stringify(latestTags, null, 2)}`);
-            process.exit(1);
             return latestTags;
 
       - name: Determine new versions
