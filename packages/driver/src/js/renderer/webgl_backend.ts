@@ -152,12 +152,12 @@ class VertexBuffer {
 
   constructor() {
     // TODO: Use a dynamic buffer
-    this._buffer = new Float32Array(512 * 1024);
+    this._buffer = new Float32Array(1024 * 1024);
     this.offset = 0;
   }
 
   get buffer() {
-    return this._buffer.slice(0, this.offset);
+    return new Float32Array(this._buffer.buffer, 0, this.offset);
   }
 
   get length() {
