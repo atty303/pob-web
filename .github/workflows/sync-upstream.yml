@@ -1,7 +1,7 @@
 name: Check for new releases
 on:
-#  schedule:
-#    - cron: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -144,6 +144,7 @@ jobs:
             return newTags.length > 0 ? newTags : null;
 
       - uses: jdx/mise-action@v2
+        if: steps.new_versions.outputs.result != 'null'
 
       - name: Install dependencies
         if: steps.new_versions.outputs.result != 'null'
