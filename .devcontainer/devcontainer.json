@@ -5,5 +5,14 @@
         "ghcr.io/atty303/devcontainer-features/mise:1": {
           "systemActivate": "shims"
         }
+    },
+    "initializeCommand": "git submodule update --init --recursive",
+    "updateContentCommand": "mise install",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "hverlin.mise-vscode"
+        ]
+      }
     }
 }

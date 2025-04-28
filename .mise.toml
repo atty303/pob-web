@@ -1,3 +1,32 @@
 [tools]
 node = "lts"
+emsdk = "latest"
 cmake = "latest"
+ninja = "latest"
+
+[tasks.install]
+run = "npm install"
+sources = [
+  "package-lock.json"
+]
+outputs = { auto = true }
+
+[tasks.pack]
+description = "Pack the distribution from upstream repository"
+run = """
+[ "{{option(name="tag")}}" = "false" ] && echo "No tag provided" >&2 && exit 1
+npm run -w packages/packer pack {{option(name="tag")}} {{option(name="game", default="poe2")}} clone
+"""
+
+[tasks.sync]
+description = "Sync the packed distribution to Cloudflare R2"
+run = """npm run -w packages/packer sync {{option(name="tag")}} {{option(name="game", default="poe2")}}"""
+
+
+[tasks."driver:dev"]
+description = "Start dev server for driver"
+run = "npm run -w packages/driver dev"
+
+[tasks."driver:build"]
+description = "Build driver"
+run = "npm run -w packages/driver build"

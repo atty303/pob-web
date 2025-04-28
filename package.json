@@ -28,7 +28,6 @@
     "daisyui": "^5.0.0-beta.2",
     "dotenv": "^16.4.7",
     "image-size": "^1.2.0",
-    "lefthook": "^1.10.10",
     "shelljs": "^0.8.5",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",

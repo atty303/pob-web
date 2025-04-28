@@ -1,7 +1,7 @@
 import { Driver } from "./driver";
 
 (async () => {
-  const version = "2/v0.4.0/r2";
+  const version = "2/v0.8.0/r2";
   const versionPrefix = `${__ASSET_PREFIX__}/${version}`;
 
   const driver = new Driver("release", versionPrefix, {
