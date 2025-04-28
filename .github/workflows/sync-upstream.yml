@@ -181,7 +181,7 @@ jobs:
             fs.writeFileSync(process.env.VERSION_FILE, JSON.stringify(versions, null, 2));
 
             if (process.env.DRY_RUN !== 'true') {
-              await exec.exec(`aws s3 cp --region auto --endpoint-url ${process.env.R2_ENDPOINT_URL} version.json s3://pob-web/version.json`);
+              await exec.exec(`aws s3 cp --checksum-algorithm=CRC32 --region auto --endpoint-url ${process.env.R2_ENDPOINT_URL} version.json s3://pob-web/version.json`);
             }
 
       - name: Commit changes
