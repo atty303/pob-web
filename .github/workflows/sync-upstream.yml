@@ -51,27 +51,71 @@ jobs:
               throw new Error('Invalid game specified. Please use "poe1" or "poe2".');
             }
 
-            const tags = await github.rest.repos.listTags({
-              owner,
-              repo,
-            });
-            core.info(`Latest tags: ${JSON.stringify(tags.data, null, 2)}`);
-            process.exit(1);
+            const tags = [];
 
-            const tagsWithCommit = [];
-            for (const tag of tags.data) {
-              const commit = await github.rest.git.getCommit({
+            const query = `
+              query($owner: String!, $repo: String!, $cursor: String) {
+                repository(owner: $owner, name: $repo) {
+                  refs(
+                    refPrefix: "refs/tags/",
+                    first: 100,
+                    after: $cursor,
+                  ) {
+                    totalCount
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                    nodes {
+                      name
+                      target {
+                        ... on Commit {
+                          committedDate
+                        }
+                        ... on Tag {
+                          target {
+                            ... on Commit {
+                              committedDate
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let cursor = null;
+
+            while (true) {
+              const result = await github.graphql(query, {
                 owner,
                 repo,
-                commit_sha: tag.commit.sha,
+                cursor,
               });
-              tagsWithCommit.push({
-                ...tag,
-                commit: commit.data,
-              });
+
+              for (const node of result.repository.refs.nodes) {
+                const date = node.target?.target?.committedDate || node.target?.committedDate;
+                if (date) {
+                  tags.push({ name: node.name, committedDate: date });
+                }
+              }
+
+              const pageInfo = result.repository.refs.pageInfo;
+              if (!pageInfo.hasNextPage) {
+                break;
+              }
+              cursor = pageInfo.endCursor;
             }
-            core.info(`Latest tags with commit: ${JSON.stringify(tagsWithCommit, null, 2)}`);
-            return tagsWithCommit;
+
+            tags.sort((a, b) => new Date(b.committedDate) - new Date(a.committedDate));
+
+            const latestTags = tags.slice(0, 10);
+
+            core.info(`Latest 10 tags: ${JSON.stringify(latestTags, null, 2)}`);
+            process.exit(1);
+            return latestTags;
 
       - name: Determine new versions
         id: new_versions
@@ -129,7 +173,7 @@ jobs:
             const versions = JSON.parse(fs.readFileSync(process.env.VERSION_FILE, 'utf8'));
 
             versions[process.env.GAME].versions = [
-              ...newTags.map(tag => ({ value: tag.name, date: tag.commit.committer.date })),
+              ...newTags.map(tag => ({ value: tag.name, date: tag.committedDate })),
               ...versions[process.env.GAME].versions,
             ];
 
