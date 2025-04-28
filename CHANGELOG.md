@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.1](https://github.com/atty303/pob-web/compare/v0.22.0...v0.22.1) (2025-04-28)
+
+
+### Bug Fixes
+
+* **version:** update poe2 head version to v0.8.0 ([f4472d3](https://github.com/atty303/pob-web/commit/f4472d358a450175933b685c0d34047608255c58))
+* **version:** update poe2 head version to v0.8.0 ([#111](https://github.com/atty303/pob-web/issues/111)) ([7929fe6](https://github.com/atty303/pob-web/commit/7929fe6e717be63232d435a968b5c8687917674e))
+
 ## [0.22.0](https://github.com/atty303/pob-web/compare/v0.21.2...v0.22.0) (2025-04-28)
 
 
