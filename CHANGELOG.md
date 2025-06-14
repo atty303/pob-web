@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.3](https://github.com/atty303/pob-web/compare/v0.22.2...v0.22.3) (2025-06-14)
+
+
+### Bug Fixes
+
+* **devcontainer:** update mise feature configuration to include install option ([d630aa6](https://github.com/atty303/pob-web/commit/d630aa64deb6f657fa347a3c9a13a033aa2b565b))
+
 ## [0.22.2](https://github.com/atty303/pob-web/compare/v0.22.1...v0.22.2) (2025-04-28)
 
 
