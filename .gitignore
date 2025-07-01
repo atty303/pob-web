@@ -6,6 +6,7 @@ dist/
 dist-pages/
 node_modules/
 build/
+build.*/
 .env*
 .wrangler
 .react-router/
