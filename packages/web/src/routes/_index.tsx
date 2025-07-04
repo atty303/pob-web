@@ -38,6 +38,9 @@ const games = {
   poe2: {
     name: "Path of Exile 2",
   },
+  le: {
+    name: "Last Epoch",
+  },
 };
 
 export default function Index({ loaderData }: Route.ComponentProps) {
@@ -104,6 +107,15 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               </span>
               <Link to="/poe1" className="btn btn-primary btn-block">
                 Start for Path of Exile 1 <ArrowRightIcon className="size-4" />
+              </Link>
+            </div>
+            {/* LE Card */}
+            <div className="card w-64 bg-base-100 shadow-md p-4 transition-shadow hover:shadow-lg">
+              <span className="min-h-44">
+                <img src="/logo-le.png" alt="Last Epoch" className="mx-auto mb-4" />
+              </span>
+              <Link to="/le" className="btn btn-primary btn-block">
+                Start for Last Epoch <ArrowRightIcon className="size-4" />
               </Link>
             </div>
           </div>
@@ -190,6 +202,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 
           {/* PoE1 Versions Table */}
           {versionTable("poe1")}
+
+          {/* LE Versions Table */}
+          {versionTable("le")}
         </div>
       </section>
 
