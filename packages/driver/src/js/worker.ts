@@ -209,7 +209,7 @@ export class DriverWorker {
           pobUserDir = "/user/Path of Building (PoE2)";
           break;
         case "le":
-          pobUserDir = "/user/Path of Building (LE)";
+          pobUserDir = "/user/Last Epoch Planner";
           break;
         default:
           pobUserDir = "/user/Path of Building";

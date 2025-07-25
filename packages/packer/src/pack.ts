@@ -47,7 +47,7 @@ switch (product) {
     remote = "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
     break;
   default:
-    remote = "https://github.com/Musholic/PathOfBuildingForLastEpoch.git";
+    remote = "https://github.com/Musholic/LastEpochPlanner.git";
     break;
 }
 const repoDir = `${buildDir}/repo`;

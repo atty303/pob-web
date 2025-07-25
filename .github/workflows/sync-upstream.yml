@@ -45,7 +45,7 @@ jobs:
                 [owner, repo] = ['PathOfBuildingCommunity', 'PathOfBuilding-PoE2'];
                 break;
               case 'le':
-                [owner, repo] = ['Musholic', 'PathOfBuildingForLastEpoch'];
+                [owner, repo] = ['Musholic', 'LastEpochPlanner'];
                 break;
               default:
                 [owner, repo] = [undefined, undefined];
