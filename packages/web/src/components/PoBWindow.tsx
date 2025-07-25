@@ -7,7 +7,7 @@ import { log, tag } from "../lib/logger";
 const { useHash } = use;
 
 export default function PoBWindow(props: {
-  product: "poe1" | "poe2";
+  product: "poe1" | "poe2" | "le";
   version: string;
   onFrame: (at: number, time: number) => void;
   onTitleChange: (title: string) => void;
@@ -47,7 +47,19 @@ export default function PoBWindow(props: {
   useEffect(() => {
     log.debug(tag.pob, "loading version", props.version);
 
-    const assetPrefix = `${__ASSET_PREFIX__}${props.product === "poe2" ? ".2" : ""}/${props.version}`;
+    let productSuffix;
+    switch(props.product) {
+      case "poe2":
+        productSuffix = ".2";
+        break;
+      case "le":
+        productSuffix = ".3";
+        break;
+      default:
+        productSuffix = "";
+        break;
+    }
+    const assetPrefix = `${__ASSET_PREFIX__}${productSuffix}/${props.version}`;
     const _driver = new Driver("release", assetPrefix, {
       onError: message => {
         throw new Error(message);
@@ -91,10 +103,21 @@ export default function PoBWindow(props: {
 
     (async () => {
       try {
+        let userNamespace;
+        switch(props.product) {
+          case "poe2":
+            userNamespace = "poe2";
+            break;
+          case "le":
+            userNamespace = "le";
+            break;
+          default:
+            userNamespace = undefined;
+        }
         await _driver.start({
           cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
-          cloudflareKvUserNamespace: props.product === "poe2" ? "poe2" : undefined,
+          cloudflareKvUserNamespace: userNamespace,
         });
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {

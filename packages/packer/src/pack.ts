@@ -18,17 +18,38 @@ if (!tag) {
   process.exit(1);
 }
 
-const product = process.argv[3] === "poe1" ? 1 : process.argv[3] === "poe2" ? 2 : undefined;
+let product;
+switch (process.argv[3]) {
+  case "poe1":
+    product = 1;
+    break;
+  case "poe2":
+    product = 2;
+    break;
+  case "le":
+    product = 3;
+    break;
+  default:
+    product = undefined;
+}
 if (!product) {
   console.error("Invalid target");
   process.exit(1);
 }
 
 const buildDir = `build/${product}/${tag}`;
-const remote =
-  product === 1
-    ? "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git"
-    : "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
+let remote;
+switch (product) {
+  case 1:
+    remote = "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git";
+    break;
+  case 2:
+    remote = "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
+    break;
+  default:
+    remote = "https://github.com/Musholic/LastEpochPlanner.git";
+    break;
+}
 const repoDir = `${buildDir}/repo`;
 
 if (clone) {
@@ -71,7 +92,7 @@ for (const file of shelljs.find(basePath)) {
     shelljs.cp(file, dest);
   }
 
-  if (path.extname(file) === ".lua" || path.extname(file) === ".zip" || path.extname(file).startsWith(".part")) {
+  if (path.extname(file) === ".lua" || path.extname(file) === ".zip" || path.extname(file).startsWith(".part") || path.extname(file).startsWith(".json")) {
     const content = fs.readFileSync(file);
 
     // patching
@@ -113,6 +134,14 @@ zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
 
 zip.writeZip(`${buildDir}/r2/root.zip`);
 zip.extractAllTo(rootDir, true);
+
+// For development, put the root.zip (and its extracted contents) where it is expected
+const devBuildDir = `build.${product}/${tag}`;
+shelljs.mkdir("-p", devBuildDir);
+shelljs.cp(`${buildDir}/r2/root.zip`, devBuildDir);
+
+const devRootDir = `${devBuildDir}/root`;
+zip.extractAllTo(devRootDir, true);
 
 function ddsSize(file: string) {
   const data = zstd.decompress(fs.readFileSync(file));
