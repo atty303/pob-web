@@ -1,7 +1,7 @@
 name: Check for new releases
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -56,7 +56,6 @@ jobs:
                 },
               },
             });
-            core.info(`Games JSON: ${gamesJson}`);
             const games = JSON.parse(gamesJson);
 
             const { owner, name: repo } = games[process.env.GAME].repository;

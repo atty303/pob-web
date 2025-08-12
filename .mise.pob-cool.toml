@@ -14,7 +14,7 @@ dir = "{{cwd}}"
 [tasks.sync]
 description = "Sync the packed distribution to Cloudflare R2"
 run = """
-aws s3 sync --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_URL} build/{{option(name="game")}}/{{option(name="tag")}}/r2 "s3://pob-web/game/{{option(name="game")}}/versions/{{option(name="tag")}}"
+aws s3 sync --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_URL} packages/packer/r2/games/{{option(name="game")}}/versions/{{option(name="tag")}} "s3://pob-web/games/{{option(name="game")}}/versions/{{option(name="tag")}}"
 """
 
 [tasks.deploy]
