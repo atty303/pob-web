@@ -40,7 +40,7 @@ jobs:
         with:
           script: |
             let gamesJson = "";
-            await exec.exec("mise run print-game-data", {
+            await exec.exec("mise", ["run", "print-game-data"], {
               listeners: {
                 stdout: (data) => {
                   gamesJson += data.toString();
