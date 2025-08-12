@@ -32,6 +32,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - uses: jdx/mise-action@v2
+      - run: mise run install
 
       - name: Get latest releases
         id: get_releases
