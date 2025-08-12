@@ -4,6 +4,10 @@ emsdk = "4.0.11"
 cmake = "latest"
 ninja = "latest"
 
+hk = "latest"
+pkl = "latest"
+actionlint = "latest"
+
 [tasks.install]
 run = "npm install"
 sources = [
