@@ -1,18 +1,10 @@
 import { Driver } from "./driver";
+import {type Game, gameData} from "pob-game/src";
 
 (async () => {
-  let version;
-  switch (__RUN_GAME__) {
-    case "le":
-      version = "3";
-      break;
-    case "poe2":
-      version = "2";
-      break;
-    default:
-      version = "1";
-  }
-  const versionPrefix = `${__ASSET_PREFIX__}/${version}/${__RUN_VERSION__}/r2`;
+  const versionPrefix = `${__ASSET_PREFIX__}/games/${__RUN_GAME__}/versions/${__RUN_VERSION__}`;
+  console.log("Loading driver with assets:", versionPrefix);
+
 
   const driver = new Driver(__RUN_BUILD__, versionPrefix, {
     onError: message => console.error(message),
@@ -23,6 +15,7 @@ import { Driver } from "./driver";
     onTitleChange: _title => {},
   });
   await driver.start({
+    userDirectory: gameData[__RUN_GAME__ as Game].userDirectory,
     cloudflareKvPrefix: "/api/kv/",
     cloudflareKvAccessToken: undefined,
     cloudflareKvUserNamespace: undefined,

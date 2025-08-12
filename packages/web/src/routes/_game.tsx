@@ -1,8 +1,9 @@
 import { Outlet } from "react-router";
 import type { Route } from "../routes/+types/_game";
+import type {Game} from "pob-game/src";
 
 export type Games = {
-  [key in "poe1" | "poe2" | "le"]: { head: string; versions: { value: string; date: string }[] };
+  [key in Game]: { head: string; versions: { value: string; date: string }[] };
 };
 
 export async function clientLoader(args: Route.ClientLoaderArgs) {

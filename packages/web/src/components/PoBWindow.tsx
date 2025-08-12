@@ -3,11 +3,12 @@ import { Driver } from "pob-driver/src/js/driver";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { log, tag } from "../lib/logger";
+import {type Game, gameData} from "pob-game/src";
 
 const { useHash } = use;
 
 export default function PoBWindow(props: {
-  product: "poe1" | "poe2" | "le";
+  game: Game;
   version: string;
   onFrame: (at: number, time: number) => void;
   onTitleChange: (title: string) => void;
@@ -45,21 +46,9 @@ export default function PoBWindow(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
   useEffect(() => {
-    log.debug(tag.pob, "loading version", props.version);
+    const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
+    log.debug(tag.pob, "loading assets from", assetPrefix);
 
-    let productSuffix;
-    switch(props.product) {
-      case "poe2":
-        productSuffix = ".2";
-        break;
-      case "le":
-        productSuffix = ".3";
-        break;
-      default:
-        productSuffix = "";
-        break;
-    }
-    const assetPrefix = `${__ASSET_PREFIX__}${productSuffix}/${props.version}`;
     const _driver = new Driver("release", assetPrefix, {
       onError: message => {
         throw new Error(message);
@@ -103,21 +92,11 @@ export default function PoBWindow(props: {
 
     (async () => {
       try {
-        let userNamespace;
-        switch(props.product) {
-          case "poe2":
-            userNamespace = "poe2";
-            break;
-          case "le":
-            userNamespace = "le";
-            break;
-          default:
-            userNamespace = undefined;
-        }
         await _driver.start({
+          userDirectory: gameData[props.game].userDirectory,
           cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
-          cloudflareKvUserNamespace: userNamespace,
+          cloudflareKvUserNamespace: gameData[props.game].cloudflareKvNamespace,
         });
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {
@@ -137,7 +116,7 @@ export default function PoBWindow(props: {
       _driver.destory();
       setLoading(true);
     };
-  }, [props.product, props.version, onFrame, onTitleChange, token, buildCode]);
+  }, [props.game, props.version, onFrame, onTitleChange, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);

@@ -31,27 +31,28 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
+      - uses: jdx/mise-action@v2
+
       - name: Get latest releases
         id: get_releases
         uses: actions/github-script@v7
         with:
           script: |
-            let owner, repo;
-            switch (process.env.GAME) {
-              case 'poe1':
-                [owner, repo] = ['PathOfBuildingCommunity', 'PathOfBuilding'];
-                break;
-              case 'poe2':
-                [owner, repo] = ['PathOfBuildingCommunity', 'PathOfBuilding-PoE2'];
-                break;
-              case 'le':
-                [owner, repo] = ['Musholic', 'LastEpochPlanner'];
-                break;
-              default:
-                [owner, repo] = [undefined, undefined];
-            }
+            const exec = require('@actions/exec');
+
+            let gamesJson = "";
+            await exec("mise run print-game-data", {
+              listeners: {
+                stdout: (data) => {
+                  gamesJson += data.toString();
+                },
+              },
+            });
+            const games = JSON.parse(gamesJson);
+
+            const { owner, name: repo } = games[process.env.GAME];
             if (!owner || !repo) {
-              throw new Error('Invalid game specified. Please use "poe1", "poe2" or "le".');
+              throw new Error('Invalid game specified.');
             }
 
             const tags = [];
@@ -156,13 +157,6 @@ jobs:
 
             return newTags.length > 0 ? newTags : null;
 
-      - uses: jdx/mise-action@v2
-        if: steps.new_versions.outputs.result != 'null'
-
-      - name: Install dependencies
-        if: steps.new_versions.outputs.result != 'null'
-        run: npm ci
-
       - name: Pack and sync new versions
         if: steps.new_versions.outputs.result != 'null'
         env:
@@ -170,14 +164,16 @@ jobs:
           R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          MISE_SOPS_STRICT: "false"
+          MISE_ENV: pob-cool
         uses: actions/github-script@v7
         with:
           script: |
             const newTags = JSON.parse(process.env.NEW_TAGS);
             for (const tag of newTags) {
-              await exec.exec(`npm run -w packages/packer pack ${tag.name} ${process.env.GAME} clone`);
+              await exec.exec(`mise run pack --game ${process.env.GAME} --tag ${tag.name}`);
               if (process.env.DRY_RUN !== 'true') {
-                await exec.exec(`npm run -w packages/packer sync ${tag.name} ${process.env.GAME}`);
+                await exec.exec(`mise run sync --game ${process.env.GAME} --tag ${tag.name}`);
               }
             }
 

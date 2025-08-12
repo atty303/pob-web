@@ -5,7 +5,7 @@ import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const rootDir = path.resolve(__dirname, "../..");
-const packerBuildDir = path.resolve(__dirname, "../packer/build");
+const packerR2Dir = path.resolve(__dirname, "../packer/r2");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -29,10 +29,10 @@ export default defineConfig(({ mode }) => ({
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
     __VERSION_URL__: JSON.stringify(
-      mode === "development" ? `/@fs/${rootDir}/version.json` : "https://asset.pob.cool/version.json",
+      mode === "development" && process.env.POB_COOL_ASSET === undefined ? `/@fs/${rootDir}/version.json` : "https://asset.pob.cool/version.json",
     ),
     __ASSET_PREFIX__: JSON.stringify(
-      mode === "development" ? `/@fs/${packerBuildDir}` : "https://asset.pob.cool/versions",
+      mode === "development" && process.env.POB_COOL_ASSET === undefined ? `/@fs/${packerR2Dir}` : "https://asset.pob.cool",
     ),
   },
   worker: {

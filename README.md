@@ -28,18 +28,18 @@ This is browser version of [Path of Building](https://pathofbuilding.community/)
 
 ### Prerequisites
 
-- [Node 22](https://nodejs.org/)
-- [Emscripten](https://emscripten.org/)
-- [CMake](https://cmake.org/)
-- [Ninja](https://ninja-build.org/)
+- [Mise](https://mise.jdx.dev/)
 
-### Clone the Repository
+### Clone the repository
 
 This repository includes a [submodule](https://gist.github.com/gitaarik/8735255) in `vendor/lua`. To include the submodule when cloning the repository, use the `--recurse-submodules` flag:
+
 ```bash
 git clone --recurse-submodules <repository-url>
 ```
+
 If you omitted the flag, you can use the following commands to clone the submodule:
+
 ```bash
 git submodule init
 git submodule update
@@ -48,7 +48,16 @@ git submodule update
 ### Install dependencies
 
 ```bash
-npm ci
+mise install
+hk install --mise
+```
+
+### Pack upstream PoB
+
+Before running the development server, you need to pack the upstream PoB assets into a structure that the driver can use.
+
+```bash
+mise run pack --game poe2 --tag v0.8.0
 ```
 
 ### Run driver shell
@@ -56,8 +65,7 @@ npm ci
 Set up a development server for the PoB web driver alone.
 
 ```bash
-npm run build -w packages/driver
-npm run dev -w packages/driver
+mise run driver:dev --game poe2 --version v0.8.0
 ```
 
 ### Run web app
@@ -66,8 +74,12 @@ Set up a web application development server.
 You need to build the driver first.
 
 ```bash
-npm run dev -w packages/web
+mise run web:dev
 ```
+
+### pob.cool maintenance for owners
+
+If you are the owner of pob.cool, you can set `MISE_ENV=pob-cool` to enable mise tasks.
 
 ## Under the hood
 
