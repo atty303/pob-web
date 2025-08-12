@@ -155,7 +155,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               <ArrowPathIcon className="h-8 w-8 text-accent mr-2" />
               <h3 className="text-xl font-semibold">Switch Between PoB Versions</h3>
             </div>
-            <p>Quickly revert to older PoB builds within a few clicks.</p>
+            <p>Quickly revert to older builds within a few clicks.</p>
           </div>
 
           {/* Feature 3: Cloud Saving */}
