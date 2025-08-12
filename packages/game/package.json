@@ -3,8 +3,7 @@
   "private": true,
   "version": "",
   "type": "module",
-  "dependencies": {
-  },
+  "dependencies": {},
   "scripts": {
     "build": "true"
   }

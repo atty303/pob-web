@@ -3,9 +3,7 @@
   "private": true,
   "version": "0.23.0",
   "type": "module",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "npm run build:debug && npm run build:release && npm run make-index",
     "build:debug": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",

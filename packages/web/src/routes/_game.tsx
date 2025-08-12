@@ -1,6 +1,6 @@
+import type { Game } from "pob-game/src";
 import { Outlet } from "react-router";
 import type { Route } from "../routes/+types/_game";
-import type {Game} from "pob-game/src";
 
 export type Games = {
   [key in Game]: { head: string; versions: { value: string; date: string }[] };

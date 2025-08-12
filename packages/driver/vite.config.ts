@@ -14,7 +14,9 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     __ASSET_PREFIX__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined ? `/@fs/${packerR2Dir}` : "https://asset.pob.cool",
+      mode === "development" && process.env.POB_COOL_ASSET === undefined
+        ? `/@fs/${packerR2Dir}`
+        : "https://asset.pob.cool",
     ),
     __RUN_GAME__: JSON.stringify(process.env.RUN_GAME ?? "poe2"),
     __RUN_VERSION__: JSON.stringify(process.env.RUN_VERSION ?? "v0.8.0"),

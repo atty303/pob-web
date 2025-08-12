@@ -12,11 +12,11 @@ import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
+import { gameData } from "pob-game/src";
 import React from "react";
 import { Link, redirect } from "react-router";
 import type { Route } from "../routes/+types/_index";
 import type { Games } from "./_game";
-import { gameData } from "pob-game/src";
 
 dayjs.extend(utc);
 dayjs.extend(localeData);

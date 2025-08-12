@@ -29,10 +29,14 @@ export default defineConfig(({ mode }) => ({
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
     __VERSION_URL__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined ? `/@fs/${rootDir}/version.json` : "https://asset.pob.cool/version.json",
+      mode === "development" && process.env.POB_COOL_ASSET === undefined
+        ? `/@fs/${rootDir}/version.json`
+        : "https://asset.pob.cool/version.json",
     ),
     __ASSET_PREFIX__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined ? `/@fs/${packerR2Dir}` : "https://asset.pob.cool",
+      mode === "development" && process.env.POB_COOL_ASSET === undefined
+        ? `/@fs/${packerR2Dir}`
+        : "https://asset.pob.cool",
     ),
   },
   worker: {

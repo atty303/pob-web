@@ -203,7 +203,7 @@ export class DriverWorker {
         namespace: fileSystemConfig.cloudflareKvUserNamespace,
       });
 
-      let pobUserDir = `/user/${fileSystemConfig.userDirectory}`;
+      const pobUserDir = `/user/${fileSystemConfig.userDirectory}`;
 
       const cloudDir = `${pobUserDir}/Builds/Cloud`;
       if (!(await zenfs.promises.exists(cloudDir))) await zenfs.promises.mkdir(cloudDir, { recursive: true });
@@ -382,7 +382,7 @@ async function printFileSystemTree(path: string) {
     for (const entry of entries) {
       const entryPath = `${currentPath}/${entry.name}`;
       if (entry.isDirectory()) {
-        tree += `${indent}📁 ${entry.name}\n` + (await buildTree(entryPath, depth + 1));
+        tree += `${indent}📁 ${entry.name}\n${await buildTree(entryPath, depth + 1)}`;
       } else {
         tree += `${indent}📄 ${entry.name}\n`;
       }

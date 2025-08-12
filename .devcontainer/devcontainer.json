@@ -1,17 +1,15 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-    "features": {
-        "ghcr.io/atty303/devcontainer-features/mise:1": {
-          "activate": "shims",
-          "install": false
-        }
-    },
-    "initializeCommand": "git submodule update --init --recursive",
-    "customizations": {
-      "vscode": {
-        "extensions": [
-          "hverlin.mise-vscode"
-        ]
-      }
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/atty303/devcontainer-features/mise:1": {
+      "activate": "shims",
+      "install": false
     }
+  },
+  "initializeCommand": "git submodule update --init --recursive",
+  "customizations": {
+    "vscode": {
+      "extensions": ["hverlin.mise-vscode"]
+    }
+  }
 }

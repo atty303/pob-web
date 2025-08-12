@@ -19,7 +19,7 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "style": { "noUselessElse": "off" }
+      "style": { "noUselessElse": "off", "noNonNullAssertion": "off" }
     }
   }
 }

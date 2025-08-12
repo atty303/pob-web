@@ -16,6 +16,7 @@ export default function handleRequest(
   routerContext: EntryContext,
   loadContext: AppLoadContext,
 ) {
+  let statusCode = responseStatusCode;
   return new Promise((resolve, reject) => {
     let shellRendered = false;
     const userAgent = request.headers.get("user-agent");
@@ -36,7 +37,7 @@ export default function handleRequest(
         resolve(
           new Response(stream, {
             headers: responseHeaders,
-            status: responseStatusCode,
+            status: statusCode,
           }),
         );
 
@@ -46,7 +47,7 @@ export default function handleRequest(
         reject(error);
       },
       onError(error: unknown) {
-        responseStatusCode = 500;
+        statusCode = 500;
         // Log streaming rendering errors from inside the shell.  Don't log
         // errors encountered during initial shell rendering since they'll
         // reject and get logged in handleDocumentRequest.

@@ -8,15 +8,21 @@ local linters = new Mapping<String, Step> {
         stage = glob
         check = "biome check {{ files }}"
         fix = "biome check --apply {{ files }}"
+        prefix = "npx"
     }
-    ["tsc"] = Builtins.tsc
+    ["tsc"] = (Builtins.tsc) {
+        prefix = "npx"
+    }
 
     ["pkl"] {
         glob = "*.pkl"
         check = "pkl eval {{files}} >/dev/null"
+        prefix = "mise exec -- "
     }
 
-    ["actionlint"] = Builtins.actionlint
+    ["actionlint"] = (Builtins.actionlint) {
+        prefix = "mise exec -- "
+    }
 }
 
 hooks {

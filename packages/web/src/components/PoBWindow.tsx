@@ -1,9 +1,9 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Driver } from "pob-driver/src/js/driver";
+import { type Game, gameData } from "pob-game/src";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { log, tag } from "../lib/logger";
-import {type Game, gameData} from "pob-game/src";
 
 const { useHash } = use;
 
