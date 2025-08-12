@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        game: [ poe1, poe2 ]
+        game: [ poe1, poe2, le ]
     env:
         VERSION_FILE: "version.json"
         GAME: ${{ matrix.game }}
@@ -36,9 +36,22 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const [owner, repo] = process.env.GAME === 'poe1' ? ['PathOfBuildingCommunity', 'PathOfBuilding'] : (process.env.GAME === 'poe2' ? ['PathOfBuildingCommunity', 'PathOfBuilding-PoE2'] : [undefined, undefined]);
+            let owner, repo;
+            switch (process.env.GAME) {
+              case 'poe1':
+                [owner, repo] = ['PathOfBuildingCommunity', 'PathOfBuilding'];
+                break;
+              case 'poe2':
+                [owner, repo] = ['PathOfBuildingCommunity', 'PathOfBuilding-PoE2'];
+                break;
+              case 'le':
+                [owner, repo] = ['Musholic', 'LastEpochPlanner'];
+                break;
+              default:
+                [owner, repo] = [undefined, undefined];
+            }
             if (!owner || !repo) {
-              throw new Error('Invalid game specified. Please use "poe1" or "poe2".');
+              throw new Error('Invalid game specified. Please use "poe1", "poe2" or "le".');
             }
 
             const tags = [];

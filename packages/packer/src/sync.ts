@@ -9,7 +9,20 @@ if (!tag) {
   process.exit(1);
 }
 
-const product = process.argv[3] === "poe1" ? 1 : process.argv[3] === "poe2" ? 2 : undefined;
+let product;
+switch (process.argv[3]) {
+  case "poe1":
+    product = 1;
+    break;
+  case "poe2":
+    product = 2;
+    break;
+  case "le":
+    product = 3;
+    break;
+  default:
+    product = undefined;
+}
 if (!product) {
   console.error("Invalid target");
   process.exit(1);
