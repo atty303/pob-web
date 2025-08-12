@@ -47,6 +47,7 @@ jobs:
                 },
               },
             });
+            core.info(`Games JSON: ${gamesJson}`);
             const games = JSON.parse(gamesJson);
 
             const { owner, name: repo } = games[process.env.GAME];
