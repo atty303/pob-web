@@ -64,7 +64,7 @@ for (const file of shelljs.find(basePath)) {
     const { width, height } = isDDS ? ddsSize(file) : imageSize(file);
     outputFile.push(`${relPath}\t${width}\t${height}`);
 
-    // PoB run existence check against the image file, but actual reading is done in the browser so we include an empty file in the zip
+    // PoB runs existence checks against the image file, but actual reading is done in the browser so we include an empty file in the zip
     zip.addFile(relPath, Buffer.of());
 
     const dest = `${r2Dir}/root/${relPath}`;
