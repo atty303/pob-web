@@ -69,5 +69,11 @@ depends = ["driver:build"]
 
 [tasks."web:dev"]
 description = "Start dev server for web"
-run = "npm run -w packages/web dev"
+usage = """
+flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
+"""
+run = """
+[ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
+npm run -w packages/web dev
+"""
 depends = ["driver:build"]
