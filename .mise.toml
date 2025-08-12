@@ -1,5 +1,5 @@
 [tools]
-node = "lts"
+node = "24"
 emsdk = "latest"
 cmake = "latest"
 ninja = "latest"
