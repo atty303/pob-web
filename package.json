@@ -5,8 +5,9 @@
   "workspaces": [
     "packages/dds",
     "packages/driver",
-    "packages/web",
-    "packages/packer"
+    "packages/game",
+    "packages/packer",
+    "packages/web"
   ],
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

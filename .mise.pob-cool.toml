@@ -1,0 +1,22 @@
+[tools]
+sops = "latest"
+aws-cli = "latest"
+
+[env]
+_.file = ".env.pob-cool.yaml"
+R2_ENDPOINT_URL = "https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com"
+
+[tasks.r2]
+description = "aws s3 wrapper for Cloudflare R2"
+run = "aws s3 --endpoint-url=${R2_ENDPOINT_URL}"
+dir = "{{cwd}}"
+
+[tasks.sync]
+description = "Sync the packed distribution to Cloudflare R2"
+run = """
+aws s3 sync --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_URL} build/{{option(name="game")}}/{{option(name="tag")}}/r2 "s3://pob-web/game/{{option(name="game")}}/versions/{{option(name="tag")}}"
+"""
+
+[tasks.deploy]
+description = "Deploy the web package to Cloudflare Pages"
+run = "npm run deploy -w packages/web"

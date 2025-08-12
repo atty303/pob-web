@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.22",
+    "pob-game": "*",
     "dds": "*"
   },
   "scripts": {

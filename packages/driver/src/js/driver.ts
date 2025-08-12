@@ -5,6 +5,7 @@ import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
 export type FilesystemConfig = {
+  userDirectory: string;
   cloudflareKvPrefix: string;
   cloudflareKvAccessToken: string | undefined;
   cloudflareKvUserNamespace: string | undefined;

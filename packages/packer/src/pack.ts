@@ -2,9 +2,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zstd from "@bokuweb/zstd-wasm";
 import AdmZip from "adm-zip";
-import { type DDSImage, parseDDSDX10 } from "dds/src";
+import { parseDDSDX10 } from "dds/src";
 import imageSize from "image-size";
 import { default as shelljs } from "shelljs";
+import {gameData, isGame} from "pob-game/src";
 
 await zstd.init();
 
@@ -18,50 +19,28 @@ if (!tag) {
   process.exit(1);
 }
 
-let product;
-switch (process.argv[3]) {
-  case "poe1":
-    product = 1;
-    break;
-  case "poe2":
-    product = 2;
-    break;
-  case "le":
-    product = 3;
-    break;
-  default:
-    product = undefined;
-}
-if (!product) {
-  console.error("Invalid target");
+const game = process.argv[3];
+if (!game || !isGame(game)) {
+  console.error("Invalid game");
   process.exit(1);
 }
+const def = gameData[game];
 
-const buildDir = `build/${product}/${tag}`;
-let remote;
-switch (product) {
-  case 1:
-    remote = "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git";
-    break;
-  case 2:
-    remote = "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git";
-    break;
-  default:
-    remote = "https://github.com/Musholic/LastEpochPlanner.git";
-    break;
-}
+const buildDir = `build/${game}/${tag}`;
+shelljs.mkdir("-p", buildDir);
+
+
+// Mirror of the R2 directory structure
+const r2Dir = `r2/games/${game}/versions/${tag}`;
+shelljs.mkdir("-p", r2Dir);
+
+const remote = `https://github.com/${def.repository.owner}/${def.repository.name}.git`;
 const repoDir = `${buildDir}/repo`;
 
 if (clone) {
   shelljs.rm("-rf", buildDir);
-  shelljs.mkdir("-p", buildDir);
   shelljs.exec(`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`, { fatal: true });
 }
-
-const rootDir = `${buildDir}/root`;
-shelljs.rm("-rf", rootDir);
-shelljs.mkdir("-p", rootDir);
-shelljs.mkdir("-p", `${buildDir}/r2`);
 
 const outputFile = [];
 
@@ -85,9 +64,10 @@ for (const file of shelljs.find(basePath)) {
     const { width, height } = isDDS ? ddsSize(file) : imageSize(file);
     outputFile.push(`${relPath}\t${width}\t${height}`);
 
+    // PoB runs existence checks against the image file, but actual reading is done in the browser so we include an empty file in the zip
     zip.addFile(relPath, Buffer.of());
 
-    const dest = `${buildDir}/r2/root/${relPath}`;
+    const dest = `${r2Dir}/root/${relPath}`;
     shelljs.mkdir("-p", path.dirname(dest));
     shelljs.cp(file, dest);
   }
@@ -132,16 +112,14 @@ zip.addFile("changelog.txt", fs.readFileSync(`${repoDir}/changelog.txt`));
 zip.addFile("help.txt", fs.readFileSync(`${repoDir}/help.txt`));
 zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
 
-zip.writeZip(`${buildDir}/r2/root.zip`);
-zip.extractAllTo(rootDir, true);
+zip.writeZip(`${buildDir}/root.zip`);
+shelljs.cp(`${buildDir}/root.zip`, `${r2Dir}/root.zip`);
 
 // For development, put the root.zip (and its extracted contents) where it is expected
-const devBuildDir = `build.${product}/${tag}`;
-shelljs.mkdir("-p", devBuildDir);
-shelljs.cp(`${buildDir}/r2/root.zip`, devBuildDir);
-
-const devRootDir = `${devBuildDir}/root`;
-zip.extractAllTo(devRootDir, true);
+const rootDir = `${buildDir}/root-zipfs`;
+shelljs.rm("-rf", rootDir);
+shelljs.mkdir("-p", rootDir);
+zip.extractAllTo(rootDir, true);
 
 function ddsSize(file: string) {
   const data = zstd.decompress(fs.readFileSync(file));

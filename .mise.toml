@@ -1,12 +1,13 @@
 [tools]
-node = "lts"
-emsdk = "latest"
+node = "24"
+emsdk = "4.0.11"
 cmake = "latest"
 ninja = "latest"
 
 [tasks.install]
 run = "npm install"
 sources = [
+  "package.json",
   "package-lock.json"
 ]
 outputs = { auto = true }
@@ -14,24 +15,59 @@ outputs = { auto = true }
 [tasks.pack]
 description = "Pack the distribution from upstream repository"
 run = """
-[ "{{option(name="tag")}}" = "false" ] && echo "No tag provided" >&2 && exit 1
-npm run -w packages/packer pack {{option(name="tag")}} {{option(name="game", default="poe2")}} clone
+npm run -w packages/packer pack {{option(name="tag")}} {{option(name="game")}} clone
 """
 
-[tasks.sync]
-description = "Sync the packed distribution to Cloudflare R2"
-run = """npm run -w packages/packer sync {{option(name="tag")}} {{option(name="game", default="poe2")}}"""
-
-
-[tasks."driver:dev"]
-description = "Start dev server for driver"
+[tasks.print-game-data]
+description = "Print game data"
 run = """
-export RUN_GAME={{option(name="game", default="poe2")}}
-export RUN_VERSION={{option(name="version", default="v0.8.0")}}
-export RUN_BUILD={{option(name="build", default="release")}}
-npm run -w packages/driver dev
+npx tsx -e 'import {gameData} from "pob-game/src"; console.log(JSON.stringify(gameData))'
 """
 
 [tasks."driver:build"]
-description = "Build driver"
+description = "Build the driver package"
 run = "npm run -w packages/driver build"
+sources = [
+  "packages/driver/*.lua",
+  "packages/driver/CMakeLists.txt",
+  "packages/driver/*.cmake",
+  "packages/driver/*.json",
+  "packages/driver/src/**/*"
+]
+outputs = { auto = true }
+depends = ["install"]
+
+[tasks."driver:dev"]
+description = "Start dev server for driver"
+usage = """
+flag "--game <game>" {
+  help "Game to run"
+  choices "poe1" "poe2" "le"
+}
+flag "--version <version>" help="Game version to run"
+flag "--build <build>" {
+  help "Build type to run"
+  choices "release" "debug"
+  default "release"
+}
+flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
+"""
+run = """
+export RUN_GAME="${usage_game?}"
+export RUN_VERSION="${usage_version?}"
+export RUN_BUILD="${usage_build?}"
+[ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
+
+npm run -w packages/driver dev
+"""
+depends = ["driver:build"]
+
+[tasks."web:build"]
+description = "Build the web package"
+run = "npm run -w packages/web build"
+depends = ["driver:build"]
+
+[tasks."web:dev"]
+description = "Start dev server for web"
+run = "npm run -w packages/web dev"
+depends = ["driver:build"]

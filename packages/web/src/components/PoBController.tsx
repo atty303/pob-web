@@ -63,7 +63,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       <div className="drawer-content">
         <div className="relative l-lvw h-lvh">
           <div className="absolute top-0 left-0 right-0 bottom-0">
-            <PoBWindow product={p.game} version={p.version} onFrame={pushFrame} onTitleChange={setTitle} />
+            <PoBWindow game={p.game} version={p.version} onFrame={pushFrame} onTitleChange={setTitle} />
           </div>
           <div className="absolute top-2 right-2">
             <span

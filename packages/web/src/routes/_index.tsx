@@ -16,6 +16,7 @@ import React from "react";
 import { Link, redirect } from "react-router";
 import type { Route } from "../routes/+types/_index";
 import type { Games } from "./_game";
+import { gameData } from "pob-game/src";
 
 dayjs.extend(utc);
 dayjs.extend(localeData);
@@ -31,23 +32,11 @@ export async function clientLoader(args: Route.ClientLoaderArgs) {
   return (await rep.json()) as Games;
 }
 
-const games = {
-  poe1: {
-    name: "Path of Exile 1",
-  },
-  poe2: {
-    name: "Path of Exile 2",
-  },
-  le: {
-    name: "Last Epoch",
-  },
-};
-
 export default function Index({ loaderData }: Route.ComponentProps) {
   function versionTable(game: keyof Games) {
     return (
       <div className="card bg-base-100 shadow-md p-4 w-full">
-        <h3 className="text-2xl font-semibold mb-4">{games[game].name} Versions</h3>
+        <h3 className="text-2xl font-semibold mb-4">{gameData[game].name}</h3>
         <div className="overflow-auto max-h-96">
           <table className="table w-full">
             <thead>
@@ -166,7 +155,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               <ArrowPathIcon className="h-8 w-8 text-accent mr-2" />
               <h3 className="text-xl font-semibold">Switch Between PoB Versions</h3>
             </div>
-            <p>Quickly revert to older PoB builds or try the latest beta—all within a few clicks.</p>
+            <p>Quickly revert to older builds within a few clicks.</p>
           </div>
 
           {/* Feature 3: Cloud Saving */}
