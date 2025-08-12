@@ -29,6 +29,15 @@ jobs:
         with:
           submodules: true
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+          path: |
+            ~/.npm
+
       - uses: jdx/mise-action@v2
 
       - name: "Build"

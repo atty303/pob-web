@@ -31,6 +31,15 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+          path: |
+            ~/.npm
+
       - uses: jdx/mise-action@v2
       - run: mise run install
 
@@ -50,7 +59,7 @@ jobs:
             core.info(`Games JSON: ${gamesJson}`);
             const games = JSON.parse(gamesJson);
 
-            const { owner, name: repo } = games[process.env.GAME];
+            const { owner, name: repo } = games[process.env.GAME].repository;
             if (!owner || !repo) {
               throw new Error('Invalid game specified.');
             }
