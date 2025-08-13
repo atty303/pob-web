@@ -127,6 +127,67 @@ function orthoMatrix(
   ]);
 }
 
+type WebGPUFormatDesc = {
+  format: GPUTextureFormat;
+  bytesPerPixel: number;
+  compressed: boolean;
+};
+
+function webgpuFormatFor(format: Format, supportedFeatures: Set<string>): WebGPUFormatDesc {
+  const desc = webgpuFormatTable[format];
+  if (!desc) {
+    // Fallback to rgba8unorm for unsupported formats
+    log.warn(tag.backend, `Unsupported format: ${format}, falling back to rgba8unorm`);
+    return { format: "rgba8unorm", bytesPerPixel: 4, compressed: false };
+  }
+
+  // Check if compressed format is supported
+  if (desc.compressed) {
+    const requiredFeature = getRequiredFeatureForFormat(desc.format);
+    if (requiredFeature && !supportedFeatures.has(requiredFeature)) {
+      log.warn(tag.backend, `Compressed format ${desc.format} not supported, falling back to rgba8unorm`);
+      return { format: "rgba8unorm", bytesPerPixel: 4, compressed: false };
+    }
+  }
+
+  return desc;
+}
+
+function getRequiredFeatureForFormat(format: GPUTextureFormat): string | null {
+  if (format.startsWith("bc")) {
+    return "texture-compression-bc";
+  }
+  if (format.startsWith("etc2")) {
+    return "texture-compression-etc2";
+  }
+  if (format.startsWith("astc")) {
+    return "texture-compression-astc";
+  }
+  return null;
+}
+
+const webgpuFormatTable: Record<number, WebGPUFormatDesc> = {
+  [Format.RGBA8_UNORM_PACK8]: { format: "rgba8unorm", bytesPerPixel: 4, compressed: false },
+  [Format.RGBA_DXT1_UNORM_BLOCK8]: { format: "bc1-rgba-unorm", bytesPerPixel: 8, compressed: true }, // 8 bytes per 4x4 block
+  [Format.RGBA_BP_UNORM_BLOCK16]: { format: "bc7-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
+  // Add more compressed formats as needed
+  [Format.RGB_DXT1_UNORM_BLOCK8]: { format: "bc1-rgba-unorm", bytesPerPixel: 8, compressed: true }, // 8 bytes per 4x4 block
+  [Format.RGBA_DXT3_UNORM_BLOCK16]: { format: "bc2-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
+  [Format.RGBA_DXT5_UNORM_BLOCK16]: { format: "bc3-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
+};
+
+const targetTable: Record<Target, boolean> = {
+  [Target.TARGET_1D]: false,
+  [Target.TARGET_1D_ARRAY]: false,
+  [Target.TARGET_2D]: true,
+  [Target.TARGET_2D_ARRAY]: true,
+  [Target.TARGET_3D]: true,
+  [Target.TARGET_RECT]: false,
+  [Target.TARGET_RECT_ARRAY]: false,
+  [Target.TARGET_CUBE]: true,
+  [Target.TARGET_CUBE_ARRAY]: false,
+};
+
 class VertexBuffer {
   private _buffer: Float32Array;
   private offset: number;
@@ -175,11 +236,13 @@ class VertexBuffer {
 
 export class WebGPUBackend implements RenderBackend {
   private device: GPUDevice | null = null;
+  private supportedFeatures: Set<string> = new Set();
   private context: GPUCanvasContext | null = null;
   private pipeline: GPURenderPipeline | null = null;
   private uniformBuffer: GPUBuffer | null = null;
   private vertexBuffer: GPUBuffer | null = null;
-  private sampler: GPUSampler | null = null;
+  private linearSampler: GPUSampler | null = null;
+  private nearestSampler: GPUSampler | null = null;
   private bindGroupLayout: GPUBindGroupLayout | null = null;
   private initialized = false;
   private initPromise: Promise<void>;
@@ -188,7 +251,7 @@ export class WebGPUBackend implements RenderBackend {
     string,
     {
       texture: GPUTexture;
-      format: GPUTextureFormat;
+      formatDesc: WebGPUFormatDesc;
     }
   > = new Map();
 
@@ -228,7 +291,28 @@ export class WebGPUBackend implements RenderBackend {
       throw new Error("WebGPU not supported");
     }
 
-    this.device = await adapter.requestDevice();
+    // Request device with compressed texture features
+    const requiredFeatures: GPUFeatureName[] = [];
+
+    // Check for texture compression features
+    if (adapter.features.has("texture-compression-bc")) {
+      requiredFeatures.push("texture-compression-bc");
+    }
+    if (adapter.features.has("texture-compression-etc2")) {
+      requiredFeatures.push("texture-compression-etc2");
+    }
+    if (adapter.features.has("texture-compression-astc")) {
+      requiredFeatures.push("texture-compression-astc");
+    }
+
+    log.info(tag.backend, "WebGPU adapter features:", Array.from(adapter.features));
+    log.info(tag.backend, "Requesting features:", requiredFeatures);
+
+    this.device = await adapter.requestDevice({
+      requiredFeatures,
+    });
+
+    this.supportedFeatures = new Set(requiredFeatures);
 
     const context = this._canvas.getContext("webgpu");
     if (!context) {
@@ -243,11 +327,22 @@ export class WebGPUBackend implements RenderBackend {
       alphaMode: "opaque",
     });
 
-    // Create sampler
-    this.sampler = this.device.createSampler({
+    // Create samplers
+    this.linearSampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear",
       mipmapFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      maxAnisotropy: 16,
+    });
+
+    this.nearestSampler = this.device.createSampler({
+      magFilter: "nearest",
+      minFilter: "nearest",
+      mipmapFilter: "nearest",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
     });
 
     // Create bind group layout
@@ -281,13 +376,31 @@ export class WebGPUBackend implements RenderBackend {
     });
 
     // Create pipeline
-    const vertexModule = this.device.createShaderModule({
-      code: vertexShaderSource,
-    });
+    const vertexShaderCode = vertexShaderSource;
+    const fragmentShaderCode = fragmentShaderSource(this.maxTextures);
 
-    const fragmentModule = this.device.createShaderModule({
-      code: fragmentShaderSource(this.maxTextures),
-    });
+    let vertexModule: GPUShaderModule;
+    let fragmentModule: GPUShaderModule;
+
+    try {
+      vertexModule = this.device.createShaderModule({
+        code: vertexShaderCode,
+      });
+    } catch (error) {
+      log.error(tag.backend, "Vertex shader compilation failed:", error);
+      log.error(tag.backend, "Vertex shader source:\n", vertexShaderCode);
+      throw error;
+    }
+
+    try {
+      fragmentModule = this.device.createShaderModule({
+        code: fragmentShaderCode,
+      });
+    } catch (error) {
+      log.error(tag.backend, "Fragment shader compilation failed:", error);
+      log.error(tag.backend, "Fragment shader source:\n", fragmentShaderCode);
+      throw error;
+    }
 
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
@@ -402,10 +515,12 @@ export class WebGPUBackend implements RenderBackend {
 
     if (textureBitmap.updateSubImage && this.device) {
       const sub = textureBitmap.updateSubImage();
+      const storedTexture = this.textures.get(textureBitmap.id);
+      const bytesPerPixel = storedTexture?.formatDesc.bytesPerPixel ?? 4;
       this.device.queue.writeTexture(
         { texture: t.texture, origin: { x: sub.x, y: sub.y } },
         sub.source as ArrayBufferView,
-        { bytesPerRow: sub.width * 4 }, // Assuming RGBA8
+        { bytesPerRow: sub.width * bytesPerPixel },
         { width: sub.width, height: sub.height, depthOrArrayLayers: 1 },
       );
     }
@@ -430,7 +545,7 @@ export class WebGPUBackend implements RenderBackend {
     // Create bind group
     const bindGroupEntries: GPUBindGroupEntry[] = [
       { binding: 0, resource: { buffer: this.uniformBuffer! } },
-      { binding: 1, resource: this.sampler! },
+      { binding: 1, resource: this.linearSampler! },
     ];
 
     // Add textures to bind group
@@ -509,9 +624,13 @@ export class WebGPUBackend implements RenderBackend {
     if (!texture) {
       const source = textureBitmap.source;
 
-      // Determine format - default to rgba8unorm for now
-      // TODO: Add proper format mapping based on source.format
-      const format: GPUTextureFormat = "rgba8unorm";
+      // Check if target is supported
+      if (!targetTable[source.target]) {
+        throw new Error(`Unsupported target: ${source.target}`);
+      }
+
+      // Get proper format descriptor
+      const formatDesc = webgpuFormatFor(source.format, this.supportedFeatures);
 
       const gpuTexture = this.device.createTexture({
         size: {
@@ -519,7 +638,7 @@ export class WebGPUBackend implements RenderBackend {
           height: source.height,
           depthOrArrayLayers: source.layers,
         },
-        format,
+        format: formatDesc.format,
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         mipLevelCount: source.levels,
         dimension: "2d",
@@ -542,27 +661,46 @@ export class WebGPUBackend implements RenderBackend {
             this.device.queue.writeTexture(
               { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
               imageData,
-              { bytesPerRow: image.width * 4 },
+              { bytesPerRow: image.width * formatDesc.bytesPerPixel },
               { width: image.width, height: image.height, depthOrArrayLayers: 1 },
             );
           } else if (source.type === "Texture") {
             const extent = source.texture.extentOf(level);
             const data = source.texture.dataOf(layer, 0, level);
 
-            if (!Format.isCompressed(source.texture.format)) {
+            if (Format.isCompressed(source.texture.format)) {
+              if (formatDesc.compressed) {
+                // Handle compressed texture data upload
+                // For BC formats, calculate bytes per row based on 4x4 blocks
+                const blocksWide = Math.ceil(extent[0] / 4);
+                const blocksHigh = Math.ceil(extent[1] / 4);
+                const bytesPerRow = blocksWide * formatDesc.bytesPerPixel;
+
+                this.device.queue.writeTexture(
+                  { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                  {
+                    bytesPerRow,
+                    rowsPerImage: blocksHigh,
+                  },
+                  { width: extent[0], height: extent[1], depthOrArrayLayers: 1 },
+                );
+              } else {
+                log.warn(tag.backend, `Compressed texture format ${source.format} not supported, skipping`);
+              }
+            } else {
               this.device.queue.writeTexture(
                 { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
                 new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-                { bytesPerRow: extent[0] * 4 }, // Assuming 4 bytes per pixel
+                { bytesPerRow: extent[0] * formatDesc.bytesPerPixel },
                 { width: extent[0], height: extent[1], depthOrArrayLayers: 1 },
               );
             }
-            // Compressed formats would need special handling
           }
         }
       }
 
-      texture = { texture: gpuTexture, format };
+      texture = { texture: gpuTexture, formatDesc };
       this.textures.set(textureBitmap.id, texture);
     }
 
