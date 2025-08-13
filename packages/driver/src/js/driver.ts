@@ -54,7 +54,7 @@ export class Driver {
     this.worker?.terminate();
   }
 
-  attachToDOM(root: HTMLElement) {
+  attachToDOM(root: HTMLElement, useWebGPU = false) {
     if (this.root) throw new Error("Already attached");
     this.root = root;
 
@@ -69,7 +69,7 @@ export class Driver {
     canvas.style.position = "absolute";
 
     const offscreenCanvas = canvas.transferControlToOffscreen();
-    this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]));
+    this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
     root.style.position = "relative";
     root.appendChild(canvas);
