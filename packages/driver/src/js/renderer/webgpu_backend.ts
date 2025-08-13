@@ -549,12 +549,21 @@ export class WebGPUBackend implements RenderBackend {
     ];
 
     // Add textures to bind group
-    const textureArray = Array.from(this.batchTextures.values());
+    // Create array to hold textures at correct indices
+    const textureSlots: GPUTexture[] = new Array(this.maxTextures).fill(this.defaultWhiteTexture);
+
+    // Place each texture at its correct index
+    for (const t of this.batchTextures.values()) {
+      if (t.index < this.maxTextures) {
+        textureSlots[t.index] = t.texture;
+      }
+    }
+
+    // Add all texture slots to bind group
     for (let i = 0; i < this.maxTextures; i++) {
-      const texture = i < textureArray.length ? textureArray[i].texture : this.defaultWhiteTexture!;
       bindGroupEntries.push({
         binding: i + 2,
-        resource: texture.createView({ dimension: "2d-array" }),
+        resource: textureSlots[i].createView({ dimension: "2d-array" }),
       });
     }
 
