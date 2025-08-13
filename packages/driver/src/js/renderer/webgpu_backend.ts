@@ -659,20 +659,24 @@ export class WebGPUBackend implements RenderBackend {
           if (source.type === "Image") {
             const image = source.texture[level];
             // Handle different image types
-            let imageData: Uint8ClampedArray;
             if ("data" in image) {
-              imageData = (image as ImageData).data;
+              // ImageData case
+              const imageData = (image as ImageData).data;
+              this.device.queue.writeTexture(
+                { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                imageData,
+                { bytesPerRow: image.width * formatDesc.bytesPerPixel },
+                { width: image.width, height: image.height, depthOrArrayLayers: 1 },
+              );
             } else {
-              // For ImageBitmap/OffscreenCanvas, we'd need to render to canvas and get ImageData
-              // For now, skip these
-              continue;
+              // ImageBitmap, HTMLImageElement, HTMLCanvasElement, OffscreenCanvas case
+              // WebGPU can copy directly from these sources
+              this.device.queue.copyExternalImageToTexture(
+                { source: image as ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas },
+                { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                { width: image.width, height: image.height, depthOrArrayLayers: 1 },
+              );
             }
-            this.device.queue.writeTexture(
-              { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-              imageData,
-              { bytesPerRow: image.width * formatDesc.bytesPerPixel },
-              { width: image.width, height: image.height, depthOrArrayLayers: 1 },
-            );
           } else if (source.type === "Texture") {
             const extent = source.texture.extentOf(level);
             const data = source.texture.dataOf(layer, 0, level);
