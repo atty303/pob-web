@@ -36,7 +36,7 @@ sources = [
   "packages/driver/CMakeLists.txt",
   "packages/driver/*.cmake",
   "packages/driver/*.json",
-  "packages/driver/src/**/*"
+  "packages/driver/src/c/**/*"
 ]
 outputs = { auto = true }
 depends = ["install"]
