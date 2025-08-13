@@ -1,5 +1,3 @@
-/// <reference path="./webgpu-types.d.ts" />
-
 import { Format, Target } from "dds/src";
 import { TextureFlags } from "../image";
 import { log, tag } from "../logger";
@@ -36,18 +34,18 @@ fn vs_main(input: VertexInput) -> VertexOutput {
   output.texCoord = input.texCoord;
   output.tintColor = input.tintColor;
   output.texId = input.texId;
-  
+
   let vp0 = input.viewport.xy + vec2<f32>(0.0, input.viewport.w);
   let vp1 = input.viewport.xy + vec2<f32>(input.viewport.z, 0.0);
   output.viewport = vec4<f32>(
     (uniforms.mvpMatrix * vec4<f32>(vp0, 0.0, 1.0)).xy,
     (uniforms.mvpMatrix * vec4<f32>(vp1, 0.0, 1.0)).xy
   );
-  
+
   let pos = uniforms.mvpMatrix * vec4<f32>(input.position + input.viewport.xy, 0.0, 1.0);
   output.screenPos = pos.xy;
   output.position = pos;
-  
+
   return output;
 }
 `;
@@ -88,14 +86,14 @@ ${Array.from({ length: maxTextures }, (_, i) => `@group(0) @binding(${i + 2}) va
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   let x = input.screenPos.x;
   let y = input.screenPos.y;
-  
+
   if (x < input.viewport.x || x >= input.viewport.z || y < input.viewport.y || y >= input.viewport.w) {
     discard;
   }
-  
+
   var color: vec4<f32>;
 ${switchCode}
-  
+
   return color * input.tintColor;
 }
 `;

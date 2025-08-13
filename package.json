@@ -2,13 +2,7 @@
   "name": "@atty303/pob-web",
   "private": true,
   "version": "0.23.0",
-  "workspaces": [
-    "packages/dds",
-    "packages/driver",
-    "packages/game",
-    "packages/packer",
-    "packages/web"
-  ],
+  "workspaces": ["packages/dds", "packages/driver", "packages/game", "packages/packer", "packages/web"],
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@bokuweb/zstd-wasm": "^0.0.22",
@@ -22,6 +16,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/shelljs": "^0.8.15",
+    "@webgpu/types": "^0.1.64",
     "adm-zip": "^0.5.12",
     "autoprefixer": "^10.4.19",
     "concurrently": "^8.2.2",
