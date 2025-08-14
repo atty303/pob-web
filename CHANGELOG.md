@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.25.0](https://github.com/atty303/pob-web/compare/v0.24.0...v0.25.0) (2025-08-14)
+
+
+### Features
+
+* Add comprehensive render statistics tracking and display ([8676af6](https://github.com/atty303/pob-web/commit/8676af628e4b138fcb2a7b7e89b05bc466d6706d))
+* Add layer visibility toggle functionality ([50d4da3](https://github.com/atty303/pob-web/commit/50d4da3f7f3219df212045e31a431446b7edff0c))
+
+
+### Performance Improvements
+
+* **driver:** add VAO support for improved vertex attribute management ([aa18e6b](https://github.com/atty303/pob-web/commit/aa18e6b635d316a9d2b2a4de1ce86d0caeaa23ea))
+* **driver:** compress vertex color data to reduce memory usage ([e3def1a](https://github.com/atty303/pob-web/commit/e3def1a0db036d526c1311389957cf112cc05386))
+* **driver:** implement index buffer for WebGL backend ([2338314](https://github.com/atty303/pob-web/commit/23383147250fd59eb310275288001b7b5d3cecfd))
+* **driver:** merge consecutive commands into ranges for efficient processing ([81a3850](https://github.com/atty303/pob-web/commit/81a3850cb657e9860b69674ad317b5f9f6bb27d7))
+* **driver:** optimize command sorting to minimize allocations and copies ([c23b038](https://github.com/atty303/pob-web/commit/c23b0382e1b541457de65f9bab348e339b91524c))
+
 ## [0.24.0](https://github.com/atty303/pob-web/compare/v0.23.0...v0.24.0) (2025-08-14)
 
 
