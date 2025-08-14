@@ -43,6 +43,7 @@ add_executable(${PROJECT_NAME}
 set(DRIVER_LINK_FLAGS
         "-flto"
         "--no-entry"
+        "--profiling-funcs"
         "-sUSE_ZLIB"
         "-sMODULARIZE"
         "-sSTACK_SIZE=131072"

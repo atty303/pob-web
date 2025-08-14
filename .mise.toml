@@ -36,7 +36,9 @@ sources = [
   "packages/driver/CMakeLists.txt",
   "packages/driver/*.cmake",
   "packages/driver/*.json",
-  "packages/driver/src/c/**/*"
+  "packages/driver/src/c/**/*",
+  "vendor/lua/**/*",
+  "vendor/luautf8/**/*",
 ]
 outputs = [ "packages/driver/build/**/*" ]
 depends = ["install"]
