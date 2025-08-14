@@ -17,6 +17,12 @@ list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
 
 add_compile_options("-flto" "-g" "-gsource-map" "-sUSE_ZLIB" "-DLUA_USE_DLOPEN")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options("-O0" "-g3")
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options("-O3")
+endif()
 set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 
 add_executable(${PROJECT_NAME}
@@ -43,6 +49,7 @@ add_executable(${PROJECT_NAME}
 set(DRIVER_LINK_FLAGS
         "-flto"
         "--no-entry"
+        "--emit-symbol-map"
         "--profiling-funcs"
         "-sUSE_ZLIB"
         "-sMODULARIZE"
@@ -61,7 +68,7 @@ set(DRIVER_LINK_FLAGS
         "-sERROR_ON_UNDEFINED_SYMBOLS=0"
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-sASSERTIONS")
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")
 endif()
 target_link_options(${PROJECT_NAME} PRIVATE ${DRIVER_LINK_FLAGS})
 
