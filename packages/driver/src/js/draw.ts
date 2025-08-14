@@ -40,12 +40,12 @@ export namespace DrawCommandInterpreter {
 
     let i = 0;
     while (i < view.byteLength) {
-      const commandType = view.getInt32(i, true);
+      const commandType = view.getUint8(i);
       switch (commandType) {
         case DrawCommandType.SetLayer: {
-          const layer = view.getInt32(i + 4, true);
-          const sublayer = view.getInt32(i + 8, true);
-          i += 12;
+          const layer = view.getInt16(i + 1, true);
+          const sublayer = view.getInt16(i + 3, true);
+          i += 5;
 
           if (currentLayer.layer !== layer || currentLayer.sublayer !== sublayer) {
             const l = layers.get(Layer.idOf(layer, sublayer));
@@ -63,37 +63,37 @@ export namespace DrawCommandInterpreter {
           break;
         }
         case DrawCommandType.SetViewport: {
-          const c = new Uint8Array(view.buffer, view.byteOffset + i, 20);
+          const c = new Uint8Array(view.buffer, view.byteOffset + i, 17);
           currentViewport = c;
           currentLayer.push(c);
-          i += 20;
+          i += 17;
           break;
         }
         case DrawCommandType.SetColor: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 20));
-          i += 20;
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 5));
+          i += 5;
           break;
         }
         case DrawCommandType.SetColorEscape: {
-          const textSize0 = view.getInt32(i + 4, true);
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 8 + textSize0));
-          i += 8 + textSize0;
+          const textSize0 = view.getUint16(i + 1, true);
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 3 + textSize0));
+          i += 3 + textSize0;
           break;
         }
         case DrawCommandType.DrawImage: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 48));
-          i += 48;
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 45));
+          i += 45;
           break;
         }
         case DrawCommandType.DrawImageQuad: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 80));
-          i += 80;
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 77));
+          i += 77;
           break;
         }
         case DrawCommandType.DrawString: {
-          const textSize = view.getInt32(i + 24, true);
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 28 + textSize));
-          i += 28 + textSize;
+          const textSize = view.getUint16(i + 12, true);
+          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 14 + textSize));
+          i += 14 + textSize;
           break;
         }
         default:
@@ -170,7 +170,7 @@ export namespace DrawCommandInterpreter {
     },
   ) {
     const view = new DataView(command.buffer, command.byteOffset, command.byteLength);
-    const commandType = view.getInt32(0, true);
+    const commandType = view.getUint8(0);
     switch (commandType) {
       case DrawCommandType.SetViewport:
         {
@@ -183,58 +183,58 @@ export namespace DrawCommandInterpreter {
         break;
       case DrawCommandType.SetColor:
         {
-          const r = view.getInt32(4, true);
-          const g = view.getInt32(8, true);
-          const b = view.getInt32(12, true);
-          const a = view.getInt32(16, true);
+          const r = view.getUint8(1);
+          const g = view.getUint8(2);
+          const b = view.getUint8(3);
+          const a = view.getUint8(4);
           cb.onSetColor(r, g, b, a);
         }
         break;
       case DrawCommandType.SetColorEscape:
         {
-          const textSize = view.getInt32(4, true);
-          const textArray = new Uint8Array(view.buffer, view.byteOffset + 8, textSize);
+          const textSize = view.getUint16(1, true);
+          const textArray = new Uint8Array(view.buffer, view.byteOffset + 3, textSize);
           const text = new TextDecoder().decode(textArray);
           cb.onSetColorEscape(text);
         }
         break;
       case DrawCommandType.DrawImage:
         {
-          const handle = view.getInt32(4, true);
-          const x = view.getFloat32(8, true);
-          const y = view.getFloat32(12, true);
-          const width = view.getFloat32(16, true);
-          const height = view.getFloat32(20, true);
-          const s1 = view.getFloat32(24, true);
-          const t1 = view.getFloat32(28, true);
-          const s2 = view.getFloat32(32, true);
-          const t2 = view.getFloat32(36, true);
-          const stackLayer = view.getInt32(40, true);
-          const maskLayer = view.getInt32(44, true);
+          const handle = view.getInt32(1, true);
+          const x = view.getFloat32(5, true);
+          const y = view.getFloat32(9, true);
+          const width = view.getFloat32(13, true);
+          const height = view.getFloat32(17, true);
+          const s1 = view.getFloat32(21, true);
+          const t1 = view.getFloat32(25, true);
+          const s2 = view.getFloat32(29, true);
+          const t2 = view.getFloat32(33, true);
+          const stackLayer = view.getInt32(37, true);
+          const maskLayer = view.getInt32(41, true);
           cb.onDrawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
         }
         break;
       case DrawCommandType.DrawImageQuad:
         {
-          const handle = view.getInt32(4, true);
-          const x1 = view.getFloat32(8, true);
-          const y1 = view.getFloat32(12, true);
-          const x2 = view.getFloat32(16, true);
-          const y2 = view.getFloat32(20, true);
-          const x3 = view.getFloat32(24, true);
-          const y3 = view.getFloat32(28, true);
-          const x4 = view.getFloat32(32, true);
-          const y4 = view.getFloat32(36, true);
-          const s1 = view.getFloat32(40, true);
-          const t1 = view.getFloat32(44, true);
-          const s2 = view.getFloat32(48, true);
-          const t2 = view.getFloat32(52, true);
-          const s3 = view.getFloat32(56, true);
-          const t3 = view.getFloat32(60, true);
-          const s4 = view.getFloat32(64, true);
-          const t4 = view.getFloat32(68, true);
-          const stackLayer = view.getInt32(72, true);
-          const maskLayer = view.getInt32(76, true);
+          const handle = view.getInt32(1, true);
+          const x1 = view.getFloat32(5, true);
+          const y1 = view.getFloat32(9, true);
+          const x2 = view.getFloat32(13, true);
+          const y2 = view.getFloat32(17, true);
+          const x3 = view.getFloat32(21, true);
+          const y3 = view.getFloat32(25, true);
+          const x4 = view.getFloat32(29, true);
+          const y4 = view.getFloat32(33, true);
+          const s1 = view.getFloat32(37, true);
+          const t1 = view.getFloat32(41, true);
+          const s2 = view.getFloat32(45, true);
+          const t2 = view.getFloat32(49, true);
+          const s3 = view.getFloat32(53, true);
+          const t3 = view.getFloat32(57, true);
+          const s4 = view.getFloat32(61, true);
+          const t4 = view.getFloat32(65, true);
+          const stackLayer = view.getInt32(69, true);
+          const maskLayer = view.getInt32(73, true);
           cb.onDrawImageQuad(
             handle,
             x1,
@@ -260,13 +260,13 @@ export namespace DrawCommandInterpreter {
         break;
       case DrawCommandType.DrawString:
         {
-          const x = view.getFloat32(4, true);
-          const y = view.getFloat32(8, true);
-          const align = view.getInt32(12, true);
-          const height = view.getInt32(16, true);
-          const font = view.getInt32(20, true);
-          const textSize = view.getInt32(24, true);
-          const textArray = new Uint8Array(view.buffer, view.byteOffset + 28, textSize);
+          const x = view.getFloat32(1, true);
+          const y = view.getFloat32(5, true);
+          const align = view.getUint8(9);
+          const height = view.getUint8(10);
+          const font = view.getUint8(11);
+          const textSize = view.getUint16(12, true);
+          const textArray = new Uint8Array(view.buffer, view.byteOffset + 14, textSize);
           const text = new TextDecoder().decode(textArray);
           cb.onDrawString(x, y, align, height, font, text);
         }

@@ -20,30 +20,32 @@ typedef enum {
     DRAW_STRING = 8,
 } DrawCommandType;
 
+#pragma pack(push, 1)
+
 typedef struct {
-    int type;
-    int layer;
-    int sublayer;
+    uint8_t type;
+    int16_t layer;
+    int16_t sublayer;
 } SetLayerCommand;
 
 typedef struct {
-    int type;
+    uint8_t type;
     int x, y, w, h;
 } SetViewportCommand;
 
 typedef struct {
-    int type;
-    int r, g, b, a;
+    uint8_t type;
+    uint8_t r, g, b, a;
 } SetColorCommand;
 
 typedef struct {
-    int type;
-    int text_size;
+    uint8_t type;
+    uint16_t text_size;
     char text[];
 } SetColorEscapeCommand;
 
 typedef struct {
-    int type;
+    uint8_t type;
     int image_handle;
     float x, y, w, h;
     float s1, t1, s2, t2;
@@ -52,7 +54,7 @@ typedef struct {
 } DrawImageCommand;
 
 typedef struct {
-    int type;
+    uint8_t type;
     int image_handle;
     float x1, y1, x2, y2, x3, y3, x4, y4;
     float s1, t1, s2, t2, s3, t3, s4, t4;
@@ -61,14 +63,16 @@ typedef struct {
 } DrawImageQuadCommand;
 
 typedef struct {
-    int type;
+    uint8_t type;
     float x, y;
-    int align;
-    int height;
-    int font;
-    int text_size;
+    uint8_t align;
+    uint8_t height;
+    uint8_t font;
+    uint16_t text_size;
     char text[];
 } DrawStringCommand;
+
+#pragma pack(pop)
 
 typedef struct {
     uint8_t *data;
