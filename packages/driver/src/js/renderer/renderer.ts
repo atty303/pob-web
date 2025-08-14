@@ -1,8 +1,8 @@
 import { Format, Target, Texture } from "dds/src";
 import { DrawCommandInterpreter } from "../draw";
 import { type ImageRepository, TextureFlags, TextureSource } from "../image";
+import type { RenderBackend } from "./backend";
 import type { TextRasterizer, TextRender } from "./text";
-import type { WebGL1Backend } from "./webgl_backend";
 
 export type TextureBitmap = {
   id: string;
@@ -44,7 +44,7 @@ const colorEscape = [
 ];
 
 export class Renderer {
-  backend: WebGL1Backend | undefined;
+  backend: RenderBackend | undefined;
 
   private screenSize: { width: number; height: number };
   private currentColor: number[] = [0, 0, 0, 0];
@@ -65,6 +65,7 @@ export class Renderer {
   render(view: DataView) {
     if (!this.backend) return;
 
+    this.backend.beginFrame();
     const layers = DrawCommandInterpreter.sort(view);
     // console.log(
     //   "layers",

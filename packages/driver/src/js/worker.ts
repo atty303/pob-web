@@ -17,6 +17,7 @@ import {
   TextMetrics,
   type TextRasterizer,
   WebGL1Backend,
+  WebGPUBackend,
   loadFonts,
 } from "./renderer";
 import type { SubScriptWorker } from "./sub";
@@ -224,10 +225,32 @@ export class DriverWorker {
 
   destroy() {}
 
-  setCanvas(canvas: OffscreenCanvas) {
-    const backend = new WebGL1Backend(canvas);
-    if (this.renderer) {
-      this.renderer.backend = backend;
+  async setCanvas(canvas: OffscreenCanvas) {
+    try {
+      if ("gpu" in navigator) {
+        // Try to initialize WebGPU backend
+        const backend = new WebGPUBackend(canvas);
+        // Wait for WebGPU initialization
+        await backend.waitForInit();
+        if (this.renderer) {
+          this.renderer.backend = backend;
+        }
+        log.info(tag.backend, "Using WebGPU backend");
+      } else {
+        // Fallback to WebGL2
+        const backend = new WebGL1Backend(canvas);
+        if (this.renderer) {
+          this.renderer.backend = backend;
+        }
+        log.info(tag.backend, "Using WebGL2 backend");
+      }
+    } catch (error) {
+      // If WebGPU fails, fallback to WebGL2
+      log.warn(tag.backend, "Failed to initialize WebGPU, falling back to WebGL2", error);
+      const backend = new WebGL1Backend(canvas);
+      if (this.renderer) {
+        this.renderer.backend = backend;
+      }
     }
   }
 

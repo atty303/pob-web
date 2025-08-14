@@ -54,7 +54,7 @@ export class Driver {
     this.worker?.terminate();
   }
 
-  attachToDOM(root: HTMLElement) {
+  attachToDOM(root: HTMLElement, useWebGPU = true) {
     if (this.root) throw new Error("Already attached");
     this.root = root;
 

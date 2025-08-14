@@ -1,6 +1,7 @@
 import { Format, Target } from "dds/src";
 import { TextureFlags } from "../image";
 import { log, tag } from "../logger";
+import type { RenderBackend } from "./backend";
 import type { TextureBitmap } from "./renderer";
 import { type FormatDesc, glFormatFor } from "./webgl";
 
@@ -193,7 +194,7 @@ class VertexBuffer {
   }
 }
 
-export class WebGL1Backend {
+export class WebGL1Backend implements RenderBackend {
   private readonly gl: WebGL2RenderingContext;
   private readonly ext: {
     textureBptc: EXT_texture_compression_bptc | null;
@@ -313,6 +314,10 @@ export class WebGL1Backend {
 
   setViewport(x: number, y: number, width: number, height: number) {
     this.viewport = [x, y, width, height];
+  }
+
+  beginFrame() {
+    // WebGL doesn't need frame-level clearing management
   }
 
   begin() {
