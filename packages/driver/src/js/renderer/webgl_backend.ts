@@ -289,6 +289,7 @@ export class WebGL1Backend implements RenderBackend {
   private drawCount = 0;
   private readonly vbo: WebGLBuffer;
   private readonly ebo: WebGLBuffer;
+  private readonly vao: WebGLVertexArrayObject;
   private vboSize = 0;
   private eboSize = 0;
   private readonly maxTextures: number;
@@ -377,6 +378,32 @@ export class WebGL1Backend implements RenderBackend {
     if (!ebo) throw new Error("Failed to create element buffer");
     this.ebo = ebo;
 
+    // Create and setup VAO
+    const vao = gl.createVertexArray();
+    if (!vao) throw new Error("Failed to create vertex array object");
+    this.vao = vao;
+
+    // Bind VAO and setup vertex attributes once
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo);
+
+    this.textureProgram.use(p => {
+      const stride = 48; // 12 * 4 bytes
+      gl.enableVertexAttribArray(p.position);
+      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, stride, 0);
+      gl.enableVertexAttribArray(p.texCoord);
+      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, stride, 8);
+      gl.enableVertexAttribArray(p.tintColor);
+      gl.vertexAttribIPointer(p.tintColor, 1, gl.UNSIGNED_INT, stride, 16);
+      gl.enableVertexAttribArray(p.viewport);
+      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, stride, 20);
+      gl.enableVertexAttribArray(p.texId);
+      gl.vertexAttribPointer(p.texId, 3, gl.FLOAT, false, stride, 36);
+    });
+
+    gl.bindVertexArray(null);
+
     // Set up the viewport
     this.setViewport(0, 0, canvas.width, canvas.height);
   }
@@ -463,6 +490,9 @@ export class WebGL1Backend implements RenderBackend {
 
     const gl = this.gl;
 
+    // Bind VAO - all vertex attributes are already configured
+    gl.bindVertexArray(this.vao);
+
     // Update vertex buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     const bufferData = this.vertices.buffer;
@@ -504,26 +534,13 @@ export class WebGL1Backend implements RenderBackend {
       }
       gl.activeTexture(gl.TEXTURE0);
 
-      // Draw (vertex stride reduced from 60 to 48 bytes)
-      const stride = 48; // 12 * 4 bytes
-      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, stride, 0);
-      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, stride, 8);
-      gl.vertexAttribIPointer(p.tintColor, 1, gl.UNSIGNED_INT, stride, 16); // Integer attribute for packed color
-      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, stride, 20);
-      gl.vertexAttribPointer(p.texId, 3, gl.FLOAT, false, stride, 36);
-      gl.enableVertexAttribArray(p.position);
-      gl.enableVertexAttribArray(p.texCoord);
-      gl.enableVertexAttribArray(p.tintColor);
-      gl.enableVertexAttribArray(p.viewport);
-      gl.enableVertexAttribArray(p.texId);
+      // Draw - VAO already has all vertex attributes configured
       gl.drawElements(gl.TRIANGLES, this.vertices.indexCount, gl.UNSIGNED_SHORT, 0);
-      // gl.disableVertexAttribArray(p.position);
-      // gl.disableVertexAttribArray(p.texCoord);
-      // gl.disableVertexAttribArray(p.tintColor);
-      // gl.disableVertexAttribArray(p.viewport);
-      // gl.disableVertexAttribArray(p.texId);
-      // gl.bindBuffer(gl.ARRAY_BUFFER, null);
     });
+
+    // Unbind VAO
+    gl.bindVertexArray(null);
+
     this.resetBatch();
   }
 
