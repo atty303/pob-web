@@ -107,15 +107,15 @@ export class Renderer {
         drawImageCount: 0,
         drawImageQuadCount: 0,
         drawStringCount: 0,
-        totalCommands: layer.commands.length,
+        totalCommands: layer.ranges.length,
       };
 
       if (isVisible) {
         this.backend.begin();
       }
 
-      for (const commandRef of layer.commands) {
-        DrawCommandInterpreter.run(commandRef, view, {
+      for (const range of layer.ranges) {
+        DrawCommandInterpreter.runRange(range, view, {
           onSetViewport: (x: number, y: number, width: number, height: number) => {
             if (isVisible) {
               if (width === 0 || height === 0) {
