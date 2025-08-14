@@ -10,7 +10,7 @@ uniform mat4 u_MvpMatrix;
 
 in vec2 a_Position;
 in vec2 a_TexCoord;
-in vec4 a_TintColor;
+in uint a_TintColor; // Packed RGBA as uint32
 in vec4 a_Viewport;
 in vec3 a_TexId;
 
@@ -22,7 +22,13 @@ out vec3 v_TexId;
 
 void main(void) {
     v_TexCoord = a_TexCoord;
-    v_TintColor = a_TintColor;
+    // Unpack color from uint32 to vec4
+    v_TintColor = vec4(
+        float((a_TintColor >> 24u) & 0xFFu) / 255.0,
+        float((a_TintColor >> 16u) & 0xFFu) / 255.0,
+        float((a_TintColor >> 8u) & 0xFFu) / 255.0,
+        float(a_TintColor & 0xFFu) / 255.0
+    );
     v_TexId = a_TexId;
     vec2 vp0 = a_Viewport.xy + vec2(0.0, a_Viewport.w);
     vec2 vp1 = a_Viewport.xy + vec2(a_Viewport.z, 0.0);
@@ -148,14 +154,19 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
 }
 
 class VertexBuffer {
-  private _buffer: Float32Array;
+  private _buffer: ArrayBuffer;
+  private _floatView: Float32Array;
+  private _uintView: Uint32Array;
   private _indices: Uint16Array;
   private vertexOffset: number;
   private indexOffset: number;
   private quadCount: number;
+  private static readonly VERTEX_SIZE = 12; // 12 floats per vertex (reduced from 15)
 
   constructor() {
-    this._buffer = new Float32Array(1024 * 1024);
+    this._buffer = new ArrayBuffer(1024 * 1024 * 4);
+    this._floatView = new Float32Array(this._buffer);
+    this._uintView = new Uint32Array(this._buffer);
     this._indices = new Uint16Array(1024 * 1024);
     this.vertexOffset = 0;
     this.indexOffset = 0;
@@ -163,7 +174,7 @@ class VertexBuffer {
   }
 
   get buffer() {
-    return new Float32Array(this._buffer.buffer, 0, this.vertexOffset);
+    return new Uint8Array(this._buffer, 0, this.vertexOffset * 4);
   }
 
   get indices() {
@@ -171,7 +182,7 @@ class VertexBuffer {
   }
 
   get vertexCount() {
-    return this.vertexOffset / 15;
+    return this.vertexOffset / VertexBuffer.VERTEX_SIZE;
   }
 
   get indexCount() {
@@ -185,11 +196,14 @@ class VertexBuffer {
   }
 
   private ensureCapacity(requiredVertices: number, requiredIndices: number) {
-    if (requiredVertices > this._buffer.length) {
-      const newSize = Math.max(requiredVertices, this._buffer.length * 2);
-      const newBuffer = new Float32Array(newSize);
-      newBuffer.set(this._buffer);
+    if (requiredVertices > this._floatView.length) {
+      const newSize = Math.max(requiredVertices, this._floatView.length * 2);
+      const newBuffer = new ArrayBuffer(newSize * 4);
+      const newFloatView = new Float32Array(newBuffer);
+      newFloatView.set(this._floatView);
       this._buffer = newBuffer;
+      this._floatView = newFloatView;
+      this._uintView = new Uint32Array(newBuffer);
     }
     if (requiredIndices > this._indices.length) {
       const newSize = Math.max(requiredIndices, this._indices.length * 2);
@@ -208,28 +222,33 @@ class VertexBuffer {
     stackLayer: number,
     maskLayer: number,
   ) {
-    this.ensureCapacity(this.vertexOffset + 60, this.indexOffset + 6);
+    this.ensureCapacity(this.vertexOffset + 48, this.indexOffset + 6); // 48 = 12 * 4 vertices
 
     const baseVertex = this.quadCount * 4;
-    const b = this._buffer;
 
-    // Push 4 vertices for the quad
+    // Pack color into uint32
+    const packedColor =
+      (Math.round(tintColor[0] * 255) << 24) |
+      (Math.round(tintColor[1] * 255) << 16) |
+      (Math.round(tintColor[2] * 255) << 8) |
+      Math.round(tintColor[3] * 255);
+
+    // Push 4 vertices for the quad (12 values per vertex instead of 15)
     for (let i = 0; i < 4; i++) {
-      b[this.vertexOffset++] = coords[i * 2];
-      b[this.vertexOffset++] = coords[i * 2 + 1];
-      b[this.vertexOffset++] = texCoords[i * 2];
-      b[this.vertexOffset++] = texCoords[i * 2 + 1];
-      b[this.vertexOffset++] = tintColor[0];
-      b[this.vertexOffset++] = tintColor[1];
-      b[this.vertexOffset++] = tintColor[2];
-      b[this.vertexOffset++] = tintColor[3];
-      b[this.vertexOffset++] = viewport[0];
-      b[this.vertexOffset++] = viewport[1];
-      b[this.vertexOffset++] = viewport[2];
-      b[this.vertexOffset++] = viewport[3];
-      b[this.vertexOffset++] = textureSlot;
-      b[this.vertexOffset++] = stackLayer;
-      b[this.vertexOffset++] = maskLayer;
+      const base = this.vertexOffset;
+      this._floatView[base] = coords[i * 2];
+      this._floatView[base + 1] = coords[i * 2 + 1];
+      this._floatView[base + 2] = texCoords[i * 2];
+      this._floatView[base + 3] = texCoords[i * 2 + 1];
+      this._uintView[base + 4] = packedColor; // Store as uint32
+      this._floatView[base + 5] = viewport[0];
+      this._floatView[base + 6] = viewport[1];
+      this._floatView[base + 7] = viewport[2];
+      this._floatView[base + 8] = viewport[3];
+      this._floatView[base + 9] = textureSlot;
+      this._floatView[base + 10] = stackLayer;
+      this._floatView[base + 11] = maskLayer;
+      this.vertexOffset += VertexBuffer.VERTEX_SIZE;
     }
 
     // Push indices for two triangles (0,1,2) and (0,2,3)
@@ -485,12 +504,13 @@ export class WebGL1Backend implements RenderBackend {
       }
       gl.activeTexture(gl.TEXTURE0);
 
-      // Draw
-      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, 60, 0);
-      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, 60, 8);
-      gl.vertexAttribPointer(p.tintColor, 4, gl.FLOAT, false, 60, 16);
-      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, 60, 32);
-      gl.vertexAttribPointer(p.texId, 3, gl.FLOAT, false, 60, 48);
+      // Draw (vertex stride reduced from 60 to 48 bytes)
+      const stride = 48; // 12 * 4 bytes
+      gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, stride, 0);
+      gl.vertexAttribPointer(p.texCoord, 2, gl.FLOAT, false, stride, 8);
+      gl.vertexAttribIPointer(p.tintColor, 1, gl.UNSIGNED_INT, stride, 16); // Integer attribute for packed color
+      gl.vertexAttribPointer(p.viewport, 4, gl.FLOAT, false, stride, 20);
+      gl.vertexAttribPointer(p.texId, 3, gl.FLOAT, false, stride, 36);
       gl.enableVertexAttribArray(p.position);
       gl.enableVertexAttribArray(p.texCoord);
       gl.enableVertexAttribArray(p.tintColor);
