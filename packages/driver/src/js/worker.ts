@@ -225,9 +225,9 @@ export class DriverWorker {
 
   destroy() {}
 
-  async setCanvas(canvas: OffscreenCanvas) {
+  async setCanvas(canvas: OffscreenCanvas, useWebGPU: boolean) {
     try {
-      if ("gpu" in navigator) {
+      if (useWebGPU && "gpu" in navigator) {
         // Try to initialize WebGPU backend
         const backend = new WebGPUBackend(canvas);
         // Wait for WebGPU initialization

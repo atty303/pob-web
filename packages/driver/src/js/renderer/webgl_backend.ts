@@ -152,7 +152,6 @@ class VertexBuffer {
   private offset: number;
 
   constructor() {
-    // TODO: Use a dynamic buffer
     this._buffer = new Float32Array(1024 * 1024);
     this.offset = 0;
   }
@@ -165,6 +164,19 @@ class VertexBuffer {
     return this.offset / 15;
   }
 
+  reset() {
+    this.offset = 0;
+  }
+
+  private ensureCapacity(requiredSize: number) {
+    if (requiredSize > this._buffer.length) {
+      const newSize = Math.max(requiredSize, this._buffer.length * 2);
+      const newBuffer = new Float32Array(newSize);
+      newBuffer.set(this._buffer);
+      this._buffer = newBuffer;
+    }
+  }
+
   push(
     i: number,
     coords: number[],
@@ -175,6 +187,7 @@ class VertexBuffer {
     stackLayer: number,
     maskLayer: number,
   ) {
+    this.ensureCapacity(this.offset + 15);
     const b = this._buffer;
     b[this.offset++] = coords[i * 2];
     b[this.offset++] = coords[i * 2 + 1];
@@ -218,6 +231,7 @@ export class WebGL1Backend implements RenderBackend {
   private vertices: VertexBuffer = new VertexBuffer();
   private drawCount = 0;
   private readonly vbo: WebGLBuffer;
+  private vboSize = 0;
   private readonly maxTextures: number;
   private batchTextures: Map<
     string,
@@ -388,7 +402,16 @@ export class WebGL1Backend implements RenderBackend {
 
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, this.vertices.buffer, gl.STREAM_DRAW);
+
+    const bufferData = this.vertices.buffer;
+    const requiredSize = bufferData.byteLength;
+
+    if (requiredSize > this.vboSize) {
+      gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STREAM_DRAW);
+      this.vboSize = requiredSize;
+    } else {
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, bufferData);
+    }
     this.textureProgram.use(p => {
       // Set up the viewport
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -433,7 +456,7 @@ export class WebGL1Backend implements RenderBackend {
   }
 
   private resetBatch() {
-    this.vertices = new VertexBuffer();
+    this.vertices.reset();
     this.batchTextures = new Map();
     this.batchTextureCount = 0;
   }
