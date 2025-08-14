@@ -51,23 +51,28 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 `;
 
 const fragmentShaderSource = (maxTextures: number) => {
-  let switchCode = "";
+  // Sample all textures first to avoid non-uniform control flow
+  let sampleCode = "";
+  for (let i = 0; i < maxTextures; ++i) {
+    sampleCode += `  let color${i} = textureSample(textures${i}, linearSampler, input.texCoord, i32(input.texId.y));\n`;
+    sampleCode += `  let mask${i} = textureSample(textures${i}, linearSampler, input.texCoord, i32(input.texId.z));\n`;
+  }
+
+  let selectCode = "";
   for (let i = 0; i < maxTextures; ++i) {
     if (i === 0) {
-      switchCode += `  if (input.texId.x < ${i}.5) `;
+      selectCode += `  if (input.texId.x < ${i}.5) {\n`;
     } else if (i === maxTextures - 1) {
-      switchCode += "  else ";
+      selectCode += "  } else {\n";
     } else {
-      switchCode += `  else if (input.texId.x < ${i}.5) `;
+      selectCode += `  } else if (input.texId.x < ${i}.5) {\n`;
     }
-    switchCode += `{
-    color = textureSample(textures${i}, linearSampler, input.texCoord, i32(input.texId.y));
-    if (input.texId.z > -0.5) {
-      color = color * textureSample(textures${i}, linearSampler, input.texCoord, i32(input.texId.z));
-    }
+    selectCode += `    color = color${i};\n`;
+    selectCode += "    if (input.texId.z > -0.5) {\n";
+    selectCode += `      color = color * mask${i};\n`;
+    selectCode += "    }\n";
   }
-`;
-  }
+  selectCode += "  }\n";
 
   return `
 struct VertexOutput {
@@ -91,8 +96,11 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     discard;
   }
 
+  // Sample all textures first to ensure uniform control flow
+${sampleCode}
+
   var color: vec4<f32>;
-${switchCode}
+${selectCode}
 
   return color * input.tintColor;
 }
@@ -561,9 +569,10 @@ export class WebGPUBackend implements RenderBackend {
 
     // Add all texture slots to bind group
     for (let i = 0; i < this.maxTextures; i++) {
+      const texture = textureSlots[i];
       bindGroupEntries.push({
         binding: i + 2,
-        resource: textureSlots[i].createView({ dimension: "2d-array" }),
+        resource: texture.createView({ dimension: "2d-array" }),
       });
     }
 
@@ -612,12 +621,13 @@ export class WebGPUBackend implements RenderBackend {
       size: { width: 8, height: 8, depthOrArrayLayers: 1 },
       format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      mipLevelCount: 1,
       dimension: "2d",
     });
 
-    const data = new Uint8Array(8 * 8 * 4).fill(255);
+    const data = new Uint8Array(8 * 8 * 4).fill(0);
     this.device.queue.writeTexture(
-      { texture },
+      { texture, mipLevel: 0 },
       data,
       { bytesPerRow: 8 * 4 },
       { width: 8, height: 8, depthOrArrayLayers: 1 },
@@ -639,75 +649,102 @@ export class WebGPUBackend implements RenderBackend {
       }
 
       // Get proper format descriptor
-      const formatDesc = webgpuFormatFor(source.format, this.supportedFeatures);
+      // For PNG images (Image type), always use rgba8unorm regardless of source.format
+      const formatDesc =
+        source.type === "Image"
+          ? { format: "rgba8unorm" as GPUTextureFormat, bytesPerPixel: 4, compressed: false }
+          : webgpuFormatFor(source.format, this.supportedFeatures);
+
+      // Ensure at least 1 mip level for consistency
+      const mipLevels = Math.max(1, source.levels);
+      // For array textures in WebGPU, ensure at least 1 layer but create as proper array
+      const arrayLayers = Math.max(1, source.layers);
 
       const gpuTexture = this.device.createTexture({
         size: {
           width: source.width,
           height: source.height,
-          depthOrArrayLayers: source.layers,
+          depthOrArrayLayers: arrayLayers,
         },
         format: formatDesc.format,
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-        mipLevelCount: source.levels,
+        mipLevelCount: mipLevels,
         dimension: "2d",
       });
 
       // Upload texture data
-      for (let layer = 0; layer < source.layers; ++layer) {
-        for (let level = 0; level < source.levels; ++level) {
+      for (let layer = 0; layer < arrayLayers; ++layer) {
+        for (let level = 0; level < mipLevels; ++level) {
           if (source.type === "Image") {
-            const image = source.texture[level];
-            // Handle different image types
-            if ("data" in image) {
-              // ImageData case
-              const imageData = (image as ImageData).data;
-              this.device.queue.writeTexture(
-                { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-                imageData,
-                { bytesPerRow: image.width * formatDesc.bytesPerPixel },
-                { width: image.width, height: image.height, depthOrArrayLayers: 1 },
-              );
-            } else {
-              // ImageBitmap, HTMLImageElement, HTMLCanvasElement, OffscreenCanvas case
-              // WebGPU can copy directly from these sources
-              this.device.queue.copyExternalImageToTexture(
-                { source: image as ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas },
-                { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-                { width: image.width, height: image.height, depthOrArrayLayers: 1 },
-              );
-            }
-          } else if (source.type === "Texture") {
-            const extent = source.texture.extentOf(level);
-            const data = source.texture.dataOf(layer, 0, level);
-
-            if (Format.isCompressed(source.texture.format)) {
-              if (formatDesc.compressed) {
-                // Handle compressed texture data upload
-                // For BC formats, calculate bytes per row based on 4x4 blocks
-                const blocksWide = Math.ceil(extent[0] / 4);
-                const blocksHigh = Math.ceil(extent[1] / 4);
-                const bytesPerRow = blocksWide * formatDesc.bytesPerPixel;
+            // Only process if we have data for this level
+            // For PNG images (TARGET_2D), only upload to layer 0
+            if (level < source.levels && (source.target === Target.TARGET_2D_ARRAY || layer === 0)) {
+              const image = source.texture[level];
+              // Handle different image types
+              if ("data" in image) {
+                // ImageData case - always RGBA8 format (4 bytes per pixel)
+                const imageData = (image as ImageData).data;
+                this.device.queue.writeTexture(
+                  { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                  imageData,
+                  { bytesPerRow: image.width * 4 }, // ImageData is always RGBA8
+                  { width: image.width, height: image.height, depthOrArrayLayers: 1 },
+                );
+              } else {
+                // ImageBitmap, HTMLImageElement, HTMLCanvasElement, OffscreenCanvas case
+                // For texture arrays, we need to use writeTexture instead of copyExternalImageToTexture
+                // because copyExternalImageToTexture doesn't properly handle array layers
+                const canvas = new OffscreenCanvas(image.width, image.height);
+                const ctx = canvas.getContext("2d")!;
+                ctx.drawImage(image as CanvasImageSource, 0, 0);
+                const imageData = ctx.getImageData(0, 0, image.width, image.height);
 
                 this.device.queue.writeTexture(
                   { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                  imageData.data,
+                  { bytesPerRow: image.width * 4 }, // ImageData is always RGBA8
+                  { width: image.width, height: image.height, depthOrArrayLayers: 1 },
+                );
+              }
+            }
+          } else if (source.type === "Texture") {
+            // Only process if we have data for this level and layer
+            if (level < source.levels && layer < source.layers) {
+              const extent = source.texture.extentOf(level);
+              const data = source.texture.dataOf(layer, 0, level);
+
+              if (Format.isCompressed(source.texture.format)) {
+                if (formatDesc.compressed) {
+                  // Handle compressed texture data upload
+                  // For BC formats, calculate bytes per row based on 4x4 blocks
+                  const blocksWide = Math.ceil(extent[0] / 4);
+                  const blocksHigh = Math.ceil(extent[1] / 4);
+                  const bytesPerRow = blocksWide * formatDesc.bytesPerPixel;
+
+                  // For compressed textures, ensure dimensions are block-aligned
+                  const alignedWidth = Math.max(4, Math.ceil(extent[0] / 4) * 4);
+                  const alignedHeight = Math.max(4, Math.ceil(extent[1] / 4) * 4);
+
+                  this.device.queue.writeTexture(
+                    { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
+                    new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                    {
+                      bytesPerRow,
+                      rowsPerImage: blocksHigh,
+                    },
+                    { width: alignedWidth, height: alignedHeight, depthOrArrayLayers: 1 },
+                  );
+                } else {
+                  log.warn(tag.backend, `Compressed texture format ${source.format} not supported, skipping`);
+                }
+              } else {
+                this.device.queue.writeTexture(
+                  { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
                   new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-                  {
-                    bytesPerRow,
-                    rowsPerImage: blocksHigh,
-                  },
+                  { bytesPerRow: extent[0] * formatDesc.bytesPerPixel },
                   { width: extent[0], height: extent[1], depthOrArrayLayers: 1 },
                 );
-              } else {
-                log.warn(tag.backend, `Compressed texture format ${source.format} not supported, skipping`);
               }
-            } else {
-              this.device.queue.writeTexture(
-                { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-                new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-                { bytesPerRow: extent[0] * formatDesc.bytesPerPixel },
-                { width: extent[0], height: extent[1], depthOrArrayLayers: 1 },
-              );
             }
           }
         }
