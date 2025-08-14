@@ -38,7 +38,7 @@ sources = [
   "packages/driver/*.json",
   "packages/driver/src/c/**/*"
 ]
-outputs = { auto = true }
+outputs = [ "packages/driver/build/**/*" ]
 depends = ["install"]
 
 [tasks."driver:dev"]
