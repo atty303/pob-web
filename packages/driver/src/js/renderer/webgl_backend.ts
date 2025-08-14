@@ -316,6 +316,10 @@ export class WebGL1Backend implements RenderBackend {
     this.viewport = [x, y, width, height];
   }
 
+  beginFrame() {
+    // WebGL doesn't need frame-level clearing management
+  }
+
   begin() {
     this.resetBatch();
   }

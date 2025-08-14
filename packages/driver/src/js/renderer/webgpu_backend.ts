@@ -277,6 +277,7 @@ export class WebGPUBackend implements RenderBackend {
   > = new Map();
   private batchTextureCount = 0;
   private dispatchCount = 0;
+  private isFirstDispatchInFrame = true;
   private defaultWhiteTexture: GPUTexture | null = null;
 
   get canvas(): OffscreenCanvas {
@@ -489,6 +490,10 @@ export class WebGPUBackend implements RenderBackend {
     this.viewport = [x, y, width, height];
   }
 
+  beginFrame() {
+    this.isFirstDispatchInFrame = true;
+  }
+
   begin() {
     this.resetBatch();
   }
@@ -590,11 +595,13 @@ export class WebGPUBackend implements RenderBackend {
         {
           view: textureView,
           clearValue: { r: 0, g: 0, b: 0, a: 1 },
-          loadOp: "clear",
+          loadOp: this.isFirstDispatchInFrame ? "clear" : "load",
           storeOp: "store",
         },
       ],
     });
+
+    this.isFirstDispatchInFrame = false;
 
     renderPass.setPipeline(this.pipeline);
     renderPass.setBindGroup(0, bindGroup);

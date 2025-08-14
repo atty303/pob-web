@@ -5,6 +5,7 @@ export interface RenderBackend {
 
   resize(width: number, height: number, pixelRatio: number): void;
   setViewport(x: number, y: number, width: number, height: number): void;
+  beginFrame(): void;
   begin(): void;
   end(): void;
   drawQuad(

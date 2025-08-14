@@ -65,6 +65,7 @@ export class Renderer {
   render(view: DataView) {
     if (!this.backend) return;
 
+    this.backend.beginFrame();
     const layers = DrawCommandInterpreter.sort(view);
     // console.log(
     //   "layers",
