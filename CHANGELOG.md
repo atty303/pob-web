@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.24.0](https://github.com/atty303/pob-web/compare/v0.23.0...v0.24.0) (2025-08-14)
+
+
+### Features
+
+* add WebGPU rendering backend ([13746aa](https://github.com/atty303/pob-web/commit/13746aa0da2aee1ae695524155066bd5122a43b2))
+* **driver:** Add WebGPU rendering backend ([#117](https://github.com/atty303/pob-web/issues/117)) ([b85b6af](https://github.com/atty303/pob-web/commit/b85b6af8c8c1e4264a00fb3d241414e5fa7af200))
+
+
+### Bug Fixes
+
+* **driver:** enable WebGPU by default in attachToDOM and setCanvas ([e424a78](https://github.com/atty303/pob-web/commit/e424a787a4ed7f256bf61768e7f426d730c42044))
+* **driver:** fix WebGPU image texture upload ([e95d05f](https://github.com/atty303/pob-web/commit/e95d05f8fbb2691e60d013f689ff55687798fdbe))
+* **driver:** fix WebGPU layer compositing by managing frame-level clearing ([70a99a5](https://github.com/atty303/pob-web/commit/70a99a540dd0eeed9c366c46c638cb54f8f28f7c))
+* **driver:** fix WebGPU shader uniform control flow error ([c3a5ab4](https://github.com/atty303/pob-web/commit/c3a5ab4f921ada88ce6930c791eacfb13a7e1377))
+* **driver:** fix WebGPU texture binding order ([71dada4](https://github.com/atty303/pob-web/commit/71dada46c9a567fe4931b44369ba941e913fd11f))
+* **driver:** fix WebGPU texture rendering issues ([6b49f09](https://github.com/atty303/pob-web/commit/6b49f09b5de53578142edc7f1c712cb061353eef))
+
+
+### Performance Improvements
+
+* **driver:** enhance data structure alignment and command handling in draw module ([60ecb3c](https://github.com/atty303/pob-web/commit/60ecb3ce719ffb5d424c660a6fe952922960aa6f))
+* **driver:** improve build configurations for Debug and Release modes ([f620be4](https://github.com/atty303/pob-web/commit/f620be454b0dd873878a9ad7a1ce5205d4e1d7ab))
+* **driver:** optimize VertexBuffer allocation in WebGL/WebGPU backends ([1335242](https://github.com/atty303/pob-web/commit/133524258a0c86a29a1db8713300ecf08866cfbf))
+* optimizations ([#119](https://github.com/atty303/pob-web/issues/119)) ([eef7429](https://github.com/atty303/pob-web/commit/eef7429ec354a442a7846bf4f49f8d118d71cb10))
+
 ## [0.23.0](https://github.com/atty303/pob-web/compare/v0.22.2...v0.23.0) (2025-08-12)
 
 
