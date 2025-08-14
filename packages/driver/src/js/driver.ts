@@ -123,4 +123,8 @@ export class Driver {
   async loadBuildFromCode(code: string) {
     return this.driverWorker?.loadBuildFromCode(code);
   }
+
+  setLayerVisible(layer: number, sublayer: number, visible: boolean) {
+    return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
+  }
 }

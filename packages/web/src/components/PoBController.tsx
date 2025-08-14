@@ -13,7 +13,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/solid";
 import type { LayerStats, RenderStats } from "pob-driver/src/js/renderer";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -44,13 +44,23 @@ export default function PoBController(p: { game: keyof Games; version: string; i
 
   const [frames, setFrames] = useState<{ at: number; renderTime: number }[]>([]);
   const [renderStats, setRenderStats] = useState<RenderStats | null>(null);
+  const [layerVisibilityCallback, setLayerVisibilityCallback] = useState<
+    ((layer: number, sublayer: number, visible: boolean) => void) | null
+  >(null);
 
-  const pushFrame = (at: number, time: number, stats?: RenderStats) => {
+  const pushFrame = useCallback((at: number, time: number, stats?: RenderStats) => {
     setFrames(frames => [...frames, { at, renderTime: time }].slice(-60));
     if (stats) {
       setRenderStats(stats);
     }
-  };
+  }, []);
+
+  const handleLayerVisibilityCallbackReady = useCallback(
+    (callback: (layer: number, sublayer: number, visible: boolean) => void) => {
+      setLayerVisibilityCallback(() => callback);
+    },
+    [],
+  );
 
   const [showPerformance, setShowPerformance] = useLocalStorage("showPerformance", false);
 
@@ -69,7 +79,13 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       <div className="drawer-content">
         <div className="relative l-lvw h-lvh">
           <div className="absolute top-0 left-0 right-0 bottom-0">
-            <PoBWindow game={p.game} version={p.version} onFrame={pushFrame} onTitleChange={setTitle} />
+            <PoBWindow
+              game={p.game}
+              version={p.version}
+              onFrame={pushFrame}
+              onTitleChange={setTitle}
+              onLayerVisibilityCallbackReady={handleLayerVisibilityCallbackReady}
+            />
           </div>
           <div className="absolute top-2 right-2">
             <span
@@ -86,8 +102,12 @@ export default function PoBController(p: { game: keyof Games; version: string; i
             </label>
           </div>
           {showPerformance && (
-            <div className="absolute bottom-2 right-2 pointer-events-none">
-              <PerformanceView frames={frames} renderStats={renderStats} />
+            <div className="absolute bottom-2 right-2">
+              <PerformanceView
+                frames={frames}
+                renderStats={renderStats}
+                onLayerVisibilityChange={layerVisibilityCallback}
+              />
             </div>
           )}
         </div>
@@ -263,16 +283,26 @@ function Auth(p: { tutorial: boolean }) {
   }
 }
 
-function PerformanceView(p: { frames: { at: number; renderTime: number }[]; renderStats: RenderStats | null }) {
+function PerformanceView(p: {
+  frames: { at: number; renderTime: number }[];
+  renderStats: RenderStats | null;
+  onLayerVisibilityChange: ((layer: number, sublayer: number, visible: boolean) => void) | null;
+}) {
   return (
     <div className="bg-base-100 p-2 rounded-box opacity-75 space-y-2 max-w-80">
       <LineChart data={p.frames} />
-      {p.renderStats && <RenderStatsView stats={p.renderStats} />}
+      {p.renderStats && <RenderStatsView stats={p.renderStats} onLayerVisibilityChange={p.onLayerVisibilityChange} />}
     </div>
   );
 }
 
-function RenderStatsView(p: { stats: RenderStats | null }) {
+function RenderStatsView(p: {
+  stats: RenderStats | null;
+  onLayerVisibilityChange: ((layer: number, sublayer: number, visible: boolean) => void) | null;
+}) {
+  const [showLayers, setShowLayers] = useState(false);
+  const [layerVisibility, setLayerVisibility] = useState<Map<string, boolean>>(new Map());
+
   if (!p.stats) {
     return null;
   }
@@ -289,6 +319,20 @@ function RenderStatsView(p: { stats: RenderStats | null }) {
 
   const totalDrawCalls = summary.totalDrawImage + summary.totalDrawImageQuad + summary.totalDrawString;
 
+  const toggleLayerVisibility = (layer: number, sublayer: number) => {
+    const layerKey = `${layer}.${sublayer}`;
+    const currentVisibility = layerVisibility.get(layerKey) ?? true;
+    const newVisibility = !currentVisibility;
+
+    setLayerVisibility(prev => {
+      const newMap = new Map(prev);
+      newMap.set(layerKey, newVisibility);
+      return newMap;
+    });
+
+    p.onLayerVisibilityChange?.(layer, sublayer, newVisibility);
+  };
+
   return (
     <div className="text-xs space-y-2">
       <div className="font-semibold">Render Stats (Frame #{summary.frameCount})</div>
@@ -303,20 +347,42 @@ function RenderStatsView(p: { stats: RenderStats | null }) {
 
       {layerDetails.length > 0 && (
         <div className="space-y-1">
-          <div className="font-semibold text-[10px]">Layers:</div>
-          <div className="max-h-24 overflow-y-auto space-y-0.5">
-            {layerDetails.map((layer: LayerStats, index: number) => {
-              const layerTotal = layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount;
-              if (layerTotal === 0) return null;
+          <button
+            type="button"
+            onClick={() => setShowLayers(!showLayers)}
+            className="font-semibold text-[10px] hover:bg-base-200 px-1 rounded cursor-pointer"
+          >
+            Layers {showLayers ? "▼" : "▶"}
+          </button>
+          {showLayers && (
+            <div className="max-h-24 overflow-y-auto space-y-0.5">
+              {layerDetails.map((layer: LayerStats, index: number) => {
+                const layerTotal = layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount;
+                if (layerTotal === 0) return null;
 
-              return (
-                <div key={`${layer.layer}-${layer.sublayer}`} className="text-[9px] font-mono">
-                  L{layer.layer}.{layer.sublayer}: {layer.totalCommands}c {layerTotal}d (I{layer.drawImageCount} Q
-                  {layer.drawImageQuadCount} T{layer.drawStringCount})
-                </div>
-              );
-            })}
-          </div>
+                const layerKey = `${layer.layer}.${layer.sublayer}`;
+                const isVisible = layerVisibility.get(layerKey) ?? true;
+
+                return (
+                  <div key={layerKey} className="text-[9px] font-mono flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleLayerVisibility(layer.layer, layer.sublayer)}
+                      className={`w-3 h-3 text-[8px] border rounded ${
+                        isVisible ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                      }`}
+                    >
+                      {isVisible ? "●" : "○"}
+                    </button>
+                    <span className={isVisible ? "" : "opacity-50"}>
+                      L{layer.layer}.{layer.sublayer}: {layer.totalCommands}c {layerTotal}d (I{layer.drawImageCount} Q
+                      {layer.drawImageQuadCount} T{layer.drawStringCount})
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

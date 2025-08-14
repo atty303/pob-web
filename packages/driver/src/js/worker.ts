@@ -296,6 +296,11 @@ export class DriverWorker {
     await this.imports?.loadBuildFromCode(code);
   }
 
+  setLayerVisible(layer: number, sublayer: number, visible: boolean) {
+    this.renderer?.setLayerVisible(layer, sublayer, visible);
+    this.invalidate();
+  }
+
   private async tick() {
     if (this.visible) {
       const start = performance.now();

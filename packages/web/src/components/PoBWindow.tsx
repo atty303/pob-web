@@ -13,6 +13,7 @@ export default function PoBWindow(props: {
   version: string;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onTitleChange: (title: string) => void;
+  onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
 }) {
   const auth0 = useAuth0();
 
@@ -106,6 +107,12 @@ export default function PoBWindow(props: {
           await _driver.loadBuildFromCode(buildCode);
         }
         if (container.current) _driver.attachToDOM(container.current);
+
+        // Pass layer visibility control callback to parent
+        props.onLayerVisibilityCallbackReady?.((layer: number, sublayer: number, visible: boolean) => {
+          _driver.setLayerVisible(layer, sublayer, visible);
+        });
+
         setLoading(false);
       } catch (e) {
         setError(e);
@@ -118,7 +125,7 @@ export default function PoBWindow(props: {
       _driver.destory();
       setLoading(true);
     };
-  }, [props.game, props.version, onFrame, onTitleChange, token, buildCode]);
+  }, [props.game, props.version, onFrame, onTitleChange, props.onLayerVisibilityCallbackReady, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);

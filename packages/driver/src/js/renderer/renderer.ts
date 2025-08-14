@@ -65,6 +65,7 @@ export class Renderer {
   private screenSize: { width: number; height: number };
   private currentColor: number[] = [0, 0, 0, 0];
   private renderStats: RenderStats;
+  private layerVisibility: Map<string, boolean> = new Map();
 
   constructor(
     readonly imageRepo: ImageRepository,
@@ -97,6 +98,9 @@ export class Renderer {
     this.renderStats.totalLayers = layers.length;
 
     for (const layer of layers) {
+      const layerKey = `${layer.layer}.${layer.sublayer}`;
+      const isVisible = this.layerVisibility.get(layerKey) ?? true;
+
       const layerStats: LayerStats = {
         layer: layer.layer,
         sublayer: layer.sublayer,
@@ -106,21 +110,30 @@ export class Renderer {
         totalCommands: layer.commands.length,
       };
 
-      this.backend.begin();
+      if (isVisible) {
+        this.backend.begin();
+      }
+
       for (const buffer of layer.commands) {
         DrawCommandInterpreter.run(buffer, {
           onSetViewport: (x: number, y: number, width: number, height: number) => {
-            if (width === 0 || height === 0) {
-              this.setViewport(0, 0, this.screenSize.width, this.screenSize.height);
-            } else {
-              this.setViewport(x, y, width, height);
+            if (isVisible) {
+              if (width === 0 || height === 0) {
+                this.setViewport(0, 0, this.screenSize.width, this.screenSize.height);
+              } else {
+                this.setViewport(x, y, width, height);
+              }
             }
           },
           onSetColor: (r: number, g: number, b: number, a: number) => {
-            this.setColor(r, g, b, a);
+            if (isVisible) {
+              this.setColor(r, g, b, a);
+            }
           },
           onSetColorEscape: (text: string) => {
-            this.setColorEscape(text);
+            if (isVisible) {
+              this.setColorEscape(text);
+            }
           },
           onDrawImage: (
             handle: number,
@@ -136,7 +149,9 @@ export class Renderer {
             maskLayer: number,
           ) => {
             layerStats.drawImageCount++;
-            this.drawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
+            if (isVisible) {
+              this.drawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
+            }
           },
           onDrawImageQuad: (
             handle: number,
@@ -160,35 +175,42 @@ export class Renderer {
             maskLayer: number,
           ) => {
             layerStats.drawImageQuadCount++;
-            this.drawImageQuad(
-              handle,
-              x1,
-              y1,
-              x2,
-              y2,
-              x3,
-              y3,
-              x4,
-              y4,
-              s1,
-              t1,
-              s2,
-              t2,
-              s3,
-              t3,
-              s4,
-              t4,
-              stackLayer,
-              maskLayer,
-            );
+            if (isVisible) {
+              this.drawImageQuad(
+                handle,
+                x1,
+                y1,
+                x2,
+                y2,
+                x3,
+                y3,
+                x4,
+                y4,
+                s1,
+                t1,
+                s2,
+                t2,
+                s3,
+                t3,
+                s4,
+                t4,
+                stackLayer,
+                maskLayer,
+              );
+            }
           },
           onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
             layerStats.drawStringCount++;
-            this.drawString(x, y, align, height, font, text);
+            if (isVisible) {
+              this.drawString(x, y, align, height, font, text);
+            }
           },
         });
       }
-      this.backend.end();
+
+      if (isVisible) {
+        this.backend.end();
+      }
 
       this.renderStats.layerStats.push(layerStats);
     }
@@ -418,5 +440,20 @@ export class Renderer {
       drawString: totalDrawString,
       avgFrameTime: this.renderStats.lastFrameTime,
     };
+  }
+
+  // Layer visibility control
+  setLayerVisible(layer: number, sublayer: number, visible: boolean) {
+    const layerKey = `${layer}.${sublayer}`;
+    this.layerVisibility.set(layerKey, visible);
+  }
+
+  isLayerVisible(layer: number, sublayer: number): boolean {
+    const layerKey = `${layer}.${sublayer}`;
+    return this.layerVisibility.get(layerKey) ?? true;
+  }
+
+  getLayerVisibility(): Map<string, boolean> {
+    return new Map(this.layerVisibility);
   }
 }
