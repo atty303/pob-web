@@ -213,6 +213,19 @@ class VertexBuffer {
     return this.offset / 15;
   }
 
+  reset() {
+    this.offset = 0;
+  }
+
+  private ensureCapacity(requiredSize: number) {
+    if (requiredSize > this._buffer.length) {
+      const newSize = Math.max(requiredSize, this._buffer.length * 2);
+      const newBuffer = new Float32Array(newSize);
+      newBuffer.set(this._buffer);
+      this._buffer = newBuffer;
+    }
+  }
+
   push(
     i: number,
     coords: number[],
@@ -223,6 +236,7 @@ class VertexBuffer {
     stackLayer: number,
     maskLayer: number,
   ) {
+    this.ensureCapacity(this.offset + 15);
     const b = this._buffer;
     b[this.offset++] = coords[i * 2];
     b[this.offset++] = coords[i * 2 + 1];
@@ -267,6 +281,7 @@ export class WebGPUBackend implements RenderBackend {
   private pixelRatio = 1;
   private vertices: VertexBuffer = new VertexBuffer();
   private drawCount = 0;
+  private vertexBufferSize = 0;
   private maxTextures = 16; // WebGPU typically supports at least 16 texture bindings
   private batchTextures: Map<
     string,
@@ -553,7 +568,20 @@ export class WebGPUBackend implements RenderBackend {
     this.device.queue.writeBuffer(this.uniformBuffer!, 0, matrix);
 
     // Update vertex buffer
-    this.device.queue.writeBuffer(this.vertexBuffer!, 0, this.vertices.buffer);
+    const bufferData = this.vertices.buffer;
+    const requiredSize = bufferData.byteLength;
+
+    if (requiredSize > this.vertexBufferSize) {
+      // Recreate vertex buffer with larger size
+      this.vertexBuffer?.destroy();
+      this.vertexBuffer = this.device.createBuffer({
+        size: requiredSize,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      });
+      this.vertexBufferSize = requiredSize;
+    }
+
+    this.device.queue.writeBuffer(this.vertexBuffer!, 0, bufferData);
 
     // Create bind group
     const bindGroupEntries: GPUBindGroupEntry[] = [
@@ -616,7 +644,7 @@ export class WebGPUBackend implements RenderBackend {
   }
 
   private resetBatch() {
-    this.vertices = new VertexBuffer();
+    this.vertices.reset();
     this.batchTextures = new Map();
     this.batchTextureCount = 0;
   }

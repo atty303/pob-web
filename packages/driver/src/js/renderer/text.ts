@@ -30,8 +30,40 @@ function font(size: number, fontNum: number) {
   }
 }
 
+class LRUCache<K, V> {
+  private cache = new Map<K, V>();
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, value);
+  }
+}
+
 export class TextMetrics {
   private readonly context;
+  private measureCache = new LRUCache<string, number>(10000);
+  private currentFont = "";
 
   constructor() {
     const canvas = new OffscreenCanvas(1, 1);
@@ -41,13 +73,31 @@ export class TextMetrics {
   }
 
   measure(size: number, fontNum: number, text: string) {
-    this.context.font = font(size, fontNum);
+    const cacheKey = `${size}:${fontNum}:${text}`;
+    const cached = this.measureCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const fontStr = font(size, fontNum);
+    if (this.currentFont !== fontStr) {
+      this.context.font = fontStr;
+      this.currentFont = fontStr;
+    }
+
     const lines = text.replaceAll(reColorGlobal, "").split("\n");
-    return Math.ceil(Math.max(0, ...lines.map(line => this.context.measureText(line).width)));
+    const result = Math.ceil(Math.max(0, ...lines.map(line => this.context.measureText(line).width)));
+
+    this.measureCache.set(cacheKey, result);
+    return result;
   }
 
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
-    this.context.font = font(size, fontNum);
+    const fontStr = font(size, fontNum);
+    if (this.currentFont !== fontStr) {
+      this.context.font = fontStr;
+      this.currentFont = fontStr;
+    }
     const lines = text.split("\n");
     const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
     const line = lines[y];
@@ -65,7 +115,11 @@ export class TextMetrics {
   }
 
   fittingText(size: number, fontNum: number, text: string, maxWidth: number) {
-    this.context.font = font(size, fontNum);
+    const fontStr = font(size, fontNum);
+    if (this.currentFont !== fontStr) {
+      this.context.font = fontStr;
+      this.currentFont = fontStr;
+    }
     const line = text.replaceAll(reColorGlobal, "");
     let width = 0;
     for (let i = 0; i < line.length; i++) {
