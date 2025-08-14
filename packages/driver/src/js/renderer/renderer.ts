@@ -114,8 +114,8 @@ export class Renderer {
         this.backend.begin();
       }
 
-      for (const buffer of layer.commands) {
-        DrawCommandInterpreter.run(buffer, {
+      for (const commandRef of layer.commands) {
+        DrawCommandInterpreter.run(commandRef, view, {
           onSetViewport: (x: number, y: number, width: number, height: number) => {
             if (isVisible) {
               if (width === 0 || height === 0) {

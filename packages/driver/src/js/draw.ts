@@ -9,14 +9,19 @@ enum DrawCommandType {
   DrawString = 8,
 }
 
+type CommandRef = {
+  offset: number;
+  length: number;
+};
+
 class Layer {
   static idOf(layer: number, sublayer: number) {
     return (layer << 16) | sublayer;
   }
 
-  readonly layer: number;
-  readonly sublayer: number;
-  readonly commands: Uint8Array[] = [];
+  layer: number;
+  sublayer: number;
+  readonly commands: CommandRef[] = [];
 
   get id(): number {
     return Layer.idOf(this.layer, this.sublayer);
@@ -27,20 +32,22 @@ class Layer {
     this.sublayer = sublayer;
   }
 
-  push(command: Uint8Array) {
-    this.commands.push(command);
+  pushCommand(offset: number, length: number) {
+    this.commands.push({ offset, length });
   }
 }
 
 export namespace DrawCommandInterpreter {
-  export function sort(view: DataView) {
+  export function sort(view: DataView): Layer[] {
     const layers = new Map<number, Layer>([[0, new Layer(0, 0)]]);
     let currentLayer = layers.get(0)!;
-    let currentViewport: Uint8Array | undefined = undefined;
+    let currentViewportOffset = -1;
+    let currentViewportLength = 0;
 
     let i = 0;
     while (i < view.byteLength) {
       const commandType = view.getUint8(i);
+      const commandStart = i;
       switch (commandType) {
         case DrawCommandType.SetLayer: {
           const layer = view.getInt16(i + 1, true);
@@ -48,52 +55,53 @@ export namespace DrawCommandInterpreter {
           i += 5;
 
           if (currentLayer.layer !== layer || currentLayer.sublayer !== sublayer) {
-            const l = layers.get(Layer.idOf(layer, sublayer));
-            if (l) {
-              currentLayer = l;
-            } else {
-              const n = new Layer(layer, sublayer);
-              layers.set(n.id, n);
-              currentLayer = n;
+            const layerId = Layer.idOf(layer, sublayer);
+            let targetLayer = layers.get(layerId);
+            if (!targetLayer) {
+              targetLayer = new Layer(layer, sublayer);
+              layers.set(layerId, targetLayer);
             }
+            currentLayer = targetLayer;
           }
-          if (currentViewport) {
-            currentLayer.push(currentViewport);
+          if (currentViewportOffset >= 0) {
+            currentLayer.pushCommand(currentViewportOffset, currentViewportLength);
           }
           break;
         }
         case DrawCommandType.SetViewport: {
-          const c = new Uint8Array(view.buffer, view.byteOffset + i, 17);
-          currentViewport = c;
-          currentLayer.push(c);
+          currentViewportOffset = commandStart;
+          currentViewportLength = 17;
+          currentLayer.pushCommand(commandStart, 17);
           i += 17;
           break;
         }
         case DrawCommandType.SetColor: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 5));
+          currentLayer.pushCommand(commandStart, 5);
           i += 5;
           break;
         }
         case DrawCommandType.SetColorEscape: {
           const textSize0 = view.getUint16(i + 1, true);
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 3 + textSize0));
-          i += 3 + textSize0;
+          const commandLength = 3 + textSize0;
+          currentLayer.pushCommand(commandStart, commandLength);
+          i += commandLength;
           break;
         }
         case DrawCommandType.DrawImage: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 45));
+          currentLayer.pushCommand(commandStart, 45);
           i += 45;
           break;
         }
         case DrawCommandType.DrawImageQuad: {
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 77));
+          currentLayer.pushCommand(commandStart, 77);
           i += 77;
           break;
         }
         case DrawCommandType.DrawString: {
           const textSize = view.getUint16(i + 12, true);
-          currentLayer.push(new Uint8Array(view.buffer, view.byteOffset + i, 14 + textSize));
-          i += 14 + textSize;
+          const commandLength = 14 + textSize;
+          currentLayer.pushCommand(commandStart, commandLength);
+          i += commandLength;
           break;
         }
         default:
@@ -101,33 +109,13 @@ export namespace DrawCommandInterpreter {
       }
     }
 
-    const keys = [...layers.keys()];
-    keys.sort((a, b) => {
-      return a - b;
-      // const aLayer = a >> 16;
-      // const aSublayer = a & 0xFFFF;
-      // const bLayer = b >> 16;
-      // const bSublayer = b & 0xFFFF;
-      // if (aLayer < bLayer) {
-      //     return -1;
-      // } else if (aLayer > bLayer) {
-      //     return 1;
-      // } else if (aSublayer < bSublayer) {
-      //     return -1;
-      // } else {
-      //     return 1;
-      // }
-    });
-    return keys.flatMap(key => {
-      const l = layers.get(key)!;
-      // console.log(l);
-      // return (l.layer === 5 && l.sublayer === 0) ? [l] : [];
-      return [l];
-    });
+    const sortedKeys = Array.from(layers.keys()).sort((a, b) => a - b);
+    return sortedKeys.map(key => layers.get(key)!);
   }
 
   export function run(
-    command: Uint8Array,
+    commandRef: CommandRef,
+    baseView: DataView,
     cb: {
       onSetViewport: (x: number, y: number, width: number, height: number) => void;
       onSetColor: (r: number, g: number, b: number, a: number) => void;
@@ -169,7 +157,7 @@ export namespace DrawCommandInterpreter {
       onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => void;
     },
   ) {
-    const view = new DataView(command.buffer, command.byteOffset, command.byteLength);
+    const view = new DataView(baseView.buffer, baseView.byteOffset + commandRef.offset, commandRef.length);
     const commandType = view.getUint8(0);
     switch (commandType) {
       case DrawCommandType.SetViewport:
@@ -193,8 +181,7 @@ export namespace DrawCommandInterpreter {
       case DrawCommandType.SetColorEscape:
         {
           const textSize = view.getUint16(1, true);
-          const textArray = new Uint8Array(view.buffer, view.byteOffset + 3, textSize);
-          const text = new TextDecoder().decode(textArray);
+          const text = new TextDecoder().decode(new Uint8Array(view.buffer, view.byteOffset + 3, textSize));
           cb.onSetColorEscape(text);
         }
         break;
@@ -266,8 +253,7 @@ export namespace DrawCommandInterpreter {
           const height = view.getUint8(10);
           const font = view.getUint8(11);
           const textSize = view.getUint16(12, true);
-          const textArray = new Uint8Array(view.buffer, view.byteOffset + 14, textSize);
-          const text = new TextDecoder().decode(textArray);
+          const text = new TextDecoder().decode(new Uint8Array(view.buffer, view.byteOffset + 14, textSize));
           cb.onDrawString(x, y, align, height, font, text);
         }
         break;
