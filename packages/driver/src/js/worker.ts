@@ -13,6 +13,7 @@ import { log, tag } from "./logger";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
+  type RenderStats,
   Renderer,
   TextMetrics,
   type TextRasterizer,
@@ -86,7 +87,7 @@ type OnFetchFunction = (
 
 export type HostCallbacks = {
   onError: (message: string) => void;
-  onFrame: (at: number, time: number) => void;
+  onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
   onTitleChange: (title: string) => void;
 };
@@ -302,7 +303,8 @@ export class DriverWorker {
       await this.imports?.onFrame();
 
       const time = performance.now() - start;
-      this.hostCallbacks?.onFrame(start, time);
+      const stats = this.renderer?.getStats();
+      this.hostCallbacks?.onFrame(start, time, stats);
       this.dirtyCount -= 1;
     }
     requestAnimationFrame(this.tick.bind(this));

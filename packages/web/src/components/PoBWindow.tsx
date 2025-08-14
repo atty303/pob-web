@@ -1,5 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Driver } from "pob-driver/src/js/driver";
+import type { RenderStats } from "pob-driver/src/js/renderer";
 import { type Game, gameData } from "pob-game/src";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as use from "react-use";
@@ -10,7 +11,7 @@ const { useHash } = use;
 export default function PoBWindow(props: {
   game: Game;
   version: string;
-  onFrame: (at: number, time: number) => void;
+  onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onTitleChange: (title: string) => void;
 }) {
   const auth0 = useAuth0();
@@ -45,6 +46,7 @@ export default function PoBWindow(props: {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
+
   useEffect(() => {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);

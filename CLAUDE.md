@@ -56,8 +56,7 @@ mise run web:build
 
 ### Linting
 ```bash
-# Run Biome formatter and linter
-npx biome check --write .
+hk fix --all
 ```
 
 ## Development Workflow

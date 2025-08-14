@@ -43,11 +43,28 @@ const colorEscape = [
   [0.4, 0.4, 0.4, 1],
 ];
 
+export type LayerStats = {
+  layer: number;
+  sublayer: number;
+  drawImageCount: number;
+  drawImageQuadCount: number;
+  drawStringCount: number;
+  totalCommands: number;
+};
+
+export type RenderStats = {
+  frameCount: number;
+  totalLayers: number;
+  layerStats: LayerStats[];
+  lastFrameTime: number;
+};
+
 export class Renderer {
   backend: RenderBackend | undefined;
 
   private screenSize: { width: number; height: number };
   private currentColor: number[] = [0, 0, 0, 0];
+  private renderStats: RenderStats;
 
   constructor(
     readonly imageRepo: ImageRepository,
@@ -55,6 +72,12 @@ export class Renderer {
     screenSize: { width: number; height: number },
   ) {
     this.screenSize = screenSize;
+    this.renderStats = {
+      frameCount: 0,
+      totalLayers: 0,
+      layerStats: [],
+      lastFrameTime: 0,
+    };
   }
 
   resize(screenSize: { width: number; height: number; pixelRatio: number }) {
@@ -65,17 +88,24 @@ export class Renderer {
   render(view: DataView) {
     if (!this.backend) return;
 
+    const frameStartTime = performance.now();
+    this.renderStats.frameCount++;
+    this.renderStats.layerStats = [];
+
     this.backend.beginFrame();
     const layers = DrawCommandInterpreter.sort(view);
-    // console.log(
-    //   "layers",
-    //   layers.map((_) => ({ layer: _.layer, sublayer: _.sublayer })),
-    // );
+    this.renderStats.totalLayers = layers.length;
+
     for (const layer of layers) {
-      // this.setColor(1, 1, 1, 1);
-      // if (!(layer.layer === 0 && layer.sublayer === 0)) {
-      //   continue;
-      // }
+      const layerStats: LayerStats = {
+        layer: layer.layer,
+        sublayer: layer.sublayer,
+        drawImageCount: 0,
+        drawImageQuadCount: 0,
+        drawStringCount: 0,
+        totalCommands: layer.commands.length,
+      };
+
       this.backend.begin();
       for (const buffer of layer.commands) {
         DrawCommandInterpreter.run(buffer, {
@@ -105,6 +135,7 @@ export class Renderer {
             stackLayer: number,
             maskLayer: number,
           ) => {
+            layerStats.drawImageCount++;
             this.drawImage(handle, x, y, width, height, s1, t1, s2, t2, stackLayer, maskLayer);
           },
           onDrawImageQuad: (
@@ -128,6 +159,7 @@ export class Renderer {
             stackLayer: number,
             maskLayer: number,
           ) => {
+            layerStats.drawImageQuadCount++;
             this.drawImageQuad(
               handle,
               x1,
@@ -151,12 +183,17 @@ export class Renderer {
             );
           },
           onDrawString: (x: number, y: number, align: number, height: number, font: number, text: string) => {
+            layerStats.drawStringCount++;
             this.drawString(x, y, align, height, font, text);
           },
         });
       }
       this.backend.end();
+
+      this.renderStats.layerStats.push(layerStats);
     }
+
+    this.renderStats.lastFrameTime = performance.now() - frameStartTime;
   }
 
   private setViewport(x: number, y: number, width: number, height: number) {
@@ -343,5 +380,43 @@ export class Renderer {
     }
 
     pos.y += height;
+  }
+
+  // Get rendering statistics
+  getStats(): RenderStats {
+    return {
+      frameCount: this.renderStats.frameCount,
+      totalLayers: this.renderStats.totalLayers,
+      layerStats: [...this.renderStats.layerStats],
+      lastFrameTime: this.renderStats.lastFrameTime,
+    };
+  }
+
+  // Reset statistics
+  resetStats() {
+    this.renderStats = {
+      frameCount: 0,
+      totalLayers: 0,
+      layerStats: [],
+      lastFrameTime: 0,
+    };
+  }
+
+  // Get summary statistics
+  getStatsSummary() {
+    const totalDrawImage = this.renderStats.layerStats.reduce((sum, layer) => sum + layer.drawImageCount, 0);
+    const totalDrawImageQuad = this.renderStats.layerStats.reduce((sum, layer) => sum + layer.drawImageQuadCount, 0);
+    const totalDrawString = this.renderStats.layerStats.reduce((sum, layer) => sum + layer.drawStringCount, 0);
+    const totalDrawCalls = totalDrawImage + totalDrawImageQuad + totalDrawString;
+
+    return {
+      frameCount: this.renderStats.frameCount,
+      totalLayers: this.renderStats.totalLayers,
+      totalDrawCalls,
+      drawImage: totalDrawImage,
+      drawImageQuad: totalDrawImageQuad,
+      drawString: totalDrawString,
+      avgFrameTime: this.renderStats.lastFrameTime,
+    };
   }
 }

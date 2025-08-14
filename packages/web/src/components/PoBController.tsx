@@ -12,6 +12,7 @@ import {
   UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/solid";
+import type { LayerStats, RenderStats } from "pob-driver/src/js/renderer";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
@@ -42,8 +43,13 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   }, [notFirstVisit]);
 
   const [frames, setFrames] = useState<{ at: number; renderTime: number }[]>([]);
-  const pushFrame = (at: number, time: number) => {
+  const [renderStats, setRenderStats] = useState<RenderStats | null>(null);
+
+  const pushFrame = (at: number, time: number, stats?: RenderStats) => {
     setFrames(frames => [...frames, { at, renderTime: time }].slice(-60));
+    if (stats) {
+      setRenderStats(stats);
+    }
   };
 
   const [showPerformance, setShowPerformance] = useLocalStorage("showPerformance", false);
@@ -81,7 +87,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
           </div>
           {showPerformance && (
             <div className="absolute bottom-2 right-2 pointer-events-none">
-              <PerformanceView frames={frames} />
+              <PerformanceView frames={frames} renderStats={renderStats} />
             </div>
           )}
         </div>
@@ -257,10 +263,62 @@ function Auth(p: { tutorial: boolean }) {
   }
 }
 
-function PerformanceView(p: { frames: { at: number; renderTime: number }[] }) {
+function PerformanceView(p: { frames: { at: number; renderTime: number }[]; renderStats: RenderStats | null }) {
   return (
-    <div className="bg-base-100 p-2 rounded-box opacity-75">
+    <div className="bg-base-100 p-2 rounded-box opacity-75 space-y-2 max-w-80">
       <LineChart data={p.frames} />
+      {p.renderStats && <RenderStatsView stats={p.renderStats} />}
+    </div>
+  );
+}
+
+function RenderStatsView(p: { stats: RenderStats | null }) {
+  if (!p.stats) {
+    return null;
+  }
+
+  const summary = {
+    totalLayers: p.stats.totalLayers,
+    totalDrawImage: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawImageCount, 0),
+    totalDrawImageQuad: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawImageQuadCount, 0),
+    totalDrawString: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawStringCount, 0),
+    frameTime: p.stats.lastFrameTime.toFixed(1),
+    frameCount: p.stats.frameCount,
+  };
+  const layerDetails = p.stats.layerStats;
+
+  const totalDrawCalls = summary.totalDrawImage + summary.totalDrawImageQuad + summary.totalDrawString;
+
+  return (
+    <div className="text-xs space-y-2">
+      <div className="font-semibold">Render Stats (Frame #{summary.frameCount})</div>
+      <div className="grid grid-cols-2 gap-1 text-[10px]">
+        <div>Layers: {summary.totalLayers}</div>
+        <div>Frame: {summary.frameTime}ms</div>
+        <div>Total draws: {totalDrawCalls}</div>
+        <div>Images: {summary.totalDrawImage}</div>
+        <div>Quads: {summary.totalDrawImageQuad}</div>
+        <div>Text: {summary.totalDrawString}</div>
+      </div>
+
+      {layerDetails.length > 0 && (
+        <div className="space-y-1">
+          <div className="font-semibold text-[10px]">Layers:</div>
+          <div className="max-h-24 overflow-y-auto space-y-0.5">
+            {layerDetails.map((layer: LayerStats, index: number) => {
+              const layerTotal = layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount;
+              if (layerTotal === 0) return null;
+
+              return (
+                <div key={`${layer.layer}-${layer.sublayer}`} className="text-[9px] font-mono">
+                  L{layer.layer}.{layer.sublayer}: {layer.totalCommands}c {layerTotal}d (I{layer.drawImageCount} Q
+                  {layer.drawImageQuadCount} T{layer.drawStringCount})
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
