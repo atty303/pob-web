@@ -1,6 +1,7 @@
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { CiKeyboard } from "react-icons/ci";
+import { MdOutlinePanTool } from "react-icons/md";
 import { ControlButton } from "./ControlButton";
 import { FullscreenButton } from "./FullscreenButton";
 import { ModifierButton } from "./ModifierButton";
@@ -12,7 +13,7 @@ interface ResponsiveToolbarProps {
   callbacks: ToolbarCallbacks;
   position: ToolbarPosition;
   isLandscape: boolean;
-  dragModeEnabled: boolean;
+  panModeEnabled: boolean;
   keyboardVisible: boolean;
 }
 
@@ -22,12 +23,12 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   callbacks,
   position,
   isLandscape,
-  dragModeEnabled,
+  panModeEnabled,
   keyboardVisible,
 }) => {
-  const handleDragModeToggle = useCallback(() => {
-    callbacks.onDragModeToggle(!dragModeEnabled);
-  }, [callbacks, dragModeEnabled]);
+  const handlePanModeToggle = useCallback(() => {
+    callbacks.onPanModeToggle(!panModeEnabled);
+  }, [callbacks, panModeEnabled]);
 
   const containerStyle = useMemo(() => {
     const baseStyle = {
@@ -86,7 +87,12 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
 
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
 
-      <ControlButton icon="🖱️" tooltip="Toggle Drag Mode" onClick={handleDragModeToggle} isActive={dragModeEnabled} />
+      <ControlButton
+        icon={<MdOutlinePanTool size={24} />}
+        tooltip="Toggle Pan Tool"
+        onClick={handlePanModeToggle}
+        isActive={panModeEnabled}
+      />
 
       <ControlButton
         icon={<CiKeyboard size={24} />}

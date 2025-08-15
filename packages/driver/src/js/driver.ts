@@ -25,7 +25,7 @@ export class Driver {
   private modifierKeyManager: ModifierKeyManager | undefined;
   private overlayManager: ReactOverlayManager | undefined;
   private canvasContainer: HTMLDivElement | undefined;
-  private dragModeEnabled = false;
+  private panModeEnabled = false;
   private orientationChangeHandler: (() => void) | undefined;
   private windowResizeHandler: (() => void) | undefined;
   private isHandlingLayoutChange = false;
@@ -146,9 +146,9 @@ export class Driver {
       onFullscreenToggle: () => {
         this.toggleFullscreen();
       },
-      onDragModeToggle: (enabled: boolean) => {
-        this.dragModeEnabled = enabled;
-        this.uiEventManager?.setDragMode(enabled);
+      onPanModeToggle: (enabled: boolean) => {
+        this.panModeEnabled = enabled;
+        this.uiEventManager?.setPanMode(enabled);
       },
       onKeyboardToggle: () => {
         // Keyboard toggle is handled by React state in OverlayContainer

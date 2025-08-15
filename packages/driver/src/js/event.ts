@@ -69,7 +69,7 @@ export class UIEventManager {
 
   private _cursorPosition: { x: number; y: number } = { x: 0, y: 0 };
   private _keyState: Set<string> = new Set();
-  private _dragModeEnabled = false;
+  private _panModeEnabled = false;
 
   // Touch state tracking
   private _touches: Map<number, { x: number; y: number; startTime: number }> = new Map();
@@ -79,7 +79,7 @@ export class UIEventManager {
   private _twoFingerCenter: { x: number; y: number } = { x: 0, y: 0 };
   private _isZooming = false;
   private _isPanning = false;
-  private _isDragModeActive = false;
+  private _isPanModeActive = false;
 
   get uiState() {
     return {
@@ -154,8 +154,8 @@ export class UIEventManager {
     el.focus();
   }
 
-  setDragMode(enabled: boolean) {
-    this._dragModeEnabled = enabled;
+  setPanMode(enabled: boolean) {
+    this._panModeEnabled = enabled;
   }
 
   private preventDefault(e: Event) {
@@ -274,27 +274,23 @@ export class UIEventManager {
       const pos = this.getTouchPosition(touch);
       this._cursorPosition = pos;
 
-      if (this._dragModeEnabled) {
-        // Drag mode: start click drag immediately
-        this._isDragModeActive = true;
-        this._keyState.add("LEFTBUTTON");
-        this.callbacks.onKeyDown("LEFTBUTTON", 0, this.uiState);
-      } else {
-        // Normal mode: potential tap or long press
-        // Check for double tap
-        if (currentTime - this._lastTapTime < 300) {
-          // Double tap detected
-          this.callbacks.onKeyDown("LEFTBUTTON", 1, this.uiState);
-          this._lastTapTime = 0;
-          return;
-        }
+      if (!this._panModeEnabled) {
+        // Direct interaction mode: prepare for potential drag or long press
+        this._isPanModeActive = false; // Don't start drag yet
 
         // Set long press timer for right click
         this._longPressTimer = window.setTimeout(() => {
-          this._keyState.add("RIGHTBUTTON");
+          // Immediately fire right click down and up
           this.callbacks.onKeyDown("RIGHTBUTTON", 0, this.uiState);
+          this.callbacks.onKeyUp("RIGHTBUTTON", 0, this.uiState);
           this._longPressTimer = null;
         }, 500);
+      } else {
+        // Pan tool mode: just mouse move for single tap
+        this.callbacks.onMouseMove(this.uiState);
+
+        // Record tap time for potential double tap detection
+        this._lastTapTime = currentTime;
       }
     } else if (e.touches.length === 2) {
       // Two finger touch - behavior depends on drag mode
@@ -323,22 +319,34 @@ export class UIEventManager {
       const pos = this.getTouchPosition(touch);
       this._cursorPosition = pos;
 
-      if (this._dragModeEnabled && this._isDragModeActive) {
-        // Drag mode: send mouse move with button down
-        this.callbacks.onMouseMove(this.uiState);
-      } else {
-        // Normal mode: just mouse move
-        this.callbacks.onMouseMove(this.uiState);
-
-        // Cancel long press if finger moves too much
-        const touchData = this._touches.get(touch.identifier);
-        if (touchData && this._longPressTimer) {
-          const distance = this.calculateDistance(touchData, pos);
-          if (distance > 10) {
-            clearTimeout(this._longPressTimer);
-            this._longPressTimer = null;
+      if (!this._panModeEnabled) {
+        // Direct interaction mode: check if we should start drag
+        if (!this._isPanModeActive && this._longPressTimer) {
+          // Check if finger moved enough to start drag
+          const touchData = this._touches.get(touch.identifier);
+          if (touchData) {
+            const distance = this.calculateDistance(touchData, pos);
+            if (distance > 5) {
+              // Start drag - cancel long press and begin left button drag
+              clearTimeout(this._longPressTimer);
+              this._longPressTimer = null;
+              this._isPanModeActive = true;
+              this._keyState.add("LEFTBUTTON");
+              this.callbacks.onKeyDown("LEFTBUTTON", 0, this.uiState);
+            }
           }
         }
+
+        if (this._isPanModeActive) {
+          // Send mouse move with button down (drag)
+          this.callbacks.onMouseMove(this.uiState);
+        } else {
+          // Just mouse move (no drag yet)
+          this.callbacks.onMouseMove(this.uiState);
+        }
+      } else {
+        // Pan tool mode: just mouse move (no click drag)
+        this.callbacks.onMouseMove(this.uiState);
       }
     } else if (e.touches.length === 2) {
       // Two finger gesture
@@ -353,15 +361,15 @@ export class UIEventManager {
         y: currentCenter.y - this._twoFingerCenter.y,
       };
 
-      if (this._dragModeEnabled) {
-        // Drag mode: two finger movement becomes wheel
+      if (!this._panModeEnabled) {
+        // Direct interaction mode: two finger movement becomes wheel
         if (Math.abs(centerDelta.y) > Math.abs(centerDelta.x)) {
           // Vertical movement - wheel up/down
           const direction = centerDelta.y > 0 ? "WHEELDOWN" : "WHEELUP";
           this.callbacks.onKeyUp(direction, 0, this.uiState);
         }
       } else {
-        // Normal mode: zoom and pan
+        // Pan mode: zoom and pan
         // Determine if this is zoom or pan
         if (Math.abs(distanceDelta) > 2 && !this._isPanning) {
           this._isZooming = true;
@@ -389,39 +397,38 @@ export class UIEventManager {
 
     if (e.touches.length === 0) {
       // All touches ended
-      if (this._dragModeEnabled && this._isDragModeActive) {
-        // Drag mode: end drag
-        this._isDragModeActive = false;
-        if (this._keyState.has("LEFTBUTTON")) {
-          this._keyState.delete("LEFTBUTTON");
-          this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
-        }
-      } else {
-        // Normal mode
-        if (this._longPressTimer) {
-          // Single tap (not long press)
+      if (!this._panModeEnabled) {
+        // Direct interaction mode: handle drag end or tap
+        if (this._isPanModeActive) {
+          // End drag
+          this._isPanModeActive = false;
+
+          if (this._keyState.has("LEFTBUTTON")) {
+            this._keyState.delete("LEFTBUTTON");
+            this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
+          }
+        } else if (this._longPressTimer) {
+          // Single tap (not long press, not drag)
           clearTimeout(this._longPressTimer);
           this._longPressTimer = null;
 
           if (!this._isZooming && !this._isPanning) {
+            // Generate single click
             this._keyState.add("LEFTBUTTON");
             this.callbacks.onKeyDown("LEFTBUTTON", 0, this.uiState);
 
             // Schedule mouseup
             setTimeout(() => {
-              this._keyState.delete("LEFTBUTTON");
-              this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
+              if (this._keyState.has("LEFTBUTTON")) {
+                this._keyState.delete("LEFTBUTTON");
+                this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
+              }
             }, 50);
-
-            this._lastTapTime = Date.now();
           }
         }
-
-        // Clean up right button if it was pressed
-        if (this._keyState.has("RIGHTBUTTON")) {
-          this._keyState.delete("RIGHTBUTTON");
-          this.callbacks.onKeyUp("RIGHTBUTTON", 0, this.uiState);
-        }
+      } else {
+        // Pan tool mode: no click events on single tap
+        // Just clean up any gesture states
       }
 
       this._isZooming = false;
@@ -442,19 +449,14 @@ export class UIEventManager {
       this._longPressTimer = null;
     }
 
-    // Clean up drag mode state
-    if (this._isDragModeActive && this._keyState.has("LEFTBUTTON")) {
+    // Clean up pan mode state
+    if (this._isPanModeActive && this._keyState.has("LEFTBUTTON")) {
       this._keyState.delete("LEFTBUTTON");
       this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
     }
 
-    if (this._keyState.has("RIGHTBUTTON")) {
-      this._keyState.delete("RIGHTBUTTON");
-      this.callbacks.onKeyUp("RIGHTBUTTON", 0, this.uiState);
-    }
-
     this._isZooming = false;
     this._isPanning = false;
-    this._isDragModeActive = false;
+    this._isPanModeActive = false;
   }
 }

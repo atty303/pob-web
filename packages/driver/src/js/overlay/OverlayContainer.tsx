@@ -17,7 +17,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
   const [modifiers, setModifiers] = useState<ModifierKeys>(modifierKeyManager.modifiers);
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
-  const [dragModeEnabled, setDragModeEnabled] = useState(false);
+  const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const handleModifierToggle = useCallback(
@@ -28,10 +28,10 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
     [modifierKeyManager],
   );
 
-  const handleDragModeToggle = useCallback(
+  const handlePanModeToggle = useCallback(
     (enabled: boolean) => {
-      setDragModeEnabled(enabled);
-      callbacks.onDragModeToggle(enabled);
+      setPanModeEnabled(enabled);
+      callbacks.onPanModeToggle(enabled);
     },
     [callbacks],
   );
@@ -46,7 +46,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
 
   const wrappedCallbacks: ToolbarCallbacks = {
     ...callbacks,
-    onDragModeToggle: handleDragModeToggle,
+    onPanModeToggle: handlePanModeToggle,
     onKeyboardToggle: handleKeyboardToggle,
   };
 
@@ -105,7 +105,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
           callbacks={wrappedCallbacks}
           position={position}
           isLandscape={isLandscape}
-          dragModeEnabled={dragModeEnabled}
+          panModeEnabled={panModeEnabled}
           keyboardVisible={keyboardVisible}
         />
       </div>

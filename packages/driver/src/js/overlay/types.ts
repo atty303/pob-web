@@ -13,7 +13,7 @@ export interface ToolbarCallbacks {
   onZoomReset: () => void;
   onLayoutChange: () => void;
   onFullscreenToggle: () => void;
-  onDragModeToggle: (enabled: boolean) => void;
+  onPanModeToggle: (enabled: boolean) => void;
   onKeyboardToggle: () => void;
 }
 
