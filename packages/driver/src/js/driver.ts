@@ -1,6 +1,8 @@
 import * as Comlink from "comlink";
 
-import { UIEventManager } from "./event";
+import { UIEventManager, type UIState } from "./event";
+import { ResponsiveToolbar, type ToolbarCallbacks } from "./toolbar";
+import { ModifierKeyManager, TouchTransformManager } from "./touch";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
@@ -18,6 +20,12 @@ export class Driver {
   private worker: Worker | undefined;
   private driverWorker: Comlink.Remote<DriverWorker> | undefined;
   private resizeObserver: ResizeObserver | undefined;
+  private canvas: HTMLCanvasElement | undefined;
+  private touchTransformManager: TouchTransformManager | undefined;
+  private modifierKeyManager: ModifierKeyManager | undefined;
+  private toolbar: ResponsiveToolbar | undefined;
+  private canvasContainer: HTMLDivElement | undefined;
+  private dragModeEnabled = false;
 
   constructor(
     readonly build: "debug" | "release",
@@ -67,36 +75,120 @@ export class Driver {
     canvas.width = r.width;
     canvas.height = r.height;
     canvas.style.position = "absolute";
+    canvas.style.transformOrigin = "0 0";
+    this.canvas = canvas;
 
     const offscreenCanvas = canvas.transferControlToOffscreen();
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
+    // Initialize touch transform manager
+    this.touchTransformManager = new TouchTransformManager(canvas.width, canvas.height, r.width, r.height);
+
+    // Initialize modifier key manager
+    this.modifierKeyManager = new ModifierKeyManager(modifiers => {
+      // Update UI state when modifiers change
+      this.updateTransform();
+    });
+
+    // Create canvas container
+    this.canvasContainer = document.createElement("div");
+    this.canvasContainer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+    `;
+
+    // Initialize toolbar
+    const toolbarCallbacks: ToolbarCallbacks = {
+      onChar: (char, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleChar(char, doubleClick, transformedState);
+      },
+      onKeyDown: (key, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleKeyDown(key, doubleClick, transformedState);
+      },
+      onKeyUp: (key, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleKeyUp(key, doubleClick, transformedState);
+      },
+      onZoomReset: () => {
+        this.resetTransform();
+      },
+      onLayoutChange: toolbarBounds => {
+        this.adjustCanvasLayout(toolbarBounds);
+      },
+      onFullscreenToggle: () => {
+        this.toggleFullscreen();
+      },
+      onDragModeToggle: (enabled: boolean) => {
+        this.dragModeEnabled = enabled;
+        this.uiEventManager?.setDragMode(enabled);
+      },
+    };
+
+    this.toolbar = new ResponsiveToolbar(root, this.modifierKeyManager, toolbarCallbacks);
+
     root.style.position = "relative";
-    root.appendChild(canvas);
+    this.canvasContainer.appendChild(canvas);
+    root.appendChild(this.canvasContainer);
     root.tabIndex = 0;
     root.focus();
+
+    // Initial layout adjustment
+    this.adjustCanvasLayout(this.toolbar.getToolbarBounds());
 
     this.resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const pixelRatio = document.defaultView?.devicePixelRatio ?? 1;
         const { width, height } = entry.contentRect;
+
+        // Adjust canvas layout based on toolbar position
+        if (this.toolbar) {
+          this.adjustCanvasLayout(this.toolbar.getToolbarBounds());
+        }
+
         this.driverWorker?.resize({ width, height, pixelRatio });
       }
     });
     this.resizeObserver.observe(root);
 
     this.uiEventManager = new UIEventManager(root, {
-      onMouseMove: uiState => this.driverWorker?.handleMouseMove(uiState),
-      onKeyDown: (name, doubleClick, uiState) => this.driverWorker?.handleKeyDown(name, doubleClick, uiState),
-      onKeyUp: (name, doubleClick, uiState) => this.driverWorker?.handleKeyUp(name, doubleClick, uiState),
-      onChar: (char, doubleClick, uiState) => this.driverWorker?.handleChar(char, doubleClick, uiState),
+      onMouseMove: uiState => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleMouseMove(transformedState);
+      },
+      onKeyDown: (name, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleKeyDown(name, doubleClick, transformedState);
+      },
+      onKeyUp: (name, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleKeyUp(name, doubleClick, transformedState);
+      },
+      onChar: (char, doubleClick, uiState) => {
+        const transformedState = this.transformUIState(uiState);
+        this.driverWorker?.handleChar(char, doubleClick, transformedState);
+      },
       onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
+      onZoom: (scale, centerX, centerY) => {
+        this.touchTransformManager?.zoom(scale, centerX, centerY);
+        this.updateTransform();
+      },
+      onPan: (deltaX, deltaY) => {
+        this.touchTransformManager?.pan(deltaX, deltaY);
+        this.updateTransform();
+      },
     });
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
   }
 
   detachFromDOM() {
     this.resizeObserver?.disconnect();
+    this.toolbar?.destroy();
     if (this.root) {
       for (const child of [...this.root.children]) {
         this.root.removeChild(child);
@@ -126,5 +218,113 @@ export class Driver {
 
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
+  }
+
+  private transformUIState(uiState: UIState): UIState {
+    if (!this.touchTransformManager || !this.modifierKeyManager) {
+      return uiState;
+    }
+
+    // Transform screen coordinates to canvas coordinates
+    const canvasCoords = this.touchTransformManager.screenToCanvas(uiState.x, uiState.y);
+
+    // Combine modifier keys with existing keys
+    const modifierKeys = this.modifierKeyManager.generateKeyState();
+    const combinedKeys = new Set([...uiState.keys, ...modifierKeys]);
+
+    return {
+      x: canvasCoords.x,
+      y: canvasCoords.y,
+      keys: combinedKeys,
+    };
+  }
+
+  private updateTransform() {
+    if (!this.canvas || !this.touchTransformManager) {
+      return;
+    }
+
+    this.canvas.style.transform = this.touchTransformManager.generateTransformCSS();
+  }
+
+  // Public methods for external control
+  resetTransform() {
+    this.touchTransformManager?.reset();
+    this.updateTransform();
+  }
+
+  zoomTo(scale: number, centerX?: number, centerY?: number) {
+    if (!this.touchTransformManager || !this.root) return;
+
+    const rect = this.root.getBoundingClientRect();
+    const cx = centerX ?? rect.width / 2;
+    const cy = centerY ?? rect.height / 2;
+
+    // Reset first, then zoom to desired scale
+    this.touchTransformManager.reset();
+    this.touchTransformManager.zoom(scale, cx, cy);
+    this.updateTransform();
+  }
+
+  getModifierKeyManager(): ModifierKeyManager | undefined {
+    return this.modifierKeyManager;
+  }
+
+  getTouchTransformManager(): TouchTransformManager | undefined {
+    return this.touchTransformManager;
+  }
+
+  private adjustCanvasLayout(toolbarBounds: DOMRect) {
+    if (!this.canvasContainer || !this.root) {
+      return;
+    }
+
+    const rootRect = this.root.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const isPortrait = windowHeight > windowWidth;
+
+    // Calculate available space based on toolbar position
+    const top = 0;
+    const left = 0;
+    let right = 0;
+    let bottom = 0;
+
+    if (isPortrait) {
+      // Toolbar is at bottom
+      bottom = Math.max(0, toolbarBounds.height + 8); // 8px padding
+    } else {
+      // Toolbar is at right
+      right = Math.max(0, toolbarBounds.width + 8); // 8px padding
+    }
+
+    // Apply the layout adjustments
+    this.canvasContainer.style.top = `${top}px`;
+    this.canvasContainer.style.left = `${left}px`;
+    this.canvasContainer.style.right = `${right}px`;
+    this.canvasContainer.style.bottom = `${bottom}px`;
+
+    // Update touch transform manager with new container size
+    const newWidth = rootRect.width - left - right;
+    const newHeight = rootRect.height - top - bottom;
+
+    this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
+    this.updateTransform();
+  }
+
+  private async toggleFullscreen() {
+    if (!this.root) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        await this.root.requestFullscreen();
+      } else {
+        // Exit fullscreen
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.warn("Fullscreen toggle failed:", error);
+    }
   }
 }
