@@ -59,7 +59,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   }, [isLandscape]);
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} className="flex items-center gap-2">
       <ControlButton icon={<HiMagnifyingGlass size={24} />} tooltip="Reset Zoom" onClick={callbacks.onZoomReset} />
 
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
