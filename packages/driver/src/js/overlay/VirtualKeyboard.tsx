@@ -56,38 +56,38 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "0", display: "0" },
       ],
       [
-        { event: "Q", display: "Q" },
-        { event: "W", display: "W" },
-        { event: "E", display: "E" },
-        { event: "R", display: "R" },
-        { event: "T", display: "T" },
-        { event: "Y", display: "Y" },
-        { event: "U", display: "U" },
-        { event: "I", display: "I" },
-        { event: "O", display: "O" },
-        { event: "P", display: "P" },
+        { event: "q", display: "Q" },
+        { event: "w", display: "W" },
+        { event: "e", display: "E" },
+        { event: "r", display: "R" },
+        { event: "t", display: "T" },
+        { event: "y", display: "Y" },
+        { event: "u", display: "U" },
+        { event: "i", display: "I" },
+        { event: "o", display: "O" },
+        { event: "p", display: "P" },
       ],
       [
-        { event: "A", display: "A" },
-        { event: "S", display: "S" },
-        { event: "D", display: "D" },
-        { event: "F", display: "F" },
-        { event: "G", display: "G" },
-        { event: "H", display: "H" },
-        { event: "J", display: "J" },
-        { event: "K", display: "K" },
-        { event: "L", display: "L" },
+        { event: "a", display: "A" },
+        { event: "s", display: "S" },
+        { event: "d", display: "D" },
+        { event: "f", display: "F" },
+        { event: "g", display: "G" },
+        { event: "h", display: "H" },
+        { event: "j", display: "J" },
+        { event: "k", display: "K" },
+        { event: "l", display: "L" },
         { event: "Hold", display: "Hold", width: "60px", isSpecial: true },
       ],
       [
         { event: "Shift", display: "Shift", width: "60px", isModifier: true },
-        { event: "Z", display: "Z" },
-        { event: "X", display: "X" },
-        { event: "C", display: "C" },
-        { event: "V", display: "V" },
-        { event: "B", display: "B" },
-        { event: "N", display: "N" },
-        { event: "M", display: "M" },
+        { event: "z", display: "Z" },
+        { event: "x", display: "X" },
+        { event: "c", display: "C" },
+        { event: "v", display: "V" },
+        { event: "b", display: "B" },
+        { event: "n", display: "N" },
+        { event: "m", display: "M" },
         { event: "Backspace", display: "⌫", isSpecial: true },
       ],
       [
@@ -98,6 +98,61 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
       ],
     ],
     [],
+  );
+
+  const applyShiftTransformation = useCallback(
+    (domKey: string): string => {
+      const isShiftHeld = keyboardState.hasKey("Shift");
+
+      if (!isShiftHeld) {
+        return domKey;
+      }
+
+      // Transform letters to uppercase when Shift is held
+      if (/^[a-z]$/.test(domKey)) {
+        return domKey.toUpperCase();
+      }
+
+      // Transform numbers and symbols when Shift is held
+      const shiftNumberMap: Record<string, string> = {
+        "1": "!",
+        "2": "@",
+        "3": "#",
+        "4": "$",
+        "5": "%",
+        "6": "^",
+        "7": "&",
+        "8": "*",
+        "9": "(",
+        "0": ")",
+      };
+
+      // Additional symbol transformations
+      const shiftSymbolMap: Record<string, string> = {
+        "`": "~",
+        "-": "_",
+        "=": "+",
+        "[": "{",
+        "]": "}",
+        "\\": "|",
+        ";": ":",
+        "'": '"',
+        ",": "<",
+        ".": ">",
+        "/": "?",
+      };
+
+      if (shiftNumberMap[domKey]) {
+        return shiftNumberMap[domKey];
+      }
+
+      if (shiftSymbolMap[domKey]) {
+        return shiftSymbolMap[domKey];
+      }
+
+      return domKey;
+    },
+    [keyboardState],
   );
 
   const handleKeyPress = useCallback(
@@ -113,11 +168,13 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
       } else {
         // Simulate physical keyboard: keydown -> keyup sequence
         keyboardState.keydown(eventKey, 0);
-        keyboardState.keypress(eventKey);
+        // Apply Shift transformation for virtual keyboard only
+        const transformedChar = applyShiftTransformation(eventKey);
+        keyboardState.keypress(transformedChar);
         keyboardState.keyup(eventKey, 0);
       }
     },
-    [keyboardState, holdMode],
+    [keyboardState, holdMode, applyShiftTransformation],
   );
 
   if (!isVisible) {

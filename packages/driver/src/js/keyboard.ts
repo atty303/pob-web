@@ -160,21 +160,14 @@ export class KeyboardState {
 
   // Method for toggling hold state (used by virtual keyboard for holdable keys)
   toggleHold(domKey: string, doubleClick = 0): void {
-    const pobKey = this.domKeyToPobKey(domKey);
-
     if (this._heldKeys.has(domKey)) {
       // Key is already held, release it
       this._heldKeys.delete(domKey);
-      this._callbacks?.onKeyUp(pobKey, doubleClick);
+      this.keyup(domKey, doubleClick);
     } else {
       // Key is not held, hold it
       this._heldKeys.add(domKey);
-      this._callbacks?.onKeyDown(pobKey, doubleClick);
-
-      // Character keys still generate their character when first pressed
-      if (this.isCharacterKey(domKey)) {
-        this.handleSpecialCharacter(domKey, doubleClick);
-      }
+      this.keydown(domKey, doubleClick);
     }
     this.notifyChange();
   }
