@@ -6,10 +6,11 @@ import { fs, Fetch } from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
-import type { UIState } from "./event";
 import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
+import type { KeyboardUIState } from "./keyboard-handler";
 import { log, tag } from "./logger";
+import type { MouseState } from "./mouse-handler";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
@@ -121,11 +122,8 @@ export class DriverWorker {
     height: 600,
     pixelRatio: 1,
   };
-  private uiState: UIState = {
-    x: 0,
-    y: 0,
-    keys: new Set(),
-  };
+  private mouseState: MouseState = { x: 0, y: 0 };
+  private keyboardState: KeyboardUIState = { keys: new Set() };
   private hostCallbacks: HostCallbacks | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
@@ -265,25 +263,33 @@ export class DriverWorker {
     this.dirtyCount = 2;
   }
 
-  handleMouseMove(uiState: UIState) {
-    this.uiState = uiState;
+  // State update methods (separate from wasm callbacks)
+  updateMouseState(mouseState: MouseState) {
+    this.mouseState = mouseState;
+  }
+
+  updateKeyboardState(keyboardState: KeyboardUIState) {
+    this.keyboardState = keyboardState;
+  }
+
+  // Mouse event handler
+  handleMouseMove(mouseState: MouseState) {
+    this.mouseState = mouseState;
     this.invalidate();
   }
 
-  handleKeyDown(name: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  // Keyboard event handlers
+  handleKeyDown(name: string, doubleClick: number) {
     this.imports?.onKeyDown(name, doubleClick);
     this.invalidate();
   }
 
-  handleKeyUp(name: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  handleKeyUp(name: string, doubleClick: number) {
     this.imports?.onKeyUp(name, doubleClick);
     this.invalidate();
   }
 
-  handleChar(char: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  handleChar(char: string, doubleClick: number) {
     this.imports?.onChar(char, doubleClick);
     this.invalidate();
   }
@@ -339,9 +345,9 @@ export class DriverWorker {
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,
-      getCursorPosX: () => this.uiState.x,
-      getCursorPosY: () => this.uiState.y,
-      isKeyDown: (name: string) => this.uiState.keys.has(name),
+      getCursorPosX: () => this.mouseState.x,
+      getCursorPosY: () => this.mouseState.y,
+      isKeyDown: (name: string) => this.keyboardState.keys.has(name),
       imageLoad: (handle: number, filename: string, flags: number) => {
         this.imageRepo?.load(handle, filename, flags).then(() => {
           this.invalidate();

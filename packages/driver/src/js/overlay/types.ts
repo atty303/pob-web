@@ -1,5 +1,3 @@
-import type { UIState } from "../event";
-
 export interface ModifierKeys {
   ctrl: boolean;
   shift: boolean;
@@ -7,9 +5,9 @@ export interface ModifierKeys {
 }
 
 export interface ToolbarCallbacks {
-  onChar: (char: string, doubleClick: number, uiState: UIState) => void;
-  onKeyDown: (key: string, doubleClick: number, uiState: UIState) => void;
-  onKeyUp: (key: string, doubleClick: number, uiState: UIState) => void;
+  onChar: (char: string, doubleClick: number) => void;
+  onKeyDown: (key: string, doubleClick: number) => void;
+  onKeyUp: (key: string, doubleClick: number) => void;
   onZoomReset: () => void;
   onZoomChange: (zoom: number) => void;
   onCanvasSizeChange: (width: number, height: number) => void;
@@ -20,5 +18,3 @@ export interface ToolbarCallbacks {
 }
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";
-
-export type { UIState };

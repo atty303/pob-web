@@ -6,4 +6,4 @@ export { VirtualKeyboard } from "./VirtualKeyboard";
 export { KeyButton } from "./KeyButton";
 export { ZoomControl } from "./ZoomControl";
 export { useFullscreen } from "./useFullscreen";
-export type { ModifierKeys, ToolbarCallbacks, ToolbarPosition, UIState } from "./types";
+export type { ModifierKeys, ToolbarCallbacks, ToolbarPosition } from "./types";

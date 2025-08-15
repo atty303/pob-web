@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
 import type { KeyboardState } from "../keyboard";
 import { KeyButton } from "./KeyButton";
-import type { ModifierKeys, ToolbarCallbacks, UIState } from "./types";
+import type { ModifierKeys, ToolbarCallbacks } from "./types";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;

@@ -1,7 +1,9 @@
 import * as Comlink from "comlink";
 
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
-import { UIEventManager, type UIState } from "./event";
+import { EventHandler, type VisibilityCallbacks } from "./event";
+import { type KeyboardCallbacks, KeyboardHandler, type KeyboardUIState } from "./keyboard-handler";
+import { type MouseCallbacks, MouseHandler, type MouseState } from "./mouse-handler";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
@@ -15,7 +17,9 @@ export type FilesystemConfig = {
 
 export class Driver {
   private isStarted = false;
-  private uiEventManager: UIEventManager | undefined;
+  private eventHandler: EventHandler | undefined;
+  private mouseHandler: MouseHandler | undefined;
+  private keyboardHandler: KeyboardHandler | undefined;
   private root: HTMLElement | undefined;
   private worker: Worker | undefined;
   private driverWorker: Comlink.Remote<DriverWorker> | undefined;
@@ -88,11 +92,11 @@ export class Driver {
         // Update pan mode based on canvas state
         if (state.needsPanning && !this.panModeEnabled) {
           this.panModeEnabled = true;
-          this.uiEventManager?.setPanMode(true);
+          this.mouseHandler?.setPanMode(true);
           this.overlayManager?.updateState({ panModeEnabled: true });
         } else if (!state.needsPanning && this.panModeEnabled) {
           this.panModeEnabled = false;
-          this.uiEventManager?.setPanMode(false);
+          this.mouseHandler?.setPanMode(false);
           this.overlayManager?.updateState({ panModeEnabled: false });
           this.canvasManager?.resetTransform();
         }
@@ -142,28 +146,121 @@ export class Driver {
 
     // Toolbar container will be managed by React
 
-    // Initialize toolbar
+    root.style.position = "relative";
+    root.appendChild(container);
+    root.appendChild(overlayContainer);
+
+    // Set focus and tabIndex on container since UIEventManager is attached there
+    container.tabIndex = 0;
+    container.focus();
+    container.style.outline = "none"; // Remove focus outline
+
+    // Listen for fullscreen changes
+    document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
+
+    // Setup orientation and resize handlers
+    this.setupOrientationAndResizeHandlers();
+
+    // Initial layout adjustment for canvas to avoid toolbar overlap
+    this.adjustCanvasForOverlay();
+
+    // Create shared worker callback object to eliminate duplication
+    const workerCallbacks = {
+      onKeyDown: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
+        this.driverWorker?.updateKeyboardState(keyboardState);
+        this.driverWorker?.handleKeyDown(name, doubleClick);
+      },
+      onKeyUp: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
+        // Update keyboard state in worker, then call the wasm callback
+        this.driverWorker?.updateKeyboardState(keyboardState);
+        this.driverWorker?.handleKeyUp(name, doubleClick);
+      },
+      onChar: (char: string, doubleClick: number, keyboardState: KeyboardUIState) => {
+        // Update keyboard state in worker, then call the wasm callback
+        this.driverWorker?.updateKeyboardState(keyboardState);
+        this.driverWorker?.handleChar(char, doubleClick);
+      },
+      // Convenience methods for when we already have states available
+      keyDown: (name: string, doubleClick: number) => {
+        const keyboardState = this.keyboardHandler!.keyboardUIState;
+        workerCallbacks.onKeyDown(name, doubleClick, keyboardState);
+      },
+      keyUp: (name: string, doubleClick: number) => {
+        const keyboardState = this.keyboardHandler!.keyboardUIState;
+        workerCallbacks.onKeyUp(name, doubleClick, keyboardState);
+      },
+      char: (char: string, doubleClick: number) => {
+        const keyboardState = this.keyboardHandler!.keyboardUIState;
+        workerCallbacks.onChar(char, doubleClick, keyboardState);
+      },
+    };
+
+    // Initialize keyboard handler
+    this.keyboardHandler = new KeyboardHandler(container, {
+      onKeyDown: workerCallbacks.onKeyDown,
+      onKeyUp: workerCallbacks.onKeyUp,
+      onChar: workerCallbacks.onChar,
+    });
+
+    // Initialize mouse handler with integrated touch functionality
+    this.mouseHandler = new MouseHandler(
+      container,
+      {
+        onMouseMove: mouseState => {
+          const transformedMouse = this.transformMouseCoordinates(mouseState);
+          this.driverWorker?.handleMouseMove(transformedMouse);
+        },
+        onZoom: (scale, centerX, centerY) => {
+          this.canvasManager?.zoom(scale, centerX, centerY);
+          this.updateOverlayWithTransform();
+        },
+        onPan: (deltaX, deltaY) => {
+          this.canvasManager?.pan(deltaX, deltaY);
+          this.updateOverlayWithTransform();
+        },
+      },
+      {
+        addPhysicalKey: (key: string) => this.keyboardHandler!.keyboardState.addPhysicalKey(key),
+        removePhysicalKey: (key: string) => this.keyboardHandler!.keyboardState.removePhysicalKey(key),
+        hasKey: (key: string) => this.keyboardHandler!.keyboardState.hasKey(key),
+        onKeyDown: (key, doubleClick) => {
+          // Mouse buttons affect keyboard state, so use the shared worker callbacks
+          workerCallbacks.keyDown(key, doubleClick);
+        },
+        onKeyUp: (key, doubleClick) => {
+          // Mouse buttons affect keyboard state, so use the shared worker callbacks
+          workerCallbacks.keyUp(key, doubleClick);
+        },
+      },
+    );
+
+    // Initialize event handler for general events
+    this.eventHandler = new EventHandler(container, {
+      onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
+    });
+
+    // Set initial pan mode state
+    this.mouseHandler!.setPanMode(this.panModeEnabled);
+    this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
+
+    // Initialize toolbar callbacks that delegate to keyboard handler
     const toolbarCallbacks: ToolbarCallbacks = {
-      onChar: (char, doubleClick, uiState) => {
-        // Don't transform coordinates for keyboard events from virtual keyboard
-        // Use current mouse position instead
-        const currentState = this.uiEventManager?.uiState ?? uiState;
-        const transformedState = this.transformUIState(currentState);
-        this.driverWorker?.handleChar(char, doubleClick, transformedState);
+      onChar: (char, doubleClick) => {
+        // Virtual keyboard events go directly through the keyboard handler
+        // Mouse state is not relevant for virtual keyboard input
+        this.keyboardHandler!.keyboardState.keypress(char, doubleClick);
       },
-      onKeyDown: (key, doubleClick, uiState) => {
-        // Don't transform coordinates for keyboard events from virtual keyboard
-        // Use current mouse position instead
-        const currentState = this.uiEventManager?.uiState ?? uiState;
-        const transformedState = this.transformUIState(currentState);
-        this.driverWorker?.handleKeyDown(key, doubleClick, transformedState);
+      onKeyDown: (key, doubleClick) => {
+        // Virtual keyboard events go directly through the keyboard handler
+        // Mouse state is not relevant for virtual keyboard input
+        this.keyboardHandler!.keyboardState.addPhysicalKey(key);
+        this.keyboardHandler!.keyboardState.keydown(key, doubleClick);
       },
-      onKeyUp: (key, doubleClick, uiState) => {
-        // Don't transform coordinates for keyboard events from virtual keyboard
-        // Use current mouse position instead
-        const currentState = this.uiEventManager?.uiState ?? uiState;
-        const transformedState = this.transformUIState(currentState);
-        this.driverWorker?.handleKeyUp(key, doubleClick, transformedState);
+      onKeyUp: (key, doubleClick) => {
+        // Virtual keyboard events go directly through the keyboard handler
+        // Mouse state is not relevant for virtual keyboard input
+        this.keyboardHandler!.keyboardState.removePhysicalKey(key);
+        this.keyboardHandler!.keyboardState.keyup(key, doubleClick);
       },
       onZoomReset: () => {
         this.canvasManager?.resetZoom();
@@ -183,70 +280,19 @@ export class Driver {
       },
       onPanModeToggle: (enabled: boolean) => {
         this.panModeEnabled = enabled;
-        this.uiEventManager?.setPanMode(enabled);
+        this.mouseHandler!.setPanMode(enabled);
       },
       onKeyboardToggle: () => {
         // Keyboard toggle is handled by React state in OverlayContainer
       },
     };
 
-    root.style.position = "relative";
-    root.appendChild(container);
-    root.appendChild(overlayContainer);
-
-    // Set focus and tabIndex on container since UIEventManager is attached there
-    container.tabIndex = 0;
-    container.focus();
-    container.style.outline = "none"; // Remove focus outline
-
-    // Listen for fullscreen changes
-    document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
-
-    // Setup orientation and resize handlers
-    this.setupOrientationAndResizeHandlers();
-
-    // Initial layout adjustment for canvas to avoid toolbar overlap
-    this.adjustCanvasForOverlay();
-
-    this.uiEventManager = new UIEventManager(container, {
-      onMouseMove: uiState => {
-        const transformedState = this.transformUIState(uiState);
-        this.driverWorker?.handleMouseMove(transformedState);
-      },
-      onKeyDown: (name, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
-        this.driverWorker?.handleKeyDown(name, doubleClick, transformedState);
-      },
-      onKeyUp: (name, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
-        this.driverWorker?.handleKeyUp(name, doubleClick, transformedState);
-      },
-      onChar: (char, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
-        this.driverWorker?.handleChar(char, doubleClick, transformedState);
-      },
-      onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
-      onZoom: (scale, centerX, centerY) => {
-        this.canvasManager?.zoom(scale, centerX, centerY);
-        this.updateOverlayWithTransform();
-      },
-      onPan: (deltaX, deltaY) => {
-        this.canvasManager?.pan(deltaX, deltaY);
-        this.updateOverlayWithTransform();
-      },
-    });
-
-    // Set initial pan mode state and connect transform manager
-    this.uiEventManager.setPanMode(this.panModeEnabled);
-    this.uiEventManager.setTransformManager(this.canvasManager);
-    this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
-
-    // Initialize overlay manager after uiEventManager is created
+    // Initialize overlay manager after handlers are created
     this.overlayManager = new ReactOverlayManager(overlayContainer);
     const currentState = this.canvasManager.getCurrentState();
     this.overlayManager.render({
       callbacks: toolbarCallbacks,
-      keyboardState: this.uiEventManager.keyboardState,
+      keyboardState: this.keyboardHandler!.keyboardState,
       panModeEnabled: this.panModeEnabled,
       currentZoom: this.canvasManager?.transform.scale ?? 1.0,
       currentCanvasSize: currentState.styleSize,
@@ -263,7 +309,9 @@ export class Driver {
         this.root.removeChild(child);
       }
     }
-    this.uiEventManager?.destroy();
+    this.eventHandler?.destroy();
+    this.mouseHandler?.destroy();
+    this.keyboardHandler?.destroy();
     this.canvasManager = undefined;
   }
 
@@ -290,23 +338,16 @@ export class Driver {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
   }
 
-  private transformUIState(uiState: UIState): UIState {
+  private transformMouseCoordinates(mouseState: MouseState): MouseState {
     if (!this.canvasManager) {
-      return {
-        x: uiState.x,
-        y: uiState.y,
-        keys: this.uiEventManager?.keyboardState.pobKeys ?? uiState.keys,
-      };
+      return mouseState;
     }
 
-    // Simple transformation: container coordinates -> canvas coordinates
-    // UIEventManager provides container coordinates, CanvasManager transforms to canvas coordinates
-    const canvasCoords = this.canvasManager.screenToCanvas(uiState.x, uiState.y);
-
+    // Transform container coordinates to canvas coordinates
+    const canvasCoords = this.canvasManager.screenToCanvas(mouseState.x, mouseState.y);
     return {
       x: canvasCoords.x,
       y: canvasCoords.y,
-      keys: this.uiEventManager?.keyboardState.pobKeys ?? uiState.keys,
     };
   }
 
