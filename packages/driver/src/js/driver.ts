@@ -1,7 +1,7 @@
 import * as Comlink from "comlink";
 
 import { UIEventManager, type UIState } from "./event";
-import { ResponsiveToolbar, type ToolbarCallbacks } from "./toolbar";
+import { ResponsiveToolbar, type ToolbarCallbacks, type ToolbarPosition } from "./toolbar";
 import { ModifierKeyManager, TouchTransformManager } from "./touch";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
@@ -24,8 +24,12 @@ export class Driver {
   private touchTransformManager: TouchTransformManager | undefined;
   private modifierKeyManager: ModifierKeyManager | undefined;
   private toolbar: ResponsiveToolbar | undefined;
+  private toolbarContainer: HTMLDivElement | undefined;
   private canvasContainer: HTMLDivElement | undefined;
   private dragModeEnabled = false;
+  private orientationChangeHandler: (() => void) | undefined;
+  private windowResizeHandler: (() => void) | undefined;
+  private isHandlingLayoutChange = false;
 
   constructor(
     readonly build: "debug" | "release",
@@ -106,6 +110,9 @@ export class Driver {
       overflow: hidden;
     `;
 
+    // Create toolbar container
+    this.toolbarContainer = this.createToolbarContainer();
+
     // Initialize toolbar
     const toolbarCallbacks: ToolbarCallbacks = {
       onChar: (char, doubleClick, uiState) => {
@@ -123,8 +130,9 @@ export class Driver {
       onZoomReset: () => {
         this.resetTransform();
       },
-      onLayoutChange: toolbarBounds => {
-        this.adjustCanvasLayout(toolbarBounds);
+      onLayoutChange: () => {
+        // Toolbar layout changes are now handled by driver's layout management
+        // No need to adjust canvas layout here as it's managed centrally
       },
       onFullscreenToggle: () => {
         this.toggleFullscreen();
@@ -135,19 +143,26 @@ export class Driver {
       },
     };
 
-    this.toolbar = new ResponsiveToolbar(root, this.modifierKeyManager, toolbarCallbacks);
+    this.toolbar = new ResponsiveToolbar(this.toolbarContainer, this.modifierKeyManager, toolbarCallbacks);
 
     root.style.position = "relative";
     this.canvasContainer.appendChild(canvas);
     root.appendChild(this.canvasContainer);
+    root.appendChild(this.toolbarContainer);
     root.tabIndex = 0;
     root.focus();
 
     // Listen for fullscreen changes
     document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
 
+    // Setup orientation and resize handlers
+    this.setupOrientationAndResizeHandlers();
+
     // Initial layout adjustment
-    this.adjustCanvasLayout(this.toolbar.getToolbarBounds());
+    const position = this.updateToolbarLayout();
+    this.toolbar.updateLayoutFromExternal(position);
+    this.toolbar.updateOrientation(position === "right");
+    this.adjustCanvasLayout(this.toolbarContainer.getBoundingClientRect());
 
     // Ensure initial resize is sent to worker
     const initialRect = this.canvasContainer.getBoundingClientRect();
@@ -156,6 +171,11 @@ export class Driver {
     }
 
     this.resizeObserver = new ResizeObserver(entries => {
+      // Avoid duplicate handling when orientation change is in progress
+      if (this.isHandlingLayoutChange) {
+        return;
+      }
+
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         // Canvas container サイズ変更を直接検出してcanvasサイズを更新
@@ -202,6 +222,7 @@ export class Driver {
     this.resizeObserver?.disconnect();
     this.toolbar?.destroy();
     document.removeEventListener("fullscreenchange", () => this.handleFullscreenChange());
+    this.cleanupOrientationAndResizeHandlers();
     if (this.root) {
       for (const child of [...this.root.children]) {
         this.root.removeChild(child);
@@ -288,7 +309,7 @@ export class Driver {
   }
 
   private adjustCanvasLayout(toolbarBounds: DOMRect) {
-    if (!this.canvasContainer || !this.root) {
+    if (!this.canvasContainer || !this.root || !this.toolbarContainer) {
       return;
     }
 
@@ -304,23 +325,24 @@ export class Driver {
     let bottom = 0;
 
     if (isPortrait) {
-      // Toolbar is at bottom - no padding needed since toolbar takes full width
+      // Toolbar is at bottom
       bottom = Math.max(0, toolbarBounds.height);
     } else {
-      // Toolbar is at right - no padding needed since toolbar takes full height
+      // Toolbar is at right
       right = Math.max(0, toolbarBounds.width);
     }
 
-    // Apply the layout adjustments
+    // Apply the layout adjustments to canvas container
     this.canvasContainer.style.top = `${top}px`;
     this.canvasContainer.style.left = `${left}px`;
     this.canvasContainer.style.right = `${right}px`;
     this.canvasContainer.style.bottom = `${bottom}px`;
 
-    // Update canvas size first, then container size and transform
+    // Calculate new canvas dimensions
     const newWidth = rootRect.width - left - right;
     const newHeight = rootRect.height - top - bottom;
 
+    // Update canvas size and transform management
     this.updateCanvasSize(newWidth, newHeight);
     this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
     this.touchTransformManager?.updateCanvasSize(newWidth, newHeight);
@@ -405,10 +427,126 @@ export class Driver {
   private handleFullscreenChange() {
     // Force layout recalculation after fullscreen change
     if (this.toolbar) {
-      // Add a small delay to ensure the browser has updated dimensions
-      setTimeout(() => {
-        this.adjustCanvasLayout(this.toolbar!.getToolbarBounds());
-      }, 100);
+      this.handleLayoutChange();
     }
+  }
+
+  private setupOrientationAndResizeHandlers() {
+    this.orientationChangeHandler = () => {
+      this.handleLayoutChange();
+    };
+
+    this.windowResizeHandler = () => {
+      this.handleLayoutChange();
+    };
+
+    window.addEventListener("orientationchange", this.orientationChangeHandler);
+    window.addEventListener("resize", this.windowResizeHandler);
+  }
+
+  private cleanupOrientationAndResizeHandlers() {
+    if (this.orientationChangeHandler) {
+      window.removeEventListener("orientationchange", this.orientationChangeHandler);
+      this.orientationChangeHandler = undefined;
+    }
+    if (this.windowResizeHandler) {
+      window.removeEventListener("resize", this.windowResizeHandler);
+      this.windowResizeHandler = undefined;
+    }
+  }
+
+  private handleLayoutChange() {
+    if (!this.toolbar || !this.root || this.isHandlingLayoutChange) {
+      return;
+    }
+
+    this.isHandlingLayoutChange = true;
+
+    // Use requestAnimationFrame to ensure browser layout calculations are complete
+    requestAnimationFrame(() => {
+      // Force browser to complete any pending layout calculations
+      window.getComputedStyle(this.root!).getPropertyValue("width");
+
+      // Update toolbar container layout
+      const position = this.updateToolbarLayout();
+
+      // Update toolbar position and orientation
+      this.toolbar!.updateLayoutFromExternal(position);
+      this.toolbar!.updateOrientation(position === "right");
+
+      // Force another layout calculation after toolbar update
+      window.getComputedStyle(this.toolbarContainer!).getPropertyValue("width");
+
+      // Then adjust canvas layout based on updated toolbar
+      requestAnimationFrame(() => {
+        const toolbarBounds = this.toolbarContainer!.getBoundingClientRect();
+        this.adjustCanvasLayout(toolbarBounds);
+
+        // Reset flag after layout is complete
+        this.isHandlingLayoutChange = false;
+      });
+    });
+  }
+
+  private createToolbarContainer(): HTMLDivElement {
+    const container = document.createElement("div");
+    container.style.cssText = `
+      position: fixed;
+      z-index: 1000;
+    `;
+    return container;
+  }
+
+  private updateToolbarLayout(): ToolbarPosition {
+    if (!this.toolbarContainer || !this.root) {
+      return "bottom";
+    }
+
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const isPortrait = windowHeight > windowWidth;
+    const position = isPortrait ? "bottom" : "right";
+
+    // Toolbar constants
+    const buttonSize = 44;
+    const padding = 8;
+
+    // Reset styles
+    this.toolbarContainer.style.flexDirection = "";
+    this.toolbarContainer.style.maxWidth = "";
+    this.toolbarContainer.style.maxHeight = "";
+    this.toolbarContainer.style.top = "";
+    this.toolbarContainer.style.bottom = "";
+    this.toolbarContainer.style.left = "";
+    this.toolbarContainer.style.right = "";
+
+    switch (position) {
+      case "bottom": {
+        // Portrait: height is fixed, width is 100%
+        const height = buttonSize + padding * 2;
+        this.toolbarContainer.style.cssText += `
+          bottom: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          height: ${height}px;
+        `;
+        break;
+      }
+      case "right": {
+        // Landscape: width is fixed, height is 100%
+        const width = buttonSize + padding * 2;
+        this.toolbarContainer.style.cssText += `
+          top: 0;
+          bottom: 0;
+          right: 0;
+          width: ${width}px;
+          height: 100%;
+        `;
+        break;
+      }
+    }
+
+    return position;
   }
 }

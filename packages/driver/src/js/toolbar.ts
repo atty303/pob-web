@@ -10,7 +10,7 @@ export interface ToolbarCallbacks {
   onKeyDown: (key: string, doubleClick: number, uiState: UIState) => void;
   onKeyUp: (key: string, doubleClick: number, uiState: UIState) => void;
   onZoomReset: () => void;
-  onLayoutChange: (toolbarBounds: DOMRect) => void;
+  onLayoutChange: () => void;
   onFullscreenToggle: () => void;
   onDragModeToggle: (enabled: boolean) => void;
 }
@@ -22,6 +22,7 @@ export interface ToolbarBounds {
 
 export class ResponsiveToolbar {
   private container: HTMLDivElement;
+  private toolbarElement!: HTMLDivElement;
   private position: ToolbarPosition = "bottom";
   private modifierKeyManager: ModifierKeyManager;
   private callbacks: ToolbarCallbacks;
@@ -31,58 +32,39 @@ export class ResponsiveToolbar {
   private fullscreenButton: HTMLButtonElement | null = null;
 
   // Toolbar sections
-  private modifierSection!: HTMLDivElement;
-  private controlSection!: HTMLDivElement;
   private keyboardSection!: HTMLDivElement;
-  private keyboardToggleSection!: HTMLDivElement;
-  private mainSection!: HTMLDivElement;
 
-  constructor(parent: HTMLElement, modifierKeyManager: ModifierKeyManager, callbacks: ToolbarCallbacks) {
+  constructor(container: HTMLDivElement, modifierKeyManager: ModifierKeyManager, callbacks: ToolbarCallbacks) {
     this.modifierKeyManager = modifierKeyManager;
     this.callbacks = callbacks;
-    this.container = this.createToolbarContainer();
-    this.createToolbarSections();
-    parent.appendChild(this.container);
-
-    // Set initial position based on screen orientation
-    this.updatePosition();
-
-    // Listen for orientation changes
-    window.addEventListener("resize", () => this.handleResize());
-    window.addEventListener("orientationchange", () => {
-      // Delay to allow for orientation change to complete
-      setTimeout(() => this.handleOrientationChange(), 100);
-    });
+    this.container = container;
+    this.createToolbarElement();
+    this.createToolbarButtons();
+    // Note: Initial orientation will be set by driver
   }
 
-  private createToolbarContainer(): HTMLDivElement {
-    const container = document.createElement("div");
-    container.style.cssText = `
-      position: fixed;
+  private createToolbarElement() {
+    this.toolbarElement = document.createElement("div");
+    this.toolbarElement.style.cssText = `
+      width: 100%;
+      height: 100%;
       background: rgba(40, 40, 40, 0.95);
       border: 1px solid rgba(60, 60, 60, 0.8);
       padding: 8px;
-      z-index: 1000;
       user-select: none;
       -webkit-user-select: none;
       display: flex;
       align-items: center;
       gap: 6px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      border-radius: 0;
+      box-sizing: border-box;
     `;
-    return container;
+    this.container.appendChild(this.toolbarElement);
   }
 
-  private createToolbarSections() {
-    // Create main button section (non-keyboard buttons)
-    this.mainSection = document.createElement("div");
-    this.mainSection.style.cssText = `
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    `;
-
-    // Add modifier keys directly to main section
+  private createToolbarButtons() {
+    // Add modifier keys directly to toolbar element
     const modifiers = [
       { key: "ctrl", label: "Ctrl" },
       { key: "shift", label: "Shift" },
@@ -91,34 +73,32 @@ export class ResponsiveToolbar {
 
     for (const { key, label } of modifiers) {
       const button = this.createModifierButton(key, label);
-      this.mainSection.appendChild(button);
+      this.toolbarElement.appendChild(button);
     }
 
-    // Add reset zoom button directly to main section
+    // Add reset zoom button
     const resetButton = this.createControlButton("🔄", "Reset Zoom", () => {
       this.callbacks.onZoomReset();
     });
-    this.mainSection.appendChild(resetButton);
+    this.toolbarElement.appendChild(resetButton);
 
-    // Add fullscreen toggle button directly to main section
+    // Add fullscreen toggle button
     const fullscreenButton = this.createFullscreenButton();
-    this.mainSection.appendChild(fullscreenButton);
+    this.toolbarElement.appendChild(fullscreenButton);
 
-    // Add drag mode toggle button directly to main section
+    // Add drag mode toggle button
     const dragModeButton = this.createDragModeButton();
-    this.mainSection.appendChild(dragModeButton);
+    this.toolbarElement.appendChild(dragModeButton);
 
-    // Add keyboard toggle button directly to main section
-    const toggleButton = this.createControlButton("⌨️", "Toggle Keyboard", () => {
-      this.toggleKeyboard();
-    });
-    this.mainSection.appendChild(toggleButton);
+    // Note: Keyboard toggle button and keyboard section are disabled for now
+    // const toggleButton = this.createControlButton("⌨️", "Toggle Keyboard", () => {
+    //   this.toggleKeyboard();
+    // });
+    // this.toolbarElement.appendChild(toggleButton);
 
-    this.container.appendChild(this.mainSection);
-
-    // Keyboard section (initially hidden)
-    this.keyboardSection = this.createKeyboardSection();
-    this.container.appendChild(this.keyboardSection);
+    // Keyboard section creation is disabled
+    // this.keyboardSection = this.createKeyboardSection();
+    // this.toolbarElement.appendChild(this.keyboardSection);
   }
 
   private createModifierSection(): HTMLDivElement {
@@ -728,136 +708,45 @@ export class ResponsiveToolbar {
   }
 
   private toggleKeyboard() {
-    this.keyboardVisible = !this.keyboardVisible;
-    this.keyboardSection.style.display = this.keyboardVisible ? "flex" : "none";
-    this.updateLayout();
+    // Keyboard functionality is disabled for now
+    // this.keyboardVisible = !this.keyboardVisible;
+    // this.keyboardSection.style.display = this.keyboardVisible ? "flex" : "none";
+    // this.updateLayout();
   }
 
-  private updatePosition() {
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const isPortrait = windowHeight > windowWidth;
-
-    this.position = isPortrait ? "bottom" : "right";
-    this.updateLayout();
-  }
-
-  private updateLayout() {
-    const { position } = this;
-
-    // Reset styles
-    this.container.style.flexDirection = "";
-    this.container.style.maxWidth = "";
-    this.container.style.maxHeight = "";
-    this.container.style.top = "";
-    this.container.style.bottom = "";
-    this.container.style.left = "";
-    this.container.style.right = "";
-
-    // Update main section flex direction based on position
-    if (position === "bottom" || position === "top") {
-      // Portrait mode: arrange buttons horizontally
-      this.mainSection.style.flexDirection = "row";
-      this.mainSection.style.gap = "6px";
+  updateOrientation(isLandscape: boolean) {
+    // Update toolbar element flex direction based on orientation
+    if (isLandscape) {
+      // Landscape: arrange buttons vertically (to save vertical space)
+      this.toolbarElement.style.flexDirection = "column";
+      this.toolbarElement.style.alignItems = "center";
+      this.toolbarElement.style.justifyContent = "center";
     } else {
-      // Landscape mode: arrange buttons vertically
-      this.mainSection.style.flexDirection = "column";
-      this.mainSection.style.gap = "6px";
-    }
-
-    // When keyboard is visible, arrange differently
-    if (this.keyboardVisible) {
-      this.keyboardSection.style.flexDirection = position === "right" || position === "left" ? "column" : "row";
-    }
-
-    switch (position) {
-      case "bottom":
-        this.container.style.cssText += `
-          bottom: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          flex-direction: ${this.keyboardVisible ? "column" : "row"};
-          align-items: center;
-          justify-content: center;
-          border-radius: 0;
-          border-left: none;
-          border-right: none;
-          border-bottom: none;
-        `;
-        break;
-      case "right":
-        this.container.style.cssText += `
-          top: 0;
-          bottom: 0;
-          right: 0;
-          height: 100%;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          border-radius: 0;
-          border-top: none;
-          border-right: none;
-          border-bottom: none;
-        `;
-        break;
-      case "top":
-        this.container.style.cssText += `
-          top: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          flex-direction: ${this.keyboardVisible ? "column" : "row"};
-          align-items: center;
-          justify-content: center;
-          border-radius: 0;
-          border-left: none;
-          border-right: none;
-          border-top: none;
-        `;
-        break;
-      case "left":
-        this.container.style.cssText += `
-          top: 0;
-          bottom: 0;
-          left: 0;
-          height: 100%;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          border-radius: 0;
-          border-top: none;
-          border-left: none;
-          border-bottom: none;
-        `;
-        break;
+      // Portrait: arrange buttons horizontally (to save horizontal space)
+      this.toolbarElement.style.flexDirection = "row";
+      this.toolbarElement.style.alignItems = "center";
+      this.toolbarElement.style.justifyContent = "center";
     }
 
     // Notify parent about layout change
-    const rect = this.container.getBoundingClientRect();
-    this.callbacks.onLayoutChange(rect);
+    this.callbacks.onLayoutChange();
   }
 
-  private handleResize() {
-    this.updatePosition();
-  }
-
-  private handleOrientationChange() {
-    this.updatePosition();
-  }
-
-  getToolbarBounds(): DOMRect {
-    return this.container.getBoundingClientRect();
+  // External method for updating layout (called by driver)
+  updateLayoutFromExternal(position: ToolbarPosition) {
+    this.position = position;
+    // Note: updateOrientation should be called separately by driver
   }
 
   setPosition(position: ToolbarPosition) {
     this.position = position;
-    this.updateLayout();
+    // Note: updateOrientation should be called separately by driver
   }
 
   destroy() {
-    window.removeEventListener("resize", () => this.handleResize());
-    window.removeEventListener("orientationchange", () => this.handleOrientationChange());
-    this.container.remove();
+    // Remove toolbar element from container
+    if (this.toolbarElement && this.container.contains(this.toolbarElement)) {
+      this.container.removeChild(this.toolbarElement);
+    }
   }
 }
