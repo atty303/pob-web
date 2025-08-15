@@ -91,6 +91,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
           position={position}
           isLandscape={isLandscape}
           dragModeEnabled={dragModeEnabled}
+          keyboardVisible={keyboardVisible}
         />
       </div>
       {keyboardVisible && (

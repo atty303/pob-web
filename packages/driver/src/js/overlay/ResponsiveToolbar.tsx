@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useMemo } from "react";
+import { CiKeyboard } from "react-icons/ci";
 import { ControlButton } from "./ControlButton";
 import { FullscreenButton } from "./FullscreenButton";
 import { ModifierButton } from "./ModifierButton";
@@ -12,6 +13,7 @@ interface ResponsiveToolbarProps {
   position: ToolbarPosition;
   isLandscape: boolean;
   dragModeEnabled: boolean;
+  keyboardVisible: boolean;
 }
 
 export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
@@ -21,6 +23,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   position,
   isLandscape,
   dragModeEnabled,
+  keyboardVisible,
 }) => {
   const handleDragModeToggle = useCallback(() => {
     callbacks.onDragModeToggle(!dragModeEnabled);
@@ -85,7 +88,12 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
 
       <ControlButton icon="🖱️" tooltip="Toggle Drag Mode" onClick={handleDragModeToggle} isActive={dragModeEnabled} />
 
-      <ControlButton icon="⌨️" tooltip="Toggle Virtual Keyboard" onClick={callbacks.onKeyboardToggle} />
+      <ControlButton
+        icon={<CiKeyboard size={24} />}
+        tooltip="Toggle Virtual Keyboard"
+        onClick={callbacks.onKeyboardToggle}
+        isActive={keyboardVisible}
+      />
     </div>
   );
 };

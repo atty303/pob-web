@@ -2,7 +2,7 @@ import type React from "react";
 import { useCallback, useState } from "react";
 
 interface ControlButtonProps {
-  icon: string;
+  icon: string | React.ReactNode;
   tooltip: string;
   onClick: () => void;
   isActive?: boolean;
