@@ -304,11 +304,11 @@ export class Driver {
     let bottom = 0;
 
     if (isPortrait) {
-      // Toolbar is at bottom
-      bottom = Math.max(0, toolbarBounds.height + 8); // 8px padding
+      // Toolbar is at bottom - no padding needed since toolbar takes full width
+      bottom = Math.max(0, toolbarBounds.height);
     } else {
-      // Toolbar is at right
-      right = Math.max(0, toolbarBounds.width + 8); // 8px padding
+      // Toolbar is at right - no padding needed since toolbar takes full height
+      right = Math.max(0, toolbarBounds.width);
     }
 
     // Apply the layout adjustments

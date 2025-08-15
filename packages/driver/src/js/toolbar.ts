@@ -55,9 +55,8 @@ export class ResponsiveToolbar {
     const container = document.createElement("div");
     container.style.cssText = `
       position: fixed;
-      background: rgba(0, 0, 0, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 6px;
+      background: rgba(64, 64, 64, 0.95);
+      border: 1px solid rgba(96, 96, 96, 0.8);
       padding: 4px;
       z-index: 1000;
       user-select: none;
@@ -461,7 +460,7 @@ export class ResponsiveToolbar {
       flex-direction: column;
       gap: 1px;
       padding: 2px;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(48, 48, 48, 0.8);
       border-radius: 3px;
     `;
 
@@ -637,42 +636,62 @@ export class ResponsiveToolbar {
     switch (position) {
       case "bottom":
         this.container.style.cssText += `
-          bottom: 4px;
-          left: 50%;
-          transform: translateX(-50%);
+          bottom: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
           flex-direction: ${this.keyboardVisible ? "column" : "row"};
           align-items: center;
-          max-width: calc(100vw - 8px);
+          justify-content: center;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          border-bottom: none;
         `;
         break;
       case "right":
         this.container.style.cssText += `
-          top: 50%;
-          right: 4px;
-          transform: translateY(-50%);
+          top: 0;
+          bottom: 0;
+          right: 0;
+          height: 100%;
           flex-direction: column;
           align-items: center;
-          max-height: calc(100vh - 8px);
+          justify-content: center;
+          border-radius: 0;
+          border-top: none;
+          border-right: none;
+          border-bottom: none;
         `;
         break;
       case "top":
         this.container.style.cssText += `
-          top: 4px;
-          left: 50%;
-          transform: translateX(-50%);
+          top: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
           flex-direction: ${this.keyboardVisible ? "column" : "row"};
           align-items: center;
-          max-width: calc(100vw - 8px);
+          justify-content: center;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          border-top: none;
         `;
         break;
       case "left":
         this.container.style.cssText += `
-          top: 50%;
-          left: 4px;
-          transform: translateY(-50%);
+          top: 0;
+          bottom: 0;
+          left: 0;
+          height: 100%;
           flex-direction: column;
           align-items: center;
-          max-height: calc(100vh - 8px);
+          justify-content: center;
+          border-radius: 0;
+          border-top: none;
+          border-left: none;
+          border-bottom: none;
         `;
         break;
     }
