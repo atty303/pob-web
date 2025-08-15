@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { KeyboardState } from "../keyboard";
 import "./overlay.css";
-import { ResponsiveToolbar } from "./ResponsiveToolbar";
+import { Toolbar } from "./Toolbar";
 import { VirtualKeyboard } from "./VirtualKeyboard";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
@@ -106,7 +106,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
         onKeyUp={stopPropagation}
         onWheel={stopPropagation}
       >
-        <ResponsiveToolbar
+        <Toolbar
           callbacks={wrappedCallbacks}
           position={position}
           isLandscape={isLandscape}

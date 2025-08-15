@@ -2,13 +2,13 @@ import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-import { MdOutlinePanTool } from "react-icons/md";
-import { ControlButton } from "./ControlButton";
-import { FullscreenButton } from "./FullscreenButton";
+import { MdFullscreen, MdFullscreenExit, MdOutlinePanTool } from "react-icons/md";
+import { ToolbarButton } from "./ToolbarButton";
 import { ZoomControl } from "./ZoomControl";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
+import { useFullscreen } from "./useFullscreen";
 
-interface ResponsiveToolbarProps {
+interface ToolbarProps {
   callbacks: ToolbarCallbacks;
   position: ToolbarPosition;
   isLandscape: boolean;
@@ -18,7 +18,7 @@ interface ResponsiveToolbarProps {
   currentCanvasSize?: { width: number; height: number };
 }
 
-export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
+export const Toolbar: React.FC<ToolbarProps> = ({
   callbacks,
   position,
   isLandscape,
@@ -28,6 +28,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   currentCanvasSize = { width: 1520, height: 800 },
 }) => {
   const [zoomControlVisible, setZoomControlVisible] = useState(false);
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   const handlePanModeToggle = useCallback(() => {
     callbacks.onPanModeToggle(!panModeEnabled);
@@ -37,29 +38,42 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
     setZoomControlVisible(prev => !prev);
   }, []);
 
-  const containerClasses = `pw:navbar pw:bg-base-200/95 pw:shadow-lg pw:select-none pw:relative ${
+  const handleFullscreenToggle = useCallback(() => {
+    toggleFullscreen();
+    callbacks.onFullscreenToggle();
+  }, [toggleFullscreen, callbacks]);
+
+  const containerClasses = `pw:navbar pw:bg-base-200/95 pw:shadow-lg pw:select-none pw:relative pw:gap-1 ${
     isLandscape ? "pw:flex-col pw:justify-center pw:h-full" : "pw:flex-row pw:justify-center pw:w-full"
   }`;
 
+  const fullscreenIcon = isFullscreen ? <MdFullscreenExit size={24} /> : <MdFullscreen size={24} />;
+  const fullscreenTooltip = isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen";
+
   return (
     <div className={containerClasses}>
-      <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
+      <ToolbarButton
+        icon={fullscreenIcon}
+        tooltip={fullscreenTooltip}
+        onClick={handleFullscreenToggle}
+        isActive={isFullscreen}
+      />
 
-      <ControlButton
+      <ToolbarButton
         icon={<HiMagnifyingGlass size={24} />}
         tooltip="Zoom Controls"
         onClick={handleZoomToggle}
         isActive={zoomControlVisible}
       />
 
-      <ControlButton
+      <ToolbarButton
         icon={<MdOutlinePanTool size={24} />}
         tooltip="Toggle Pan Tool"
         onClick={handlePanModeToggle}
         isActive={panModeEnabled}
       />
 
-      <ControlButton
+      <ToolbarButton
         icon={<CiKeyboard size={24} />}
         tooltip="Toggle Virtual Keyboard"
         onClick={callbacks.onKeyboardToggle}
