@@ -162,6 +162,7 @@ export class Driver {
         this.updateCanvasSize(width, height);
         // TouchTransformManagerも更新
         this.touchTransformManager?.updateContainerSize(width, height);
+        this.touchTransformManager?.updateCanvasSize(width, height);
         this.updateTransform();
       }
     });
@@ -316,15 +317,14 @@ export class Driver {
     this.canvasContainer.style.right = `${right}px`;
     this.canvasContainer.style.bottom = `${bottom}px`;
 
-    // Update touch transform manager with new container size
+    // Update canvas size first, then container size and transform
     const newWidth = rootRect.width - left - right;
     const newHeight = rootRect.height - top - bottom;
 
-    this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
-    this.updateTransform();
-
-    // Update canvas size to match the actual available area
     this.updateCanvasSize(newWidth, newHeight);
+    this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
+    this.touchTransformManager?.updateCanvasSize(newWidth, newHeight);
+    this.updateTransform();
   }
 
   private async toggleFullscreen() {

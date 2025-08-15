@@ -89,7 +89,7 @@ export class TouchTransformManager {
     // Constrain translation to keep canvas visible
     if (scaledWidth <= this._containerWidth) {
       // Center horizontally if canvas is smaller than container
-      this._translateX = (this._containerWidth - scaledWidth) / 2;
+      this._translateX = Math.round((this._containerWidth - scaledWidth) / 2);
     } else {
       // Constrain to prevent showing empty space
       const maxTranslateX = 0;
@@ -99,7 +99,7 @@ export class TouchTransformManager {
 
     if (scaledHeight <= this._containerHeight) {
       // Center vertically if canvas is smaller than container
-      this._translateY = (this._containerHeight - scaledHeight) / 2;
+      this._translateY = Math.round((this._containerHeight - scaledHeight) / 2);
     } else {
       // Constrain to prevent showing empty space
       const maxTranslateY = 0;
