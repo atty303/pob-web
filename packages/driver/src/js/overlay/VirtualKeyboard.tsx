@@ -179,7 +179,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   }
 
   return (
-    <div className="flex flex-col gap-0.5 p-2 bg-gray-800/95 border border-gray-600/80 rounded w-full box-border select-none">
+    <div className="flex flex-col gap-0.5 p-2 w-full box-border select-none">
       {keyLayout.map((row, rowIndex) => (
         <div key={`row-${row.map(k => k.event).join("-")}`} className="flex gap-0.5 justify-center w-full">
           {row.map(keyDef => {

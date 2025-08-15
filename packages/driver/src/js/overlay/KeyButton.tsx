@@ -70,9 +70,9 @@ export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px
     "h-11 border rounded-sm text-white text-xs cursor-pointer outline-none touch-manipulation select-none flex items-center justify-center p-0 transition-all duration-150";
 
   const getStateClasses = () => {
-    if (isPressed) return "bg-white/30 border-white/50";
-    if (isActive) return "bg-blue-600/80 border-blue-500";
-    return "bg-white/10 border-white/30 hover:bg-white/20";
+    if (isPressed) return "bg-gray-500/90 border-gray-400/90";
+    if (isActive) return "bg-blue-600/90 border-blue-500";
+    return "bg-gray-700/80 border-gray-600/80 hover:bg-gray-600/90";
   };
 
   return (
