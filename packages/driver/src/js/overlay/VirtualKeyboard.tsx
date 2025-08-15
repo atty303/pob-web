@@ -20,6 +20,47 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const keyboardRef = useRef<HTMLDivElement>(null);
 
+  // Function to constrain position within viewport
+  const constrainPositionToViewport = useCallback((pos: { x: number; y: number }) => {
+    if (!keyboardRef.current) return pos;
+
+    const keyboardRect = keyboardRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // The keyboard is positioned with:
+    // left: 50%, bottom: 20px, marginLeft: -200px, transform: translate(x, y)
+    // So actual position is: left = 50% - 200px + x, bottom = 20px - y
+    const keyboardWidth = keyboardRect.width;
+    const keyboardHeight = keyboardRect.height;
+
+    // Calculate actual screen coordinates
+    const actualLeft = viewportWidth / 2 - 200 + pos.x;
+    const actualBottom = 20 - pos.y; // bottom position (distance from bottom edge)
+    const actualTop = viewportHeight - actualBottom - keyboardHeight;
+
+    let constrainedX = pos.x;
+    let constrainedY = pos.y;
+
+    // Constrain X position (left and right edges)
+    if (actualLeft < 0) {
+      constrainedX = -(viewportWidth / 2 - 200);
+    } else if (actualLeft + keyboardWidth > viewportWidth) {
+      constrainedX = viewportWidth - keyboardWidth - (viewportWidth / 2 - 200);
+    }
+
+    // Constrain Y position (top and bottom edges)
+    if (actualTop < 0) {
+      // Too high - keyboard top edge above viewport top
+      constrainedY = -(viewportHeight - keyboardHeight - 20);
+    } else if (actualBottom < 0) {
+      // Too low - keyboard bottom edge below viewport bottom
+      constrainedY = 20;
+    }
+
+    return { x: constrainedX, y: constrainedY };
+  }, []);
+
   // Update local state when keyboard state changes
   const updateLocalState = useCallback(() => {
     setHeldKeys(new Set(keyboardState.heldKeys));
@@ -32,6 +73,21 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
       keyboardState.removeChangeListener(updateLocalState);
     };
   }, [keyboardState, updateLocalState]);
+
+  // Handle viewport resize to constrain keyboard position
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition(prevPosition => constrainPositionToViewport(prevPosition));
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, [constrainPositionToViewport]);
 
   type KeyDefinition = {
     event: string; // DOM event name
@@ -203,12 +259,14 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
       const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-      setPosition({
+      const newPosition = {
         x: clientX - dragStart.x,
         y: clientY - dragStart.y,
-      });
+      };
+
+      setPosition(constrainPositionToViewport(newPosition));
     },
-    [isDragging, dragStart],
+    [isDragging, dragStart, constrainPositionToViewport],
   );
 
   const handleDragEnd = useCallback(() => {
