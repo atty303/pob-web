@@ -1,10 +1,5 @@
-@import "tailwindcss/theme.css" layer(overlay);
-@import "tailwindcss";
+@import "tailwindcss" prefix(pw);
 @plugin "@tailwindcss/typography";
-
-@theme {
-  --prefix: O-;
-}
 
 @plugin "daisyui" {
   theme: dark --default;

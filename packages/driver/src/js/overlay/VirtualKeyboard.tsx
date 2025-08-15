@@ -179,9 +179,9 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   }
 
   return (
-    <div className="flex flex-col gap-0.5 p-2 w-full box-border select-none">
+    <div className="pw:flex pw:flex-col pw:gap-0.5 pw:p-2 pw:w-full pw:box-border pw:select-none">
       {keyLayout.map((row, rowIndex) => (
-        <div key={`row-${row.map(k => k.event).join("-")}`} className="flex gap-0.5 justify-center w-full">
+        <div key={`row-${row.map(k => k.event).join("-")}`} className="pw:flex pw:gap-0.5 pw:justify-center pw:w-full">
           {row.map(keyDef => {
             const { event, display, width = "44px", isModifier = false } = keyDef;
 

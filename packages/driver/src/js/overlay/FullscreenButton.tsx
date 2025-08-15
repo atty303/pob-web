@@ -62,8 +62,8 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({ onToggle }) 
   const tooltip = isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen";
 
   const baseClasses =
-    "w-11 h-11 border border-white/30 rounded text-white cursor-pointer outline-none touch-manipulation transition-all duration-150 select-none flex items-center justify-center p-2";
-  const stateClasses = isPressed ? "bg-white/30" : "bg-white/10 hover:bg-white/20";
+    "pw:w-11 pw:h-11 pw:border pw:border-white/30 pw:rounded pw:text-white pw:cursor-pointer pw:outline-none pw:touch-manipulation pw:transition-all pw:duration-150 pw:select-none pw:flex pw:items-center pw:justify-center pw:p-2";
+  const stateClasses = isPressed ? "pw:bg-white/30" : "pw:bg-white/10 hover:pw:bg-white/20";
 
   return (
     <button

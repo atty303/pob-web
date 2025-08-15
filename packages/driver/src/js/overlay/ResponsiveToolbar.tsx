@@ -37,8 +37,8 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
     setZoomControlVisible(prev => !prev);
   }, []);
 
-  const containerClasses = `w-full h-full bg-gray-700/95 border border-gray-600/80 p-2 select-none flex items-center gap-1.5 shadow-lg box-border relative ${
-    isLandscape ? "flex-col justify-center" : "flex-row justify-center"
+  const containerClasses = `pw:w-full pw:h-full pw:bg-gray-700/95 pw:border pw:border-gray-600/80 pw:p-2 pw:select-none pw:flex pw:items-center pw:gap-1.5 pw:shadow-lg pw:box-border pw:relative ${
+    isLandscape ? "pw:flex-col pw:justify-center" : "pw:flex-row pw:justify-center"
   }`;
 
   return (

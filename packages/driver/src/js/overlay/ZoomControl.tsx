@@ -85,24 +85,24 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
 
   const positionClasses =
     position === "bottom"
-      ? "O-bottom-16 O-left-1/2 O-transform O--translate-x-1/2"
-      : "O-right-16 O-top-1/2 O-transform O--translate-y-1/2";
+      ? "pw:bottom-16 pw:left-1/2 pw:transform pw:-translate-x-1/2"
+      : "pw:right-16 pw:top-1/2 pw:transform pw:-translate-y-1/2";
 
   return (
     <div
-      className={`O-absolute ${positionClasses} O-z-50 O-p-3 O-bg-gray-800 O-rounded-lg O-shadow-xl O-border O-border-gray-600 O-min-w-64`}
+      className={`pw:absolute ${positionClasses} pw:z-50 pw:p-3 pw:bg-gray-800 pw:rounded-lg pw:shadow-xl pw:border pw:border-gray-600 pw:min-w-64`}
     >
-      <div className="O-flex O-flex-col O-gap-3">
+      <div className="pw:flex pw:flex-col pw:gap-3">
         {/* Zoom Controls */}
-        <div className="O-flex O-items-center O-gap-3">
+        <div className="pw:flex pw:items-center pw:gap-3">
           {/* Reset Button */}
           <button
             type="button"
             onClick={onZoomReset}
-            className="O-p-2 O-bg-gray-700 hover:O-bg-gray-600 O-rounded-md O-transition-colors O-duration-200"
+            className="pw:p-2 pw:bg-gray-700 hover:pw:bg-gray-600 pw:rounded-md pw:transition-colors pw:duration-200"
             title="Reset Zoom"
           >
-            <MdRefresh size={16} className="O-text-white" />
+            <MdRefresh size={16} className="pw:text-white" />
           </button>
 
           {/* Zoom Slider */}
@@ -113,35 +113,35 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
             step={0.1}
             value={currentZoom}
             onChange={handleSliderChange}
-            className="O-flex-1 O-h-2 O-bg-gray-700 O-rounded-lg O-appearance-none O-cursor-pointer slider"
+            className="pw:flex-1 pw:h-2 pw:bg-gray-700 pw:rounded-lg pw:appearance-none pw:cursor-pointer slider"
           />
 
           {/* Current Zoom Display */}
-          <span className="O-text-sm O-font-medium O-text-white O-min-w-12 O-text-center">{zoomPercentage}%</span>
+          <span className="pw:text-sm pw:font-medium pw:text-white pw:min-w-12 pw:text-center">{zoomPercentage}%</span>
         </div>
 
         {/* Canvas Size Controls */}
-        <div className="O-border-t O-border-gray-600 O-pt-3">
-          <div className="O-text-xs O-text-gray-300 O-mb-2">Canvas Size</div>
-          <div className="O-flex O-items-center O-gap-2">
+        <div className="pw:border-t pw:border-gray-600 pw:pt-3">
+          <div className="pw:text-xs pw:text-gray-300 pw:mb-2">Canvas Size</div>
+          <div className="pw:flex pw:items-center pw:gap-2">
             <input
               type="number"
               value={canvasWidth}
               onChange={handleWidthChange}
               onBlur={handleWidthBlur}
-              className="O-w-20 O-px-2 O-py-1 O-text-xs O-bg-gray-700 O-border O-border-gray-600 O-rounded O-text-white"
+              className="pw:w-20 pw:px-2 pw:py-1 pw:text-xs pw:bg-gray-700 pw:border pw:border-gray-600 pw:rounded pw:text-white"
               placeholder="W"
               min="50"
               max="8000"
               step="50"
             />
-            <span className="O-text-xs O-text-gray-400">×</span>
+            <span className="pw:text-xs pw:text-gray-400">×</span>
             <input
               type="number"
               value={canvasHeight}
               onChange={handleHeightChange}
               onBlur={handleHeightBlur}
-              className="O-w-20 O-px-2 O-py-1 O-text-xs O-bg-gray-700 O-border O-border-gray-600 O-rounded O-text-white"
+              className="pw:w-20 pw:px-2 pw:py-1 pw:text-xs pw:bg-gray-700 pw:border pw:border-gray-600 pw:rounded pw:text-white"
               placeholder="H"
               min="50"
               max="8000"
