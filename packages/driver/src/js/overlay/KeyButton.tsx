@@ -27,8 +27,8 @@ export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px
     }
   }, [char, label, callbacks]);
 
-  const baseClasses = "pw:btn pw:btn-sm pw:text-xs pw:h-11";
-  const variantClasses = isActive ? "pw:btn-primary" : "pw:btn-ghost";
+  const baseClasses = "pw:btn pw:btn-md pw:h-10";
+  const variantClasses = isActive ? "pw:btn-primary" : "pw:btn-neutral pw:opacity-80";
 
   return (
     <button type="button" className={`${baseClasses} ${variantClasses}`} style={{ width }} onClick={executeAction}>
