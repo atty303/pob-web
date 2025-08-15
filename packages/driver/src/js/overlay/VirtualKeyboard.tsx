@@ -179,34 +179,36 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   }
 
   return (
-    <div className="pw:flex pw:flex-col pw:gap-0.5 pw:p-2 pw:w-full pw:box-border pw:select-none">
-      {keyLayout.map((row, rowIndex) => (
-        <div key={`row-${row.map(k => k.event).join("-")}`} className="pw:flex pw:gap-0.5 pw:justify-center pw:w-full">
-          {row.map(keyDef => {
-            const { event, display, width = "44px", isModifier = false } = keyDef;
+    <div className="pw:card pw:bg-base-200/95 pw:w-full">
+      <div className="pw:card-body pw:gap-1">
+        {keyLayout.map((row, rowIndex) => (
+          <div key={`row-${row.map(k => k.event).join("-")}`} className="pw:flex pw:gap-1 pw:justify-center pw:w-full">
+            {row.map(keyDef => {
+              const { event, display, width = "44px", isModifier = false } = keyDef;
 
-            // Determine if this key should show as active (held or mode buttons)
-            const isActive =
-              (isModifier && heldKeys.has(event)) ||
-              (event === "SymbolMode" && symbolMode) ||
-              (event === "LetterMode" && !symbolMode);
+              // Determine if this key should show as active (held or mode buttons)
+              const isActive =
+                (isModifier && heldKeys.has(event)) ||
+                (event === "SymbolMode" && symbolMode) ||
+                (event === "LetterMode" && !symbolMode);
 
-            return (
-              <KeyButton
-                key={event}
-                label={display}
-                char={display}
-                width={width}
-                callbacks={{
-                  ...callbacks,
-                  onChar: () => handleKeyPress(event, keyDef),
-                }}
-                isActive={isActive}
-              />
-            );
-          })}
-        </div>
-      ))}
+              return (
+                <KeyButton
+                  key={event}
+                  label={display}
+                  char={display}
+                  width={width}
+                  callbacks={{
+                    ...callbacks,
+                    onChar: () => handleKeyPress(event, keyDef),
+                  }}
+                  isActive={isActive}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

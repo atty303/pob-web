@@ -66,13 +66,12 @@ export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px
     setIsPressed(false);
   }, []);
 
-  const baseClasses =
-    "pw:h-11 pw:border pw:rounded-sm pw:text-white pw:text-xs pw:cursor-pointer pw:outline-none pw:touch-manipulation pw:select-none pw:flex pw:items-center pw:justify-center pw:p-0 pw:transition-all pw:duration-150";
+  const baseClasses = "pw:btn pw:btn-sm pw:text-xs pw:h-11";
 
   const getStateClasses = () => {
-    if (isPressed) return "pw:bg-gray-500/90 pw:border-gray-400/90";
-    if (isActive) return "pw:bg-blue-600/90 pw:border-blue-500";
-    return "pw:bg-gray-700/80 pw:border-gray-600/80 hover:pw:bg-gray-600/90";
+    if (isPressed) return "pw:btn-active";
+    if (isActive) return "pw:btn-primary";
+    return "pw:btn-ghost";
   };
 
   return (

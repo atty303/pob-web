@@ -48,13 +48,12 @@ export const ControlButton: React.FC<ControlButtonProps> = ({ icon, tooltip, onC
     [onClick],
   );
 
-  const baseClasses =
-    "pw:w-11 pw:h-11 pw:border pw:border-white/30 pw:rounded pw:text-white pw:text-xl pw:cursor-pointer pw:outline-none pw:touch-manipulation pw:transition-all pw:duration-150 pw:select-none pw:flex pw:items-center pw:justify-center";
+  const baseClasses = "pw:btn pw:btn-square pw:btn-ghost";
 
   const getStateClasses = () => {
-    if (isPressed) return "pw:bg-white/30 pw:border-white/50";
-    if (isActive) return "pw:bg-blue-600/80 pw:border-blue-500 pw:scale-95";
-    return "pw:bg-white/10 hover:pw:bg-white/20";
+    if (isPressed) return "pw:btn-active";
+    if (isActive) return "pw:btn-primary pw:scale-95";
+    return "";
   };
 
   return (

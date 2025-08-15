@@ -90,19 +90,19 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
 
   return (
     <div
-      className={`pw:absolute ${positionClasses} pw:z-50 pw:p-3 pw:bg-gray-800 pw:rounded-lg pw:shadow-xl pw:border pw:border-gray-600 pw:min-w-64`}
+      className={`pw:absolute ${positionClasses} pw:z-50 pw:card pw:card-compact pw:bg-base-200 pw:shadow-xl pw:min-w-64`}
     >
-      <div className="pw:flex pw:flex-col pw:gap-3">
+      <div className="pw:card-body">
         {/* Zoom Controls */}
         <div className="pw:flex pw:items-center pw:gap-3">
           {/* Reset Button */}
           <button
             type="button"
             onClick={onZoomReset}
-            className="pw:p-2 pw:bg-gray-700 hover:pw:bg-gray-600 pw:rounded-md pw:transition-colors pw:duration-200"
+            className="pw:btn pw:btn-sm pw:btn-circle pw:btn-ghost"
             title="Reset Zoom"
           >
-            <MdRefresh size={16} className="pw:text-white" />
+            <MdRefresh size={16} />
           </button>
 
           {/* Zoom Slider */}
@@ -113,41 +113,39 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
             step={0.1}
             value={currentZoom}
             onChange={handleSliderChange}
-            className="pw:flex-1 pw:h-2 pw:bg-gray-700 pw:rounded-lg pw:appearance-none pw:cursor-pointer slider"
+            className="pw:range pw:range-sm pw:flex-1"
           />
 
           {/* Current Zoom Display */}
-          <span className="pw:text-sm pw:font-medium pw:text-white pw:min-w-12 pw:text-center">{zoomPercentage}%</span>
+          <span className="pw:badge pw:badge-neutral pw:min-w-12">{zoomPercentage}%</span>
         </div>
 
         {/* Canvas Size Controls */}
-        <div className="pw:border-t pw:border-gray-600 pw:pt-3">
-          <div className="pw:text-xs pw:text-gray-300 pw:mb-2">Canvas Size</div>
-          <div className="pw:flex pw:items-center pw:gap-2">
-            <input
-              type="number"
-              value={canvasWidth}
-              onChange={handleWidthChange}
-              onBlur={handleWidthBlur}
-              className="pw:w-20 pw:px-2 pw:py-1 pw:text-xs pw:bg-gray-700 pw:border pw:border-gray-600 pw:rounded pw:text-white"
-              placeholder="W"
-              min="50"
-              max="8000"
-              step="50"
-            />
-            <span className="pw:text-xs pw:text-gray-400">×</span>
-            <input
-              type="number"
-              value={canvasHeight}
-              onChange={handleHeightChange}
-              onBlur={handleHeightBlur}
-              className="pw:w-20 pw:px-2 pw:py-1 pw:text-xs pw:bg-gray-700 pw:border pw:border-gray-600 pw:rounded pw:text-white"
-              placeholder="H"
-              min="50"
-              max="8000"
-              step="50"
-            />
-          </div>
+        <div className="pw:divider pw:divider-start pw:text-xs">Canvas Size</div>
+        <div className="pw:flex pw:items-center pw:gap-2">
+          <input
+            type="number"
+            value={canvasWidth}
+            onChange={handleWidthChange}
+            onBlur={handleWidthBlur}
+            className="pw:input pw:input-xs pw:input-bordered pw:w-20"
+            placeholder="W"
+            min="50"
+            max="8000"
+            step="50"
+          />
+          <span className="pw:text-base-content/60">×</span>
+          <input
+            type="number"
+            value={canvasHeight}
+            onChange={handleHeightChange}
+            onBlur={handleHeightBlur}
+            className="pw:input pw:input-xs pw:input-bordered pw:w-20"
+            placeholder="H"
+            min="50"
+            max="8000"
+            step="50"
+          />
         </div>
       </div>
     </div>
