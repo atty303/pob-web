@@ -1,5 +1,7 @@
 import type { UIState } from "./event";
 import type { ModifierKeyManager, ModifierKeys } from "./touch";
+import arrowsPointingOutSvg from "./icons/arrows-pointing-out.svg?raw";
+import arrowsPointingInSvg from "./icons/arrows-pointing-in.svg?raw";
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";
 
@@ -25,6 +27,8 @@ export class ResponsiveToolbar {
   private callbacks: ToolbarCallbacks;
   private keyboardVisible = false;
   private dragModeEnabled = false;
+  private isFullscreen = false;
+  private fullscreenButton: HTMLButtonElement | null = null;
 
   // Toolbar sections
   private modifierSection!: HTMLDivElement;
@@ -55,8 +59,8 @@ export class ResponsiveToolbar {
     const container = document.createElement("div");
     container.style.cssText = `
       position: fixed;
-      background: rgba(64, 64, 64, 0.95);
-      border: 1px solid rgba(96, 96, 96, 0.8);
+      background: rgba(40, 40, 40, 0.95);
+      border: 1px solid rgba(60, 60, 60, 0.8);
       padding: 8px;
       z-index: 1000;
       user-select: none;
@@ -97,9 +101,7 @@ export class ResponsiveToolbar {
     this.mainSection.appendChild(resetButton);
 
     // Add fullscreen toggle button directly to main section
-    const fullscreenButton = this.createControlButton("⛶", "Toggle Fullscreen", () => {
-      this.callbacks.onFullscreenToggle();
-    });
+    const fullscreenButton = this.createFullscreenButton();
     this.mainSection.appendChild(fullscreenButton);
 
     // Add drag mode toggle button directly to main section
@@ -235,6 +237,7 @@ export class ResponsiveToolbar {
     return section;
   }
 
+
   private createControlButton(icon: string, tooltip: string, onClick: () => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = icon;
@@ -323,6 +326,141 @@ export class ResponsiveToolbar {
     });
 
     return button;
+  }
+
+  private createFullscreenButton(): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.innerHTML = arrowsPointingOutSvg;
+    button.title = "Toggle Fullscreen";
+    button.style.cssText = `
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      color: white;
+      cursor: pointer;
+      outline: none;
+      touch-action: manipulation;
+      transition: background 0.15s ease;
+      -webkit-user-select: none;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    `;
+
+    // Disable pointer events on SVG to ensure click events come from button
+    const svg = button.querySelector("svg");
+    if (svg) {
+      svg.style.width = "24px";
+      svg.style.height = "24px";
+      svg.style.stroke = "white";
+      svg.style.pointerEvents = "none";
+      // Disable pointer events on all child elements too
+      const paths = svg.querySelectorAll("*");
+      paths.forEach(el => {
+        (el as HTMLElement).style.pointerEvents = "none";
+      });
+    }
+
+    this.fullscreenButton = button;
+
+    let touchProcessed = false;
+
+    const setActiveStyle = () => {
+      button.style.background = "rgba(255, 255, 255, 0.3)";
+    };
+
+    const setInactiveStyle = () => {
+      button.style.background = "rgba(255, 255, 255, 0.1)";
+    };
+
+    // Touch events
+    button.addEventListener("touchstart", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      touchProcessed = true;
+      setActiveStyle();
+    });
+
+    button.addEventListener("touchend", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      setInactiveStyle();
+      if (touchProcessed) {
+        this.callbacks.onFullscreenToggle();
+        touchProcessed = false;
+      }
+    });
+
+    button.addEventListener("touchcancel", e => {
+      e.preventDefault();
+      setInactiveStyle();
+      touchProcessed = false;
+    });
+
+    // Mouse events
+    button.addEventListener("mousedown", () => {
+      if (!touchProcessed) {
+        setActiveStyle();
+      }
+    });
+
+    button.addEventListener("mouseup", () => {
+      if (!touchProcessed) {
+        setInactiveStyle();
+      }
+    });
+
+    button.addEventListener("mouseleave", () => {
+      if (!touchProcessed) {
+        setInactiveStyle();
+      }
+    });
+
+    button.addEventListener("click", e => {
+      if (!touchProcessed) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.callbacks.onFullscreenToggle();
+      }
+      setTimeout(() => {
+        touchProcessed = false;
+      }, 100);
+    });
+
+    // Listen for fullscreen changes
+    document.addEventListener("fullscreenchange", () => {
+      this.updateFullscreenState();
+    });
+
+    return button;
+  }
+
+  private toggleFullscreenIcon() {
+    this.isFullscreen = !!document.fullscreenElement;
+    if (this.fullscreenButton) {
+      this.fullscreenButton.innerHTML = this.isFullscreen ? arrowsPointingInSvg : arrowsPointingOutSvg;
+      this.fullscreenButton.title = this.isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen";
+      const svg = this.fullscreenButton.querySelector("svg");
+      if (svg) {
+        svg.style.width = "24px";
+        svg.style.height = "24px";
+        svg.style.stroke = "white";
+        svg.style.pointerEvents = "none";
+        // Disable pointer events on all child elements too
+        const paths = svg.querySelectorAll("*");
+        paths.forEach(el => {
+          (el as HTMLElement).style.pointerEvents = "none";
+        });
+      }
+    }
+  }
+
+  private updateFullscreenState() {
+    this.toggleFullscreenIcon();
   }
 
   private createDragModeButton(): HTMLButtonElement {
@@ -460,7 +598,7 @@ export class ResponsiveToolbar {
       flex-direction: column;
       gap: 2px;
       padding: 3px;
-      background: rgba(48, 48, 48, 0.8);
+      background: rgba(32, 32, 32, 0.8);
       border-radius: 3px;
     `;
 

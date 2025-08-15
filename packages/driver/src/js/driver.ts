@@ -331,12 +331,45 @@ export class Driver {
     if (!this.root) return;
 
     try {
-      if (!document.fullscreenElement) {
-        // Enter fullscreen
-        await this.root.requestFullscreen();
+      const doc = document as any;
+      const elem = this.root as any;
+      
+      // Check if we're currently in fullscreen
+      const isFullscreen = !!(doc.fullscreenElement || 
+                             doc.webkitFullscreenElement || 
+                             doc.mozFullScreenElement || 
+                             doc.msFullscreenElement);
+      
+      if (!isFullscreen) {
+        // Enter fullscreen - try various vendor-prefixed methods
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          // iOS Safari uses webkitRequestFullscreen
+          elem.webkitRequestFullscreen();
+        } else if (elem.webkitEnterFullscreen) {
+          // Some mobile browsers use this
+          elem.webkitEnterFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+          elem.mozRequestFullScreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        } else {
+          console.warn("Fullscreen API not supported on this device");
+        }
       } else {
-        // Exit fullscreen
-        await document.exitFullscreen();
+        // Exit fullscreen - try various vendor-prefixed methods
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (doc.webkitCancelFullScreen) {
+          doc.webkitCancelFullScreen();
+        } else if (doc.mozCancelFullScreen) {
+          doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          doc.msExitFullscreen();
+        }
       }
     } catch (error) {
       console.warn("Fullscreen toggle failed:", error);
