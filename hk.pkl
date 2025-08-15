@@ -28,13 +28,14 @@ local linters = new Mapping<String, Step> {
 hooks {
     ["pre-commit"] {
         fix = true
-        stash = "git"
+        stash = "patch-file"
         steps {
             ...linters
         }
     }
     ["fix"] {
         fix = true
+        stash = "patch-file"
         steps = linters
     }
     ["check"] {
