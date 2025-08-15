@@ -40,6 +40,10 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
     setKeyboardVisible(prev => !prev);
   }, []);
 
+  const stopPropagation = useCallback((e: React.SyntheticEvent) => {
+    e.stopPropagation();
+  }, []);
+
   const wrappedCallbacks: ToolbarCallbacks = {
     ...callbacks,
     onDragModeToggle: handleDragModeToggle,
@@ -71,18 +75,29 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
         position: "relative",
         width: "100%",
         height: "100%",
-        pointerEvents: "auto",
+        pointerEvents: "none",
       }}
     >
       <div
         style={{
           position: "absolute",
+          pointerEvents: "auto",
           ...(position === "bottom"
             ? { bottom: 0, left: 0, right: 0 }
             : position === "right"
               ? { top: 0, right: 0, bottom: 0 }
               : { top: 0, left: 0, right: 0 }),
         }}
+        onMouseDown={stopPropagation}
+        onMouseUp={stopPropagation}
+        onMouseMove={stopPropagation}
+        onClick={stopPropagation}
+        onTouchStart={stopPropagation}
+        onTouchMove={stopPropagation}
+        onTouchEnd={stopPropagation}
+        onKeyDown={stopPropagation}
+        onKeyUp={stopPropagation}
+        onWheel={stopPropagation}
       >
         <ResponsiveToolbar
           modifiers={modifiers}
@@ -102,7 +117,18 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
             left: 0,
             right: position === "right" ? "60px" : "0",
             zIndex: 999,
+            pointerEvents: "auto",
           }}
+          onMouseDown={stopPropagation}
+          onMouseUp={stopPropagation}
+          onMouseMove={stopPropagation}
+          onClick={stopPropagation}
+          onTouchStart={stopPropagation}
+          onTouchMove={stopPropagation}
+          onTouchEnd={stopPropagation}
+          onKeyDown={stopPropagation}
+          onKeyUp={stopPropagation}
+          onWheel={stopPropagation}
         >
           <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} />
         </div>
