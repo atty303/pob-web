@@ -63,7 +63,6 @@ export class Driver {
   }
 
   destory() {
-    console.log("destroy");
     this.driverWorker?.destroy();
     this.worker?.terminate();
   }
