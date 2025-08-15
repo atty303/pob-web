@@ -14,6 +14,7 @@ export interface ToolbarCallbacks {
   onLayoutChange: () => void;
   onFullscreenToggle: () => void;
   onDragModeToggle: (enabled: boolean) => void;
+  onKeyboardToggle: () => void;
 }
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";

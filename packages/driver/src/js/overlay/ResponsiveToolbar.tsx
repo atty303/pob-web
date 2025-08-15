@@ -84,6 +84,8 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
 
       <ControlButton icon="🖱️" tooltip="Toggle Drag Mode" onClick={handleDragModeToggle} isActive={dragModeEnabled} />
+
+      <ControlButton icon="⌨️" tooltip="Toggle Virtual Keyboard" onClick={callbacks.onKeyboardToggle} />
     </div>
   );
 };

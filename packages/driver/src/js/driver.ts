@@ -24,7 +24,6 @@ export class Driver {
   private touchTransformManager: TouchTransformManager | undefined;
   private modifierKeyManager: ModifierKeyManager | undefined;
   private overlayManager: ReactOverlayManager | undefined;
-  private toolbarContainer: HTMLDivElement | undefined;
   private canvasContainer: HTMLDivElement | undefined;
   private dragModeEnabled = false;
   private orientationChangeHandler: (() => void) | undefined;
@@ -122,9 +121,7 @@ export class Driver {
       z-index: 1000;
     `;
 
-    // Create toolbar container within overlay
-    this.toolbarContainer = this.createToolbarContainer();
-    this.toolbarContainer.style.pointerEvents = "auto"; // Enable pointer events only for toolbar
+    // Toolbar container will be managed by React
 
     // Initialize toolbar
     const toolbarCallbacks: ToolbarCallbacks = {
@@ -153,18 +150,19 @@ export class Driver {
         this.dragModeEnabled = enabled;
         this.uiEventManager?.setDragMode(enabled);
       },
+      onKeyboardToggle: () => {
+        // Keyboard toggle is handled by React state in OverlayContainer
+      },
     };
 
-    this.overlayManager = new ReactOverlayManager(this.toolbarContainer);
+    this.overlayManager = new ReactOverlayManager(overlayContainer);
     this.overlayManager.render({
       modifierKeyManager: this.modifierKeyManager,
       callbacks: toolbarCallbacks,
-      toolbarContainer: this.toolbarContainer,
     });
 
     root.style.position = "relative";
     this.canvasContainer.appendChild(canvas);
-    overlayContainer.appendChild(this.toolbarContainer);
     root.appendChild(this.canvasContainer);
     root.appendChild(overlayContainer);
     root.tabIndex = 0;
@@ -176,9 +174,8 @@ export class Driver {
     // Setup orientation and resize handlers
     this.setupOrientationAndResizeHandlers();
 
-    // Initial layout adjustment
-    this.updateToolbarLayout();
-    this.adjustCanvasLayout(this.toolbarContainer.getBoundingClientRect());
+    // Initial layout adjustment for canvas to avoid toolbar overlap
+    this.adjustCanvasForOverlay();
 
     // Ensure initial resize is sent to worker
     const initialRect = this.canvasContainer.getBoundingClientRect();
@@ -324,44 +321,33 @@ export class Driver {
     return this.touchTransformManager;
   }
 
-  private adjustCanvasLayout(toolbarBounds: DOMRect) {
-    if (!this.canvasContainer || !this.root || !this.toolbarContainer) {
+  private adjustCanvasForOverlay() {
+    if (!this.canvasContainer || !this.root) {
       return;
     }
 
-    const rootRect = this.root.getBoundingClientRect();
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     const isPortrait = windowHeight > windowWidth;
 
-    // Calculate available space based on toolbar position
-    const top = 0;
-    const left = 0;
-    let right = 0;
-    let bottom = 0;
+    // Toolbar size constants
+    const toolbarSize = 60; // 44px button + 16px padding
 
     if (isPortrait) {
-      // Toolbar is at bottom
-      bottom = Math.max(0, toolbarBounds.height);
+      // Portrait: toolbar at bottom
+      this.canvasContainer.style.bottom = `${toolbarSize}px`;
+      this.canvasContainer.style.right = "0";
     } else {
-      // Toolbar is at right
-      right = Math.max(0, toolbarBounds.width);
+      // Landscape: toolbar at right
+      this.canvasContainer.style.right = `${toolbarSize}px`;
+      this.canvasContainer.style.bottom = "0";
     }
 
-    // Apply the layout adjustments to canvas container
-    this.canvasContainer.style.top = `${top}px`;
-    this.canvasContainer.style.left = `${left}px`;
-    this.canvasContainer.style.right = `${right}px`;
-    this.canvasContainer.style.bottom = `${bottom}px`;
-
-    // Calculate new canvas dimensions
-    const newWidth = rootRect.width - left - right;
-    const newHeight = rootRect.height - top - bottom;
-
-    // Update canvas size and transform management
-    this.updateCanvasSize(newWidth, newHeight);
-    this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
-    this.touchTransformManager?.updateCanvasSize(newWidth, newHeight);
+    // Update canvas size based on new container dimensions
+    const rect = this.canvasContainer.getBoundingClientRect();
+    this.updateCanvasSize(rect.width, rect.height);
+    this.touchTransformManager?.updateContainerSize(rect.width, rect.height);
+    this.touchTransformManager?.updateCanvasSize(rect.width, rect.height);
     this.updateTransform();
   }
 
@@ -472,7 +458,7 @@ export class Driver {
   }
 
   private handleLayoutChange() {
-    if (!this.overlayManager || !this.root || this.isHandlingLayoutChange) {
+    if (this.isHandlingLayoutChange) {
       return;
     }
 
@@ -480,84 +466,13 @@ export class Driver {
 
     // Use requestAnimationFrame to ensure browser layout calculations are complete
     requestAnimationFrame(() => {
-      // Force browser to complete any pending layout calculations
-      window.getComputedStyle(this.root!).getPropertyValue("width");
+      // Adjust canvas for overlay after orientation change
+      this.adjustCanvasForOverlay();
 
-      // Update toolbar container layout
-      this.updateToolbarLayout();
-
-      // Force another layout calculation after toolbar update
-      window.getComputedStyle(this.toolbarContainer!).getPropertyValue("width");
-
-      // Then adjust canvas layout based on updated toolbar
-      requestAnimationFrame(() => {
-        const toolbarBounds = this.toolbarContainer!.getBoundingClientRect();
-        this.adjustCanvasLayout(toolbarBounds);
-
-        // Reset flag after layout is complete
-        this.isHandlingLayoutChange = false;
-      });
+      // Reset flag after layout is complete
+      this.isHandlingLayoutChange = false;
     });
   }
 
-  private createToolbarContainer(): HTMLDivElement {
-    const container = document.createElement("div");
-    container.style.cssText = `
-      position: absolute;
-    `;
-    return container;
-  }
-
-  private updateToolbarLayout(): ToolbarPosition {
-    if (!this.toolbarContainer || !this.root) {
-      return "bottom";
-    }
-
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const isPortrait = windowHeight > windowWidth;
-    const position = isPortrait ? "bottom" : "right";
-
-    // Toolbar constants
-    const buttonSize = 44;
-    const padding = 8;
-
-    // Reset styles
-    this.toolbarContainer.style.flexDirection = "";
-    this.toolbarContainer.style.maxWidth = "";
-    this.toolbarContainer.style.maxHeight = "";
-    this.toolbarContainer.style.top = "";
-    this.toolbarContainer.style.bottom = "";
-    this.toolbarContainer.style.left = "";
-    this.toolbarContainer.style.right = "";
-
-    switch (position) {
-      case "bottom": {
-        // Portrait: height is fixed, width is 100%
-        const height = buttonSize + padding * 2;
-        this.toolbarContainer.style.cssText += `
-          bottom: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          height: ${height}px;
-        `;
-        break;
-      }
-      case "right": {
-        // Landscape: width is fixed, height is 100%
-        const width = buttonSize + padding * 2;
-        this.toolbarContainer.style.cssText += `
-          top: 0;
-          bottom: 0;
-          right: 0;
-          width: ${width}px;
-          height: 100%;
-        `;
-        break;
-      }
-    }
-
-    return position;
-  }
+  // Toolbar layout is now managed by React components
 }
