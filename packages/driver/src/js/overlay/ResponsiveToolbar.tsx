@@ -1,6 +1,7 @@
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { CiKeyboard } from "react-icons/ci";
+import { HiMagnifyingGlass } from "react-icons/hi2";
 import { MdOutlinePanTool } from "react-icons/md";
 import { ControlButton } from "./ControlButton";
 import { FullscreenButton } from "./FullscreenButton";
@@ -59,7 +60,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
 
   return (
     <div style={containerStyle}>
-      <ControlButton icon="🔄" tooltip="Reset Zoom" onClick={callbacks.onZoomReset} />
+      <ControlButton icon={<HiMagnifyingGlass size={24} />} tooltip="Reset Zoom" onClick={callbacks.onZoomReset} />
 
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
 
