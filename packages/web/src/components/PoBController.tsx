@@ -4,7 +4,6 @@ import {
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
   ArrowUpIcon,
-  ArrowsPointingOutIcon,
   Bars3Icon,
   HomeIcon,
   LightBulbIcon,
@@ -17,7 +16,7 @@ import * as use from "react-use";
 import type { Games } from "../routes/_game";
 import PoBWindow from "./PoBWindow";
 
-const { useTimeoutFn, useLocalStorage, useFullscreen, useTitle } = use;
+const { useTimeoutFn, useLocalStorage, useTitle } = use;
 
 export default function PoBController(p: { game: keyof Games; version: string; isHead: boolean }) {
   const [title, setTitle] = useState<string>();
@@ -39,9 +38,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       setDrawer(true);
     }
   }, [notFirstVisit]);
-
-  const [fullscreen, setFullscreen] = useState(false);
-  useFullscreen(container, fullscreen, { onClose: () => setFullscreen(false) });
 
   return (
     <div ref={container} className="drawer">
@@ -83,8 +79,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         game={p.game}
         isHead={p.isHead}
         setDrawer={setDrawer}
-        fullscreen={fullscreen}
-        setFullscreen={setFullscreen}
         optOutTutorial={optOutTutorial}
         setOptOutTutorial={setOptOutTutorial}
       />
@@ -96,8 +90,6 @@ function Sidebar(p: {
   game: keyof Games;
   isHead: boolean;
   setDrawer: (value: boolean) => void;
-  fullscreen: boolean;
-  setFullscreen: (value: boolean) => void;
   optOutTutorial: boolean | undefined;
   setOptOutTutorial: (value: boolean) => void;
 }) {
@@ -132,21 +124,6 @@ function Sidebar(p: {
             </Link>
           </li>
           <li className="menu-title">Preferences</li>
-          <li>
-            <label htmlFor="fullscreen" className="flex">
-              <span className="flex-1 flex items-center gap-2">
-                <ArrowsPointingOutIcon className="size-4" />
-                Fullscreen
-              </span>
-              <input
-                id="fullscreen"
-                type="checkbox"
-                className="toggle"
-                checked={p.fullscreen}
-                onChange={e => p.setFullscreen(e.target.checked)}
-              />
-            </label>
-          </li>
           <li>
             <label htmlFor="optOutTutorial" className="flex">
               <span className="flex-1 flex items-center gap-2">
