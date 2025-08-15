@@ -19,7 +19,8 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "style": { "noUselessElse": "off", "noNonNullAssertion": "off" }
+      "style": { "noUselessElse": "off", "noNonNullAssertion": "off" },
+      "a11y": { "noSvgWithoutTitle": "off" }
     }
   }
 }

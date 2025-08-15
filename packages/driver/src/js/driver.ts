@@ -1,7 +1,7 @@
 import * as Comlink from "comlink";
 
 import { UIEventManager, type UIState } from "./event";
-import { ResponsiveToolbar, type ToolbarCallbacks, type ToolbarPosition } from "./toolbar";
+import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
 import { ModifierKeyManager, TouchTransformManager } from "./touch";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
@@ -23,7 +23,7 @@ export class Driver {
   private canvas: HTMLCanvasElement | undefined;
   private touchTransformManager: TouchTransformManager | undefined;
   private modifierKeyManager: ModifierKeyManager | undefined;
-  private toolbar: ResponsiveToolbar | undefined;
+  private overlayManager: ReactOverlayManager | undefined;
   private toolbarContainer: HTMLDivElement | undefined;
   private canvasContainer: HTMLDivElement | undefined;
   private dragModeEnabled = false;
@@ -155,7 +155,12 @@ export class Driver {
       },
     };
 
-    this.toolbar = new ResponsiveToolbar(this.toolbarContainer, this.modifierKeyManager, toolbarCallbacks);
+    this.overlayManager = new ReactOverlayManager(this.toolbarContainer);
+    this.overlayManager.render({
+      modifierKeyManager: this.modifierKeyManager,
+      callbacks: toolbarCallbacks,
+      toolbarContainer: this.toolbarContainer,
+    });
 
     root.style.position = "relative";
     this.canvasContainer.appendChild(canvas);
@@ -172,9 +177,7 @@ export class Driver {
     this.setupOrientationAndResizeHandlers();
 
     // Initial layout adjustment
-    const position = this.updateToolbarLayout();
-    this.toolbar.updateLayoutFromExternal(position);
-    this.toolbar.updateOrientation(position === "right");
+    this.updateToolbarLayout();
     this.adjustCanvasLayout(this.toolbarContainer.getBoundingClientRect());
 
     // Ensure initial resize is sent to worker
@@ -233,7 +236,7 @@ export class Driver {
 
   detachFromDOM() {
     this.resizeObserver?.disconnect();
-    this.toolbar?.destroy();
+    this.overlayManager?.destroy();
     document.removeEventListener("fullscreenchange", () => this.handleFullscreenChange());
     this.cleanupOrientationAndResizeHandlers();
     if (this.root) {
@@ -439,7 +442,7 @@ export class Driver {
 
   private handleFullscreenChange() {
     // Force layout recalculation after fullscreen change
-    if (this.toolbar) {
+    if (this.overlayManager) {
       this.handleLayoutChange();
     }
   }
@@ -469,7 +472,7 @@ export class Driver {
   }
 
   private handleLayoutChange() {
-    if (!this.toolbar || !this.root || this.isHandlingLayoutChange) {
+    if (!this.overlayManager || !this.root || this.isHandlingLayoutChange) {
       return;
     }
 
@@ -481,11 +484,7 @@ export class Driver {
       window.getComputedStyle(this.root!).getPropertyValue("width");
 
       // Update toolbar container layout
-      const position = this.updateToolbarLayout();
-
-      // Update toolbar position and orientation
-      this.toolbar!.updateLayoutFromExternal(position);
-      this.toolbar!.updateOrientation(position === "right");
+      this.updateToolbarLayout();
 
       // Force another layout calculation after toolbar update
       window.getComputedStyle(this.toolbarContainer!).getPropertyValue("width");

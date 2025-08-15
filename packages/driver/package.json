@@ -18,6 +18,8 @@
     "@zenfs/dom": "^1.1.5",
     "comlink": "^4.4.1",
     "@bokuweb/zstd-wasm": "^0.0.22",
-    "dds": "*"
+    "dds": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }
