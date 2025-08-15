@@ -71,7 +71,6 @@ export type KeyboardStateChangeCallback = () => void;
 export class KeyboardState {
   private _keys: Set<string> = new Set(); // DOM event names
   private _heldKeys: Set<string> = new Set(); // DOM event names
-  private _holdMode = false;
   private _callbacks: KeyboardStateCallbacks | undefined;
   private _changeCallbacks: Set<KeyboardStateChangeCallback> = new Set();
 
@@ -128,21 +127,8 @@ export class KeyboardState {
     return domKey;
   }
 
-  get holdMode(): boolean {
-    return this._holdMode;
-  }
-
   get heldKeys(): Set<string> {
     return new Set(this._heldKeys);
-  }
-
-  setHoldMode(enabled: boolean) {
-    this._holdMode = enabled;
-    if (!enabled) {
-      // Clear character keys when turning off hold mode (keep modifier keys)
-      this._heldKeys = new Set([...this._heldKeys].filter(key => this.isModifierKey(key)));
-    }
-    this.notifyChange();
   }
 
   // Method equivalent to DOM keydown event
@@ -158,10 +144,10 @@ export class KeyboardState {
     this.handleSpecialCharacter(domKey, doubleClick);
   }
 
-  // Virtual keyboard key press with proper hold mode and modifier handling
-  virtualKeyPress(domKey: string, isModifier = false, isSpecial = false, doubleClick = 0): void {
+  // Virtual keyboard key press with modifier handling
+  virtualKeyPress(domKey: string, isModifier = false, doubleClick = 0): void {
     if (isModifier) {
-      // Modifier keys always use toggle hold behavior
+      // Modifier keys use toggle hold behavior
       if (this._heldKeys.has(domKey)) {
         // Key is already held, release it
         this._heldKeys.delete(domKey);
@@ -170,23 +156,6 @@ export class KeyboardState {
         // Key is not held, hold it
         this._heldKeys.add(domKey);
         this.keydown(domKey, doubleClick);
-      }
-      this.notifyChange();
-    } else if (this._holdMode && !isSpecial) {
-      // In hold mode, character keys use toggle hold behavior
-      if (this._heldKeys.has(domKey)) {
-        // Key is already held, release it
-        this._heldKeys.delete(domKey);
-        this.keyup(domKey, doubleClick);
-      } else {
-        // Key is not held, hold it
-        this._heldKeys.add(domKey);
-        this.keydown(domKey, doubleClick);
-
-        // Character keys still generate their character when first pressed
-        if (this.isCharacterKey(domKey)) {
-          this.virtualKeypress(domKey, doubleClick);
-        }
       }
       this.notifyChange();
     } else {

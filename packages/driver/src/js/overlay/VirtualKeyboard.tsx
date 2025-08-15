@@ -12,12 +12,10 @@ interface VirtualKeyboardProps {
 
 export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks, keyboardState }) => {
   // Use state to track keyboard state changes for React reactivity
-  const [holdMode, setHoldMode] = useState(keyboardState.holdMode);
   const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
 
   // Update local state when keyboard state changes
   const updateLocalState = useCallback(() => {
-    setHoldMode(keyboardState.holdMode);
     setHeldKeys(new Set(keyboardState.heldKeys));
   }, [keyboardState]);
 
@@ -29,16 +27,12 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     };
   }, [keyboardState, updateLocalState]);
 
-  const handleHoldToggle = useCallback(() => {
-    keyboardState.setHoldMode(!holdMode);
-  }, [holdMode, keyboardState]);
-
   type KeyDefinition = {
     event: string; // DOM event name
     display: string; // What to show on the button
     width?: string; // Optional custom width
     isModifier?: boolean; // Whether this is a modifier key
-    isSpecial?: boolean; // Whether this is a special key (excluded from hold mode)
+    isSpecial?: boolean; // Whether this is a special key
   };
 
   const keyLayout = useMemo(
@@ -77,7 +71,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "j", display: "J" },
         { event: "k", display: "K" },
         { event: "l", display: "L" },
-        { event: "Hold", display: "Hold", width: "60px", isSpecial: true },
       ],
       [
         { event: "Shift", display: "Shift", width: "60px", isModifier: true },
@@ -102,8 +95,8 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
 
   const handleKeyPress = useCallback(
     (eventKey: string, keyDef: KeyDefinition) => {
-      const { isModifier = false, isSpecial = false } = keyDef;
-      keyboardState.virtualKeyPress(eventKey, isModifier, isSpecial, 0);
+      const { isModifier = false } = keyDef;
+      keyboardState.virtualKeyPress(eventKey, isModifier, 0);
     },
     [keyboardState],
   );
@@ -139,26 +132,10 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
           }}
         >
           {row.map(keyDef => {
-            const { event, display, width = "44px", isModifier = false, isSpecial = false } = keyDef;
-
-            if (event === "Hold") {
-              return (
-                <KeyButton
-                  key={event}
-                  label={display}
-                  char=""
-                  width={width}
-                  callbacks={{
-                    ...callbacks,
-                    onChar: handleHoldToggle,
-                  }}
-                  isActive={holdMode}
-                />
-              );
-            }
+            const { event, display, width = "44px", isModifier = false } = keyDef;
 
             // Determine if this key should show as active (held)
-            const isActive = (isModifier || (holdMode && !isSpecial)) && heldKeys.has(event);
+            const isActive = isModifier && heldKeys.has(event);
 
             return (
               <KeyButton
