@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, searchForWorkspaceRoot } from "vite";
 import Inspect from "vite-plugin-inspect";
@@ -37,5 +38,5 @@ export default defineConfig(({ mode }) => ({
       target: "es2020",
     },
   },
-  plugins: [react(), Inspect()],
+  plugins: [react(), tailwindcss(), Inspect()],
 }));
