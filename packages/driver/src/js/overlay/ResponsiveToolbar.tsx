@@ -35,40 +35,12 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
     setZoomControlVisible(prev => !prev);
   }, []);
 
-  const containerStyle = useMemo(() => {
-    const baseStyle = {
-      width: "100%",
-      height: "100%",
-      background: "rgba(40, 40, 40, 0.95)",
-      border: "1px solid rgba(60, 60, 60, 0.8)",
-      padding: "8px",
-      userSelect: "none" as const,
-      WebkitUserSelect: "none" as const,
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
-      borderRadius: "0",
-      boxSizing: "border-box" as const,
-    };
-
-    if (isLandscape) {
-      return {
-        ...baseStyle,
-        flexDirection: "column" as const,
-        justifyContent: "center",
-      };
-    } else {
-      return {
-        ...baseStyle,
-        flexDirection: "row" as const,
-        justifyContent: "center",
-      };
-    }
-  }, [isLandscape]);
+  const containerClasses = `w-full h-full bg-gray-700/95 border border-gray-600/80 p-2 select-none flex items-center gap-1.5 shadow-lg box-border relative ${
+    isLandscape ? "flex-col justify-center" : "flex-row justify-center"
+  }`;
 
   return (
-    <div style={containerStyle} className="flex items-center gap-2 relative">
+    <div className={containerClasses}>
       <ControlButton
         icon={<HiMagnifyingGlass size={24} />}
         tooltip="Zoom Controls"

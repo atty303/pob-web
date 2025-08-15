@@ -66,38 +66,26 @@ export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px
     setIsPressed(false);
   }, []);
 
+  const baseClasses =
+    "h-11 border rounded-sm text-white text-xs cursor-pointer outline-none touch-manipulation select-none flex items-center justify-center p-0 transition-all duration-150";
+
+  const getStateClasses = () => {
+    if (isPressed) return "bg-white/30 border-white/50";
+    if (isActive) return "bg-blue-600/80 border-blue-500";
+    return "bg-white/10 border-white/30 hover:bg-white/20";
+  };
+
   return (
     <button
       type="button"
+      className={`${baseClasses} ${getStateClasses()}`}
+      style={{ width }}
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
-      style={{
-        width,
-        height: "44px",
-        background: isPressed
-          ? "rgba(255, 255, 255, 0.3)"
-          : isActive
-            ? "rgba(0, 123, 255, 0.8)"
-            : "rgba(255, 255, 255, 0.1)",
-        border: isActive ? "1px solid rgba(0, 123, 255, 1)" : "1px solid rgba(255, 255, 255, 0.3)",
-        borderRadius: "2px",
-        color: "white",
-        fontSize: "13px",
-        cursor: "pointer",
-        outline: "none",
-        touchAction: "manipulation",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0",
-        transition: "background 0.15s ease",
-      }}
     >
       {label === "Space" ? "␣" : label}
     </button>

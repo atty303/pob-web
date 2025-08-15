@@ -48,41 +48,26 @@ export const ControlButton: React.FC<ControlButtonProps> = ({ icon, tooltip, onC
     [onClick],
   );
 
-  const getBackgroundColor = () => {
-    if (isPressed) return "rgba(255, 255, 255, 0.3)";
-    if (isActive) return "rgba(0, 123, 255, 0.8)";
-    return "rgba(255, 255, 255, 0.1)";
+  const baseClasses =
+    "w-11 h-11 border border-white/30 rounded text-white text-xl cursor-pointer outline-none touch-manipulation transition-all duration-150 select-none flex items-center justify-center";
+
+  const getStateClasses = () => {
+    if (isPressed) return "bg-white/30 border-white/50";
+    if (isActive) return "bg-blue-600/80 border-blue-500 scale-95";
+    return "bg-white/10 hover:bg-white/20";
   };
 
   return (
     <button
       type="button"
       title={tooltip}
+      className={`${baseClasses} ${getStateClasses()}`}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={{
-        width: "44px",
-        height: "44px",
-        background: getBackgroundColor(),
-        border: `1px solid ${isActive ? "rgba(0, 123, 255, 1)" : "rgba(255, 255, 255, 0.3)"}`,
-        borderRadius: "3px",
-        color: "white",
-        fontSize: "20px",
-        cursor: "pointer",
-        outline: "none",
-        touchAction: "manipulation",
-        transition: "background 0.15s ease",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transform: isActive ? "scale(0.95)" : "scale(1)",
-      }}
     >
       {icon}
     </button>
