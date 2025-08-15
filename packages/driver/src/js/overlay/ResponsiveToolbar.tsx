@@ -15,6 +15,7 @@ interface ResponsiveToolbarProps {
   panModeEnabled: boolean;
   keyboardVisible: boolean;
   currentZoom?: number;
+  currentCanvasSize?: { width: number; height: number };
 }
 
 export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
@@ -24,6 +25,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   panModeEnabled,
   keyboardVisible,
   currentZoom = 1.0,
+  currentCanvasSize = { width: 1520, height: 800 },
 }) => {
   const [zoomControlVisible, setZoomControlVisible] = useState(false);
 
@@ -70,6 +72,8 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
         maxZoom={3.0}
         onZoomChange={callbacks.onZoomChange}
         onZoomReset={callbacks.onZoomReset}
+        onCanvasSizeChange={callbacks.onCanvasSizeChange}
+        currentCanvasSize={currentCanvasSize}
         isVisible={zoomControlVisible}
         position={position}
       />

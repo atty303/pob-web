@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 
+import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
 import { UIEventManager, type UIState } from "./event";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
 import { TouchTransformManager } from "./touch";
@@ -19,19 +20,18 @@ export class Driver {
   private root: HTMLElement | undefined;
   private worker: Worker | undefined;
   private driverWorker: Comlink.Remote<DriverWorker> | undefined;
-  private resizeObserver: ResizeObserver | undefined;
-  private canvas: HTMLCanvasElement | undefined;
   private touchTransformManager: TouchTransformManager | undefined;
   private overlayManager: ReactOverlayManager | undefined;
-  private canvasContainer: HTMLDivElement | undefined;
+  private canvasManager: CanvasManager | undefined;
   private panModeEnabled = false;
   private orientationChangeHandler: (() => void) | undefined;
   private windowResizeHandler: (() => void) | undefined;
   private isHandlingLayoutChange = false;
 
   // Minimum canvas size for PoB to render correctly
-  private readonly MIN_CANVAS_WIDTH = 1520;
+  private readonly MIN_CANVAS_WIDTH = 1550;
   private readonly MIN_CANVAS_HEIGHT = 800;
+  private readonly TOOLBAR_SIZE = 60;
 
   constructor(
     readonly build: "debug" | "release",
@@ -75,43 +75,70 @@ export class Driver {
       this.root.removeChild(child);
     }
 
-    const r = root.getBoundingClientRect();
-    const canvas = document.createElement("canvas");
-    const pixelRatio = window.devicePixelRatio || 1;
-    // Ensure minimum canvas size for PoB
-    const canvasWidth = Math.max(r.width, this.MIN_CANVAS_WIDTH);
-    const canvasHeight = Math.max(r.height, this.MIN_CANVAS_HEIGHT);
+    // Initialize CanvasManager
+    const canvasConfig: CanvasConfig = {
+      minWidth: this.MIN_CANVAS_WIDTH,
+      minHeight: this.MIN_CANVAS_HEIGHT,
+      toolbarSize: this.TOOLBAR_SIZE,
+    };
 
-    // Canvas resolution (高DPI対応) - use actual canvas size
-    canvas.width = canvasWidth * pixelRatio;
-    canvas.height = canvasHeight * pixelRatio;
-    // CSS サイズ - use actual canvas size
-    canvas.style.width = `${canvasWidth}px`;
-    canvas.style.height = `${canvasHeight}px`;
-    canvas.style.position = "absolute";
-    canvas.style.transformOrigin = "0 0";
-    this.canvas = canvas;
+    this.canvasManager = new CanvasManager(canvasConfig);
 
+    // Set up callbacks for CanvasManager
+    this.canvasManager.setCallbacks({
+      onStateChange: (state: CanvasState) => {
+        // Update pan mode based on canvas state
+        if (state.needsPanning && !this.panModeEnabled) {
+          this.panModeEnabled = true;
+          this.uiEventManager?.setPanMode(true);
+          this.overlayManager?.updateState({ panModeEnabled: true });
+        } else if (!state.needsPanning && this.panModeEnabled) {
+          this.panModeEnabled = false;
+          this.uiEventManager?.setPanMode(false);
+          this.overlayManager?.updateState({ panModeEnabled: false });
+          this.touchTransformManager?.reset();
+          this.updateTransform();
+        }
+
+        // Update TouchTransformManager with style size and container sizes
+        this.touchTransformManager?.updateCanvasSize(state.styleSize.width, state.styleSize.height);
+        this.touchTransformManager?.updateContainerSize(state.containerSize.width, state.containerSize.height);
+
+        // Update overlay with current style size
+        this.overlayManager?.updateState({
+          currentCanvasSize: state.styleSize,
+        });
+      },
+      onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
+        // Notify worker of rendering size change
+        // Pass style size and pixel ratio separately to worker
+        this.driverWorker?.resize({
+          width: renderingSize.styleWidth,
+          height: renderingSize.styleHeight,
+          pixelRatio: renderingSize.pixelRatio,
+        });
+      },
+    });
+
+    // Attach canvas manager to DOM
+    const { canvas, container } = this.canvasManager.attachToDOM(root);
+
+    // Transfer canvas control to worker
     const offscreenCanvas = canvas.transferControlToOffscreen();
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
-    // Initialize touch transform manager with actual sizes
-    this.touchTransformManager = new TouchTransformManager(canvasWidth, canvasHeight, r.width, r.height);
+    // Initialize touch transform manager
+    const r = root.getBoundingClientRect();
+    const initialState = this.canvasManager.getCurrentState();
+    this.touchTransformManager = new TouchTransformManager(
+      initialState.styleSize.width,
+      initialState.styleSize.height,
+      r.width,
+      r.height,
+    );
 
-    // Create canvas container - positioned to avoid toolbar overlap
-    this.canvasContainer = document.createElement("div");
-    this.canvasContainer.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      overflow: hidden;
-    `;
-
-    // Enable pan mode initially if canvas is larger than container
-    const needsPanning = canvasWidth > r.width || canvasHeight > r.height;
-    if (needsPanning) {
+    // Set initial pan mode if needed
+    if (initialState.needsPanning) {
       this.panModeEnabled = true;
     }
 
@@ -149,6 +176,9 @@ export class Driver {
       onZoomChange: (zoom: number) => {
         this.zoomTo(zoom);
       },
+      onCanvasSizeChange: (width: number, height: number) => {
+        this.canvasManager?.setCanvasStyleSize(width, height);
+      },
       onLayoutChange: () => {
         // Toolbar layout changes no longer affect canvas layout
       },
@@ -165,8 +195,7 @@ export class Driver {
     };
 
     root.style.position = "relative";
-    this.canvasContainer.appendChild(canvas);
-    root.appendChild(this.canvasContainer);
+    root.appendChild(container);
     root.appendChild(overlayContainer);
     root.tabIndex = 0;
     root.focus();
@@ -179,28 +208,6 @@ export class Driver {
 
     // Initial layout adjustment for canvas to avoid toolbar overlap
     this.adjustCanvasForOverlay();
-
-    // Ensure initial resize is sent to worker
-    const initialRect = this.canvasContainer.getBoundingClientRect();
-    if (initialRect.width > 0 && initialRect.height > 0) {
-      this.updateCanvasSize(initialRect.width, initialRect.height);
-    }
-
-    this.resizeObserver = new ResizeObserver(entries => {
-      // Avoid duplicate handling when orientation change is in progress
-      if (this.isHandlingLayoutChange) {
-        return;
-      }
-
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        // Canvas container サイズ変更を直接検出してcanvasサイズを更新
-        // updateCanvasSizeが内部でTouchTransformManagerも更新するので、ここでは呼ばない
-        this.updateCanvasSize(width, height);
-        this.updateTransform();
-      }
-    });
-    this.resizeObserver.observe(this.canvasContainer);
 
     this.uiEventManager = new UIEventManager(root, {
       onMouseMove: uiState => {
@@ -236,16 +243,18 @@ export class Driver {
 
     // Initialize overlay manager after uiEventManager is created
     this.overlayManager = new ReactOverlayManager(overlayContainer);
+    const currentState = this.canvasManager.getCurrentState();
     this.overlayManager.render({
       callbacks: toolbarCallbacks,
       keyboardState: this.uiEventManager.keyboardState,
       panModeEnabled: this.panModeEnabled,
       currentZoom: this.touchTransformManager?.transform.scale ?? 1.0,
+      currentCanvasSize: currentState.styleSize,
     });
   }
 
   detachFromDOM() {
-    this.resizeObserver?.disconnect();
+    this.canvasManager?.detachFromDOM();
     this.overlayManager?.destroy();
     document.removeEventListener("fullscreenchange", () => this.handleFullscreenChange());
     this.cleanupOrientationAndResizeHandlers();
@@ -255,6 +264,7 @@ export class Driver {
       }
     }
     this.uiEventManager?.destroy();
+    this.canvasManager = undefined;
   }
 
   copy(text: string) {
@@ -300,15 +310,17 @@ export class Driver {
   }
 
   private updateTransform() {
-    if (!this.canvas || !this.touchTransformManager) {
+    const canvas = this.canvasManager?.getCanvas();
+    if (!canvas || !this.touchTransformManager) {
       return;
     }
 
-    this.canvas.style.transform = this.touchTransformManager.generateTransformCSS();
+    canvas.style.transform = this.touchTransformManager.generateTransformCSS();
 
-    // Update overlay with current zoom level
+    // Update overlay with current zoom level and canvas size
     this.overlayManager?.updateState({
       currentZoom: this.touchTransformManager.transform.scale,
+      currentCanvasSize: this.touchTransformManager.canvasSize,
     });
   }
 
@@ -335,8 +347,16 @@ export class Driver {
     return this.touchTransformManager;
   }
 
+  setCanvasSize(width: number, height: number) {
+    this.canvasManager?.setCanvasStyleSize(width, height);
+
+    // Reset transform to prevent invalid positions after size change
+    this.touchTransformManager?.reset();
+    this.updateTransform();
+  }
+
   private adjustCanvasForOverlay() {
-    if (!this.canvasContainer || !this.root) {
+    if (!this.canvasManager) {
       return;
     }
 
@@ -344,23 +364,7 @@ export class Driver {
     const windowHeight = window.innerHeight;
     const isPortrait = windowHeight > windowWidth;
 
-    // Toolbar size constants
-    const toolbarSize = 60; // 44px button + 16px padding
-
-    if (isPortrait) {
-      // Portrait: toolbar at bottom
-      this.canvasContainer.style.bottom = `${toolbarSize}px`;
-      this.canvasContainer.style.right = "0";
-    } else {
-      // Landscape: toolbar at right
-      this.canvasContainer.style.right = `${toolbarSize}px`;
-      this.canvasContainer.style.bottom = "0";
-    }
-
-    // Update canvas size based on new container dimensions
-    const rect = this.canvasContainer.getBoundingClientRect();
-    // updateCanvasSizeが内部でTouchTransformManagerも更新する
-    this.updateCanvasSize(rect.width, rect.height);
+    this.canvasManager.adjustForToolbar(isPortrait);
     this.updateTransform();
   }
 
@@ -426,49 +430,6 @@ export class Driver {
     } catch (error) {
       console.warn("Fullscreen toggle failed:", error);
     }
-  }
-
-  private updateCanvasSize(containerWidth: number, containerHeight: number) {
-    // Ensure minimum canvas size for PoB
-    const canvasWidth = Math.max(containerWidth, this.MIN_CANVAS_WIDTH);
-    const canvasHeight = Math.max(containerHeight, this.MIN_CANVAS_HEIGHT);
-
-    // Check if we need pan mode (canvas larger than container)
-    const needsPanning = canvasWidth > containerWidth || canvasHeight > containerHeight;
-
-    if (this.canvas) {
-      // Set CSS size to the actual canvas size (may be larger than container)
-      this.canvas.style.width = `${canvasWidth}px`;
-      this.canvas.style.height = `${canvasHeight}px`;
-
-      if (needsPanning) {
-        // Enable panning when canvas is larger than container
-        if (!this.panModeEnabled) {
-          this.panModeEnabled = true;
-          this.uiEventManager?.setPanMode(true);
-          // Update overlay to show pan mode is active
-          this.overlayManager?.updateState({ panModeEnabled: true });
-        }
-      } else {
-        // Disable panning when canvas fits in container
-        if (this.panModeEnabled) {
-          this.panModeEnabled = false;
-          this.uiEventManager?.setPanMode(false);
-          this.overlayManager?.updateState({ panModeEnabled: false });
-          // Reset transform when panning is disabled
-          this.touchTransformManager?.reset();
-          this.updateTransform();
-        }
-      }
-    }
-
-    // Update TouchTransformManager with both container and canvas sizes
-    this.touchTransformManager?.updateContainerSize(containerWidth, containerHeight);
-    this.touchTransformManager?.updateCanvasSize(canvasWidth, canvasHeight);
-
-    // PoB worker に新しいサイズを通知 (実際のcanvas解像度)
-    const pixelRatio = window.devicePixelRatio || 1;
-    this.driverWorker?.resize({ width: canvasWidth, height: canvasHeight, pixelRatio });
   }
 
   private handleFullscreenChange() {

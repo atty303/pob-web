@@ -30,6 +30,13 @@ export class TouchTransformManager {
     };
   }
 
+  get canvasSize(): { width: number; height: number } {
+    return {
+      width: this._canvasWidth,
+      height: this._canvasHeight,
+    };
+  }
+
   updateContainerSize(width: number, height: number) {
     this._containerWidth = width;
     this._containerHeight = height;
