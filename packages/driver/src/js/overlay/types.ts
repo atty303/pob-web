@@ -11,6 +11,7 @@ export interface ToolbarCallbacks {
   onKeyDown: (key: string, doubleClick: number, uiState: UIState) => void;
   onKeyUp: (key: string, doubleClick: number, uiState: UIState) => void;
   onZoomReset: () => void;
+  onZoomChange: (zoom: number) => void;
   onLayoutChange: () => void;
   onFullscreenToggle: () => void;
   onPanModeToggle: (enabled: boolean) => void;

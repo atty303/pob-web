@@ -1,10 +1,11 @@
 import type React from "react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import { MdOutlinePanTool } from "react-icons/md";
 import { ControlButton } from "./ControlButton";
 import { FullscreenButton } from "./FullscreenButton";
+import { ZoomControl } from "./ZoomControl";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
 interface ResponsiveToolbarProps {
@@ -13,6 +14,7 @@ interface ResponsiveToolbarProps {
   isLandscape: boolean;
   panModeEnabled: boolean;
   keyboardVisible: boolean;
+  currentZoom?: number;
 }
 
 export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
@@ -21,10 +23,17 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   isLandscape,
   panModeEnabled,
   keyboardVisible,
+  currentZoom = 1.0,
 }) => {
+  const [zoomControlVisible, setZoomControlVisible] = useState(false);
+
   const handlePanModeToggle = useCallback(() => {
     callbacks.onPanModeToggle(!panModeEnabled);
   }, [callbacks, panModeEnabled]);
+
+  const handleZoomToggle = useCallback(() => {
+    setZoomControlVisible(prev => !prev);
+  }, []);
 
   const containerStyle = useMemo(() => {
     const baseStyle = {
@@ -59,8 +68,13 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   }, [isLandscape]);
 
   return (
-    <div style={containerStyle} className="flex items-center gap-2">
-      <ControlButton icon={<HiMagnifyingGlass size={24} />} tooltip="Reset Zoom" onClick={callbacks.onZoomReset} />
+    <div style={containerStyle} className="flex items-center gap-2 relative">
+      <ControlButton
+        icon={<HiMagnifyingGlass size={24} />}
+        tooltip="Zoom Controls"
+        onClick={handleZoomToggle}
+        isActive={zoomControlVisible}
+      />
 
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
 
@@ -76,6 +90,16 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
         tooltip="Toggle Virtual Keyboard"
         onClick={callbacks.onKeyboardToggle}
         isActive={keyboardVisible}
+      />
+
+      <ZoomControl
+        currentZoom={currentZoom}
+        minZoom={0.5}
+        maxZoom={3.0}
+        onZoomChange={callbacks.onZoomChange}
+        onZoomReset={callbacks.onZoomReset}
+        isVisible={zoomControlVisible}
+        position={position}
       />
     </div>
   );

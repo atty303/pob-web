@@ -11,12 +11,14 @@ interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;
   keyboardState: KeyboardState;
   panModeEnabled?: boolean;
+  currentZoom?: number;
 }
 
 export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   callbacks,
   keyboardState,
   panModeEnabled: externalPanMode,
+  currentZoom = 1.0,
 }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
@@ -108,6 +110,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           isLandscape={isLandscape}
           panModeEnabled={panModeEnabled}
           keyboardVisible={keyboardVisible}
+          currentZoom={currentZoom}
         />
       </div>
       {keyboardVisible && (
@@ -155,7 +158,7 @@ export class ReactOverlayManager {
     }
   }
 
-  updateState(updates: Partial<Pick<OverlayContainerProps, "panModeEnabled">>) {
+  updateState(updates: Partial<Pick<OverlayContainerProps, "panModeEnabled" | "currentZoom">>) {
     if (this.currentProps && this.root) {
       const newProps = { ...this.currentProps, ...updates };
       this.currentProps = newProps;

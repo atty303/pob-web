@@ -146,6 +146,9 @@ export class Driver {
       onZoomReset: () => {
         this.resetTransform();
       },
+      onZoomChange: (zoom: number) => {
+        this.zoomTo(zoom);
+      },
       onLayoutChange: () => {
         // Toolbar layout changes no longer affect canvas layout
       },
@@ -237,6 +240,7 @@ export class Driver {
       callbacks: toolbarCallbacks,
       keyboardState: this.uiEventManager.keyboardState,
       panModeEnabled: this.panModeEnabled,
+      currentZoom: this.touchTransformManager?.transform.scale ?? 1.0,
     });
   }
 
@@ -301,6 +305,11 @@ export class Driver {
     }
 
     this.canvas.style.transform = this.touchTransformManager.generateTransformCSS();
+
+    // Update overlay with current zoom level
+    this.overlayManager?.updateState({
+      currentZoom: this.touchTransformManager.transform.scale,
+    });
   }
 
   // Public methods for external control
