@@ -331,15 +331,30 @@ export class Driver {
     if (!this.root) return;
 
     try {
-      const doc = document as any;
-      const elem = this.root as any;
-      
+      const doc = document as Document & {
+        webkitFullscreenElement?: Element;
+        mozFullScreenElement?: Element;
+        msFullscreenElement?: Element;
+        webkitExitFullscreen?: () => void;
+        webkitCancelFullScreen?: () => void;
+        mozCancelFullScreen?: () => void;
+        msExitFullscreen?: () => void;
+      };
+      const elem = this.root as HTMLElement & {
+        webkitRequestFullscreen?: () => void;
+        webkitEnterFullscreen?: () => void;
+        mozRequestFullScreen?: () => void;
+        msRequestFullscreen?: () => void;
+      };
+
       // Check if we're currently in fullscreen
-      const isFullscreen = !!(doc.fullscreenElement || 
-                             doc.webkitFullscreenElement || 
-                             doc.mozFullScreenElement || 
-                             doc.msFullscreenElement);
-      
+      const isFullscreen = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+
       if (!isFullscreen) {
         // Enter fullscreen - try various vendor-prefixed methods
         if (elem.requestFullscreen) {

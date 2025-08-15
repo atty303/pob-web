@@ -1,7 +1,7 @@
 import type { UIState } from "./event";
-import type { ModifierKeyManager, ModifierKeys } from "./touch";
-import arrowsPointingOutSvg from "./icons/arrows-pointing-out.svg?raw";
 import arrowsPointingInSvg from "./icons/arrows-pointing-in.svg?raw";
+import arrowsPointingOutSvg from "./icons/arrows-pointing-out.svg?raw";
+import type { ModifierKeyManager, ModifierKeys } from "./touch";
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";
 
@@ -237,7 +237,6 @@ export class ResponsiveToolbar {
     return section;
   }
 
-
   private createControlButton(icon: string, tooltip: string, onClick: () => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = icon;
@@ -360,9 +359,9 @@ export class ResponsiveToolbar {
       svg.style.pointerEvents = "none";
       // Disable pointer events on all child elements too
       const paths = svg.querySelectorAll("*");
-      paths.forEach(el => {
+      for (const el of paths) {
         (el as HTMLElement).style.pointerEvents = "none";
-      });
+      }
     }
 
     this.fullscreenButton = button;
@@ -452,9 +451,9 @@ export class ResponsiveToolbar {
         svg.style.pointerEvents = "none";
         // Disable pointer events on all child elements too
         const paths = svg.querySelectorAll("*");
-        paths.forEach(el => {
+        for (const el of paths) {
           (el as HTMLElement).style.pointerEvents = "none";
-        });
+        }
       }
     }
   }
