@@ -1,52 +1,8 @@
+import { KeyboardState, type KeyboardStateCallbacks } from "./keyboard";
+
 function mouseString(e: MouseEvent) {
   return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][e.button];
 }
-
-const KEY_MAP = new Map<string, string>([
-  ["Backspace", "BACK"],
-  ["Tab", "TAB"],
-  ["Enter", "RETURN"],
-  ["Escape", "ESCAPE"],
-  ["Shift", "SHIFT"],
-  ["Control", "CTRL"],
-  ["Alt", "ALT"],
-  ["Pause", "PAUSE"],
-  ["PageUp", "PAGEUP"],
-  ["PageDown", "PAGEDOWN"],
-  ["End", "END"],
-  ["Home", "HOME"],
-  ["PrintScreen", "PRINTSCREEN"],
-  ["Insert", "INSERT"],
-  ["Delete", "DELETE"],
-  ["ArrowUp", "UP"],
-  ["ArrowDown", "DOWN"],
-  ["ArrowLeft", "LEFT"],
-  ["ArrowRight", "RIGHT"],
-  ["F1", "F1"],
-  ["F2", "F2"],
-  ["F3", "F3"],
-  ["F4", "F4"],
-  ["F5", "F5"],
-  ["F6", "F6"],
-  ["F7", "F7"],
-  ["F8", "F8"],
-  ["F9", "F9"],
-  ["F10", "F10"],
-  ["F11", "F11"],
-  ["F12", "F12"],
-  ["F13", "F13"],
-  ["F14", "F14"],
-  ["F15", "F15"],
-  ["NumLock", "NUMLOCK"],
-  ["ScrollLock", "SCROLLLOCK"],
-]);
-
-const EXTRA_KEY_MAP = new Map<string, string>([
-  ["Backspace", "\b"],
-  ["Tab", "\t"],
-  ["Enter", "\r"],
-  ["Escape", "\u001B"],
-]);
 
 type Callbacks = {
   onMouseMove: (uiState: UIState) => void;
@@ -66,9 +22,9 @@ export type UIState = {
 
 export class UIEventManager {
   readonly destroy: () => void;
+  readonly keyboardState: KeyboardState;
 
   private _cursorPosition: { x: number; y: number } = { x: 0, y: 0 };
-  private _keyState: Set<string> = new Set();
   private _panModeEnabled = false;
 
   // Touch state tracking
@@ -85,7 +41,7 @@ export class UIEventManager {
     return {
       x: this._cursorPosition.x,
       y: this._cursorPosition.y,
-      keys: this._keyState,
+      keys: this.keyboardState.keys,
     };
   }
 
@@ -93,6 +49,12 @@ export class UIEventManager {
     readonly el: HTMLElement,
     readonly callbacks: Callbacks,
   ) {
+    // Initialize keyboard state with callbacks that delegate to the provided callbacks
+    this.keyboardState = new KeyboardState({
+      onKeyDown: (key, doubleClick) => callbacks.onKeyDown(key, doubleClick, this.uiState),
+      onKeyUp: (key, doubleClick) => callbacks.onKeyUp(key, doubleClick, this.uiState),
+      onChar: (char, doubleClick) => callbacks.onChar(char, doubleClick, this.uiState),
+    });
     const preventDefault = this.preventDefault.bind(this);
     const handleVisibilityChange = this.handleVisibilityChange.bind(this);
     const handleMouseMove = this.handleMouseMove.bind(this);
@@ -175,7 +137,7 @@ export class UIEventManager {
     e.preventDefault();
     const name = mouseString(e);
     if (name) {
-      this._keyState.add(name);
+      this.keyboardState.addPhysicalKey(name);
       this.callbacks.onKeyDown(name, 0, this.uiState);
     }
     this.el.focus();
@@ -185,7 +147,7 @@ export class UIEventManager {
     e.preventDefault();
     const name = mouseString(e);
     if (name) {
-      this._keyState.delete(name);
+      this.keyboardState.removePhysicalKey(name);
       this.callbacks.onKeyUp(name, -1, this.uiState); // TODO: 0
     }
     this.el.focus();
@@ -209,30 +171,25 @@ export class UIEventManager {
 
   private handleKeyDown(e: KeyboardEvent) {
     ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
-    const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-    if (key) {
-      this._keyState.add(key);
-      this.callbacks.onKeyDown(key, 0, this.uiState);
-      const ex = EXTRA_KEY_MAP.get(e.key);
-      if (ex) {
-        this.callbacks.onChar(ex, 0, this.uiState);
-      }
-    }
+    const domKey = e.key; // Use DOM event key name directly
+
+    // Use keyboard state to handle all key logic including special character mappings
+    this.keyboardState.addPhysicalKey(domKey);
+    this.keyboardState.keydown(domKey, 0);
   }
 
   private handleKeyPress(e: KeyboardEvent) {
     e.preventDefault();
-    this.callbacks.onChar(e.key, 0, this.uiState);
+    this.keyboardState.keypress(e.key, 0);
   }
 
   private handleKeyUp(e: KeyboardEvent) {
     e.preventDefault();
-    const key = e.key.length === 1 ? e.key.toLowerCase() : KEY_MAP.get(e.key);
-    if (key) {
-      // TODO: order is correct?
-      this._keyState.delete(key);
-      this.callbacks.onKeyUp(key, 0, this.uiState);
-    }
+    const domKey = e.key; // Use DOM event key name directly
+
+    // TODO: order is correct?
+    this.keyboardState.removePhysicalKey(domKey);
+    this.keyboardState.keyup(domKey, 0);
   }
 
   private getTouchPosition(touch: Touch): { x: number; y: number } {
@@ -331,7 +288,7 @@ export class UIEventManager {
               clearTimeout(this._longPressTimer);
               this._longPressTimer = null;
               this._isPanModeActive = true;
-              this._keyState.add("LEFTBUTTON");
+              this.keyboardState.addPhysicalKey("LEFTBUTTON");
               this.callbacks.onKeyDown("LEFTBUTTON", 0, this.uiState);
             }
           }
@@ -403,8 +360,8 @@ export class UIEventManager {
           // End drag
           this._isPanModeActive = false;
 
-          if (this._keyState.has("LEFTBUTTON")) {
-            this._keyState.delete("LEFTBUTTON");
+          if (this.keyboardState.hasKey("LEFTBUTTON")) {
+            this.keyboardState.removePhysicalKey("LEFTBUTTON");
             this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
           }
         } else if (this._longPressTimer) {
@@ -414,13 +371,13 @@ export class UIEventManager {
 
           if (!this._isZooming && !this._isPanning) {
             // Generate single click
-            this._keyState.add("LEFTBUTTON");
+            this.keyboardState.addPhysicalKey("LEFTBUTTON");
             this.callbacks.onKeyDown("LEFTBUTTON", 0, this.uiState);
 
             // Schedule mouseup
             setTimeout(() => {
-              if (this._keyState.has("LEFTBUTTON")) {
-                this._keyState.delete("LEFTBUTTON");
+              if (this.keyboardState.hasKey("LEFTBUTTON")) {
+                this.keyboardState.removePhysicalKey("LEFTBUTTON");
                 this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
               }
             }, 50);
@@ -450,8 +407,8 @@ export class UIEventManager {
     }
 
     // Clean up pan mode state
-    if (this._isPanModeActive && this._keyState.has("LEFTBUTTON")) {
-      this._keyState.delete("LEFTBUTTON");
+    if (this._isPanModeActive && this.keyboardState.hasKey("LEFTBUTTON")) {
+      this.keyboardState.removePhysicalKey("LEFTBUTTON");
       this.callbacks.onKeyUp("LEFTBUTTON", 0, this.uiState);
     }
 

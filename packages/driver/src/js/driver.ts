@@ -148,11 +148,6 @@ export class Driver {
       },
     };
 
-    this.overlayManager = new ReactOverlayManager(overlayContainer);
-    this.overlayManager.render({
-      callbacks: toolbarCallbacks,
-    });
-
     root.style.position = "relative";
     this.canvasContainer.appendChild(canvas);
     root.appendChild(this.canvasContainer);
@@ -221,6 +216,13 @@ export class Driver {
       },
     });
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
+
+    // Initialize overlay manager after uiEventManager is created
+    this.overlayManager = new ReactOverlayManager(overlayContainer);
+    this.overlayManager.render({
+      callbacks: toolbarCallbacks,
+      keyboardState: this.uiEventManager.keyboardState,
+    });
   }
 
   detachFromDOM() {
@@ -261,7 +263,11 @@ export class Driver {
 
   private transformUIState(uiState: UIState): UIState {
     if (!this.touchTransformManager) {
-      return uiState;
+      return {
+        x: uiState.x,
+        y: uiState.y,
+        keys: this.uiEventManager?.keyboardState.pobKeys ?? uiState.keys,
+      };
     }
 
     // Transform screen coordinates to canvas coordinates
@@ -270,7 +276,7 @@ export class Driver {
     return {
       x: canvasCoords.x,
       y: canvasCoords.y,
-      keys: uiState.keys,
+      keys: this.uiEventManager?.keyboardState.pobKeys ?? uiState.keys,
     };
   }
 

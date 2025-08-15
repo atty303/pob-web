@@ -1,95 +1,123 @@
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { KeyboardState } from "../keyboard";
 import { KeyButton } from "./KeyButton";
 import type { ModifierKeys, ToolbarCallbacks, UIState } from "./types";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;
   callbacks: ToolbarCallbacks;
+  keyboardState: KeyboardState;
 }
 
-export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks }) => {
-  const [holdMode, setHoldMode] = useState(false);
-  const [heldKeys, setHeldKeys] = useState<Set<string>>(new Set());
+export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks, keyboardState }) => {
+  // Use state to track keyboard state changes for React reactivity
+  const [holdMode, setHoldMode] = useState(keyboardState.holdMode);
+  const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
+
+  // Update local state when keyboard state changes
+  const updateLocalState = useCallback(() => {
+    setHoldMode(keyboardState.holdMode);
+    setHeldKeys(new Set(keyboardState.heldKeys));
+  }, [keyboardState]);
+
+  // Listen for keyboard state changes
+  useEffect(() => {
+    keyboardState.addChangeListener(updateLocalState);
+    return () => {
+      keyboardState.removeChangeListener(updateLocalState);
+    };
+  }, [keyboardState, updateLocalState]);
 
   const handleHoldToggle = useCallback(() => {
-    setHoldMode(prev => !prev);
-    // Clear character keys when turning off hold mode (keep modifier keys)
-    if (holdMode) {
-      setHeldKeys(prev => new Set([...prev].filter(key => isModifierKey(key))));
-    }
-  }, [holdMode]);
+    keyboardState.setHoldMode(!holdMode);
+  }, [holdMode, keyboardState]);
+
+  type KeyDefinition = {
+    event: string; // DOM event name
+    display: string; // What to show on the button
+    width?: string; // Optional custom width
+    isModifier?: boolean; // Whether this is a modifier key
+    isSpecial?: boolean; // Whether this is a special key (excluded from hold mode)
+  };
 
   const keyLayout = useMemo(
-    () => [
-      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-      ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-      ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Hold"],
-      ["Shift", "Z", "X", "C", "V", "B", "N", "M", "⌫"],
-      ["Ctrl", "Alt", "Space", "↵"],
+    (): KeyDefinition[][] => [
+      [
+        { event: "1", display: "1" },
+        { event: "2", display: "2" },
+        { event: "3", display: "3" },
+        { event: "4", display: "4" },
+        { event: "5", display: "5" },
+        { event: "6", display: "6" },
+        { event: "7", display: "7" },
+        { event: "8", display: "8" },
+        { event: "9", display: "9" },
+        { event: "0", display: "0" },
+      ],
+      [
+        { event: "Q", display: "Q" },
+        { event: "W", display: "W" },
+        { event: "E", display: "E" },
+        { event: "R", display: "R" },
+        { event: "T", display: "T" },
+        { event: "Y", display: "Y" },
+        { event: "U", display: "U" },
+        { event: "I", display: "I" },
+        { event: "O", display: "O" },
+        { event: "P", display: "P" },
+      ],
+      [
+        { event: "A", display: "A" },
+        { event: "S", display: "S" },
+        { event: "D", display: "D" },
+        { event: "F", display: "F" },
+        { event: "G", display: "G" },
+        { event: "H", display: "H" },
+        { event: "J", display: "J" },
+        { event: "K", display: "K" },
+        { event: "L", display: "L" },
+        { event: "Hold", display: "Hold", width: "60px", isSpecial: true },
+      ],
+      [
+        { event: "Shift", display: "Shift", width: "60px", isModifier: true },
+        { event: "Z", display: "Z" },
+        { event: "X", display: "X" },
+        { event: "C", display: "C" },
+        { event: "V", display: "V" },
+        { event: "B", display: "B" },
+        { event: "N", display: "N" },
+        { event: "M", display: "M" },
+        { event: "Backspace", display: "⌫", isSpecial: true },
+      ],
+      [
+        { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
+        { event: "Alt", display: "Alt", width: "60px", isModifier: true },
+        { event: "Space", display: "Space", width: "88px", isSpecial: true },
+        { event: "Enter", display: "↵", isSpecial: true },
+      ],
     ],
     [],
   );
 
-  const getKeyProps = (key: string) => {
-    let width = "44px";
-    let char = key.toLowerCase();
-
-    if (key === "Space") {
-      width = "88px"; // Moderate width for space bar
-      char = " ";
-    } else if (key === "⌫") {
-      width = "44px";
-      char = "\b";
-    } else if (key === "↵") {
-      width = "44px";
-      char = "\r";
-    } else if (key === "Ctrl" || key === "Shift" || key === "Alt") {
-      width = "60px"; // Wider for modifier keys
-    } else if (key === "Hold") {
-      width = "60px"; // Wider for hold button
-    }
-
-    return { width, char };
-  };
-
-  const isModifierKey = useCallback((key: string): key is keyof ModifierKeys => {
-    return key === "Ctrl" || key === "Shift" || key === "Alt";
-  }, []);
-
-  const isCharacterKey = useCallback((key: string): boolean => {
-    // Check if it's a letter or number
-    return /^[A-Za-z0-9]$/.test(key);
-  }, []);
-
-  const isHoldableKey = (key: string): boolean => {
-    // Character keys and modifier keys can be held
-    return isCharacterKey(key) || isModifierKey(key);
-  };
-
   const handleKeyPress = useCallback(
-    (key: string, char: string) => {
-      if (isModifierKey(key) || (holdMode && isCharacterKey(key))) {
-        // Modifier keys always behave as hold keys, character keys in hold mode
-        setHeldKeys(prev => {
-          const newHeldKeys = new Set(prev);
-          if (newHeldKeys.has(key)) {
-            // Key is already held, release it
-            newHeldKeys.delete(key);
-            callbacks.onKeyUp(key, 0, { x: 0, y: 0, keys: newHeldKeys });
-          } else {
-            // Key is not held, press it
-            newHeldKeys.add(key);
-            callbacks.onKeyDown(key, 0, { x: 0, y: 0, keys: newHeldKeys });
-          }
-          return newHeldKeys;
-        });
+    (eventKey: string, keyDef: KeyDefinition) => {
+      const { isModifier = false, isSpecial = false } = keyDef;
+
+      if (isModifier) {
+        // Modifier keys always use toggle hold behavior
+        keyboardState.toggleHold(eventKey, 0);
+      } else if (holdMode && !isSpecial) {
+        // In hold mode, character keys use toggle hold behavior
+        keyboardState.toggleHold(eventKey, 0);
       } else {
-        // Normal key press behavior - include currently held keys
-        callbacks.onChar(char, 0, { x: 0, y: 0, keys: heldKeys });
+        // Simulate physical keyboard: keydown -> keyup sequence
+        keyboardState.keydown(eventKey, 0);
+        keyboardState.keypress(eventKey);
+        keyboardState.keyup(eventKey, 0);
       }
     },
-    [holdMode, callbacks, heldKeys, isModifierKey, isCharacterKey],
+    [keyboardState, holdMode],
   );
 
   if (!isVisible) {
@@ -112,9 +140,9 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         WebkitUserSelect: "none",
       }}
     >
-      {keyLayout.map(row => (
+      {keyLayout.map((row, rowIndex) => (
         <div
-          key={row.join("-")}
+          key={`row-${row.map(k => k.event).join("-")}`}
           style={{
             display: "flex",
             gap: "2px",
@@ -122,31 +150,14 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
             width: "100%",
           }}
         >
-          {row.map(key => {
-            const { width, char } = getKeyProps(key);
+          {row.map(keyDef => {
+            const { event, display, width = "44px", isModifier = false, isSpecial = false } = keyDef;
 
-            if (isModifierKey(key)) {
-              const isActive = heldKeys.has(key);
+            if (event === "Hold") {
               return (
                 <KeyButton
-                  key={key}
-                  label={key}
-                  char={char}
-                  width={width}
-                  callbacks={{
-                    ...callbacks,
-                    onChar: () => handleKeyPress(key, char),
-                  }}
-                  isActive={isActive}
-                />
-              );
-            }
-
-            if (key === "Hold") {
-              return (
-                <KeyButton
-                  key={key}
-                  label={key}
+                  key={event}
+                  label={display}
                   char=""
                   width={width}
                   callbacks={{
@@ -158,51 +169,22 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
               );
             }
 
-            // Handle character keys with hold mode
-            if (holdMode && isCharacterKey(key)) {
-              const isHeld = heldKeys.has(key);
-              return (
-                <KeyButton
-                  key={key}
-                  label={key}
-                  char={char}
-                  width={width}
-                  callbacks={{
-                    ...callbacks,
-                    onChar: () => handleKeyPress(key, char),
-                  }}
-                  isActive={isHeld}
-                />
-              );
-            }
+            // Determine if this key should show as active (held)
+            const isActive = (isModifier || (holdMode && !isSpecial)) && heldKeys.has(event);
 
-            // For non-character keys, wrap callbacks to include held keys in UIState
-            const wrappedCallbacks = {
-              ...callbacks,
-              onChar: (char: string, doubleClick: number, uiState: UIState) => {
-                const enhancedUIState = {
-                  ...uiState,
-                  keys: new Set([...heldKeys, ...uiState.keys]),
-                };
-                callbacks.onChar(char, doubleClick, enhancedUIState);
-              },
-              onKeyDown: (key: string, doubleClick: number, uiState: UIState) => {
-                const enhancedUIState = {
-                  ...uiState,
-                  keys: new Set([...heldKeys, ...uiState.keys]),
-                };
-                callbacks.onKeyDown(key, doubleClick, enhancedUIState);
-              },
-              onKeyUp: (key: string, doubleClick: number, uiState: UIState) => {
-                const enhancedUIState = {
-                  ...uiState,
-                  keys: new Set([...heldKeys, ...uiState.keys]),
-                };
-                callbacks.onKeyUp(key, doubleClick, enhancedUIState);
-              },
-            };
-
-            return <KeyButton key={key} label={key} char={char} width={width} callbacks={wrappedCallbacks} />;
+            return (
+              <KeyButton
+                key={event}
+                label={display}
+                char={display}
+                width={width}
+                callbacks={{
+                  ...callbacks,
+                  onChar: () => handleKeyPress(event, keyDef),
+                }}
+                isActive={isActive}
+              />
+            );
           })}
         </div>
       ))}

@@ -1,15 +1,17 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import type { KeyboardState } from "../keyboard";
 import { ResponsiveToolbar } from "./ResponsiveToolbar";
 import { VirtualKeyboard } from "./VirtualKeyboard";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
 interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;
+  keyboardState: KeyboardState;
 }
 
-export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks }) => {
+export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks, keyboardState }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
@@ -115,7 +117,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks })
           onKeyUp={stopPropagation}
           onWheel={stopPropagation}
         >
-          <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} />
+          <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
         </div>
       )}
     </div>
