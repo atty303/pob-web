@@ -99,7 +99,7 @@ export class Driver {
       this.updateTransform();
     });
 
-    // Create canvas container
+    // Create canvas container - positioned to avoid toolbar overlap
     this.canvasContainer = document.createElement("div");
     this.canvasContainer.style.cssText = `
       position: absolute;
@@ -110,8 +110,21 @@ export class Driver {
       overflow: hidden;
     `;
 
-    // Create toolbar container
+    // Create overlay container - 100% size, in front of canvas
+    const overlayContainer = document.createElement("div");
+    overlayContainer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    `;
+
+    // Create toolbar container within overlay
     this.toolbarContainer = this.createToolbarContainer();
+    this.toolbarContainer.style.pointerEvents = "auto"; // Enable pointer events only for toolbar
 
     // Initialize toolbar
     const toolbarCallbacks: ToolbarCallbacks = {
@@ -131,8 +144,7 @@ export class Driver {
         this.resetTransform();
       },
       onLayoutChange: () => {
-        // Toolbar layout changes are now handled by driver's layout management
-        // No need to adjust canvas layout here as it's managed centrally
+        // Toolbar layout changes no longer affect canvas layout
       },
       onFullscreenToggle: () => {
         this.toggleFullscreen();
@@ -147,8 +159,9 @@ export class Driver {
 
     root.style.position = "relative";
     this.canvasContainer.appendChild(canvas);
+    overlayContainer.appendChild(this.toolbarContainer);
     root.appendChild(this.canvasContainer);
-    root.appendChild(this.toolbarContainer);
+    root.appendChild(overlayContainer);
     root.tabIndex = 0;
     root.focus();
 
@@ -491,8 +504,7 @@ export class Driver {
   private createToolbarContainer(): HTMLDivElement {
     const container = document.createElement("div");
     container.style.cssText = `
-      position: fixed;
-      z-index: 1000;
+      position: absolute;
     `;
     return container;
   }
