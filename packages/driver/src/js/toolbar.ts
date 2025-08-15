@@ -57,13 +57,13 @@ export class ResponsiveToolbar {
       position: fixed;
       background: rgba(64, 64, 64, 0.95);
       border: 1px solid rgba(96, 96, 96, 0.8);
-      padding: 4px;
+      padding: 8px;
       z-index: 1000;
       user-select: none;
       -webkit-user-select: none;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     `;
     return container;
@@ -75,7 +75,7 @@ export class ResponsiveToolbar {
     this.mainSection.style.cssText = `
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     `;
 
     // Add modifier keys directly to main section
@@ -144,13 +144,13 @@ export class ResponsiveToolbar {
     const button = document.createElement("button");
     button.textContent = label;
     button.style.cssText = `
-      width: 32px;
-      height: 24px;
+      width: 44px;
+      height: 44px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 3px;
       color: white;
-      font-size: 9px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       outline: none;
@@ -240,13 +240,13 @@ export class ResponsiveToolbar {
     button.textContent = icon;
     button.title = tooltip;
     button.style.cssText = `
-      width: 28px;
-      height: 24px;
+      width: 44px;
+      height: 44px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 3px;
       color: white;
-      font-size: 12px;
+      font-size: 20px;
       cursor: pointer;
       outline: none;
       touch-action: manipulation;
@@ -330,13 +330,13 @@ export class ResponsiveToolbar {
     button.textContent = "🖱️";
     button.title = "Toggle Drag Mode";
     button.style.cssText = `
-      width: 28px;
-      height: 24px;
+      width: 44px;
+      height: 44px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 3px;
       color: white;
-      font-size: 12px;
+      font-size: 20px;
       cursor: pointer;
       outline: none;
       touch-action: manipulation;
@@ -458,8 +458,8 @@ export class ResponsiveToolbar {
     section.style.cssText = `
       display: none;
       flex-direction: column;
-      gap: 1px;
-      padding: 2px;
+      gap: 2px;
+      padding: 3px;
       background: rgba(48, 48, 48, 0.8);
       border-radius: 3px;
     `;
@@ -476,22 +476,22 @@ export class ResponsiveToolbar {
       const rowDiv = document.createElement("div");
       rowDiv.style.cssText = `
         display: flex;
-        gap: 1px;
+        gap: 2px;
         justify-content: center;
       `;
 
       for (const key of row) {
-        let width = "20px";
+        let width = "44px";
         let char = key.toLowerCase();
 
         if (key === "Space") {
-          width = "40px";
+          width = "88px";
           char = " ";
         } else if (key === "⌫") {
-          width = "24px";
+          width = "44px";
           char = "\b";
         } else if (key === "↵") {
-          width = "24px";
+          width = "44px";
           char = "\r";
         }
 
@@ -505,17 +505,17 @@ export class ResponsiveToolbar {
     return section;
   }
 
-  private createKeyButton(label: string, char?: string, width = "20px"): HTMLButtonElement {
+  private createKeyButton(label: string, char?: string, width = "44px"): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = label === "Space" ? "␣" : label;
     button.style.cssText = `
       width: ${width};
-      height: 20px;
+      height: 44px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 2px;
       color: white;
-      font-size: 9px;
+      font-size: 13px;
       cursor: pointer;
       outline: none;
       touch-action: manipulation;
@@ -621,11 +621,11 @@ export class ResponsiveToolbar {
     if (position === "bottom" || position === "top") {
       // Portrait mode: arrange buttons horizontally
       this.mainSection.style.flexDirection = "row";
-      this.mainSection.style.gap = "4px";
+      this.mainSection.style.gap = "6px";
     } else {
       // Landscape mode: arrange buttons vertically
       this.mainSection.style.flexDirection = "column";
-      this.mainSection.style.gap = "4px";
+      this.mainSection.style.gap = "6px";
     }
 
     // When keyboard is visible, arrange differently
