@@ -9,13 +9,25 @@ import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;
   keyboardState: KeyboardState;
+  panModeEnabled?: boolean;
 }
 
-export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks, keyboardState }) => {
+export const OverlayContainer: React.FC<OverlayContainerProps> = ({
+  callbacks,
+  keyboardState,
+  panModeEnabled: externalPanMode,
+}) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
-  const [panModeEnabled, setPanModeEnabled] = useState(false);
+  const [panModeEnabled, setPanModeEnabled] = useState(externalPanMode ?? false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Update internal pan mode state when external prop changes
+  useEffect(() => {
+    if (externalPanMode !== undefined) {
+      setPanModeEnabled(externalPanMode);
+    }
+  }, [externalPanMode]);
 
   const handlePanModeToggle = useCallback(
     (enabled: boolean) => {
@@ -127,6 +139,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks, k
 export class ReactOverlayManager {
   private root: ReturnType<typeof createRoot> | null = null;
   private container: HTMLDivElement;
+  private currentProps: OverlayContainerProps | null = null;
 
   constructor(container: HTMLDivElement) {
     this.container = container;
@@ -134,8 +147,17 @@ export class ReactOverlayManager {
   }
 
   render(props: OverlayContainerProps) {
+    this.currentProps = props;
     if (this.root) {
       this.root.render(<OverlayContainer {...props} />);
+    }
+  }
+
+  updateState(updates: Partial<Pick<OverlayContainerProps, "panModeEnabled">>) {
+    if (this.currentProps && this.root) {
+      const newProps = { ...this.currentProps, ...updates };
+      this.currentProps = newProps;
+      this.root.render(<OverlayContainer {...newProps} />);
     }
   }
 
@@ -144,5 +166,6 @@ export class ReactOverlayManager {
       this.root.unmount();
       this.root = null;
     }
+    this.currentProps = null;
   }
 }

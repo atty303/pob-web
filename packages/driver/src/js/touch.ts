@@ -109,7 +109,7 @@ export class TouchTransformManager {
   }
 
   generateTransformCSS(): string {
-    return `scale(${this._scale}) translate(${this._translateX / this._scale}px, ${this._translateY / this._scale}px)`;
+    return `translate(${this._translateX}px, ${this._translateY}px) scale(${this._scale})`;
   }
 }
 

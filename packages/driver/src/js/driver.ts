@@ -29,6 +29,10 @@ export class Driver {
   private windowResizeHandler: (() => void) | undefined;
   private isHandlingLayoutChange = false;
 
+  // Minimum canvas size for PoB to render correctly
+  private readonly MIN_CANVAS_WIDTH = 1520;
+  private readonly MIN_CANVAS_HEIGHT = 800;
+
   constructor(
     readonly build: "debug" | "release",
     readonly assetPrefix: string,
@@ -75,12 +79,16 @@ export class Driver {
     const r = root.getBoundingClientRect();
     const canvas = document.createElement("canvas");
     const pixelRatio = window.devicePixelRatio || 1;
-    // Canvas resolution (高DPI対応)
-    canvas.width = r.width * pixelRatio;
-    canvas.height = r.height * pixelRatio;
-    // CSS サイズ
-    canvas.style.width = `${r.width}px`;
-    canvas.style.height = `${r.height}px`;
+    // Ensure minimum canvas size for PoB
+    const canvasWidth = Math.max(r.width, this.MIN_CANVAS_WIDTH);
+    const canvasHeight = Math.max(r.height, this.MIN_CANVAS_HEIGHT);
+
+    // Canvas resolution (高DPI対応) - use actual canvas size
+    canvas.width = canvasWidth * pixelRatio;
+    canvas.height = canvasHeight * pixelRatio;
+    // CSS サイズ - use actual canvas size
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
     canvas.style.position = "absolute";
     canvas.style.transformOrigin = "0 0";
     this.canvas = canvas;
@@ -88,8 +96,8 @@ export class Driver {
     const offscreenCanvas = canvas.transferControlToOffscreen();
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
-    // Initialize touch transform manager
-    this.touchTransformManager = new TouchTransformManager(canvas.width, canvas.height, r.width, r.height);
+    // Initialize touch transform manager with actual sizes
+    this.touchTransformManager = new TouchTransformManager(canvasWidth, canvasHeight, r.width, r.height);
 
     // Create canvas container - positioned to avoid toolbar overlap
     this.canvasContainer = document.createElement("div");
@@ -101,6 +109,12 @@ export class Driver {
       bottom: 0;
       overflow: hidden;
     `;
+
+    // Enable pan mode initially if canvas is larger than container
+    const needsPanning = canvasWidth > r.width || canvasHeight > r.height;
+    if (needsPanning) {
+      this.panModeEnabled = true;
+    }
 
     // Create overlay container - 100% size, in front of canvas
     const overlayContainer = document.createElement("div");
@@ -215,6 +229,9 @@ export class Driver {
         this.updateTransform();
       },
     });
+
+    // Set initial pan mode state
+    this.uiEventManager.setPanMode(this.panModeEnabled);
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
 
     // Initialize overlay manager after uiEventManager is created
@@ -222,6 +239,7 @@ export class Driver {
     this.overlayManager.render({
       callbacks: toolbarCallbacks,
       keyboardState: this.uiEventManager.keyboardState,
+      panModeEnabled: this.panModeEnabled,
     });
   }
 
@@ -405,15 +423,47 @@ export class Driver {
     }
   }
 
-  private updateCanvasSize(width: number, height: number) {
+  private updateCanvasSize(containerWidth: number, containerHeight: number) {
+    // Ensure minimum canvas size for PoB
+    const canvasWidth = Math.max(containerWidth, this.MIN_CANVAS_WIDTH);
+    const canvasHeight = Math.max(containerHeight, this.MIN_CANVAS_HEIGHT);
+
+    // Check if we need pan mode (canvas larger than container)
+    const needsPanning = canvasWidth > containerWidth || canvasHeight > containerHeight;
+
     if (this.canvas) {
-      // CSS サイズのみ更新 (offscreenCanvas転送後はwidth/heightは変更しない)
-      this.canvas.style.width = `${width}px`;
-      this.canvas.style.height = `${height}px`;
+      // Set CSS size to the actual canvas size (may be larger than container)
+      this.canvas.style.width = `${canvasWidth}px`;
+      this.canvas.style.height = `${canvasHeight}px`;
+
+      if (needsPanning) {
+        // Enable panning when canvas is larger than container
+        if (!this.panModeEnabled) {
+          this.panModeEnabled = true;
+          this.uiEventManager?.setPanMode(true);
+          // Update overlay to show pan mode is active
+          this.overlayManager?.updateState({ panModeEnabled: true });
+        }
+      } else {
+        // Disable panning when canvas fits in container
+        if (this.panModeEnabled) {
+          this.panModeEnabled = false;
+          this.uiEventManager?.setPanMode(false);
+          this.overlayManager?.updateState({ panModeEnabled: false });
+          // Reset transform when panning is disabled
+          this.touchTransformManager?.reset();
+          this.updateTransform();
+        }
+      }
     }
-    // PoB worker に新しいサイズを通知 (workerが実際のcanvas resolutionを管理)
+
+    // Update TouchTransformManager with both container and canvas sizes
+    this.touchTransformManager?.updateContainerSize(containerWidth, containerHeight);
+    this.touchTransformManager?.updateCanvasSize(canvasWidth, canvasHeight);
+
+    // PoB worker に新しいサイズを通知 (実際のcanvas解像度)
     const pixelRatio = window.devicePixelRatio || 1;
-    this.driverWorker?.resize({ width, height, pixelRatio });
+    this.driverWorker?.resize({ width: canvasWidth, height: canvasHeight, pixelRatio });
   }
 
   private handleFullscreenChange() {

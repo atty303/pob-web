@@ -36,6 +36,8 @@ export class UIEventManager {
   private _isZooming = false;
   private _isPanning = false;
   private _isPanModeActive = false;
+  private _isMousePanning = false;
+  private _mouseStartPos: { x: number; y: number } | null = null;
 
   get uiState() {
     return {
@@ -118,6 +120,11 @@ export class UIEventManager {
 
   setPanMode(enabled: boolean) {
     this._panModeEnabled = enabled;
+    // Clean up mouse panning state when mode changes
+    if (!enabled) {
+      this._isMousePanning = false;
+      this._mouseStartPos = null;
+    }
   }
 
   private preventDefault(e: Event) {
@@ -129,14 +136,33 @@ export class UIEventManager {
   }
 
   private handleMouseMove(e: MouseEvent) {
-    this._cursorPosition = { x: e.offsetX, y: e.offsetY };
-    this.callbacks.onMouseMove(this.uiState);
+    const newPos = { x: e.offsetX, y: e.offsetY };
+
+    // Handle pan mode mouse dragging
+    if (this._panModeEnabled && this._isMousePanning && this._mouseStartPos) {
+      const deltaX = newPos.x - this._mouseStartPos.x;
+      const deltaY = newPos.y - this._mouseStartPos.y;
+      this.callbacks.onPan?.(deltaX, deltaY);
+      this._mouseStartPos = newPos;
+    }
+
+    this._cursorPosition = newPos;
+
+    // Only send mouse move to PoB if not in pan mode or not currently panning
+    if (!this._panModeEnabled || !this._isMousePanning) {
+      this.callbacks.onMouseMove(this.uiState);
+    }
   }
 
   private handleMouseDown(e: MouseEvent) {
     e.preventDefault();
     const name = mouseString(e);
-    if (name) {
+
+    if (this._panModeEnabled && name === "LEFTBUTTON") {
+      // In pan mode, left click starts panning
+      this._isMousePanning = true;
+      this._mouseStartPos = { x: e.offsetX, y: e.offsetY };
+    } else if (name) {
       this.keyboardState.addPhysicalKey(name);
       this.callbacks.onKeyDown(name, 0, this.uiState);
     }
@@ -146,7 +172,12 @@ export class UIEventManager {
   private handleMouseUp(e: MouseEvent) {
     e.preventDefault();
     const name = mouseString(e);
-    if (name) {
+
+    if (this._panModeEnabled && name === "LEFTBUTTON" && this._isMousePanning) {
+      // End mouse panning
+      this._isMousePanning = false;
+      this._mouseStartPos = null;
+    } else if (name) {
       this.keyboardState.removePhysicalKey(name);
       this.callbacks.onKeyUp(name, -1, this.uiState); // TODO: 0
     }
@@ -327,15 +358,21 @@ export class UIEventManager {
         }
       } else {
         // Pan mode: zoom and pan
-        // Determine if this is zoom or pan
-        if (Math.abs(distanceDelta) > 2 && !this._isPanning) {
+        // Determine if this is zoom or pan (increased threshold to avoid accidental zoom)
+        if (Math.abs(distanceDelta) > 10 && !this._isPanning) {
           this._isZooming = true;
           // Calculate relative scale change (not absolute scale)
           const scale = this._twoFingerDistance > 0 ? currentDistance / this._twoFingerDistance : 1;
           this.callbacks.onZoom?.(scale, this._twoFingerCenter.x, this._twoFingerCenter.y);
-        } else if ((Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5) && !this._isZooming) {
-          this._isPanning = true;
-          this.callbacks.onPan?.(centerDelta.x, centerDelta.y);
+        } else if (!this._isZooming) {
+          // Always pan if not zooming (remove distance threshold after initial detection)
+          if (!this._isPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
+            this._isPanning = true;
+          }
+
+          if (this._isPanning) {
+            this.callbacks.onPan?.(centerDelta.x, centerDelta.y);
+          }
         }
       }
 
