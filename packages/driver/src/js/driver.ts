@@ -72,8 +72,13 @@ export class Driver {
 
     const r = root.getBoundingClientRect();
     const canvas = document.createElement("canvas");
-    canvas.width = r.width;
-    canvas.height = r.height;
+    const pixelRatio = window.devicePixelRatio || 1;
+    // Canvas resolution (高DPI対応)
+    canvas.width = r.width * pixelRatio;
+    canvas.height = r.height * pixelRatio;
+    // CSS サイズ
+    canvas.style.width = `${r.width}px`;
+    canvas.style.height = `${r.height}px`;
     canvas.style.position = "absolute";
     canvas.style.transformOrigin = "0 0";
     this.canvas = canvas;
@@ -138,23 +143,29 @@ export class Driver {
     root.tabIndex = 0;
     root.focus();
 
+    // Listen for fullscreen changes
+    document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
+
     // Initial layout adjustment
     this.adjustCanvasLayout(this.toolbar.getToolbarBounds());
 
+    // Ensure initial resize is sent to worker
+    const initialRect = this.canvasContainer.getBoundingClientRect();
+    if (initialRect.width > 0 && initialRect.height > 0) {
+      this.updateCanvasSize(initialRect.width, initialRect.height);
+    }
+
     this.resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        const pixelRatio = document.defaultView?.devicePixelRatio ?? 1;
         const { width, height } = entry.contentRect;
-
-        // Adjust canvas layout based on toolbar position
-        if (this.toolbar) {
-          this.adjustCanvasLayout(this.toolbar.getToolbarBounds());
-        }
-
-        this.driverWorker?.resize({ width, height, pixelRatio });
+        // Canvas container サイズ変更を直接検出してcanvasサイズを更新
+        this.updateCanvasSize(width, height);
+        // TouchTransformManagerも更新
+        this.touchTransformManager?.updateContainerSize(width, height);
+        this.updateTransform();
       }
     });
-    this.resizeObserver.observe(root);
+    this.resizeObserver.observe(this.canvasContainer);
 
     this.uiEventManager = new UIEventManager(root, {
       onMouseMove: uiState => {
@@ -189,6 +200,7 @@ export class Driver {
   detachFromDOM() {
     this.resizeObserver?.disconnect();
     this.toolbar?.destroy();
+    document.removeEventListener("fullscreenchange", () => this.handleFullscreenChange());
     if (this.root) {
       for (const child of [...this.root.children]) {
         this.root.removeChild(child);
@@ -310,6 +322,9 @@ export class Driver {
 
     this.touchTransformManager?.updateContainerSize(newWidth, newHeight);
     this.updateTransform();
+
+    // Update canvas size to match the actual available area
+    this.updateCanvasSize(newWidth, newHeight);
   }
 
   private async toggleFullscreen() {
@@ -325,6 +340,27 @@ export class Driver {
       }
     } catch (error) {
       console.warn("Fullscreen toggle failed:", error);
+    }
+  }
+
+  private updateCanvasSize(width: number, height: number) {
+    if (this.canvas) {
+      // CSS サイズのみ更新 (offscreenCanvas転送後はwidth/heightは変更しない)
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+    }
+    // PoB worker に新しいサイズを通知 (workerが実際のcanvas resolutionを管理)
+    const pixelRatio = window.devicePixelRatio || 1;
+    this.driverWorker?.resize({ width, height, pixelRatio });
+  }
+
+  private handleFullscreenChange() {
+    // Force layout recalculation after fullscreen change
+    if (this.toolbar) {
+      // Add a small delay to ensure the browser has updated dimensions
+      setTimeout(() => {
+        this.adjustCanvasLayout(this.toolbar!.getToolbarBounds());
+      }, 100);
     }
   }
 }
