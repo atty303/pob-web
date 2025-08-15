@@ -15,6 +15,7 @@ import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
 import PoBWindow from "./PoBWindow";
+import { SidebarToggleButton } from "./SidebarToggleButton";
 
 const { useTimeoutFn, useLocalStorage, useTitle } = use;
 
@@ -39,6 +40,14 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     }
   }, [notFirstVisit]);
 
+  // Create SidebarToggle component for driver toolbar
+  const SidebarToggle = ({
+    position,
+    isLandscape,
+  }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => (
+    <SidebarToggleButton position={position} isLandscape={isLandscape} onToggle={() => setDrawer(true)} />
+  );
+
   return (
     <div ref={container} className="drawer">
       <input
@@ -57,21 +66,8 @@ export default function PoBController(p: { game: keyof Games; version: string; i
               onFrame={() => {}}
               onTitleChange={setTitle}
               onLayerVisibilityCallbackReady={() => {}}
+              sidebarToggleComponent={SidebarToggle}
             />
-          </div>
-          <div className="absolute top-2 right-2">
-            <span
-              className="not-data-tutorial:invisible data-tutorial:inline-block data-tutorial:animate-bounce"
-              data-tutorial={(tutorial && !optOutTutorial) || null}
-            >
-              <div
-                className="tooltip tooltip-open tooltip-left tooltip-info"
-                data-tip="Use this button to open the menu"
-              />
-            </span>
-            <label className="btn btn-circle btn-primary opacity-75" htmlFor="drawer">
-              <Bars3Icon className="size-6" />
-            </label>
           </div>
         </div>
       </div>

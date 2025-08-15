@@ -6,6 +6,7 @@ import { type KeyboardCallbacks, KeyboardHandler, type KeyboardUIState } from ".
 import { type MouseCallbacks, MouseHandler, type MouseState } from "./mouse-handler";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
 import type { FrameData, RenderStats } from "./overlay/PerformanceOverlay";
+import type { ToolbarPosition as ToolbarPos } from "./overlay/types";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
@@ -33,6 +34,7 @@ export class Driver {
   private performanceVisible = false;
   private frames: FrameData[] = [];
   private renderStats: RenderStats | null = null;
+  private externalComponent: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined;
 
   // Minimum canvas size for PoB to render correctly
   private readonly MIN_CANVAS_WIDTH = 1550;
@@ -328,6 +330,7 @@ export class Driver {
       frames: this.frames,
       renderStats: this.renderStats,
       performanceVisible: this.performanceVisible,
+      externalComponent: this.externalComponent,
       onLayerVisibilityChange: (layer: number, sublayer: number, visible: boolean) => {
         this.setLayerVisible(layer, sublayer, visible);
       },
@@ -383,6 +386,13 @@ export class Driver {
     }
   }
 
+  setExternalToolbarComponent(
+    component: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined,
+  ) {
+    this.externalComponent = component;
+    this.updateOverlayWithTransform();
+  }
+
   private transformMouseCoordinates(mouseState: MouseState): MouseState {
     if (!this.canvasManager) {
       return mouseState;
@@ -410,6 +420,7 @@ export class Driver {
       frames: this.frames,
       renderStats: this.renderStats,
       performanceVisible: this.performanceVisible,
+      externalComponent: this.externalComponent,
     });
   }
 

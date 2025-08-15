@@ -20,6 +20,7 @@ interface OverlayContainerProps {
   renderStats?: RenderStats | null;
   performanceVisible?: boolean;
   onLayerVisibilityChange?: (layer: number, sublayer: number, visible: boolean) => void;
+  externalComponent?: React.ComponentType<{ position: ToolbarPosition; isLandscape: boolean }>;
 }
 
 export const OverlayContainer: React.FC<OverlayContainerProps> = ({
@@ -33,6 +34,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   renderStats = null,
   performanceVisible = false,
   onLayerVisibilityChange,
+  externalComponent,
 }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
@@ -140,6 +142,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           currentZoom={currentZoom}
           currentCanvasSize={currentCanvasSize}
           isFixedSize={isFixedSize}
+          externalComponent={externalComponent}
         />
       </div>
       {keyboardVisible && (
@@ -183,6 +186,7 @@ export class ReactOverlayManager {
         | "frames"
         | "renderStats"
         | "performanceVisible"
+        | "externalComponent"
       >
     >,
   ) {

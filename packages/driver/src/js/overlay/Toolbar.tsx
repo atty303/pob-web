@@ -18,6 +18,7 @@ interface ToolbarProps {
   currentZoom?: number;
   currentCanvasSize?: { width: number; height: number };
   isFixedSize?: boolean;
+  externalComponent?: React.ComponentType<{ position: ToolbarPosition; isLandscape: boolean }>;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -30,6 +31,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   currentZoom = 1.0,
   currentCanvasSize = { width: 1520, height: 800 },
   isFixedSize = false,
+  externalComponent: ExternalComponent,
 }) => {
   const [zoomControlVisible, setZoomControlVisible] = useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
@@ -94,6 +96,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         onClick={handlePerformanceToggle}
         isActive={performanceVisible}
       />
+
+      {ExternalComponent && <ExternalComponent position={position} isLandscape={isLandscape} />}
 
       <ZoomControl
         currentZoom={currentZoom}

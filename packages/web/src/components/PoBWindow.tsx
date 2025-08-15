@@ -14,6 +14,7 @@ export default function PoBWindow(props: {
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onTitleChange: (title: string) => void;
   onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
+  sidebarToggleComponent?: React.ComponentType<{ position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }>;
 }) {
   const auth0 = useAuth0();
 
@@ -54,6 +55,7 @@ export default function PoBWindow(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sidebarToggleComponent is stable
   useEffect(() => {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);
@@ -115,6 +117,11 @@ export default function PoBWindow(props: {
           await _driver.loadBuildFromCode(buildCode);
         }
         if (container.current) _driver.attachToDOM(container.current);
+
+        // Set external toolbar component if provided
+        if (props.sidebarToggleComponent) {
+          _driver.setExternalToolbarComponent(props.sidebarToggleComponent);
+        }
 
         // Pass layer visibility control callback to parent
         onLayerVisibilityCallbackReadyRef.current?.((layer: number, sublayer: number, visible: boolean) => {
