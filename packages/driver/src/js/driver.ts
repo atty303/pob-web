@@ -193,10 +193,8 @@ export class Driver {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         // Canvas container サイズ変更を直接検出してcanvasサイズを更新
+        // updateCanvasSizeが内部でTouchTransformManagerも更新するので、ここでは呼ばない
         this.updateCanvasSize(width, height);
-        // TouchTransformManagerも更新
-        this.touchTransformManager?.updateContainerSize(width, height);
-        this.touchTransformManager?.updateCanvasSize(width, height);
         this.updateTransform();
       }
     });
@@ -353,9 +351,8 @@ export class Driver {
 
     // Update canvas size based on new container dimensions
     const rect = this.canvasContainer.getBoundingClientRect();
+    // updateCanvasSizeが内部でTouchTransformManagerも更新する
     this.updateCanvasSize(rect.width, rect.height);
-    this.touchTransformManager?.updateContainerSize(rect.width, rect.height);
-    this.touchTransformManager?.updateCanvasSize(rect.width, rect.height);
     this.updateTransform();
   }
 

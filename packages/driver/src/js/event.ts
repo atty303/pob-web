@@ -142,8 +142,12 @@ export class UIEventManager {
     if (this._panModeEnabled && this._isMousePanning && this._mouseStartPos) {
       const deltaX = newPos.x - this._mouseStartPos.x;
       const deltaY = newPos.y - this._mouseStartPos.y;
-      this.callbacks.onPan?.(deltaX, deltaY);
-      this._mouseStartPos = newPos;
+
+      // Only pan if there's actual movement
+      if (deltaX !== 0 || deltaY !== 0) {
+        this.callbacks.onPan?.(deltaX, deltaY);
+        this._mouseStartPos = newPos;
+      }
     }
 
     this._cursorPosition = newPos;
