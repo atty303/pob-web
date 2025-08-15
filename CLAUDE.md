@@ -73,3 +73,14 @@ hk fix --all
 - POESESSID cookies are rejected for security
 - No modifications are made to the original PoB code, only behavioral changes through the driver
 - The project supports multiple games: poe1, poe2, and Last Epoch (le)
+
+## Driver Overlay Components
+
+The driver includes React overlay components for mobile interface elements (virtual keyboard, zoom controls, toolbar buttons). These components use scoped TailwindCSS styling:
+
+- **CSS Scoping**: All TailwindCSS classes in overlay components must use the `pw:` prefix
+- **Example**: Use `pw:absolute pw:z-50 pw:p-3` instead of `absolute z-50 p-3`
+- **Configuration**: TailwindCSS is configured with `@theme { --prefix: pw:; }` in `packages/driver/src/js/overlay/overlay.css`
+- **Browser Compatibility**: The `pw:` prefix approach ensures compatibility with older browsers (including Amazon Silk Browser) that don't support CSS layers
+
+When working with overlay components, always use the `pw:` prefix for TailwindCSS classes to maintain proper CSS scoping and prevent conflicts with external stylesheets.
