@@ -1,5 +1,6 @@
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MdDragIndicator } from "react-icons/md";
 import type { KeyboardState } from "../keyboard";
 import { KeyButton } from "./KeyButton";
 import type { ModifierKeys, ToolbarCallbacks, UIState } from "./types";
@@ -14,6 +15,10 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   // Use state to track keyboard state changes for React reactivity
   const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
   const [symbolMode, setSymbolMode] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const keyboardRef = useRef<HTMLDivElement>(null);
 
   // Update local state when keyboard state changes
   const updateLocalState = useCallback(() => {
@@ -174,13 +179,76 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     [keyboardState],
   );
 
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      setDragStart({
+        x: clientX - position.x,
+        y: clientY - position.y,
+      });
+    },
+    [position],
+  );
+
+  const handleDragMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
+      if (!isDragging) return;
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      setPosition({
+        x: clientX - dragStart.x,
+        y: clientY - dragStart.y,
+      });
+    },
+    [isDragging, dragStart],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleDragMove);
+      document.addEventListener("mouseup", handleDragEnd);
+      document.addEventListener("touchmove", handleDragMove);
+      document.addEventListener("touchend", handleDragEnd);
+
+      return () => {
+        document.removeEventListener("mousemove", handleDragMove);
+        document.removeEventListener("mouseup", handleDragEnd);
+        document.removeEventListener("touchmove", handleDragMove);
+        document.removeEventListener("touchend", handleDragEnd);
+      };
+    }
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
   if (!isVisible) {
     return null;
   }
 
   return (
-    <div className="pw:w-full pw:flex pw:justify-center">
-      <div className="pw:bg-base-200/80 pw:rounded">
+    <div
+      ref={keyboardRef}
+      className="pw:absolute"
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        left: "50%",
+        bottom: "20px",
+        marginLeft: "-200px", // Half of approximate keyboard width
+        cursor: isDragging ? "grabbing" : "default",
+        pointerEvents: "none",
+      }}
+    >
+      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto">
         <div className="pw:m-2 pw:gap-0.5">
           {keyLayout.map((row, rowIndex) => (
             <div
@@ -212,6 +280,16 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
               })}
             </div>
           ))}
+        </div>
+
+        {/* Drag Handle */}
+        <div
+          className="pw:absolute pw:bottom-1 pw:right-1 pw:w-6 pw:h-6 pw:flex pw:items-center pw:justify-center pw:text-base-content/60 pw:hover:text-base-content pw:cursor-grab pw:active:cursor-grabbing pw:bg-base-300/50 pw:rounded"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+          style={{ touchAction: "none" }}
+        >
+          <MdDragIndicator size={16} />
         </div>
       </div>
     </div>

@@ -25,6 +25,7 @@ export class UIEventManager {
   readonly keyboardState: KeyboardState;
 
   private _cursorPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private _transformManager: { screenToCanvas(x: number, y: number): { x: number; y: number } } | null = null;
   private _panModeEnabled = false;
 
   // Touch state tracking
@@ -127,6 +128,10 @@ export class UIEventManager {
     }
   }
 
+  setTransformManager(transformManager: { screenToCanvas(x: number, y: number): { x: number; y: number } }) {
+    this._transformManager = transformManager;
+  }
+
   private preventDefault(e: Event) {
     e.preventDefault();
   }
@@ -136,9 +141,16 @@ export class UIEventManager {
   }
 
   private handleMouseMove(e: MouseEvent) {
-    const newPos = { x: e.offsetX, y: e.offsetY };
+    // Use getBoundingClientRect for accurate coordinates with CSS transforms
+    const rect = this.el.getBoundingClientRect();
+    const newPos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
 
-    // Handle pan mode mouse dragging
+    // Clean mouse handling
+
+    // Handle pan mode mouse dragging - use screen coordinates for pan calculations
     if (this._panModeEnabled && this._isMousePanning && this._mouseStartPos) {
       const deltaX = newPos.x - this._mouseStartPos.x;
       const deltaY = newPos.y - this._mouseStartPos.y;
@@ -148,9 +160,13 @@ export class UIEventManager {
         this.callbacks.onPan?.(deltaX, deltaY);
         this._mouseStartPos = newPos;
       }
+
+      // Update cursor position even during panning for accurate coordinates
+      this._cursorPosition = newPos;
+      return;
     }
 
-    this._cursorPosition = newPos;
+    this._cursorPosition = newPos; // Store canvas container coordinates
 
     // Only send mouse move to PoB if not in pan mode or not currently panning
     if (!this._panModeEnabled || !this._isMousePanning) {
@@ -162,10 +178,16 @@ export class UIEventManager {
     e.preventDefault();
     const name = mouseString(e);
 
+    const rect = this.el.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
     if (this._panModeEnabled && name === "LEFTBUTTON") {
       // In pan mode, left click starts panning
       this._isMousePanning = true;
-      this._mouseStartPos = { x: e.offsetX, y: e.offsetY };
+      this._mouseStartPos = pos;
     } else if (name) {
       this.keyboardState.addPhysicalKey(name);
       this.callbacks.onKeyDown(name, 0, this.uiState);
@@ -181,6 +203,11 @@ export class UIEventManager {
       // End mouse panning
       this._isMousePanning = false;
       this._mouseStartPos = null;
+      const rect = this.el.getBoundingClientRect();
+      this._cursorPosition = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
     } else if (name) {
       this.keyboardState.removePhysicalKey(name);
       this.callbacks.onKeyUp(name, -1, this.uiState); // TODO: 0
@@ -228,6 +255,7 @@ export class UIEventManager {
   }
 
   private getTouchPosition(touch: Touch): { x: number; y: number } {
+    // Calculate container coordinates from touch
     const rect = this.el.getBoundingClientRect();
     return {
       x: touch.clientX - rect.left,

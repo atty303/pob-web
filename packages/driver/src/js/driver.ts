@@ -3,7 +3,6 @@ import * as Comlink from "comlink";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
 import { UIEventManager, type UIState } from "./event";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
-import { TouchTransformManager } from "./touch";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
@@ -20,7 +19,6 @@ export class Driver {
   private root: HTMLElement | undefined;
   private worker: Worker | undefined;
   private driverWorker: Comlink.Remote<DriverWorker> | undefined;
-  private touchTransformManager: TouchTransformManager | undefined;
   private overlayManager: ReactOverlayManager | undefined;
   private canvasManager: CanvasManager | undefined;
   private panModeEnabled = false;
@@ -96,13 +94,8 @@ export class Driver {
           this.panModeEnabled = false;
           this.uiEventManager?.setPanMode(false);
           this.overlayManager?.updateState({ panModeEnabled: false });
-          this.touchTransformManager?.reset();
-          this.updateTransform();
+          this.canvasManager?.resetTransform();
         }
-
-        // Update TouchTransformManager with style size and container sizes
-        this.touchTransformManager?.updateCanvasSize(state.styleSize.width, state.styleSize.height);
-        this.touchTransformManager?.updateContainerSize(state.containerSize.width, state.containerSize.height);
 
         // Update overlay with current style size
         this.overlayManager?.updateState({
@@ -127,17 +120,10 @@ export class Driver {
     const offscreenCanvas = canvas.transferControlToOffscreen();
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
-    // Initialize touch transform manager
-    const r = root.getBoundingClientRect();
-    const initialState = this.canvasManager.getCurrentState();
-    this.touchTransformManager = new TouchTransformManager(
-      initialState.styleSize.width,
-      initialState.styleSize.height,
-      r.width,
-      r.height,
-    );
+    // CanvasManager now handles transforms internally
 
     // Set initial pan mode if needed
+    const initialState = this.canvasManager.getCurrentState();
     if (initialState.needsPanning) {
       this.panModeEnabled = true;
     }
@@ -159,19 +145,29 @@ export class Driver {
     // Initialize toolbar
     const toolbarCallbacks: ToolbarCallbacks = {
       onChar: (char, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
+        // Don't transform coordinates for keyboard events from virtual keyboard
+        // Use current mouse position instead
+        const currentState = this.uiEventManager?.uiState ?? uiState;
+        const transformedState = this.transformUIState(currentState);
         this.driverWorker?.handleChar(char, doubleClick, transformedState);
       },
       onKeyDown: (key, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
+        // Don't transform coordinates for keyboard events from virtual keyboard
+        // Use current mouse position instead
+        const currentState = this.uiEventManager?.uiState ?? uiState;
+        const transformedState = this.transformUIState(currentState);
         this.driverWorker?.handleKeyDown(key, doubleClick, transformedState);
       },
       onKeyUp: (key, doubleClick, uiState) => {
-        const transformedState = this.transformUIState(uiState);
+        // Don't transform coordinates for keyboard events from virtual keyboard
+        // Use current mouse position instead
+        const currentState = this.uiEventManager?.uiState ?? uiState;
+        const transformedState = this.transformUIState(currentState);
         this.driverWorker?.handleKeyUp(key, doubleClick, transformedState);
       },
       onZoomReset: () => {
-        this.resetTransform();
+        this.canvasManager?.resetZoom();
+        this.updateOverlayWithTransform();
       },
       onZoomChange: (zoom: number) => {
         this.zoomTo(zoom);
@@ -197,8 +193,11 @@ export class Driver {
     root.style.position = "relative";
     root.appendChild(container);
     root.appendChild(overlayContainer);
-    root.tabIndex = 0;
-    root.focus();
+
+    // Set focus and tabIndex on container since UIEventManager is attached there
+    container.tabIndex = 0;
+    container.focus();
+    container.style.outline = "none"; // Remove focus outline
 
     // Listen for fullscreen changes
     document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
@@ -209,7 +208,7 @@ export class Driver {
     // Initial layout adjustment for canvas to avoid toolbar overlap
     this.adjustCanvasForOverlay();
 
-    this.uiEventManager = new UIEventManager(root, {
+    this.uiEventManager = new UIEventManager(container, {
       onMouseMove: uiState => {
         const transformedState = this.transformUIState(uiState);
         this.driverWorker?.handleMouseMove(transformedState);
@@ -228,17 +227,18 @@ export class Driver {
       },
       onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
       onZoom: (scale, centerX, centerY) => {
-        this.touchTransformManager?.zoom(scale, centerX, centerY);
-        this.updateTransform();
+        this.canvasManager?.zoom(scale, centerX, centerY);
+        this.updateOverlayWithTransform();
       },
       onPan: (deltaX, deltaY) => {
-        this.touchTransformManager?.pan(deltaX, deltaY);
-        this.updateTransform();
+        this.canvasManager?.pan(deltaX, deltaY);
+        this.updateOverlayWithTransform();
       },
     });
 
-    // Set initial pan mode state
+    // Set initial pan mode state and connect transform manager
     this.uiEventManager.setPanMode(this.panModeEnabled);
+    this.uiEventManager.setTransformManager(this.canvasManager);
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
 
     // Initialize overlay manager after uiEventManager is created
@@ -248,7 +248,7 @@ export class Driver {
       callbacks: toolbarCallbacks,
       keyboardState: this.uiEventManager.keyboardState,
       panModeEnabled: this.panModeEnabled,
-      currentZoom: this.touchTransformManager?.transform.scale ?? 1.0,
+      currentZoom: this.canvasManager?.transform.scale ?? 1.0,
       currentCanvasSize: currentState.styleSize,
     });
   }
@@ -291,7 +291,7 @@ export class Driver {
   }
 
   private transformUIState(uiState: UIState): UIState {
-    if (!this.touchTransformManager) {
+    if (!this.canvasManager) {
       return {
         x: uiState.x,
         y: uiState.y,
@@ -299,8 +299,9 @@ export class Driver {
       };
     }
 
-    // Transform screen coordinates to canvas coordinates
-    const canvasCoords = this.touchTransformManager.screenToCanvas(uiState.x, uiState.y);
+    // Simple transformation: container coordinates -> canvas coordinates
+    // UIEventManager provides container coordinates, CanvasManager transforms to canvas coordinates
+    const canvasCoords = this.canvasManager.screenToCanvas(uiState.x, uiState.y);
 
     return {
       x: canvasCoords.x,
@@ -309,50 +310,38 @@ export class Driver {
     };
   }
 
-  private updateTransform() {
-    const canvas = this.canvasManager?.getCanvas();
-    if (!canvas || !this.touchTransformManager) {
+  private updateOverlayWithTransform() {
+    if (!this.canvasManager) {
       return;
     }
 
-    canvas.style.transform = this.touchTransformManager.generateTransformCSS();
-
     // Update overlay with current zoom level and canvas size
     this.overlayManager?.updateState({
-      currentZoom: this.touchTransformManager.transform.scale,
-      currentCanvasSize: this.touchTransformManager.canvasSize,
+      currentZoom: this.canvasManager.transform.scale,
+      currentCanvasSize: this.canvasManager.getStyleSize(),
     });
   }
 
   // Public methods for external control
   resetTransform() {
-    this.touchTransformManager?.reset();
-    this.updateTransform();
+    this.canvasManager?.resetTransform();
+    this.updateOverlayWithTransform();
   }
 
   zoomTo(scale: number, centerX?: number, centerY?: number) {
-    if (!this.touchTransformManager || !this.root) return;
+    if (!this.canvasManager) return;
 
-    const rect = this.root.getBoundingClientRect();
-    const cx = centerX ?? rect.width / 2;
-    const cy = centerY ?? rect.height / 2;
-
-    // Reset first, then zoom to desired scale
-    this.touchTransformManager.reset();
-    this.touchTransformManager.zoom(scale, cx, cy);
-    this.updateTransform();
-  }
-
-  getTouchTransformManager(): TouchTransformManager | undefined {
-    return this.touchTransformManager;
+    // Let CanvasManager handle coordinate calculation if center is not provided
+    this.canvasManager.zoomTo(scale, centerX, centerY);
+    this.updateOverlayWithTransform();
   }
 
   setCanvasSize(width: number, height: number) {
     this.canvasManager?.setCanvasStyleSize(width, height);
 
     // Reset transform to prevent invalid positions after size change
-    this.touchTransformManager?.reset();
-    this.updateTransform();
+    this.canvasManager?.resetTransform();
+    this.updateOverlayWithTransform();
   }
 
   private adjustCanvasForOverlay() {
@@ -365,7 +354,7 @@ export class Driver {
     const isPortrait = windowHeight > windowWidth;
 
     this.canvasManager.adjustForToolbar(isPortrait);
-    this.updateTransform();
+    this.updateOverlayWithTransform();
   }
 
   private async toggleFullscreen() {

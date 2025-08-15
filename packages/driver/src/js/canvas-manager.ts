@@ -22,6 +22,12 @@ export interface CanvasRenderingSize {
   pixelRatio: number;
 }
 
+export interface ViewportTransform {
+  scale: number;
+  translateX: number;
+  translateY: number;
+}
+
 export interface CanvasState {
   styleSize: CanvasStyleSize;
   containerSize: CanvasSize;
@@ -42,6 +48,17 @@ export class CanvasManager {
   private config: CanvasConfig;
   private resizeObserver: ResizeObserver | null = null;
 
+  // Viewport transform properties
+  private _scale = 1;
+  private _panTranslateX = 0; // Pan-only translation (visual only)
+  private _panTranslateY = 0;
+  private _zoomTranslateX = 0; // Zoom-center translation (affects coordinates)
+  private _zoomTranslateY = 0;
+  private _minScale = 0.5;
+  private _maxScale = 3.0;
+  private _containerWidth = 800;
+  private _containerHeight = 600;
+
   private onStateChange?: (state: CanvasState) => void;
   private onRenderingSizeChange?: (size: CanvasRenderingSize) => void;
 
@@ -49,6 +66,8 @@ export class CanvasManager {
     this.config = config;
     this.currentStyleWidth = config.minWidth;
     this.currentStyleHeight = config.minHeight;
+    this._containerWidth = config.minWidth;
+    this._containerHeight = config.minHeight;
   }
 
   setCallbacks(callbacks: {
@@ -128,6 +147,11 @@ export class CanvasManager {
     if (this.canvasContainer) {
       const containerRect = this.canvasContainer.getBoundingClientRect();
       this.updateCanvasStyleSize();
+
+      // Recalculate transform constraints with new canvas size
+      this._constrainTransform();
+      this._updateCanvasTransform();
+
       this.notifyStateChange(containerRect.width, containerRect.height);
       this.notifyRenderingSizeChange();
     }
@@ -142,11 +166,19 @@ export class CanvasManager {
       // Portrait: toolbar at bottom
       this.canvasContainer.style.bottom = `${toolbarSize}px`;
       this.canvasContainer.style.right = "0";
+      // Update container size - height reduced by toolbar
+      this._containerHeight = Math.max(0, this._containerHeight - toolbarSize);
     } else {
       // Landscape: toolbar at right
       this.canvasContainer.style.right = `${toolbarSize}px`;
       this.canvasContainer.style.bottom = "0";
+      // Update container size - width reduced by toolbar
+      this._containerWidth = Math.max(0, this._containerWidth - toolbarSize);
     }
+
+    // Recalculate constraints with new container size
+    this._constrainTransform();
+    this._updateCanvasTransform();
   }
 
   getCurrentState(): CanvasState {
@@ -186,6 +218,116 @@ export class CanvasManager {
     return this.canvasContainer;
   }
 
+  // Viewport transform methods
+  get transform(): ViewportTransform {
+    return {
+      scale: this._scale,
+      translateX: this._panTranslateX + this._zoomTranslateX, // Combined translation for external use
+      translateY: this._panTranslateY + this._zoomTranslateY,
+    };
+  }
+
+  zoom(scale: number, centerX: number, centerY: number) {
+    const newScale = Math.max(this._minScale, Math.min(this._maxScale, this._scale * scale));
+    const scaleChange = newScale / this._scale;
+
+    // Calculate new zoom translation to keep center point fixed
+    // CRITICAL: Consider total translation (pan + zoom) for correct zoom center calculation
+    const oldTotalTranslateX = this._panTranslateX + this._zoomTranslateX;
+    const oldTotalTranslateY = this._panTranslateY + this._zoomTranslateY;
+
+    // Zoom around center point: total translation should keep center fixed
+    const newTotalTranslateX = centerX - (centerX - oldTotalTranslateX) * scaleChange;
+    const newTotalTranslateY = centerY - (centerY - oldTotalTranslateY) * scaleChange;
+
+    // Update zoom translation while preserving pan translation
+    this._zoomTranslateX = newTotalTranslateX - this._panTranslateX;
+    this._zoomTranslateY = newTotalTranslateY - this._panTranslateY;
+    this._scale = newScale;
+
+    // Apply constraints normally - proper separation should handle this correctly
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
+  pan(deltaX: number, deltaY: number) {
+    // Update PAN translation only (zoom translation unchanged)
+    this._panTranslateX += deltaX;
+    this._panTranslateY += deltaY;
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
+  resetPan() {
+    this._panTranslateX = 0;
+    this._panTranslateY = 0;
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
+  resetZoom() {
+    this._scale = 1;
+    this._zoomTranslateX = 0;
+    this._zoomTranslateY = 0;
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
+  resetTransform() {
+    this._scale = 1;
+    this._panTranslateX = 0;
+    this._panTranslateY = 0;
+    this._zoomTranslateX = 0;
+    this._zoomTranslateY = 0;
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
+  zoomTo(scale: number, centerX?: number, centerY?: number) {
+    // Calculate center coordinates if not provided
+    const cx = centerX ?? this._containerWidth / 2;
+    const cy = centerY ?? this._containerHeight / 2;
+
+    // Reset only zoom (preserve pan) then zoom to desired scale
+    this.resetZoom();
+    this.zoom(scale, cx, cy);
+  }
+
+  // Transform container coordinates to canvas coordinates
+  screenToCanvas(containerX: number, containerY: number): { x: number; y: number } {
+    // PRACTICAL APPROACH:
+    // - Canvas has actual CSS transform: translate(panX+zoomX, panY+zoomY) scale(scale)
+    // - Mouse coordinates come from container space
+    // - Need complete inverse transform to get canvas logical coordinates
+    // - CSS: translate(tx, ty) scale(s) → Inverse: (containerX - tx) / s
+
+    const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
+    const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
+
+    const result = {
+      x: (containerX - totalTranslateX) / this._scale, // Complete inverse of applied CSS transform
+      y: (containerY - totalTranslateY) / this._scale, // Both pan and zoom translation considered
+    };
+
+    return result;
+  }
+
+  // Transform canvas coordinates to screen coordinates
+  canvasToScreen(canvasX: number, canvasY: number): { x: number; y: number } {
+    const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
+    const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
+    return {
+      x: canvasX * this._scale + totalTranslateX,
+      y: canvasY * this._scale + totalTranslateY,
+    };
+  }
+
+  generateTransformCSS(): string {
+    const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
+    const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
+    return `translate(${totalTranslateX}px, ${totalTranslateY}px) scale(${this._scale})`;
+  }
+
   private calculateStyleSize(containerWidth: number, containerHeight: number): CanvasStyleSize {
     if (this.isFixedSize) {
       return {
@@ -201,6 +343,10 @@ export class CanvasManager {
   }
 
   private updateCanvasSize(containerWidth: number, containerHeight: number) {
+    // Update container size for transform calculations
+    this._containerWidth = containerWidth;
+    this._containerHeight = containerHeight;
+
     // Update style size if not fixed
     if (!this.isFixedSize) {
       const styleSize = this.calculateStyleSize(containerWidth, containerHeight);
@@ -210,6 +356,10 @@ export class CanvasManager {
 
     // Update canvas style size (DOM appearance only)
     this.updateCanvasStyleSize();
+
+    // Recalculate transform constraints with new container size
+    this._constrainTransform();
+    this._updateCanvasTransform();
 
     // Notify changes
     this.notifyStateChange(containerWidth, containerHeight);
@@ -263,5 +413,51 @@ export class CanvasManager {
     });
 
     this.resizeObserver.observe(this.canvasContainer);
+  }
+
+  private _constrainTransform() {
+    const scaledWidth = this.currentStyleWidth * this._scale;
+    const scaledHeight = this.currentStyleHeight * this._scale;
+
+    // Calculate total translation for constraints
+    const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
+    const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
+
+    let newTotalTranslateX = totalTranslateX;
+    let newTotalTranslateY = totalTranslateY;
+
+    // Constrain translation to keep canvas visible
+    if (scaledWidth <= this._containerWidth) {
+      // Center horizontally if canvas is smaller than container
+      newTotalTranslateX = Math.round((this._containerWidth - scaledWidth) / 2);
+    } else {
+      // Constrain to prevent showing empty space
+      const maxTranslateX = 0;
+      const minTranslateX = this._containerWidth - scaledWidth;
+      newTotalTranslateX = Math.max(minTranslateX, Math.min(maxTranslateX, totalTranslateX));
+    }
+
+    if (scaledHeight <= this._containerHeight) {
+      // Center vertically if canvas is smaller than container
+      newTotalTranslateY = Math.round((this._containerHeight - scaledHeight) / 2);
+    } else {
+      // Constrain to prevent showing empty space
+      const maxTranslateY = 0;
+      const minTranslateY = this._containerHeight - scaledHeight;
+      newTotalTranslateY = Math.max(minTranslateY, Math.min(maxTranslateY, totalTranslateY));
+    }
+
+    // CRITICAL: Adjust pan translation to maintain constraints while preserving zoom translation
+    // Zoom translation must remain stable for coordinate transformation consistency
+    this._panTranslateX = newTotalTranslateX - this._zoomTranslateX;
+    this._panTranslateY = newTotalTranslateY - this._zoomTranslateY;
+
+    // Constraint applied: keep canvas within visible bounds
+  }
+
+  private _updateCanvasTransform() {
+    if (!this.canvas) return;
+    // Apply transform immediately and synchronously
+    this.canvas.style.transform = this.generateTransformCSS();
   }
 }

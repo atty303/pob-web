@@ -117,28 +117,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
         />
       </div>
       {keyboardVisible && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: position === "bottom" ? "60px" : "0",
-            left: 0,
-            right: position === "right" ? "60px" : "0",
-            zIndex: 999,
-            pointerEvents: "auto",
-          }}
-          onMouseDown={stopPropagation}
-          onMouseUp={stopPropagation}
-          onMouseMove={stopPropagation}
-          onClick={stopPropagation}
-          onTouchStart={stopPropagation}
-          onTouchMove={stopPropagation}
-          onTouchEnd={stopPropagation}
-          onKeyDown={stopPropagation}
-          onKeyUp={stopPropagation}
-          onWheel={stopPropagation}
-        >
-          <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
-        </div>
+        <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
       )}
     </div>
   );
