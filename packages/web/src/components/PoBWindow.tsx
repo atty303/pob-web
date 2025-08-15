@@ -2,7 +2,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Driver } from "pob-driver/src/js/driver";
 import type { RenderStats } from "pob-driver/src/js/renderer";
 import { type Game, gameData } from "pob-game/src";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { log, tag } from "../lib/logger";
 
@@ -18,6 +18,15 @@ export default function PoBWindow(props: {
   const auth0 = useAuth0();
 
   const container = useRef<HTMLDivElement>(null);
+  const driverRef = useRef<Driver | null>(null);
+  const onFrameRef = useRef(props.onFrame);
+  const onTitleChangeRef = useRef(props.onTitleChange);
+  const onLayerVisibilityCallbackReadyRef = useRef(props.onLayerVisibilityCallbackReady);
+
+  // Keep refs updated with latest props
+  onFrameRef.current = props.onFrame;
+  onTitleChangeRef.current = props.onTitleChange;
+  onLayerVisibilityCallbackReadyRef.current = props.onLayerVisibilityCallbackReady;
 
   const [token, setToken] = useState<string>();
   useEffect(() => {
@@ -29,9 +38,6 @@ export default function PoBWindow(props: {
     }
     getToken();
   }, [auth0, auth0.isAuthenticated]);
-
-  const onFrame = useCallback(props.onFrame, []);
-  const onTitleChange = useCallback(props.onTitleChange, []);
 
   const [hash, _setHash] = useHash();
   const [buildCode, setBuildCode] = useState("");
@@ -56,7 +62,7 @@ export default function PoBWindow(props: {
       onError: message => {
         throw new Error(message);
       },
-      onFrame,
+      onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
       onFetch: async (url, headers, body) => {
         let rep = undefined;
 
@@ -90,8 +96,10 @@ export default function PoBWindow(props: {
 
         return rep;
       },
-      onTitleChange,
+      onTitleChange: title => onTitleChangeRef.current(title),
     });
+
+    driverRef.current = _driver;
 
     (async () => {
       try {
@@ -109,7 +117,7 @@ export default function PoBWindow(props: {
         if (container.current) _driver.attachToDOM(container.current);
 
         // Pass layer visibility control callback to parent
-        props.onLayerVisibilityCallbackReady?.((layer: number, sublayer: number, visible: boolean) => {
+        onLayerVisibilityCallbackReadyRef.current?.((layer: number, sublayer: number, visible: boolean) => {
           _driver.setLayerVisible(layer, sublayer, visible);
         });
 
@@ -123,9 +131,10 @@ export default function PoBWindow(props: {
     return () => {
       _driver.detachFromDOM();
       _driver.destory();
+      driverRef.current = null;
       setLoading(true);
     };
-  }, [props.game, props.version, onFrame, onTitleChange, props.onLayerVisibilityCallbackReady, token, buildCode]);
+  }, [props.game, props.version, token, buildCode]);
 
   if (error) {
     log.error(tag.pob, error);
