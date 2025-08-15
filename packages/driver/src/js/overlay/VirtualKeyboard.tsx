@@ -100,81 +100,12 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     [],
   );
 
-  const applyShiftTransformation = useCallback(
-    (domKey: string): string => {
-      const isShiftHeld = keyboardState.hasKey("Shift");
-
-      if (!isShiftHeld) {
-        return domKey;
-      }
-
-      // Transform letters to uppercase when Shift is held
-      if (/^[a-z]$/.test(domKey)) {
-        return domKey.toUpperCase();
-      }
-
-      // Transform numbers and symbols when Shift is held
-      const shiftNumberMap: Record<string, string> = {
-        "1": "!",
-        "2": "@",
-        "3": "#",
-        "4": "$",
-        "5": "%",
-        "6": "^",
-        "7": "&",
-        "8": "*",
-        "9": "(",
-        "0": ")",
-      };
-
-      // Additional symbol transformations
-      const shiftSymbolMap: Record<string, string> = {
-        "`": "~",
-        "-": "_",
-        "=": "+",
-        "[": "{",
-        "]": "}",
-        "\\": "|",
-        ";": ":",
-        "'": '"',
-        ",": "<",
-        ".": ">",
-        "/": "?",
-      };
-
-      if (shiftNumberMap[domKey]) {
-        return shiftNumberMap[domKey];
-      }
-
-      if (shiftSymbolMap[domKey]) {
-        return shiftSymbolMap[domKey];
-      }
-
-      return domKey;
-    },
-    [keyboardState],
-  );
-
   const handleKeyPress = useCallback(
     (eventKey: string, keyDef: KeyDefinition) => {
       const { isModifier = false, isSpecial = false } = keyDef;
-
-      if (isModifier) {
-        // Modifier keys always use toggle hold behavior
-        keyboardState.toggleHold(eventKey, 0);
-      } else if (holdMode && !isSpecial) {
-        // In hold mode, character keys use toggle hold behavior
-        keyboardState.toggleHold(eventKey, 0);
-      } else {
-        // Simulate physical keyboard: keydown -> keyup sequence
-        keyboardState.keydown(eventKey, 0);
-        // Apply Shift transformation for virtual keyboard only
-        const transformedChar = applyShiftTransformation(eventKey);
-        keyboardState.keypress(transformedChar);
-        keyboardState.keyup(eventKey, 0);
-      }
+      keyboardState.virtualKeyPress(eventKey, isModifier, isSpecial, 0);
     },
-    [keyboardState, holdMode, applyShiftTransformation],
+    [keyboardState],
   );
 
   if (!isVisible) {

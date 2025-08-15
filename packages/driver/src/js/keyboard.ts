@@ -158,18 +158,101 @@ export class KeyboardState {
     this.handleSpecialCharacter(domKey, doubleClick);
   }
 
-  // Method for toggling hold state (used by virtual keyboard for holdable keys)
-  toggleHold(domKey: string, doubleClick = 0): void {
-    if (this._heldKeys.has(domKey)) {
-      // Key is already held, release it
-      this._heldKeys.delete(domKey);
-      this.keyup(domKey, doubleClick);
+  // Virtual keyboard key press with proper hold mode and modifier handling
+  virtualKeyPress(domKey: string, isModifier = false, isSpecial = false, doubleClick = 0): void {
+    if (isModifier) {
+      // Modifier keys always use toggle hold behavior
+      if (this._heldKeys.has(domKey)) {
+        // Key is already held, release it
+        this._heldKeys.delete(domKey);
+        this.keyup(domKey, doubleClick);
+      } else {
+        // Key is not held, hold it
+        this._heldKeys.add(domKey);
+        this.keydown(domKey, doubleClick);
+      }
+      this.notifyChange();
+    } else if (this._holdMode && !isSpecial) {
+      // In hold mode, character keys use toggle hold behavior
+      if (this._heldKeys.has(domKey)) {
+        // Key is already held, release it
+        this._heldKeys.delete(domKey);
+        this.keyup(domKey, doubleClick);
+      } else {
+        // Key is not held, hold it
+        this._heldKeys.add(domKey);
+        this.keydown(domKey, doubleClick);
+
+        // Character keys still generate their character when first pressed
+        if (this.isCharacterKey(domKey)) {
+          this.virtualKeypress(domKey, doubleClick);
+        }
+      }
+      this.notifyChange();
     } else {
-      // Key is not held, hold it
-      this._heldKeys.add(domKey);
+      // Normal key press: keydown -> keypress -> keyup sequence
       this.keydown(domKey, doubleClick);
+      this.virtualKeypress(domKey, doubleClick);
+      this.keyup(domKey, doubleClick);
     }
-    this.notifyChange();
+  }
+
+  // Virtual keyboard keypress with Shift transformation
+  private virtualKeypress(domKey: string, doubleClick = 0): void {
+    const transformedChar = this.applyShiftTransformation(domKey);
+    this._callbacks?.onChar(transformedChar, doubleClick);
+  }
+
+  private applyShiftTransformation(domKey: string): string {
+    const isShiftHeld = this.hasKey("Shift");
+
+    if (!isShiftHeld) {
+      return domKey;
+    }
+
+    // Transform letters to uppercase when Shift is held
+    if (/^[a-z]$/.test(domKey)) {
+      return domKey.toUpperCase();
+    }
+
+    // Transform numbers and symbols when Shift is held
+    const shiftNumberMap: Record<string, string> = {
+      "1": "!",
+      "2": "@",
+      "3": "#",
+      "4": "$",
+      "5": "%",
+      "6": "^",
+      "7": "&",
+      "8": "*",
+      "9": "(",
+      "0": ")",
+    };
+
+    // Additional symbol transformations
+    const shiftSymbolMap: Record<string, string> = {
+      "`": "~",
+      "-": "_",
+      "=": "+",
+      "[": "{",
+      "]": "}",
+      "\\": "|",
+      ";": ":",
+      "'": '"',
+      ",": "<",
+      ".": ">",
+      "/": "?",
+    };
+
+    if (shiftNumberMap[domKey]) {
+      return shiftNumberMap[domKey];
+    }
+
+    if (shiftSymbolMap[domKey]) {
+      return shiftSymbolMap[domKey];
+    }
+
+    return domKey;
   }
 
   private handleSpecialCharacter(domKey: string, doubleClick: number): void {
