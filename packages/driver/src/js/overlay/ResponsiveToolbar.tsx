@@ -41,14 +41,14 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
 
   return (
     <div className={containerClasses}>
+      <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
+
       <ControlButton
         icon={<HiMagnifyingGlass size={24} />}
         tooltip="Zoom Controls"
         onClick={handleZoomToggle}
         isActive={zoomControlVisible}
       />
-
-      <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
 
       <ControlButton
         icon={<MdOutlinePanTool size={24} />}
