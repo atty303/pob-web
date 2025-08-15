@@ -2,12 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <title>Path of Building Web</title>
+    <style>
+        /* iOS Safari viewport fixes */
+        #window {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for iOS Safari */
+            overflow: hidden;
+            /* Safe area support for notched devices */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        
+        /* Ensure body and html take full viewport */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body style="margin: 0;">
+<body>
 <div id="app">
-    <div id="window" style="width: 100vw; height: 100vh"></div>
+    <div id="window"></div>
 </div>
 <script type="module" src="/src/js/run.ts"></script>
 </body>
