@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => ({
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), packerR2Dir],
     },
+    // Owner's Cloudflare Tunnel domain for mobile testing
+    allowedHosts: ["local.pob.cool"],
   },
   define: {
     __ASSET_PREFIX__: JSON.stringify(

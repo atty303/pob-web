@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => ({
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), rootDir],
     },
+    // Owner's Cloudflare Tunnel domain for mobile testing
+    allowedHosts: ["local.pob.cool"],
   },
   build: {
     chunkSizeWarningLimit: 1024,
