@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { KeyboardState } from "../keyboard";
 import "./overlay.css";
+import type { FrameData, RenderStats } from "./PerformanceOverlay";
+import { PerformanceOverlay } from "./PerformanceOverlay";
 import { Toolbar } from "./Toolbar";
 import { VirtualKeyboard } from "./VirtualKeyboard";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
@@ -14,6 +16,10 @@ interface OverlayContainerProps {
   currentZoom?: number;
   currentCanvasSize?: { width: number; height: number };
   isFixedSize?: boolean;
+  frames?: FrameData[];
+  renderStats?: RenderStats | null;
+  performanceVisible?: boolean;
+  onLayerVisibilityChange?: (layer: number, sublayer: number, visible: boolean) => void;
 }
 
 export const OverlayContainer: React.FC<OverlayContainerProps> = ({
@@ -23,11 +29,16 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   currentZoom = 1.0,
   currentCanvasSize = { width: 1520, height: 800 },
   isFixedSize = false,
+  frames = [],
+  renderStats = null,
+  performanceVisible = false,
+  onLayerVisibilityChange,
 }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(externalPanMode ?? false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [performanceOverlayVisible, setPerformanceOverlayVisible] = useState(performanceVisible);
 
   // Update internal pan mode state when external prop changes
   useEffect(() => {
@@ -35,6 +46,11 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
       setPanModeEnabled(externalPanMode);
     }
   }, [externalPanMode]);
+
+  // Update internal performance overlay state when external prop changes
+  useEffect(() => {
+    setPerformanceOverlayVisible(performanceVisible);
+  }, [performanceVisible]);
 
   const handlePanModeToggle = useCallback(
     (enabled: boolean) => {
@@ -48,6 +64,11 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
     setKeyboardVisible(prev => !prev);
   }, []);
 
+  const handlePerformanceToggle = useCallback(() => {
+    setPerformanceOverlayVisible(prev => !prev);
+    callbacks.onPerformanceToggle();
+  }, [callbacks]);
+
   const stopPropagation = useCallback((e: React.SyntheticEvent) => {
     e.stopPropagation();
   }, []);
@@ -56,6 +77,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
     ...callbacks,
     onPanModeToggle: handlePanModeToggle,
     onKeyboardToggle: handleKeyboardToggle,
+    onPerformanceToggle: handlePerformanceToggle,
   };
 
   useEffect(() => {
@@ -114,6 +136,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           isLandscape={isLandscape}
           panModeEnabled={panModeEnabled}
           keyboardVisible={keyboardVisible}
+          performanceVisible={performanceOverlayVisible}
           currentZoom={currentZoom}
           currentCanvasSize={currentCanvasSize}
           isFixedSize={isFixedSize}
@@ -122,6 +145,12 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
       {keyboardVisible && (
         <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
       )}
+      <PerformanceOverlay
+        isVisible={performanceOverlayVisible}
+        frames={frames}
+        renderStats={renderStats}
+        onLayerVisibilityChange={onLayerVisibilityChange}
+      />
     </div>
   );
 };
@@ -145,7 +174,16 @@ export class ReactOverlayManager {
 
   updateState(
     updates: Partial<
-      Pick<OverlayContainerProps, "panModeEnabled" | "currentZoom" | "currentCanvasSize" | "isFixedSize">
+      Pick<
+        OverlayContainerProps,
+        | "panModeEnabled"
+        | "currentZoom"
+        | "currentCanvasSize"
+        | "isFixedSize"
+        | "frames"
+        | "renderStats"
+        | "performanceVisible"
+      >
     >,
   ) {
     if (this.currentProps && this.root) {

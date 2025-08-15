@@ -5,6 +5,7 @@ import { EventHandler, type VisibilityCallbacks } from "./event";
 import { type KeyboardCallbacks, KeyboardHandler, type KeyboardUIState } from "./keyboard-handler";
 import { type MouseCallbacks, MouseHandler, type MouseState } from "./mouse-handler";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
+import type { FrameData, RenderStats } from "./overlay/PerformanceOverlay";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
@@ -29,6 +30,9 @@ export class Driver {
   private orientationChangeHandler: (() => void) | undefined;
   private windowResizeHandler: (() => void) | undefined;
   private isHandlingLayoutChange = false;
+  private performanceVisible = false;
+  private frames: FrameData[] = [];
+  private renderStats: RenderStats | null = null;
 
   // Minimum canvas size for PoB to render correctly
   private readonly MIN_CANVAS_WIDTH = 1550;
@@ -39,7 +43,14 @@ export class Driver {
     readonly build: "debug" | "release",
     readonly assetPrefix: string,
     readonly hostCallbacks: HostCallbacks,
-  ) {}
+  ) {
+    // Wrap the onFrame callback to also call pushFrame internally
+    const originalOnFrame = this.hostCallbacks.onFrame;
+    this.hostCallbacks.onFrame = (at: number, time: number, stats?: RenderStats) => {
+      this.pushFrame(at, time, stats);
+      originalOnFrame(at, time, stats);
+    };
+  }
 
   async start(fileSystemConfig: FilesystemConfig) {
     if (this.isStarted) throw new Error("Already started");
@@ -299,6 +310,10 @@ export class Driver {
       onKeyboardToggle: () => {
         // Keyboard toggle is handled by React state in OverlayContainer
       },
+      onPerformanceToggle: () => {
+        this.performanceVisible = !this.performanceVisible;
+        this.updateOverlayWithTransform();
+      },
     };
 
     // Initialize overlay manager after handlers are created
@@ -310,6 +325,12 @@ export class Driver {
       panModeEnabled: this.panModeEnabled,
       currentZoom: this.canvasManager?.transform.scale ?? 1.0,
       currentCanvasSize: currentState.styleSize,
+      frames: this.frames,
+      renderStats: this.renderStats,
+      performanceVisible: this.performanceVisible,
+      onLayerVisibilityChange: (layer: number, sublayer: number, visible: boolean) => {
+        this.setLayerVisible(layer, sublayer, visible);
+      },
     });
   }
 
@@ -352,6 +373,16 @@ export class Driver {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
   }
 
+  pushFrame(at: number, renderTime: number, stats?: RenderStats) {
+    this.frames = [...this.frames, { at, renderTime }].slice(-60); // Keep last 60 frames
+    if (stats) {
+      this.renderStats = stats;
+    }
+    if (this.performanceVisible) {
+      this.updateOverlayWithTransform();
+    }
+  }
+
   private transformMouseCoordinates(mouseState: MouseState): MouseState {
     if (!this.canvasManager) {
       return mouseState;
@@ -376,6 +407,9 @@ export class Driver {
       currentZoom: this.canvasManager.transform.scale,
       currentCanvasSize: this.canvasManager.getStyleSize(),
       isFixedSize: canvasState.isFixedSize,
+      frames: this.frames,
+      renderStats: this.renderStats,
+      performanceVisible: this.performanceVisible,
     });
   }
 

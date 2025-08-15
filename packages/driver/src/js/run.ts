@@ -7,7 +7,7 @@ import { Driver } from "./driver";
 
   const driver = new Driver(__RUN_BUILD__, versionPrefix, {
     onError: message => console.error(message),
-    onFrame: (_render, _time) => {},
+    onFrame: (_at, _time, _stats) => {},
     onFetch: async (_url, _headers, _body) => {
       throw new Error("Fetch not implemented in shell");
     },

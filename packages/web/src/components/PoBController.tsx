@@ -8,12 +8,10 @@ import {
   Bars3Icon,
   HomeIcon,
   LightBulbIcon,
-  PresentationChartLineIcon,
   UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/solid";
-import type { LayerStats, RenderStats } from "pob-driver/src/js/renderer";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -42,28 +40,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     }
   }, [notFirstVisit]);
 
-  const [frames, setFrames] = useState<{ at: number; renderTime: number }[]>([]);
-  const [renderStats, setRenderStats] = useState<RenderStats | null>(null);
-  const [layerVisibilityCallback, setLayerVisibilityCallback] = useState<
-    ((layer: number, sublayer: number, visible: boolean) => void) | null
-  >(null);
-
-  const pushFrame = useCallback((at: number, time: number, stats?: RenderStats) => {
-    setFrames(frames => [...frames, { at, renderTime: time }].slice(-60));
-    if (stats) {
-      setRenderStats(stats);
-    }
-  }, []);
-
-  const handleLayerVisibilityCallbackReady = useCallback(
-    (callback: (layer: number, sublayer: number, visible: boolean) => void) => {
-      setLayerVisibilityCallback(() => callback);
-    },
-    [],
-  );
-
-  const [showPerformance, setShowPerformance] = useLocalStorage("showPerformance", false);
-
   const [fullscreen, setFullscreen] = useState(false);
   useFullscreen(container, fullscreen, { onClose: () => setFullscreen(false) });
 
@@ -82,9 +58,9 @@ export default function PoBController(p: { game: keyof Games; version: string; i
             <PoBWindow
               game={p.game}
               version={p.version}
-              onFrame={pushFrame}
+              onFrame={() => {}}
               onTitleChange={setTitle}
-              onLayerVisibilityCallbackReady={handleLayerVisibilityCallbackReady}
+              onLayerVisibilityCallbackReady={() => {}}
             />
           </div>
           <div className="absolute top-2 right-2">
@@ -101,15 +77,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
               <Bars3Icon className="size-6" />
             </label>
           </div>
-          {showPerformance && (
-            <div className="absolute bottom-2 right-2">
-              <PerformanceView
-                frames={frames}
-                renderStats={renderStats}
-                onLayerVisibilityChange={layerVisibilityCallback}
-              />
-            </div>
-          )}
         </div>
       </div>
       <Sidebar
@@ -118,8 +85,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         setDrawer={setDrawer}
         fullscreen={fullscreen}
         setFullscreen={setFullscreen}
-        showPerformance={showPerformance}
-        setShowPerformance={setShowPerformance}
         optOutTutorial={optOutTutorial}
         setOptOutTutorial={setOptOutTutorial}
       />
@@ -133,8 +98,6 @@ function Sidebar(p: {
   setDrawer: (value: boolean) => void;
   fullscreen: boolean;
   setFullscreen: (value: boolean) => void;
-  showPerformance: boolean | undefined;
-  setShowPerformance: (value: boolean) => void;
   optOutTutorial: boolean | undefined;
   setOptOutTutorial: (value: boolean) => void;
 }) {
@@ -181,21 +144,6 @@ function Sidebar(p: {
                 className="toggle"
                 checked={p.fullscreen}
                 onChange={e => p.setFullscreen(e.target.checked)}
-              />
-            </label>
-          </li>
-          <li>
-            <label htmlFor="showPerformance" className="flex">
-              <span className="flex-1 flex items-center gap-2">
-                <PresentationChartLineIcon className="size-4" />
-                Show performance overlay
-              </span>
-              <input
-                id="showPerformance"
-                type="checkbox"
-                className="toggle"
-                checked={p.showPerformance}
-                onChange={e => p.setShowPerformance(e.target.checked)}
               />
             </label>
           </li>
@@ -281,178 +229,4 @@ function Auth(p: { tutorial: boolean }) {
       </div>
     );
   }
-}
-
-function PerformanceView(p: {
-  frames: { at: number; renderTime: number }[];
-  renderStats: RenderStats | null;
-  onLayerVisibilityChange: ((layer: number, sublayer: number, visible: boolean) => void) | null;
-}) {
-  return (
-    <div className="bg-base-100 p-2 rounded-box opacity-75 space-y-2 max-w-80">
-      <LineChart data={p.frames} />
-      {p.renderStats && <RenderStatsView stats={p.renderStats} onLayerVisibilityChange={p.onLayerVisibilityChange} />}
-    </div>
-  );
-}
-
-function RenderStatsView(p: {
-  stats: RenderStats | null;
-  onLayerVisibilityChange: ((layer: number, sublayer: number, visible: boolean) => void) | null;
-}) {
-  const [showLayers, setShowLayers] = useState(false);
-  const [layerVisibility, setLayerVisibility] = useState<Map<string, boolean>>(new Map());
-
-  if (!p.stats) {
-    return null;
-  }
-
-  const summary = {
-    totalLayers: p.stats.totalLayers,
-    totalDrawImage: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawImageCount, 0),
-    totalDrawImageQuad: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawImageQuadCount, 0),
-    totalDrawString: p.stats.layerStats.reduce((sum, layer) => sum + layer.drawStringCount, 0),
-    frameTime: p.stats.lastFrameTime.toFixed(1),
-    frameCount: p.stats.frameCount,
-  };
-  const layerDetails = p.stats.layerStats;
-
-  const totalDrawCalls = summary.totalDrawImage + summary.totalDrawImageQuad + summary.totalDrawString;
-
-  const toggleLayerVisibility = (layer: number, sublayer: number) => {
-    const layerKey = `${layer}.${sublayer}`;
-    const currentVisibility = layerVisibility.get(layerKey) ?? true;
-    const newVisibility = !currentVisibility;
-
-    setLayerVisibility(prev => {
-      const newMap = new Map(prev);
-      newMap.set(layerKey, newVisibility);
-      return newMap;
-    });
-
-    p.onLayerVisibilityChange?.(layer, sublayer, newVisibility);
-  };
-
-  return (
-    <div className="text-xs space-y-2">
-      <div className="font-semibold">Render Stats (Frame #{summary.frameCount})</div>
-      <div className="grid grid-cols-2 gap-1 text-[10px]">
-        <div>Layers: {summary.totalLayers}</div>
-        <div>Frame: {summary.frameTime}ms</div>
-        <div>Total draws: {totalDrawCalls}</div>
-        <div>Images: {summary.totalDrawImage}</div>
-        <div>Quads: {summary.totalDrawImageQuad}</div>
-        <div>Text: {summary.totalDrawString}</div>
-      </div>
-
-      {layerDetails.length > 0 && (
-        <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => setShowLayers(!showLayers)}
-            className="font-semibold text-[10px] hover:bg-base-200 px-1 rounded cursor-pointer"
-          >
-            Layers {showLayers ? "▼" : "▶"}
-          </button>
-          {showLayers && (
-            <div className="max-h-24 overflow-y-auto space-y-0.5">
-              {layerDetails.map((layer: LayerStats, index: number) => {
-                const layerTotal = layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount;
-                if (layerTotal === 0) return null;
-
-                const layerKey = `${layer.layer}.${layer.sublayer}`;
-                const isVisible = layerVisibility.get(layerKey) ?? true;
-
-                return (
-                  <div key={layerKey} className="text-[9px] font-mono flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => toggleLayerVisibility(layer.layer, layer.sublayer)}
-                      className={`w-3 h-3 text-[8px] border rounded ${
-                        isVisible ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                      }`}
-                    >
-                      {isVisible ? "●" : "○"}
-                    </button>
-                    <span className={isVisible ? "" : "opacity-50"}>
-                      L{layer.layer}.{layer.sublayer}: {layer.totalCommands}c {layerTotal}d (I{layer.drawImageCount} Q
-                      {layer.drawImageQuadCount} T{layer.drawStringCount})
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LineChart(p: { data: { at: number; renderTime: number }[] }) {
-  const scaleX = 1;
-  const scaleY = 1;
-
-  const chart = useMemo(() => {
-    const ats = p.data.map(_ => _.at);
-    const renderTimes = p.data.map(_ => _.renderTime);
-    const minX = Math.min(...ats);
-    const maxX = Math.max(...ats);
-    const minY = 0;
-    const maxY = Math.max(...renderTimes);
-
-    const series = p.data.reduce(
-      (acc, value, index) => {
-        if (index > 0) {
-          acc.push({
-            x1: p.data[index - 1].at,
-            y1: maxY - p.data[index - 1].renderTime,
-            x2: p.data[index].at,
-            y2: maxY - p.data[index].renderTime,
-          });
-        }
-        return acc;
-      },
-      [] as { x1: number; y1: number; x2: number; y2: number }[],
-    );
-    return {
-      svg: (
-        <svg
-          className="absolute top-0 left-0 w-full h-full bg-neutral text-neutral-content border border-neutral-content py-2"
-          viewBox={
-            p.data.length > 0
-              ? `${minX * scaleX} ${minY * scaleY} ${(maxX - minX) * scaleX} ${(maxY - minY) * scaleY}`
-              : "0 0 0 0"
-          }
-          preserveAspectRatio="none"
-        >
-          <title>Render performance</title>
-          {series.map(_ => (
-            <line
-              key={_.x1}
-              x1={_.x1 * scaleX}
-              y1={_.y1 * scaleY}
-              x2={_.x2 * scaleX}
-              y2={_.y2 * scaleY}
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-          ))}
-        </svg>
-      ),
-      max: maxY,
-      avg: renderTimes.reduce((acc, value) => acc + value, 0) / renderTimes.length,
-    };
-  }, [p.data]);
-
-  return (
-    <div className="relative w-64 h-16">
-      {chart.svg}
-      {Number.isFinite(chart.max) && (
-        <span className="absolute bottom-1 left-1 p-1 badge-xs badge-neutral">
-          Max {chart.max.toFixed(1)}ms Avg {chart.avg.toFixed(1)}ms
-        </span>
-      )}
-    </div>
-  );
 }

@@ -16,6 +16,7 @@ export interface ToolbarCallbacks {
   onFullscreenToggle: () => void;
   onPanModeToggle: (enabled: boolean) => void;
   onKeyboardToggle: () => void;
+  onPerformanceToggle: () => void;
 }
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";
