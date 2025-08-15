@@ -2,7 +2,7 @@ import * as Comlink from "comlink";
 
 import { UIEventManager, type UIState } from "./event";
 import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
-import { ModifierKeyManager, TouchTransformManager } from "./touch";
+import { TouchTransformManager } from "./touch";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
 
@@ -22,7 +22,6 @@ export class Driver {
   private resizeObserver: ResizeObserver | undefined;
   private canvas: HTMLCanvasElement | undefined;
   private touchTransformManager: TouchTransformManager | undefined;
-  private modifierKeyManager: ModifierKeyManager | undefined;
   private overlayManager: ReactOverlayManager | undefined;
   private canvasContainer: HTMLDivElement | undefined;
   private panModeEnabled = false;
@@ -92,12 +91,6 @@ export class Driver {
     // Initialize touch transform manager
     this.touchTransformManager = new TouchTransformManager(canvas.width, canvas.height, r.width, r.height);
 
-    // Initialize modifier key manager
-    this.modifierKeyManager = new ModifierKeyManager(modifiers => {
-      // Update UI state when modifiers change
-      this.updateTransform();
-    });
-
     // Create canvas container - positioned to avoid toolbar overlap
     this.canvasContainer = document.createElement("div");
     this.canvasContainer.style.cssText = `
@@ -157,7 +150,6 @@ export class Driver {
 
     this.overlayManager = new ReactOverlayManager(overlayContainer);
     this.overlayManager.render({
-      modifierKeyManager: this.modifierKeyManager,
       callbacks: toolbarCallbacks,
     });
 
@@ -268,21 +260,17 @@ export class Driver {
   }
 
   private transformUIState(uiState: UIState): UIState {
-    if (!this.touchTransformManager || !this.modifierKeyManager) {
+    if (!this.touchTransformManager) {
       return uiState;
     }
 
     // Transform screen coordinates to canvas coordinates
     const canvasCoords = this.touchTransformManager.screenToCanvas(uiState.x, uiState.y);
 
-    // Combine modifier keys with existing keys
-    const modifierKeys = this.modifierKeyManager.generateKeyState();
-    const combinedKeys = new Set([...uiState.keys, ...modifierKeys]);
-
     return {
       x: canvasCoords.x,
       y: canvasCoords.y,
-      keys: combinedKeys,
+      keys: uiState.keys,
     };
   }
 
@@ -311,10 +299,6 @@ export class Driver {
     this.touchTransformManager.reset();
     this.touchTransformManager.zoom(scale, cx, cy);
     this.updateTransform();
-  }
-
-  getModifierKeyManager(): ModifierKeyManager | undefined {
-    return this.modifierKeyManager;
   }
 
   getTouchTransformManager(): TouchTransformManager | undefined {

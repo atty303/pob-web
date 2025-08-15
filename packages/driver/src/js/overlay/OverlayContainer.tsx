@@ -3,30 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ResponsiveToolbar } from "./ResponsiveToolbar";
 import { VirtualKeyboard } from "./VirtualKeyboard";
-import type { ModifierKeys, ToolbarCallbacks, ToolbarPosition } from "./types";
+import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
 interface OverlayContainerProps {
-  modifierKeyManager: {
-    modifiers: ModifierKeys;
-    toggleModifier: (key: keyof ModifierKeys) => void;
-  };
   callbacks: ToolbarCallbacks;
 }
 
-export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyManager, callbacks }) => {
-  const [modifiers, setModifiers] = useState<ModifierKeys>(modifierKeyManager.modifiers);
+export const OverlayContainer: React.FC<OverlayContainerProps> = ({ callbacks }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  const handleModifierToggle = useCallback(
-    (key: keyof ModifierKeys) => {
-      modifierKeyManager.toggleModifier(key);
-      setModifiers({ ...modifierKeyManager.modifiers });
-    },
-    [modifierKeyManager],
-  );
 
   const handlePanModeToggle = useCallback(
     (enabled: boolean) => {
@@ -100,8 +87,6 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({ modifierKeyM
         onWheel={stopPropagation}
       >
         <ResponsiveToolbar
-          modifiers={modifiers}
-          onModifierToggle={handleModifierToggle}
           callbacks={wrappedCallbacks}
           position={position}
           isLandscape={isLandscape}

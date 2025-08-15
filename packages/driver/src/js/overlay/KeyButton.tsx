@@ -7,9 +7,10 @@ interface KeyButtonProps {
   char?: string;
   width?: string;
   callbacks: ToolbarCallbacks;
+  isActive?: boolean;
 }
 
-export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px", callbacks }) => {
+export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px", callbacks, isActive = false }) => {
   const [isPressed, setIsPressed] = useState(false);
 
   const executeAction = useCallback(() => {
@@ -77,8 +78,12 @@ export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px
       style={{
         width,
         height: "44px",
-        background: isPressed ? "rgba(255, 255, 255, 0.3)" : "rgba(255, 255, 255, 0.1)",
-        border: "1px solid rgba(255, 255, 255, 0.3)",
+        background: isPressed
+          ? "rgba(255, 255, 255, 0.3)"
+          : isActive
+            ? "rgba(0, 123, 255, 0.8)"
+            : "rgba(255, 255, 255, 0.1)",
+        border: isActive ? "1px solid rgba(0, 123, 255, 1)" : "1px solid rgba(255, 255, 255, 0.3)",
         borderRadius: "2px",
         color: "white",
         fontSize: "13px",

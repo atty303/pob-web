@@ -4,12 +4,9 @@ import { CiKeyboard } from "react-icons/ci";
 import { MdOutlinePanTool } from "react-icons/md";
 import { ControlButton } from "./ControlButton";
 import { FullscreenButton } from "./FullscreenButton";
-import { ModifierButton } from "./ModifierButton";
-import type { ModifierKeys, ToolbarCallbacks, ToolbarPosition } from "./types";
+import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
 interface ResponsiveToolbarProps {
-  modifiers: ModifierKeys;
-  onModifierToggle: (key: keyof ModifierKeys) => void;
   callbacks: ToolbarCallbacks;
   position: ToolbarPosition;
   isLandscape: boolean;
@@ -18,8 +15,6 @@ interface ResponsiveToolbarProps {
 }
 
 export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
-  modifiers,
-  onModifierToggle,
   callbacks,
   position,
   isLandscape,
@@ -62,27 +57,8 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
     }
   }, [isLandscape]);
 
-  const modifierButtons = useMemo(
-    () => [
-      { key: "ctrl" as const, label: "Ctrl" },
-      { key: "shift" as const, label: "Shift" },
-      { key: "alt" as const, label: "Alt" },
-    ],
-    [],
-  );
-
   return (
     <div style={containerStyle}>
-      {modifierButtons.map(({ key, label }) => (
-        <ModifierButton
-          key={key}
-          modifierKey={key}
-          label={label}
-          isActive={modifiers[key]}
-          onToggle={onModifierToggle}
-        />
-      ))}
-
       <ControlButton icon="🔄" tooltip="Reset Zoom" onClick={callbacks.onZoomReset} />
 
       <FullscreenButton onToggle={callbacks.onFullscreenToggle} />
