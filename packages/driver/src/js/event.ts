@@ -284,7 +284,7 @@ export class UIEventManager {
           this.callbacks.onKeyDown("RIGHTBUTTON", 0, this.uiState);
           this.callbacks.onKeyUp("RIGHTBUTTON", 0, this.uiState);
           this._longPressTimer = null;
-        }, 500);
+        }, 300);
       } else {
         // Pan tool mode: just mouse move for single tap
         this.callbacks.onMouseMove(this.uiState);
