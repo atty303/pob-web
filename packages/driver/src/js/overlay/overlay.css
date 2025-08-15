@@ -1,40 +1,49 @@
 @import "tailwindcss/theme.css" layer(overlay);
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-@layer overlay {
-  .driver-overlay {
-    @import "tailwindcss/preflight.css";
-    @tailwind utilities;
-  }
+@theme {
+  --prefix: O-;
+}
 
-  /* Custom slider styling */
-  .driver-overlay .slider::-webkit-slider-thumb {
-    appearance: none;
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 2px solid #1e40af;
-  }
+@plugin "daisyui" {
+  theme: dark --default;
+  logs: false;
+}
 
-  .driver-overlay .slider::-moz-range-thumb {
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 2px solid #1e40af;
-  }
+/* https://github.com/saadeghi/daisyui/issues/3040 */
+html {
+  scrollbar-gutter: auto !important;
+}
 
-  .driver-overlay .slider::-webkit-slider-track {
-    height: 8px;
-    border-radius: 4px;
-    background: #374151;
-  }
+/* Custom slider styling */
+.driver-overlay .slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #1e40af;
+}
 
-  .driver-overlay .slider::-moz-range-track {
-    height: 8px;
-    border-radius: 4px;
-    background: #374151;
-  }
+.driver-overlay .slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #1e40af;
+}
+
+.driver-overlay .slider::-webkit-slider-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #374151;
+}
+
+.driver-overlay .slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #374151;
 }
