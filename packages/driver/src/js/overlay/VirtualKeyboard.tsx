@@ -13,6 +13,7 @@ interface VirtualKeyboardProps {
 export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks, keyboardState }) => {
   // Use state to track keyboard state changes for React reactivity
   const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
+  const [symbolMode, setSymbolMode] = useState(false);
 
   // Update local state when keyboard state changes
   const updateLocalState = useCallback(() => {
@@ -35,7 +36,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     isSpecial?: boolean; // Whether this is a special key
   };
 
-  const keyLayout = useMemo(
+  const letterKeyLayout = useMemo(
     (): KeyDefinition[][] => [
       [
         { event: "1", display: "1" },
@@ -85,6 +86,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "Delete", display: "Del", isSpecial: true },
       ],
       [
+        { event: "SymbolMode", display: "!?#", width: "60px", isSpecial: true },
         { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
         { event: "Alt", display: "Alt", width: "60px", isModifier: true },
         { event: "Space", display: "Space", width: "120px", isSpecial: true },
@@ -94,9 +96,79 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     [],
   );
 
+  const symbolKeyLayout = useMemo(
+    (): KeyDefinition[][] => [
+      [
+        { event: "!", display: "!" },
+        { event: "@", display: "@" },
+        { event: "#", display: "#" },
+        { event: "$", display: "$" },
+        { event: "%", display: "%" },
+        { event: "^", display: "^" },
+        { event: "&", display: "&" },
+        { event: "*", display: "*" },
+        { event: "(", display: "(" },
+        { event: ")", display: ")" },
+      ],
+      [
+        { event: "`", display: "`" },
+        { event: "~", display: "~" },
+        { event: "-", display: "-" },
+        { event: "_", display: "_" },
+        { event: "=", display: "=" },
+        { event: "+", display: "+" },
+        { event: "[", display: "[" },
+        { event: "]", display: "]" },
+        { event: "{", display: "{" },
+        { event: "}", display: "}" },
+      ],
+      [
+        { event: ";", display: ";" },
+        { event: ":", display: ":" },
+        { event: "'", display: "'" },
+        { event: '"', display: '"' },
+        { event: "\\", display: "\\" },
+        { event: "|", display: "|" },
+        { event: ",", display: "," },
+        { event: ".", display: "." },
+        { event: "<", display: "<" },
+      ],
+      [
+        { event: "Shift", display: "Shift", isModifier: true },
+        { event: "/", display: "/" },
+        { event: "?", display: "?" },
+        { event: ">", display: ">" },
+        { event: "Tab", display: "Tab", width: "60px", isSpecial: true },
+        { event: "Escape", display: "Esc", width: "60px", isSpecial: true },
+        { event: "Backspace", display: "⌫", isSpecial: true },
+        { event: "Delete", display: "Del", isSpecial: true },
+      ],
+      [
+        { event: "LetterMode", display: "ABC", width: "60px", isSpecial: true },
+        { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
+        { event: "Alt", display: "Alt", width: "60px", isModifier: true },
+        { event: "Space", display: "Space", width: "120px", isSpecial: true },
+        { event: "Enter", display: "↵", isSpecial: true },
+      ],
+    ],
+    [],
+  );
+
+  const keyLayout = symbolMode ? symbolKeyLayout : letterKeyLayout;
+
   const handleKeyPress = useCallback(
     (eventKey: string, keyDef: KeyDefinition) => {
       const { isModifier = false } = keyDef;
+
+      // Handle special mode switching keys
+      if (eventKey === "SymbolMode") {
+        setSymbolMode(true);
+        return;
+      } else if (eventKey === "LetterMode") {
+        setSymbolMode(false);
+        return;
+      }
+
       keyboardState.virtualKeyPress(eventKey, isModifier, 0);
     },
     [keyboardState],
@@ -135,8 +207,11 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
           {row.map(keyDef => {
             const { event, display, width = "44px", isModifier = false } = keyDef;
 
-            // Determine if this key should show as active (held)
-            const isActive = isModifier && heldKeys.has(event);
+            // Determine if this key should show as active (held or mode buttons)
+            const isActive =
+              (isModifier && heldKeys.has(event)) ||
+              (event === "SymbolMode" && symbolMode) ||
+              (event === "LetterMode" && !symbolMode);
 
             return (
               <KeyButton
