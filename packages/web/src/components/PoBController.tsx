@@ -3,9 +3,6 @@ import {
   ArrowRightEndOnRectangleIcon,
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
-  ArrowUpIcon,
-  Bars3Icon,
-  HomeIcon,
   LightBulbIcon,
   UserCircleIcon,
   XMarkIcon,
@@ -14,8 +11,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
+import { HomeButton } from "./HomeButton";
+import { MenuButton } from "./MenuButton";
 import PoBWindow from "./PoBWindow";
-import { SidebarToggleButton } from "./SidebarToggleButton";
 
 const { useTimeoutFn, useLocalStorage, useTitle } = use;
 
@@ -40,12 +38,15 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     }
   }, [notFirstVisit]);
 
-  // Create SidebarToggle component for driver toolbar
-  const SidebarToggle = ({
+  // Create toolbar components for driver toolbar
+  const ToolbarComponents = ({
     position,
     isLandscape,
   }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => (
-    <SidebarToggleButton position={position} isLandscape={isLandscape} onToggle={() => setDrawer(true)} />
+    <>
+      <HomeButton position={position} isLandscape={isLandscape} />
+      <MenuButton position={position} isLandscape={isLandscape} onToggle={() => setDrawer(true)} />
+    </>
   );
 
   return (
@@ -66,7 +67,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
               onFrame={() => {}}
               onTitleChange={setTitle}
               onLayerVisibilityCallbackReady={() => {}}
-              sidebarToggleComponent={SidebarToggle}
+              toolbarComponent={ToolbarComponents}
             />
           </div>
         </div>
@@ -108,17 +109,6 @@ function Sidebar(p: {
               <Auth tutorial={!p.optOutTutorial} />
             </li>
           </ul>
-          <li className="menu-title mt-2">Navigation</li>
-          <li>
-            <Link to="/">
-              <HomeIcon className="size-4" /> Return to home
-            </Link>
-          </li>
-          <li className={p.isHead ? "menu-disabled" : undefined}>
-            <Link to={`/${p.game}/`}>
-              <ArrowUpIcon className="size-4" /> Change to latest version
-            </Link>
-          </li>
           <li className="menu-title">Preferences</li>
           <li>
             <label htmlFor="optOutTutorial" className="flex">

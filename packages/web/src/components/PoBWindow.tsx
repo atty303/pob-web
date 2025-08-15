@@ -14,7 +14,7 @@ export default function PoBWindow(props: {
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onTitleChange: (title: string) => void;
   onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
-  sidebarToggleComponent?: React.ComponentType<{ position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }>;
+  toolbarComponent?: React.ComponentType<{ position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }>;
 }) {
   const auth0 = useAuth0();
 
@@ -119,8 +119,8 @@ export default function PoBWindow(props: {
         if (container.current) _driver.attachToDOM(container.current);
 
         // Set external toolbar component if provided
-        if (props.sidebarToggleComponent) {
-          _driver.setExternalToolbarComponent(props.sidebarToggleComponent);
+        if (props.toolbarComponent) {
+          _driver.setExternalToolbarComponent(props.toolbarComponent);
         }
 
         // Pass layer visibility control callback to parent
