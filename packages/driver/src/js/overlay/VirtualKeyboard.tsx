@@ -73,7 +73,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "l", display: "L" },
       ],
       [
-        { event: "Shift", display: "Shift", width: "60px", isModifier: true },
+        { event: "Shift", display: "Shift", isModifier: true },
         { event: "z", display: "Z" },
         { event: "x", display: "X" },
         { event: "c", display: "C" },
@@ -82,11 +82,12 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "n", display: "N" },
         { event: "m", display: "M" },
         { event: "Backspace", display: "⌫", isSpecial: true },
+        { event: "Delete", display: "Del", isSpecial: true },
       ],
       [
         { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
         { event: "Alt", display: "Alt", width: "60px", isModifier: true },
-        { event: "Space", display: "Space", width: "88px", isSpecial: true },
+        { event: "Space", display: "Space", width: "120px", isSpecial: true },
         { event: "Enter", display: "↵", isSpecial: true },
       ],
     ],
