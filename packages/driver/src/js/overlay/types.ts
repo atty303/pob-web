@@ -11,6 +11,7 @@ export interface ToolbarCallbacks {
   onZoomReset: () => void;
   onZoomChange: (zoom: number) => void;
   onCanvasSizeChange: (width: number, height: number) => void;
+  onFixedSizeToggle: (isFixed: boolean) => void;
   onLayoutChange: () => void;
   onFullscreenToggle: () => void;
   onPanModeToggle: (enabled: boolean) => void;

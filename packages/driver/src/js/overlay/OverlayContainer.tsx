@@ -13,6 +13,7 @@ interface OverlayContainerProps {
   panModeEnabled?: boolean;
   currentZoom?: number;
   currentCanvasSize?: { width: number; height: number };
+  isFixedSize?: boolean;
 }
 
 export const OverlayContainer: React.FC<OverlayContainerProps> = ({
@@ -21,6 +22,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   panModeEnabled: externalPanMode,
   currentZoom = 1.0,
   currentCanvasSize = { width: 1520, height: 800 },
+  isFixedSize = false,
 }) => {
   const [position, setPosition] = useState<ToolbarPosition>("bottom");
   const [isLandscape, setIsLandscape] = useState(false);
@@ -114,6 +116,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           keyboardVisible={keyboardVisible}
           currentZoom={currentZoom}
           currentCanvasSize={currentCanvasSize}
+          isFixedSize={isFixedSize}
         />
       </div>
       {keyboardVisible && (
@@ -140,7 +143,11 @@ export class ReactOverlayManager {
     }
   }
 
-  updateState(updates: Partial<Pick<OverlayContainerProps, "panModeEnabled" | "currentZoom" | "currentCanvasSize">>) {
+  updateState(
+    updates: Partial<
+      Pick<OverlayContainerProps, "panModeEnabled" | "currentZoom" | "currentCanvasSize" | "isFixedSize">
+    >,
+  ) {
     if (this.currentProps && this.root) {
       const newProps = { ...this.currentProps, ...updates };
       this.currentProps = newProps;

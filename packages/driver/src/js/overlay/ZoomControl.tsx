@@ -8,7 +8,9 @@ interface ZoomControlProps {
   onZoomChange: (zoom: number) => void;
   onZoomReset: () => void;
   onCanvasSizeChange?: (width: number, height: number) => void;
+  onFixedSizeToggle?: (isFixed: boolean) => void;
   currentCanvasSize?: { width: number; height: number };
+  isFixedSize?: boolean;
   isVisible: boolean;
   position: "bottom" | "right" | "left" | "top";
 }
@@ -20,7 +22,9 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
   onZoomChange,
   onZoomReset,
   onCanvasSizeChange,
+  onFixedSizeToggle,
   currentCanvasSize = { width: 1520, height: 800 },
+  isFixedSize = false,
   isVisible,
   position,
 }) => {
@@ -90,21 +94,12 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
 
   return (
     <div
-      className={`pw:absolute ${positionClasses} pw:z-50 pw:card pw:card-compact pw:bg-base-200 pw:shadow-xl pw:min-w-64`}
+      className={`pw:absolute ${positionClasses} pw:z-50 pw:card pw:card-compact pw:bg-base-200 pw:shadow-xl pw:min-w-96`}
     >
-      <div className="pw:card-body">
+      <div className="pw:card-body pw:space-y-3">
         {/* Zoom Controls */}
         <div className="pw:flex pw:items-center pw:gap-3">
-          {/* Reset Button */}
-          <button
-            type="button"
-            onClick={onZoomReset}
-            className="pw:btn pw:btn-sm pw:btn-circle pw:btn-ghost"
-            title="Reset Zoom"
-          >
-            <MdRefresh size={16} />
-          </button>
-
+          <span className="pw:text-sm pw:text-base-content/80 pw:w-12">Zoom</span>
           {/* Zoom Slider */}
           <input
             type="range"
@@ -116,23 +111,34 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
             className="pw:range pw:range-sm pw:flex-1"
           />
 
-          {/* Current Zoom Display */}
-          <span className="pw:badge pw:badge-neutral pw:min-w-12">{zoomPercentage}%</span>
+          {/* Zoom Display with Reset Button */}
+          <div className="pw:join">
+            <button
+              type="button"
+              onClick={onZoomReset}
+              className="pw:btn pw:btn-xs pw:btn-ghost pw:join-item"
+              title="Reset Zoom"
+            >
+              <MdRefresh size={14} />
+            </button>
+            <div className="pw:btn pw:btn-xs pw:btn-ghost pw:join-item pw:pointer-events-none">{zoomPercentage}%</div>
+          </div>
         </div>
 
-        {/* Canvas Size Controls */}
-        <div className="pw:divider pw:divider-start pw:text-xs">Canvas Size</div>
-        <div className="pw:flex pw:items-center pw:gap-2">
+        {/* Canvas Size */}
+        <div className="pw:flex pw:items-center pw:gap-3">
+          <span className="pw:text-sm pw:text-base-content/80 pw:w-12">Size</span>
           <input
             type="number"
             value={canvasWidth}
             onChange={handleWidthChange}
             onBlur={handleWidthBlur}
-            className="pw:input pw:input-xs pw:input-bordered pw:w-20"
-            placeholder="W"
+            className="pw:input pw:input-xs pw:input-bordered pw:flex-1"
+            placeholder="Width"
             min="50"
             max="8000"
             step="50"
+            disabled={!isFixedSize}
           />
           <span className="pw:text-base-content/60">×</span>
           <input
@@ -140,12 +146,24 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
             value={canvasHeight}
             onChange={handleHeightChange}
             onBlur={handleHeightBlur}
-            className="pw:input pw:input-xs pw:input-bordered pw:w-20"
-            placeholder="H"
+            className="pw:input pw:input-xs pw:input-bordered pw:flex-1"
+            placeholder="Height"
             min="50"
             max="8000"
             step="50"
+            disabled={!isFixedSize}
           />
+          <div className="pw:form-control">
+            <label className="pw:label pw:cursor-pointer pw:gap-2">
+              <span className="pw:label-text pw:text-xs">Auto</span>
+              <input
+                type="checkbox"
+                checked={!isFixedSize}
+                onChange={e => onFixedSizeToggle?.(!e.target.checked)}
+                className="pw:toggle pw:toggle-xs"
+              />
+            </label>
+          </div>
         </div>
       </div>
     </div>

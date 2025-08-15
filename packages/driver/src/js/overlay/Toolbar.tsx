@@ -16,6 +16,7 @@ interface ToolbarProps {
   keyboardVisible: boolean;
   currentZoom?: number;
   currentCanvasSize?: { width: number; height: number };
+  isFixedSize?: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -26,6 +27,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   keyboardVisible,
   currentZoom = 1.0,
   currentCanvasSize = { width: 1520, height: 800 },
+  isFixedSize = false,
 }) => {
   const [zoomControlVisible, setZoomControlVisible] = useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
@@ -87,7 +89,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         onZoomChange={callbacks.onZoomChange}
         onZoomReset={callbacks.onZoomReset}
         onCanvasSizeChange={callbacks.onCanvasSizeChange}
+        onFixedSizeToggle={callbacks.onFixedSizeToggle}
         currentCanvasSize={currentCanvasSize}
+        isFixedSize={isFixedSize}
         isVisible={zoomControlVisible}
         position={position}
       />

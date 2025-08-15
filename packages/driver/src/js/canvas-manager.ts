@@ -157,6 +157,16 @@ export class CanvasManager {
     }
   }
 
+  resetToAutoSize() {
+    this.isFixedSize = false;
+
+    if (this.canvasContainer) {
+      const containerRect = this.canvasContainer.getBoundingClientRect();
+      // Recalculate size based on container
+      this.updateCanvasSize(containerRect.width, containerRect.height);
+    }
+  }
+
   adjustForToolbar(isPortrait: boolean) {
     if (!this.canvasContainer) return;
 

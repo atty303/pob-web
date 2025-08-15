@@ -101,9 +101,10 @@ export class Driver {
           this.canvasManager?.resetTransform();
         }
 
-        // Update overlay with current style size
+        // Update overlay with current style size and fixed size state
         this.overlayManager?.updateState({
           currentCanvasSize: state.styleSize,
+          isFixedSize: state.isFixedSize,
         });
       },
       onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
@@ -272,6 +273,19 @@ export class Driver {
       onCanvasSizeChange: (width: number, height: number) => {
         this.canvasManager?.setCanvasStyleSize(width, height);
       },
+      onFixedSizeToggle: (isFixed: boolean) => {
+        if (isFixed) {
+          // Fixed mode: keep current size as fixed
+          const currentSize = this.canvasManager?.getStyleSize();
+          if (currentSize) {
+            this.canvasManager?.setCanvasStyleSize(currentSize.width, currentSize.height);
+          }
+        } else {
+          // Auto mode: reset to auto sizing
+          this.canvasManager?.resetToAutoSize();
+        }
+        this.updateOverlayWithTransform();
+      },
       onLayoutChange: () => {
         // Toolbar layout changes no longer affect canvas layout
       },
@@ -357,9 +371,11 @@ export class Driver {
     }
 
     // Update overlay with current zoom level and canvas size
+    const canvasState = this.canvasManager.getCurrentState();
     this.overlayManager?.updateState({
       currentZoom: this.canvasManager.transform.scale,
       currentCanvasSize: this.canvasManager.getStyleSize(),
+      isFixedSize: canvasState.isFixedSize,
     });
   }
 
