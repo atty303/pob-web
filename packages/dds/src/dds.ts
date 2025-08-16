@@ -371,7 +371,6 @@ export const parseDDSDX10 = (data: Uint8Array): Texture => {
     faceCount,
     mipMapCount,
   );
-  console.log("DDS texture created", texture);
 
   const sourceSize = offset + texture.size;
   if (data.byteLength !== sourceSize) {

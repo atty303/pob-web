@@ -193,8 +193,6 @@ export class DriverWorker {
       },
     });
 
-    await printFileSystemTree("/lib");
-
     if (fileSystemConfig.cloudflareKvAccessToken) {
       const kvFs = await zenfs.resolveMountConfig({
         backend: CloudflareKV,
