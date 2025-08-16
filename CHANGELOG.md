@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.27.0](https://github.com/atty303/pob-web/compare/v0.26.0...v0.27.0) (2025-08-16)
+
+
+### Features
+
+* **ErrorDialog:** implement error handling UI for critical errors ([f64acb5](https://github.com/atty303/pob-web/commit/f64acb5bfc14772044db4cafeee933136ad5d529))
+* **sentry:** add console logging integration and enable logs ([3b6b4c6](https://github.com/atty303/pob-web/commit/3b6b4c69deae7b546bdaa42113a205fd898d9a08))
+
+
+### Bug Fixes
+
+* added error dialog ([#125](https://github.com/atty303/pob-web/issues/125)) ([b167b95](https://github.com/atty303/pob-web/commit/b167b95b6f72972e4e43c6170e581d929c3c99ac))
+* **PoBWindow:** update error handling to set error state instead of throwing ([f4b560d](https://github.com/atty303/pob-web/commit/f4b560d04aad0b74e7e15be8c0200628b29ef70d))
+* **worker:** add error handling during frame processing in tick method ([246ca8a](https://github.com/atty303/pob-web/commit/246ca8a3cfc08626f4bea92b42260592575000b1))
+
 ## [0.26.0](https://github.com/atty303/pob-web/compare/v0.25.0...v0.26.0) (2025-08-16)
 
 
