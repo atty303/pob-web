@@ -199,6 +199,19 @@ export class CanvasManager {
     this._updateCanvasTransform();
   }
 
+  recalculateInitialScale() {
+    // Recalculate the initial scale based on current container size
+    this.calculateInitialScale();
+    // Apply the new initial scale
+    this._scale = this._initialScale;
+    // Reset zoom translations to center the canvas
+    this._zoomTranslateX = 0;
+    this._zoomTranslateY = 0;
+    // Apply constraints and update transform
+    this._constrainTransform();
+    this._updateCanvasTransform();
+  }
+
   getCurrentState(): CanvasState {
     const containerRect = this.canvasContainer?.getBoundingClientRect();
     const containerSize = containerRect

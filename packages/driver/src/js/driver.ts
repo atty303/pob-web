@@ -535,6 +535,12 @@ export class Driver {
       // Adjust canvas for overlay after orientation change
       this.adjustCanvasForOverlay();
 
+      // Recalculate initial scale for new orientation
+      this.canvasManager?.recalculateInitialScale();
+
+      // Update overlay with new transform
+      this.updateOverlayWithTransform();
+
       // Reset flag after layout is complete
       this.isHandlingLayoutChange = false;
     });
