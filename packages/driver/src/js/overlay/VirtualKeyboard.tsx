@@ -147,7 +147,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "Backspace", display: "⌫", isSpecial: true },
       ],
       [
-        { event: "SymbolMode", display: "!?#", width: "60px", isSpecial: true },
+        { event: "SymbolMode", display: "!?#", isSpecial: true },
         { event: "Control", display: "Ctrl", isModifier: true },
         { event: "Alt", display: "Alt", isModifier: true },
         { event: "Space", display: "Space", width: "120px", isSpecial: true },
@@ -208,7 +208,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "Delete", display: "Del", isSpecial: true },
       ],
       [
-        { event: "LetterMode", display: "ABC", width: "60px", isSpecial: true },
+        { event: "LetterMode", display: "ABC", isSpecial: true },
         { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
         { event: "Alt", display: "Alt", width: "60px", isModifier: true },
         { event: "Space", display: "Space", width: "120px", isSpecial: true },
@@ -312,15 +312,15 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         pointerEvents: "none",
       }}
     >
-      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:p-0.5 pw:pt-6">
-        <div className="pw:m-2 pw:gap-0.5">
+      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:px-0.5 pw:pt-6">
+        <div className="">
           {keyLayout.map((row, rowIndex) => (
             <div
               key={`row-${row.map(k => k.event).join("-")}`}
-              className="pw:flex pw:gap-0.5 pw:justify-center pw:w-full"
+              className="pw:flex pw:gap-0.5 pw:justify-center pw:w-full pw:mt-1"
             >
               {row.map(keyDef => {
-                const { event, display, width = "44px", isModifier = false } = keyDef;
+                const { event, display, width = "38px", isModifier = false } = keyDef;
 
                 // Determine if this key should show as active (held or mode buttons)
                 const isActive =

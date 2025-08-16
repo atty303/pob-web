@@ -19,7 +19,7 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
 
     return (
       <dialog ref={ref} className="pw:modal">
-        <div className="pw:modal-box pw:w-[36rem] pw:max-w-2xl">
+        <div className="pw:modal-box pw:max-w-2xl">
           {/* Header */}
           <div className="pw:flex pw:items-center pw:justify-between pw:mb-4 pw:pb-2 pw:border-b pw:border-base-300">
             <div className="pw:flex pw:items-center pw:gap-2">

@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => ({
     },
     // Owner's Cloudflare Tunnel domain for mobile testing
     allowedHosts: ["local.pob.cool"],
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
   },
   build: {
     chunkSizeWarningLimit: 1024,

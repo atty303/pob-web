@@ -33,7 +33,10 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   };
 
   return (
-    <div ref={container} className="relative w-full h-full">
+    <div
+      ref={container}
+      className="relative w-full h-full overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+    >
       <PoBWindow
         game={p.game}
         version={p.version}

@@ -40,7 +40,7 @@ export const PerformanceOverlay: React.FC<PerformanceOverlayProps> = ({
   }
 
   return (
-    <div className="pw:absolute pw:bottom-2 pw:right-2 pw:bg-base-100/90 pw:p-3 pw:rounded pw:backdrop-blur-sm pw:space-y-2 pw:max-w-80 pw:pointer-events-auto">
+    <div className="pw:absolute pw:top-2 pw:right-2 pw:bg-base-100/90 pw:p-3 pw:rounded pw:backdrop-blur-sm pw:space-y-2 pw:max-w-80 pw:pointer-events-auto">
       <LineChart data={frames} />
       {renderStats && <RenderStatsView stats={renderStats} onLayerVisibilityChange={onLayerVisibilityChange} />}
     </div>

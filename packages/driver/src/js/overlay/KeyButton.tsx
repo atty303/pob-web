@@ -9,7 +9,7 @@ interface KeyButtonProps {
   isActive?: boolean;
 }
 
-export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width = "44px", callbacks, isActive = false }) => {
+export const KeyButton: React.FC<KeyButtonProps> = ({ label, char, width, callbacks, isActive = false }) => {
   const executeAction = useCallback(() => {
     callbacks.onClick(char);
   }, [char, callbacks]);

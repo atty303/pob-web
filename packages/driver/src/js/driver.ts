@@ -131,9 +131,9 @@ export class Driver {
     // Create overlay container - 100% size, in front of canvas
     const overlayContainer = document.createElement("div");
     overlayContainer.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
+      position: relative;
+      width: 100%;
+      height: 100%;
       width: 100%;
       height: 100%;
       pointer-events: none;
