@@ -274,7 +274,6 @@ export class BinPackingTextRasterizer {
     this.context.textBaseline = "bottom";
     this.packer = new BinaryBinPack(this.size.width, this.size.height);
     this.generation += 1;
-    console.log("BinPackingTextRasterizer: reset");
   }
 
   get(height: number, fontNum: number, text: string) {

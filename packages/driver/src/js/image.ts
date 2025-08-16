@@ -91,7 +91,6 @@ export class ImageRepository {
           zstdInitialized = true;
         }
         const data = zstd.decompress(new Uint8Array(await blob.arrayBuffer()));
-        log.debug(tag.texture, "Loading DDS", src);
         try {
           const texture0 = parseDDSDX10(data);
           const texture = new Texture(

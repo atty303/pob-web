@@ -87,7 +87,7 @@ type OnFetchFunction = (
 }>;
 
 export type HostCallbacks = {
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
   onTitleChange: (title: string) => void;
@@ -192,8 +192,6 @@ export class DriverWorker {
         },
       },
     });
-
-    await printFileSystemTree("/lib");
 
     if (fileSystemConfig.cloudflareKvAccessToken) {
       const kvFs = await zenfs.resolveMountConfig({
@@ -302,14 +300,20 @@ export class DriverWorker {
 
   private async tick() {
     if (this.visible) {
-      const start = performance.now();
+      try {
+        const start = performance.now();
 
-      await this.imports?.onFrame();
+        await this.imports?.onFrame();
 
-      const time = performance.now() - start;
-      const stats = this.renderer?.getStats();
-      this.hostCallbacks?.onFrame(start, time, stats);
-      this.dirtyCount -= 1;
+        const time = performance.now() - start;
+        const stats = this.renderer?.getStats();
+        this.hostCallbacks?.onFrame(start, time, stats);
+        this.dirtyCount -= 1;
+      } catch (error) {
+        log.error(tag.worker, "Error during frame processing", error);
+        this.hostCallbacks?.onError(error);
+        throw error;
+      }
     }
     requestAnimationFrame(this.tick.bind(this));
   }
@@ -332,7 +336,7 @@ export class DriverWorker {
   private exports(module: DriverModule) {
     return {
       fs: zenfs.fs,
-      onError: (message: string) => this.hostCallbacks?.onError(message),
+      onError: (message: string) => this.hostCallbacks?.onError(new Error(`Error in lua: ${message}`)),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,
