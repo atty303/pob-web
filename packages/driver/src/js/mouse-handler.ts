@@ -8,7 +8,8 @@ function mouseString(e: MouseEvent) {
 }
 
 export type MouseCallbacks = {
-  onMouseMove: (mouseState: MouseState) => void;
+  onMouseMove: () => void;
+  onMouseStateUpdate?: (mouseState: MouseState) => void;
   onPan?: (deltaX: number, deltaY: number) => void;
   onZoom?: (scale: number, centerX: number, centerY: number) => void;
 };
@@ -38,6 +39,12 @@ export class MouseHandler {
       x: this._cursorPosition.x,
       y: this._cursorPosition.y,
     };
+  }
+
+  private updateMouseState(pos: { x: number; y: number }) {
+    this._cursorPosition = pos;
+    // Notify driver of mouse state update
+    this.callbacks.onMouseStateUpdate?.(this.mouseState);
   }
 
   constructor(
@@ -126,15 +133,16 @@ export class MouseHandler {
       }
 
       // Update cursor position even during panning for accurate coordinates
-      this._cursorPosition = newPos;
+      this.updateMouseState(newPos);
       return;
     }
 
-    this._cursorPosition = newPos; // Store canvas container coordinates
+    // Update mouse state and notify driver
+    this.updateMouseState(newPos);
 
     // Only send mouse move to PoB if not in pan mode or not currently panning
     if (!this._panModeEnabled || !this._isMousePanning) {
-      this.callbacks.onMouseMove(this.mouseState);
+      this.callbacks.onMouseMove();
     }
   }
 
@@ -147,6 +155,9 @@ export class MouseHandler {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
+
+    // Update mouse state for button events
+    this.updateMouseState(pos);
 
     if (this._panModeEnabled && name === "LEFTBUTTON") {
       // In pan mode, left click starts panning
@@ -163,15 +174,19 @@ export class MouseHandler {
     e.preventDefault();
     const name = mouseString(e);
 
+    const rect = this.el.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    // Update mouse state for button events
+    this.updateMouseState(pos);
+
     if (this._panModeEnabled && name === "LEFTBUTTON" && this._isMousePanning) {
       // End mouse panning
       this._isMousePanning = false;
       this._mouseStartPos = null;
-      const rect = this.el.getBoundingClientRect();
-      this._cursorPosition = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
     } else if (name) {
       this.keyboardCallbacks.removePhysicalKey?.(name);
       this.keyboardCallbacks.onKeyUp(name, -1); // TODO: 0
@@ -182,6 +197,16 @@ export class MouseHandler {
   handleDblClick(e: MouseEvent) {
     e.preventDefault();
     const name = mouseString(e);
+
+    const rect = this.el.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    // Update mouse state for button events
+    this.updateMouseState(pos);
+
     if (name) {
       this.keyboardCallbacks.onKeyDown(name, 1);
     }
@@ -190,6 +215,16 @@ export class MouseHandler {
 
   handleWheel(e: WheelEvent) {
     e.preventDefault();
+
+    const rect = this.el.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    // Update mouse state for wheel events
+    this.updateMouseState(pos);
+
     const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
     this.keyboardCallbacks.onKeyUp(name, 0);
     this.el.focus();
@@ -234,7 +269,7 @@ export class MouseHandler {
       // Single touch - behavior depends on drag mode
       const touch = e.touches[0];
       const pos = this.getTouchPosition(touch);
-      this._cursorPosition = pos;
+      this.updateMouseState(pos);
 
       if (!this._panModeEnabled) {
         // Direct interaction mode: prepare for potential drag or long press
@@ -249,7 +284,7 @@ export class MouseHandler {
         }, 300);
       } else {
         // Pan tool mode: just mouse move for single tap
-        this.callbacks.onMouseMove(this.mouseState);
+        this.callbacks.onMouseMove();
 
         // Record tap time for potential double tap detection
         this._lastTapTime = currentTime;
@@ -279,7 +314,7 @@ export class MouseHandler {
       // Single finger move
       const touch = e.touches[0];
       const pos = this.getTouchPosition(touch);
-      this._cursorPosition = pos;
+      this.updateMouseState(pos);
 
       if (!this._panModeEnabled) {
         // Direct interaction mode: check if we should start drag
@@ -301,14 +336,14 @@ export class MouseHandler {
 
         if (this._isPanModeActive) {
           // Send mouse move with button down (drag)
-          this.callbacks.onMouseMove(this.mouseState);
+          this.callbacks.onMouseMove();
         } else {
           // Just mouse move (no drag yet)
-          this.callbacks.onMouseMove(this.mouseState);
+          this.callbacks.onMouseMove();
         }
       } else {
         // Pan tool mode: just mouse move (no click drag)
-        this.callbacks.onMouseMove(this.mouseState);
+        this.callbacks.onMouseMove();
       }
     } else if (e.touches.length === 2) {
       // Two finger gesture

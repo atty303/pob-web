@@ -202,7 +202,11 @@ export class Driver {
     this.mouseHandler = new MouseHandler(
       container,
       {
-        onMouseMove: mouseState => {
+        onMouseMove: () => {
+          const transformedMouse = this.transformMouseCoordinates(this.mouseHandler!.mouseState);
+          this.driverWorker?.handleMouseMove(transformedMouse);
+        },
+        onMouseStateUpdate: mouseState => {
           const transformedMouse = this.transformMouseCoordinates(mouseState);
           this.driverWorker?.handleMouseMove(transformedMouse);
         },
