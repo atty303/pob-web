@@ -5,6 +5,7 @@ import { type Game, gameData } from "pob-game/src";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { log, tag } from "../lib/logger";
+import ErrorDialog from "./ErrorDialog";
 
 const { useHash } = use;
 
@@ -54,6 +55,7 @@ export default function PoBWindow(props: {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
+  const [showErrorDialog, setShowErrorDialog] = useState(true);
 
   useEffect(() => {
     if (driverRef.current && props.toolbarComponent) {
@@ -67,8 +69,9 @@ export default function PoBWindow(props: {
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
     const _driver = new Driver("release", assetPrefix, {
-      onError: message => {
-        setError(new Error(message));
+      onError: error => {
+        setError(error);
+        setShowErrorDialog(true);
       },
       onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
       onFetch: async (url, headers, body) => {
@@ -137,6 +140,7 @@ export default function PoBWindow(props: {
         setLoading(false);
       } catch (e) {
         setError(e);
+        setShowErrorDialog(true);
         setLoading(false);
       }
     })();
@@ -151,6 +155,23 @@ export default function PoBWindow(props: {
 
   if (error) {
     log.error(tag.pob, error);
+    return (
+      <>
+        {showErrorDialog && (
+          <ErrorDialog
+            error={error}
+            onReload={() => window.location.reload()}
+            onClose={() => setShowErrorDialog(false)}
+          />
+        )}
+        <div
+          ref={container}
+          className={`w-full h-full border border-neutral focus:outline-none bg-black ${
+            loading ? "rounded-none skeleton" : ""
+          }`}
+        />
+      </>
+    );
   }
 
   return (

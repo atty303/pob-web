@@ -87,7 +87,7 @@ type OnFetchFunction = (
 }>;
 
 export type HostCallbacks = {
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
   onTitleChange: (title: string) => void;
@@ -311,7 +311,7 @@ export class DriverWorker {
         this.dirtyCount -= 1;
       } catch (error) {
         log.error(tag.worker, "Error during frame processing", error);
-        this.hostCallbacks?.onError(`Error during frame processing: ${error}`);
+        this.hostCallbacks?.onError(error);
         throw error;
       }
     }
@@ -336,7 +336,7 @@ export class DriverWorker {
   private exports(module: DriverModule) {
     return {
       fs: zenfs.fs,
-      onError: (message: string) => this.hostCallbacks?.onError(message),
+      onError: (message: string) => this.hostCallbacks?.onError(new Error(`Error in lua: ${message}`)),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,

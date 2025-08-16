@@ -6,7 +6,7 @@ import { Driver } from "./driver";
   console.log("Loading driver with assets:", versionPrefix);
 
   const driver = new Driver(__RUN_BUILD__, versionPrefix, {
-    onError: message => console.error(message),
+    onError: error => console.error(error),
     onFrame: (_at, _time, _stats) => {},
     onFetch: async (_url, _headers, _body) => {
       throw new Error("Fetch not implemented in shell");
