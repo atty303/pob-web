@@ -29,6 +29,8 @@ export class MouseHandler {
   private _isZooming = false;
   private _isPanning = false;
   private _isPanModeActive = false;
+  private _threeFingerPanning = false;
+  private _threeFingerCenter: { x: number; y: number } = { x: 0, y: 0 };
 
   // Two finger wheel sensitivity
   private _wheelAccumulator = 0;
@@ -302,6 +304,16 @@ export class MouseHandler {
       this._twoFingerCenter = this.calculateCenter(touch1, touch2);
       this._isZooming = false;
       this._isPanning = false;
+    } else if (e.touches.length === 3) {
+      // Three finger touch - initialize pan center
+      const touch1 = this.getTouchPosition(e.touches[0]);
+      const touch2 = this.getTouchPosition(e.touches[1]);
+      const touch3 = this.getTouchPosition(e.touches[2]);
+      this._threeFingerCenter = {
+        x: (touch1.x + touch2.x + touch3.x) / 3,
+        y: (touch1.y + touch2.y + touch3.y) / 3,
+      };
+      this._threeFingerPanning = false;
     }
 
     this.el.focus();
@@ -394,6 +406,31 @@ export class MouseHandler {
 
       this._twoFingerDistance = currentDistance;
       this._twoFingerCenter = currentCenter;
+    } else if (e.touches.length === 3) {
+      // Three finger gesture - always pan regardless of pan mode
+      const touch1 = this.getTouchPosition(e.touches[0]);
+      const touch2 = this.getTouchPosition(e.touches[1]);
+      const touch3 = this.getTouchPosition(e.touches[2]);
+      const currentCenter = {
+        x: (touch1.x + touch2.x + touch3.x) / 3,
+        y: (touch1.y + touch2.y + touch3.y) / 3,
+      };
+
+      const centerDelta = {
+        x: currentCenter.x - this._threeFingerCenter.x,
+        y: currentCenter.y - this._threeFingerCenter.y,
+      };
+
+      // Start three finger panning if movement detected
+      if (!this._threeFingerPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
+        this._threeFingerPanning = true;
+      }
+
+      if (this._threeFingerPanning) {
+        this.callbacks.onPan?.(centerDelta.x, centerDelta.y);
+      }
+
+      this._threeFingerCenter = currentCenter;
     }
   }
 
@@ -444,6 +481,7 @@ export class MouseHandler {
       this._isZooming = false;
       this._isPanning = false;
       this._wheelAccumulator = 0; // Reset wheel accumulator
+      this._threeFingerPanning = false; // Reset three finger panning
     }
 
     this.el.focus();
@@ -470,5 +508,6 @@ export class MouseHandler {
     this._isPanning = false;
     this._isPanModeActive = false;
     this._wheelAccumulator = 0; // Reset wheel accumulator
+    this._threeFingerPanning = false; // Reset three finger panning
   }
 }
