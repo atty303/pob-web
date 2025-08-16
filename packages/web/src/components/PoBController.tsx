@@ -2,6 +2,8 @@ import type { Driver } from "pob-driver/src/js/driver";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
+import { HelpButton } from "./HelpButton";
+import { HelpDialog } from "./HelpDialog";
 import PoBWindow from "./PoBWindow";
 import { SettingsButton } from "./SettingsButton";
 import { SettingsDialog } from "./SettingsDialog";
@@ -17,6 +19,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
   const [performanceVisible, setPerformanceVisible] = useState(false);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   // Create toolbar components for driver toolbar
   const ToolbarComponents = ({
@@ -24,11 +27,14 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     isLandscape,
   }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => {
     return (
-      <SettingsButton
-        position={position}
-        isLandscape={isLandscape}
-        onOpenSettings={() => settingsDialogRef.current?.showModal()}
-      />
+      <>
+        <SettingsButton
+          position={position}
+          isLandscape={isLandscape}
+          onOpenSettings={() => settingsDialogRef.current?.showModal()}
+        />
+        <HelpButton position={position} isLandscape={isLandscape} onOpenHelp={() => setHelpDialogOpen(true)} />
+      </>
     );
   };
 
@@ -59,6 +65,8 @@ export default function PoBController(p: { game: keyof Games; version: string; i
           driverRef.current?.setPerformanceVisible(newValue);
         }}
       />
+
+      <HelpDialog isOpen={helpDialogOpen} onClose={() => setHelpDialogOpen(false)} />
     </div>
   );
 }
