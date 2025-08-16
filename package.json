@@ -1,8 +1,14 @@
 {
   "name": "@atty303/pob-web",
   "private": true,
-  "version": "0.26.0",
-  "workspaces": ["packages/dds", "packages/driver", "packages/game", "packages/packer", "packages/web"],
+  "version": "0.27.0",
+  "workspaces": [
+    "packages/dds",
+    "packages/driver",
+    "packages/game",
+    "packages/packer",
+    "packages/web"
+  ],
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@bokuweb/zstd-wasm": "^0.0.22",
