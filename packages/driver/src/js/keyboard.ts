@@ -60,6 +60,35 @@ const EXTRA_CHAR_MAP = new Map<string, string>([
   ["Escape", "\u001B"],
 ]);
 
+// Transform numbers and symbols when Shift is held
+const shiftNumberMap: Record<string, string> = {
+  "1": "!",
+  "2": "@",
+  "3": "#",
+  "4": "$",
+  "5": "%",
+  "6": "^",
+  "7": "&",
+  "8": "*",
+  "9": "(",
+  "0": ")",
+};
+
+// Additional symbol transformations
+const shiftSymbolMap: Record<string, string> = {
+  "`": "~",
+  "-": "_",
+  "=": "+",
+  "[": "{",
+  "]": "}",
+  "\\": "|",
+  ";": ":",
+  "'": '"',
+  ",": "<",
+  ".": ">",
+  "/": "?",
+};
+
 export type KeyboardStateCallbacks = {
   onKeyDown: (key: string, doubleClick: number) => void;
   onKeyUp: (key: string, doubleClick: number) => void;
@@ -133,6 +162,7 @@ export class KeyboardState {
 
   // Method equivalent to DOM keydown event
   keydown(domKey: string, doubleClick = 0): void {
+    console.log(`Key down: ${domKey}, doubleClick: ${doubleClick}`);
     const pobKey = this.domKeyToPobKey(domKey);
 
     // Normal key press - add to temporary keys and call down
@@ -159,17 +189,17 @@ export class KeyboardState {
       }
       this.notifyChange();
     } else {
-      // Normal key press: keydown -> keypress -> keyup sequence
+      // Use same logic as physical keyboard: keydown handles special characters
       this.keydown(domKey, doubleClick);
-      this.virtualKeypress(domKey, doubleClick);
+
+      // Only add keypress for character-generating keys
+      if (/^[a-z0-9]$/.test(domKey)) {
+        const transformedChar = this.applyShiftTransformation(domKey);
+        this.keypress(transformedChar);
+      }
+
       this.keyup(domKey, doubleClick);
     }
-  }
-
-  // Virtual keyboard keypress with Shift transformation
-  private virtualKeypress(domKey: string, doubleClick = 0): void {
-    const transformedChar = this.applyShiftTransformation(domKey);
-    this._callbacks?.onChar(transformedChar, doubleClick);
   }
 
   private applyShiftTransformation(domKey: string): string {
@@ -183,35 +213,6 @@ export class KeyboardState {
     if (/^[a-z]$/.test(domKey)) {
       return domKey.toUpperCase();
     }
-
-    // Transform numbers and symbols when Shift is held
-    const shiftNumberMap: Record<string, string> = {
-      "1": "!",
-      "2": "@",
-      "3": "#",
-      "4": "$",
-      "5": "%",
-      "6": "^",
-      "7": "&",
-      "8": "*",
-      "9": "(",
-      "0": ")",
-    };
-
-    // Additional symbol transformations
-    const shiftSymbolMap: Record<string, string> = {
-      "`": "~",
-      "-": "_",
-      "=": "+",
-      "[": "{",
-      "]": "}",
-      "\\": "|",
-      ";": ":",
-      "'": '"',
-      ",": "<",
-      ".": ">",
-      "/": "?",
-    };
 
     if (shiftNumberMap[domKey]) {
       return shiftNumberMap[domKey];
@@ -241,6 +242,7 @@ export class KeyboardState {
 
   // Method equivalent to DOM keyup event
   keyup(domKey: string, doubleClick = 0): void {
+    console.log(`Key up: ${domKey}, doubleClick: ${doubleClick}`);
     if (this._keys.has(domKey)) {
       this._keys.delete(domKey);
       const pobKey = this.domKeyToPobKey(domKey);
@@ -251,6 +253,7 @@ export class KeyboardState {
 
   // Method equivalent to DOM keypress event
   keypress(domKey: string, doubleClick = 0): void {
+    console.log(`Key press: ${domKey}, doubleClick: ${doubleClick}`);
     // Send the key as-is, matching original DOM keypress behavior
     this._callbacks?.onChar(domKey, doubleClick);
   }
@@ -271,14 +274,5 @@ export class KeyboardState {
   clearAllKeys(): void {
     this._keys.clear();
     this._heldKeys.clear();
-  }
-
-  private isModifierKey(domKey: string): boolean {
-    return domKey === "Control" || domKey === "Shift" || domKey === "Alt";
-  }
-
-  private isCharacterKey(domKey: string): boolean {
-    // Character keys are letters and numbers
-    return /^[A-Za-z0-9]$/.test(domKey);
   }
 }

@@ -259,23 +259,6 @@ export class Driver {
 
     // Initialize toolbar callbacks that delegate to keyboard handler
     const toolbarCallbacks: ToolbarCallbacks = {
-      onChar: (char, doubleClick) => {
-        // Virtual keyboard events go directly through the keyboard handler
-        // Mouse state is not relevant for virtual keyboard input
-        this.keyboardHandler!.keyboardState.keypress(char, doubleClick);
-      },
-      onKeyDown: (key, doubleClick) => {
-        // Virtual keyboard events go directly through the keyboard handler
-        // Mouse state is not relevant for virtual keyboard input
-        this.keyboardHandler!.keyboardState.addPhysicalKey(key);
-        this.keyboardHandler!.keyboardState.keydown(key, doubleClick);
-      },
-      onKeyUp: (key, doubleClick) => {
-        // Virtual keyboard events go directly through the keyboard handler
-        // Mouse state is not relevant for virtual keyboard input
-        this.keyboardHandler!.keyboardState.removePhysicalKey(key);
-        this.keyboardHandler!.keyboardState.keyup(key, doubleClick);
-      },
       onZoomReset: () => {
         this.canvasManager?.resetZoom();
         this.updateOverlayWithTransform();

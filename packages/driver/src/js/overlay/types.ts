@@ -5,9 +5,6 @@ export interface ModifierKeys {
 }
 
 export interface ToolbarCallbacks {
-  onChar: (char: string, doubleClick: number) => void;
-  onKeyDown: (key: string, doubleClick: number) => void;
-  onKeyUp: (key: string, doubleClick: number) => void;
   onZoomReset: () => void;
   onZoomChange: (zoom: number) => void;
   onCanvasSizeChange: (width: number, height: number) => void;

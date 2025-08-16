@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
 import type { KeyboardState } from "../keyboard";
 import { KeyButton } from "./KeyButton";
-import type { ModifierKeys, ToolbarCallbacks } from "./types";
+import type { ToolbarCallbacks } from "./types";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;
@@ -329,8 +329,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
                     char={display}
                     width={width}
                     callbacks={{
-                      ...callbacks,
-                      onChar: () => handleKeyPress(event, keyDef),
+                      onClick: () => handleKeyPress(event, keyDef),
                     }}
                     isActive={isActive}
                   />
