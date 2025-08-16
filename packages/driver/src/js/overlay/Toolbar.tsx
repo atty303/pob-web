@@ -95,8 +95,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
       <ZoomControl
         currentZoom={currentZoom}
-        minZoom={0.5}
-        maxZoom={3.0}
+        minZoom={0.1}
+        maxZoom={2.0}
         onZoomChange={callbacks.onZoomChange}
         onZoomReset={callbacks.onZoomReset}
         onCanvasSizeChange={callbacks.onCanvasSizeChange}

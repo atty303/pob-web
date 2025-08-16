@@ -53,10 +53,11 @@ export class CanvasManager {
   private _panTranslateY = 0;
   private _zoomTranslateX = 0; // Zoom-center translation (affects coordinates)
   private _zoomTranslateY = 0;
-  private _minScale = 0.5;
-  private _maxScale = 3.0;
+  private _minScale = 0.1;
+  private _maxScale = 2.0;
   private _containerWidth = 800;
   private _containerHeight = 600;
+  private _isInitialScale = true; // Track if we need to calculate initial scale
 
   private onStateChange?: (state: CanvasState) => void;
   private onRenderingSizeChange?: (size: CanvasRenderingSize) => void;
@@ -185,6 +186,12 @@ export class CanvasManager {
       this._containerWidth = Math.max(0, this._containerWidth - toolbarSize);
     }
 
+    // Calculate initial scale after toolbar adjustment if needed
+    if (this._isInitialScale && !this.isFixedSize) {
+      this.calculateInitialScale();
+      this._isInitialScale = false;
+    }
+
     // Recalculate constraints with new container size
     this._constrainTransform();
     this._updateCanvasTransform();
@@ -277,6 +284,7 @@ export class CanvasManager {
     this._scale = 1;
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
+    this._isInitialScale = false; // User explicitly reset, don't auto-scale
     this._constrainTransform();
     this._updateCanvasTransform();
   }
@@ -287,6 +295,7 @@ export class CanvasManager {
     this._panTranslateY = 0;
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
+    this._isInitialScale = false; // User explicitly reset, don't auto-scale
     this._constrainTransform();
     this._updateCanvasTransform();
   }
@@ -299,6 +308,7 @@ export class CanvasManager {
     // Reset only zoom (preserve pan) then zoom to desired scale
     this.resetZoom();
     this.zoom(scale, cx, cy);
+    this._isInitialScale = false; // User explicitly zoomed, don't auto-scale
   }
 
   // Transform container coordinates to canvas coordinates
@@ -372,6 +382,24 @@ export class CanvasManager {
     // Notify changes
     this.notifyStateChange(containerWidth, containerHeight);
     this.notifyRenderingSizeChange();
+  }
+
+  private calculateInitialScale() {
+    // Check if both width and height don't fit in container
+    const widthFits = this.currentStyleWidth <= this._containerWidth;
+    const heightFits = this.currentStyleHeight <= this._containerHeight;
+
+    if (!widthFits || !heightFits) {
+      // Calculate scale to fit width and height
+      const scaleToFitWidth = this._containerWidth / this.currentStyleWidth;
+      const scaleToFitHeight = this._containerHeight / this.currentStyleHeight;
+
+      // Use the larger scale (less zoom out) so at least one dimension fits
+      const initialScale = Math.max(scaleToFitWidth, scaleToFitHeight);
+
+      // Constrain to min/max scale bounds
+      this._scale = Math.max(this._minScale, Math.min(this._maxScale, initialScale));
+    }
   }
 
   private updateCanvasStyleSize() {
