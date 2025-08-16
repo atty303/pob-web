@@ -150,9 +150,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           externalComponent={externalComponent}
         />
       </div>
-      {keyboardVisible && (
-        <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
-      )}
+      <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
       <PerformanceOverlay
         isVisible={performanceOverlayVisible}
         frames={frames}

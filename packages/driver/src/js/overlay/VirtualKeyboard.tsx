@@ -112,7 +112,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     };
   }, [keyboardState, updateLocalState]);
 
-  // Initialize position when keyboard becomes visible or on first mount
+  // Initialize position only on first show
   useEffect(() => {
     if (isVisible && !isInitialized) {
       // Use setTimeout to ensure the keyboard is rendered and we can get its dimensions
@@ -366,10 +366,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     }
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  if (!isVisible) {
-    return null;
-  }
-
   return (
     <div
       ref={keyboardRef}
@@ -381,6 +377,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         marginLeft: "-200px", // Half of approximate keyboard width
         cursor: isDragging ? "grabbing" : "default",
         pointerEvents: "none",
+        display: isVisible ? "block" : "none", // Control visibility without unmounting
         visibility: isInitialized ? "visible" : "hidden", // Hide until positioned
       }}
     >
