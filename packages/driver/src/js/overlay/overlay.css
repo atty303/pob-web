@@ -10,35 +10,3 @@
 html {
   scrollbar-gutter: auto !important;
 }
-
-/* Custom slider styling */
-.driver-overlay .slider::-webkit-slider-thumb {
-  appearance: none;
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: 2px solid #1e40af;
-}
-
-.driver-overlay .slider::-moz-range-thumb {
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: 2px solid #1e40af;
-}
-
-.driver-overlay .slider::-webkit-slider-track {
-  height: 8px;
-  border-radius: 4px;
-  background: #374151;
-}
-
-.driver-overlay .slider::-moz-range-track {
-  height: 8px;
-  border-radius: 4px;
-  background: #374151;
-}

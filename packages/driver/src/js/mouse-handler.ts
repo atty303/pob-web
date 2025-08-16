@@ -20,7 +20,6 @@ export class MouseHandler {
   private _isMousePanning = false;
   private _mouseStartPos: { x: number; y: number } | null = null;
 
-  // Touch state tracking
   private _touches: Map<number, { x: number; y: number; startTime: number }> = new Map();
   private _longPressTimer: number | null = null;
   private _lastTapTime = 0;
@@ -34,9 +33,8 @@ export class MouseHandler {
   private _multiTouchPreventionTimer: number | null = null;
   private _allowMouseUpdates = true;
 
-  // Two finger wheel sensitivity
   private _wheelAccumulator = 0;
-  private static readonly WHEEL_SENSITIVITY = 4; // Require 4x movement for one wheel event
+  private static readonly WHEEL_SENSITIVITY = 4;
 
   get mouseState(): MouseState {
     return {
@@ -47,7 +45,6 @@ export class MouseHandler {
 
   private updateMouseState(pos: { x: number; y: number }) {
     this._cursorPosition = pos;
-    // Only notify driver if mouse updates are allowed (prevent during multi-touch gestures)
     if (this._allowMouseUpdates) {
       this.callbacks.onMouseStateUpdate?.(this.mouseState);
     }
@@ -64,7 +61,6 @@ export class MouseHandler {
       onKeyUp: (key: string, doubleClick: number) => void;
     },
   ) {
-    // Bind event handlers
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
@@ -75,14 +71,12 @@ export class MouseHandler {
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleTouchCancel = this.handleTouchCancel.bind(this);
 
-    // Add mouse event listeners
     el.addEventListener("mousemove", this.handleMouseMove);
     el.addEventListener("mousedown", this.handleMouseDown);
     el.addEventListener("mouseup", this.handleMouseUp);
     el.addEventListener("dblclick", this.handleDblClick);
     el.addEventListener("wheel", this.handleWheel, { passive: false });
 
-    // Add touch event listeners
     el.addEventListener("touchstart", this.handleTouchStart, { passive: false });
     el.addEventListener("touchmove", this.handleTouchMove, { passive: false });
     el.addEventListener("touchend", this.handleTouchEnd, { passive: false });
@@ -91,7 +85,6 @@ export class MouseHandler {
 
   setPanMode(enabled: boolean) {
     this._panModeEnabled = enabled;
-    // Clean up mouse panning state when mode changes
     if (!enabled) {
       this._isMousePanning = false;
       this._mouseStartPos = null;
@@ -99,14 +92,12 @@ export class MouseHandler {
   }
 
   destroy() {
-    // Remove mouse event listeners
     this.el.removeEventListener("mousemove", this.handleMouseMove);
     this.el.removeEventListener("mousedown", this.handleMouseDown);
     this.el.removeEventListener("mouseup", this.handleMouseUp);
     this.el.removeEventListener("dblclick", this.handleDblClick);
     this.el.removeEventListener("wheel", this.handleWheel);
 
-    // Remove touch event listeners
     this.el.removeEventListener("touchstart", this.handleTouchStart);
     this.el.removeEventListener("touchmove", this.handleTouchMove);
     this.el.removeEventListener("touchend", this.handleTouchEnd);
@@ -123,33 +114,27 @@ export class MouseHandler {
   }
 
   handleMouseMove(e: MouseEvent) {
-    // Use getBoundingClientRect for accurate coordinates with CSS transforms
     const rect = this.el.getBoundingClientRect();
     const newPos = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
 
-    // Handle pan mode mouse dragging - use screen coordinates for pan calculations
     if (this._panModeEnabled && this._isMousePanning && this._mouseStartPos) {
       const deltaX = newPos.x - this._mouseStartPos.x;
       const deltaY = newPos.y - this._mouseStartPos.y;
 
-      // Only pan if there's actual movement
       if (deltaX !== 0 || deltaY !== 0) {
         this.callbacks.onPan?.(deltaX, deltaY);
         this._mouseStartPos = newPos;
       }
 
-      // Update cursor position even during panning for accurate coordinates
       this.updateMouseState(newPos);
       return;
     }
 
-    // Update mouse state and notify driver
     this.updateMouseState(newPos);
 
-    // Only send mouse move to PoB if not in pan mode or not currently panning
     if (!this._panModeEnabled || !this._isMousePanning) {
       this.callbacks.onMouseMove();
     }
@@ -165,11 +150,9 @@ export class MouseHandler {
       y: e.clientY - rect.top,
     };
 
-    // Update mouse state for button events
     this.updateMouseState(pos);
 
     if (this._panModeEnabled && name === "LEFTBUTTON") {
-      // In pan mode, left click starts panning
       this._isMousePanning = true;
       this._mouseStartPos = pos;
     } else if (name) {
@@ -189,11 +172,9 @@ export class MouseHandler {
       y: e.clientY - rect.top,
     };
 
-    // Update mouse state for button events
     this.updateMouseState(pos);
 
     if (this._panModeEnabled && name === "LEFTBUTTON" && this._isMousePanning) {
-      // End mouse panning
       this._isMousePanning = false;
       this._mouseStartPos = null;
     } else if (name) {
@@ -213,7 +194,6 @@ export class MouseHandler {
       y: e.clientY - rect.top,
     };
 
-    // Update mouse state for button events
     this.updateMouseState(pos);
 
     if (name) {
@@ -239,9 +219,7 @@ export class MouseHandler {
     this.el.focus();
   }
 
-  // Touch event handlers
   private getTouchPosition(touch: Touch): { x: number; y: number } {
-    // Calculate container coordinates from touch
     const rect = this.el.getBoundingClientRect();
     return {
       x: touch.clientX - rect.left,
@@ -275,25 +253,19 @@ export class MouseHandler {
     }
 
     if (e.touches.length === 1) {
-      // Single touch - behavior depends on drag mode
       const touch = e.touches[0];
       const pos = this.getTouchPosition(touch);
 
-      // Prevent immediate mouse updates to avoid conflicts with potential multi-touch gestures
       this._allowMouseUpdates = false;
 
-      // Clear any existing multi-touch prevention timer
       if (this._multiTouchPreventionTimer) {
         clearTimeout(this._multiTouchPreventionTimer);
       }
 
-      // Set timer to allow mouse updates if no second finger comes within 50ms
       this._multiTouchPreventionTimer = window.setTimeout(() => {
         if (this._touches.size === 1) {
           this._allowMouseUpdates = true;
-          // Update mouse state now that we're sure it's single touch
           this.updateMouseState(pos);
-          // For pan mode, also send initial mouse move
           if (this._panModeEnabled) {
             this.callbacks.onMouseMove();
           }
@@ -301,23 +273,17 @@ export class MouseHandler {
         this._multiTouchPreventionTimer = null;
       }, 50);
 
-      // Store position but don't update mouse state yet
       this._cursorPosition = pos;
 
       if (!this._panModeEnabled) {
-        // Direct interaction mode: prepare for potential drag or long press
-        this._isPanModeActive = false; // Don't start drag yet
+        this._isPanModeActive = false;
 
-        // Set long press timer for right click
         this._longPressTimer = window.setTimeout(() => {
-          // Immediately fire right click down and up
           this.keyboardCallbacks.onKeyDown("RIGHTBUTTON", 0);
           this.keyboardCallbacks.onKeyUp("RIGHTBUTTON", 0);
           this._longPressTimer = null;
         }, 300);
       } else {
-        // Pan tool mode: mouse move will be handled by _multiTouchPreventionTimer
-        // Record tap time for potential double tap detection
         this._lastTapTime = currentTime;
       }
     } else if (e.touches.length === 2) {
@@ -431,20 +397,15 @@ export class MouseHandler {
         }
 
         if (this._isZooming && !this._isPanning) {
-          // Continue zooming smoothly without threshold
           const scale = this._twoFingerDistance > 0 ? currentDistance / this._twoFingerDistance : 1;
           this.callbacks.onZoom?.(scale, this._twoFingerCenter.x, this._twoFingerCenter.y);
         } else if (!this._isZooming && !this._panModeEnabled) {
-          // Direct interaction mode: two finger vertical movement becomes wheel
           if (Math.abs(centerDelta.y) > Math.abs(centerDelta.x)) {
-            // Accumulate vertical movement for wheel sensitivity
             this._wheelAccumulator += centerDelta.y;
 
-            // Only trigger wheel event when accumulated movement exceeds threshold
             if (Math.abs(this._wheelAccumulator) >= MouseHandler.WHEEL_SENSITIVITY) {
               const direction = this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP";
               this.keyboardCallbacks.onKeyUp(direction, 0);
-              // Reset accumulator after firing wheel event
               this._wheelAccumulator = 0;
             }
           }
@@ -454,7 +415,6 @@ export class MouseHandler {
         this._twoFingerCenter = currentCenter;
       }
     } else if (e.touches.length === 3) {
-      // Three finger gesture - always pan regardless of pan mode
       const touch1 = this.getTouchPosition(e.touches[0]);
       const touch2 = this.getTouchPosition(e.touches[1]);
       const touch3 = this.getTouchPosition(e.touches[2]);
@@ -463,17 +423,13 @@ export class MouseHandler {
         y: (touch1.y + touch2.y + touch3.y) / 3,
       };
 
-      // Do NOT update mouse position during three-finger gestures to prevent mouse move events
-
       const centerDelta = {
         x: currentCenter.x - this._threeFingerCenter.x,
         y: currentCenter.y - this._threeFingerCenter.y,
       };
 
-      // Start three finger panning if movement detected
       if (!this._threeFingerPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
         this._threeFingerPanning = true;
-        // Disable any ongoing 2-finger gestures when 3-finger pan starts
         this._isZooming = false;
         this._isPanning = false;
       }
@@ -495,11 +451,8 @@ export class MouseHandler {
     }
 
     if (e.touches.length === 0) {
-      // All touches ended
       if (!this._panModeEnabled) {
-        // Direct interaction mode: handle drag end or tap
         if (this._isPanModeActive) {
-          // End drag
           this._isPanModeActive = false;
 
           if (this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
@@ -507,16 +460,13 @@ export class MouseHandler {
             this.keyboardCallbacks.onKeyUp("LEFTBUTTON", 0);
           }
         } else if (this._longPressTimer) {
-          // Single tap (not long press, not drag)
           clearTimeout(this._longPressTimer);
           this._longPressTimer = null;
 
           if (!this._isZooming && !this._isPanning) {
-            // Generate single click
             this.keyboardCallbacks.addPhysicalKey?.("LEFTBUTTON");
             this.keyboardCallbacks.onKeyDown("LEFTBUTTON", 0);
 
-            // Schedule mouseup
             setTimeout(() => {
               if (this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
                 this.keyboardCallbacks.removePhysicalKey?.("LEFTBUTTON");
@@ -526,8 +476,6 @@ export class MouseHandler {
           }
         }
       } else {
-        // Pan tool mode: no click events on single tap
-        // Just clean up any gesture states
       }
 
       this._isZooming = false;
@@ -553,7 +501,6 @@ export class MouseHandler {
       this._longPressTimer = null;
     }
 
-    // Clean up pan mode state
     if (this._isPanModeActive && this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
       this.keyboardCallbacks.removePhysicalKey?.("LEFTBUTTON");
       this.keyboardCallbacks.onKeyUp("LEFTBUTTON", 0);
@@ -562,10 +509,9 @@ export class MouseHandler {
     this._isZooming = false;
     this._isPanning = false;
     this._isPanModeActive = false;
-    this._wheelAccumulator = 0; // Reset wheel accumulator
-    this._threeFingerPanning = false; // Reset three finger panning
+    this._wheelAccumulator = 0;
+    this._threeFingerPanning = false;
 
-    // Re-enable mouse updates when touches are cancelled
     this._allowMouseUpdates = true;
   }
 }

@@ -15,10 +15,10 @@ export interface CanvasStyleSize {
 }
 
 export interface CanvasRenderingSize {
-  styleWidth: number; // CSS size (without pixel ratio)
-  styleHeight: number; // CSS size (without pixel ratio)
-  renderingWidth: number; // Actual rendering resolution (with pixel ratio)
-  renderingHeight: number; // Actual rendering resolution (with pixel ratio)
+  styleWidth: number;
+  styleHeight: number;
+  renderingWidth: number;
+  renderingHeight: number;
   pixelRatio: number;
 }
 
@@ -39,7 +39,6 @@ export class CanvasManager {
   private canvasContainer: HTMLDivElement | null = null;
   private root: HTMLElement | null = null;
 
-  // Style size - controls CSS appearance of canvas in DOM
   private currentStyleWidth: number;
   private currentStyleHeight: number;
   private isFixedSize = false;
@@ -47,18 +46,17 @@ export class CanvasManager {
   private config: CanvasConfig;
   private resizeObserver: ResizeObserver | null = null;
 
-  // Viewport transform properties
   private _scale = 1;
-  private _panTranslateX = 0; // Pan-only translation (visual only)
+  private _panTranslateX = 0;
   private _panTranslateY = 0;
-  private _zoomTranslateX = 0; // Zoom-center translation (affects coordinates)
+  private _zoomTranslateX = 0;
   private _zoomTranslateY = 0;
   private _minScale = 0.1;
   private _maxScale = 2.0;
   private _containerWidth = 800;
   private _containerHeight = 600;
-  private _isInitialScale = true; // Track if we need to calculate initial scale
-  private _initialScale = 1; // Store the calculated initial scale
+  private _isInitialScale = true;
+  private _initialScale = 1;
 
   private onStateChange?: (state: CanvasState) => void;
   private onRenderingSizeChange?: (size: CanvasRenderingSize) => void;
@@ -69,7 +67,7 @@ export class CanvasManager {
     this.currentStyleHeight = config.minHeight;
     this._containerWidth = config.minWidth;
     this._containerHeight = config.minHeight;
-    this._initialScale = 1; // Default initial scale
+    this._initialScale = 1;
   }
 
   setCallbacks(callbacks: {
@@ -85,12 +83,9 @@ export class CanvasManager {
     canvas.style.position = "absolute";
     canvas.style.transformOrigin = "0 0";
 
-    // Set initial style size (CSS visual appearance)
     canvas.style.width = `${this.currentStyleWidth}px`;
     canvas.style.height = `${this.currentStyleHeight}px`;
 
-    // Set initial rendering resolution (canvas.width/height)
-    // Note: After transferControlToOffscreen(), rendering resolution is managed by worker
     const pixelRatio = window.devicePixelRatio || 1;
     canvas.width = this.currentStyleWidth * pixelRatio;
     canvas.height = this.currentStyleHeight * pixelRatio;
@@ -116,18 +111,14 @@ export class CanvasManager {
   attachToDOM(root: HTMLElement): { canvas: HTMLCanvasElement; container: HTMLDivElement } {
     this.root = root;
 
-    // Create elements
     const canvas = this.createCanvas();
     const container = this.createCanvasContainer();
 
-    // Initialize size based on root dimensions
     const rootRect = root.getBoundingClientRect();
     this.updateCanvasSize(rootRect.width, rootRect.height);
 
-    // Setup container and canvas
     container.appendChild(canvas);
 
-    // Setup resize observer
     this.setupResizeObserver();
 
     return { canvas, container };
@@ -150,7 +141,6 @@ export class CanvasManager {
       const containerRect = this.canvasContainer.getBoundingClientRect();
       this.updateCanvasStyleSize();
 
-      // Recalculate transform constraints with new canvas size
       this._constrainTransform();
       this._updateCanvasTransform();
 
@@ -164,7 +154,6 @@ export class CanvasManager {
 
     if (this.canvasContainer) {
       const containerRect = this.canvasContainer.getBoundingClientRect();
-      // Recalculate size based on container
       this.updateCanvasSize(containerRect.width, containerRect.height);
     }
   }
@@ -175,39 +164,29 @@ export class CanvasManager {
     const toolbarSize = this.config.toolbarSize;
 
     if (isPortrait) {
-      // Portrait: toolbar at bottom
       this.canvasContainer.style.bottom = `${toolbarSize}px`;
       this.canvasContainer.style.right = "0";
-      // Update container size - height reduced by toolbar
       this._containerHeight = Math.max(0, this._containerHeight - toolbarSize);
     } else {
-      // Landscape: toolbar at right
       this.canvasContainer.style.right = `${toolbarSize}px`;
       this.canvasContainer.style.bottom = "0";
-      // Update container size - width reduced by toolbar
       this._containerWidth = Math.max(0, this._containerWidth - toolbarSize);
     }
 
-    // Calculate initial scale after toolbar adjustment if needed
     if (this._isInitialScale && !this.isFixedSize) {
       this.calculateInitialScale();
       this._isInitialScale = false;
     }
 
-    // Recalculate constraints with new container size
     this._constrainTransform();
     this._updateCanvasTransform();
   }
 
   recalculateInitialScale() {
-    // Recalculate the initial scale based on current container size
     this.calculateInitialScale();
-    // Apply the new initial scale
     this._scale = this._initialScale;
-    // Reset zoom translations to center the canvas
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
-    // Apply constraints and update transform
     this._constrainTransform();
     this._updateCanvasTransform();
   }
@@ -275,13 +254,11 @@ export class CanvasManager {
     this._zoomTranslateY = newTotalTranslateY - this._panTranslateY;
     this._scale = newScale;
 
-    // Apply constraints normally - proper separation should handle this correctly
     this._constrainTransform();
     this._updateCanvasTransform();
   }
 
   pan(deltaX: number, deltaY: number) {
-    // Update PAN translation only (zoom translation unchanged)
     this._panTranslateX += deltaX;
     this._panTranslateY += deltaY;
     this._constrainTransform();
@@ -316,14 +293,12 @@ export class CanvasManager {
   }
 
   zoomTo(scale: number, centerX?: number, centerY?: number) {
-    // Calculate center coordinates if not provided
     const cx = centerX ?? this._containerWidth / 2;
     const cy = centerY ?? this._containerHeight / 2;
 
-    // Reset only zoom (preserve pan) then zoom to desired scale
     this.resetZoom();
     this.zoom(scale, cx, cy);
-    this._isInitialScale = false; // User explicitly zoomed, don't auto-scale
+    this._isInitialScale = false;
   }
 
   // Transform container coordinates to canvas coordinates
