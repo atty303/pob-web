@@ -55,7 +55,14 @@ export default function PoBWindow(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: sidebarToggleComponent is stable
+  // Update toolbar component when it changes
+  useEffect(() => {
+    if (driverRef.current && props.toolbarComponent) {
+      driverRef.current.setExternalToolbarComponent(props.toolbarComponent);
+    }
+  }, [props.toolbarComponent]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: toolbarComponent is handled separately
   useEffect(() => {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);

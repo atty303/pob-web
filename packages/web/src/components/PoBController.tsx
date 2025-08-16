@@ -1,16 +1,9 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import {
-  ArrowRightEndOnRectangleIcon,
-  ArrowRightStartOnRectangleIcon,
-  ArrowTopRightOnSquareIcon,
-  LightBulbIcon,
-  UserCircleIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowTopRightOnSquareIcon, LightBulbIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
+import { AuthButton } from "./AuthButton";
 import { HomeButton } from "./HomeButton";
 import { MenuButton } from "./MenuButton";
 import PoBWindow from "./PoBWindow";
@@ -18,6 +11,8 @@ import PoBWindow from "./PoBWindow";
 const { useTimeoutFn, useLocalStorage, useTitle } = use;
 
 export default function PoBController(p: { game: keyof Games; version: string; isHead: boolean }) {
+  const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
+
   const [title, setTitle] = useState<string>();
   useTitle(title ?? "pob.cool");
 
@@ -42,12 +37,23 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const ToolbarComponents = ({
     position,
     isLandscape,
-  }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => (
-    <>
-      <HomeButton position={position} isLandscape={isLandscape} />
-      <MenuButton position={position} isLandscape={isLandscape} onToggle={() => setDrawer(true)} />
-    </>
-  );
+  }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => {
+    return (
+      <>
+        <HomeButton position={position} isLandscape={isLandscape} />
+        <AuthButton
+          position={position}
+          isLandscape={isLandscape}
+          isLoading={isLoading}
+          isAuthenticated={isAuthenticated}
+          userName={user?.name}
+          onLogin={() => loginWithRedirect()}
+          onLogout={() => logout()}
+        />
+        <MenuButton position={position} isLandscape={isLandscape} onToggle={() => setDrawer(true)} />
+      </>
+    );
+  };
 
   return (
     <div ref={container} className="drawer">
@@ -104,11 +110,6 @@ function Sidebar(p: {
           </span>
         </header>
         <ul className="menu w-full">
-          <ul className="menu w-full">
-            <li className="pointer-events-none bg-base-300">
-              <Auth tutorial={!p.optOutTutorial} />
-            </li>
-          </ul>
           <li className="menu-title">Preferences</li>
           <li>
             <label htmlFor="optOutTutorial" className="flex">
@@ -153,43 +154,4 @@ function Sidebar(p: {
       </div>
     </div>
   );
-}
-
-function Auth(p: { tutorial: boolean }) {
-  const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
-
-  if (isLoading) {
-    return (
-      <div className="place-content-center p-2">
-        <span className="loading loading-spinner loading-md" />
-      </div>
-    );
-  } else if (isAuthenticated) {
-    return (
-      <div>
-        <UserCircleIcon className="size-6" />
-        {user?.name}
-        <button className="btn btn-primary pointer-events-auto" type="button" onClick={() => logout()}>
-          <ArrowRightStartOnRectangleIcon className="size-4" />
-          Logout
-        </button>
-      </div>
-    );
-  } else {
-    return (
-      <div
-        className={`tooltip tooltip-right tooltip-info ${p.tutorial && "tooltip-open"}`}
-        data-tip="You can save your builds to the cloud by logging in."
-      >
-        <button
-          className="btn btn-primary btn-block pointer-events-auto"
-          type="button"
-          onClick={() => loginWithRedirect()}
-        >
-          <ArrowRightEndOnRectangleIcon className="size-4" />
-          Login
-        </button>
-      </div>
-    );
-  }
 }
