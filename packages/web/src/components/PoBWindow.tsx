@@ -68,7 +68,7 @@ export default function PoBWindow(props: {
 
     const _driver = new Driver("release", assetPrefix, {
       onError: message => {
-        throw new Error(message);
+        setError(new Error(message));
       },
       onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
       onFetch: async (url, headers, body) => {
