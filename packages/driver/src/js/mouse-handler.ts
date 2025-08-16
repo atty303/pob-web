@@ -29,6 +29,10 @@ export class MouseHandler {
   private _isPanning = false;
   private _isPanModeActive = false;
 
+  // Two finger wheel sensitivity
+  private _wheelAccumulator = 0;
+  private static readonly WHEEL_SENSITIVITY = 4; // Require 4x movement for one wheel event
+
   get mouseState(): MouseState {
     return {
       x: this._cursorPosition.x,
@@ -322,9 +326,16 @@ export class MouseHandler {
       if (!this._panModeEnabled) {
         // Direct interaction mode: two finger movement becomes wheel
         if (Math.abs(centerDelta.y) > Math.abs(centerDelta.x)) {
-          // Vertical movement - wheel up/down
-          const direction = centerDelta.y > 0 ? "WHEELDOWN" : "WHEELUP";
-          this.keyboardCallbacks.onKeyUp(direction, 0);
+          // Accumulate vertical movement for wheel sensitivity
+          this._wheelAccumulator += centerDelta.y;
+
+          // Only trigger wheel event when accumulated movement exceeds threshold
+          if (Math.abs(this._wheelAccumulator) >= MouseHandler.WHEEL_SENSITIVITY) {
+            const direction = this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP";
+            this.keyboardCallbacks.onKeyUp(direction, 0);
+            // Reset accumulator after firing wheel event
+            this._wheelAccumulator = 0;
+          }
         }
       } else {
         // Pan mode: zoom and pan
@@ -397,6 +408,7 @@ export class MouseHandler {
 
       this._isZooming = false;
       this._isPanning = false;
+      this._wheelAccumulator = 0; // Reset wheel accumulator
     }
 
     this.el.focus();
@@ -422,5 +434,6 @@ export class MouseHandler {
     this._isZooming = false;
     this._isPanning = false;
     this._isPanModeActive = false;
+    this._wheelAccumulator = 0; // Reset wheel accumulator
   }
 }

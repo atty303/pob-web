@@ -47,6 +47,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="pob.cool" />
         <meta name="theme-color" content="#1a1a1a" />
+        <link rel="manifest" href="/manifest.json" />
         <title>pob.cool</title>
         <meta property="og:title" content="pob.cool" />
         <meta property="og:description" content="A web version of Path of Building" />
