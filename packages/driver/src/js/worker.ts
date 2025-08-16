@@ -300,14 +300,20 @@ export class DriverWorker {
 
   private async tick() {
     if (this.visible) {
-      const start = performance.now();
+      try {
+        const start = performance.now();
 
-      await this.imports?.onFrame();
+        await this.imports?.onFrame();
 
-      const time = performance.now() - start;
-      const stats = this.renderer?.getStats();
-      this.hostCallbacks?.onFrame(start, time, stats);
-      this.dirtyCount -= 1;
+        const time = performance.now() - start;
+        const stats = this.renderer?.getStats();
+        this.hostCallbacks?.onFrame(start, time, stats);
+        this.dirtyCount -= 1;
+      } catch (error) {
+        log.error(tag.worker, "Error during frame processing", error);
+        this.hostCallbacks?.onError(`Error during frame processing: ${error}`);
+        throw error;
+      }
     }
     requestAnimationFrame(this.tick.bind(this));
   }
