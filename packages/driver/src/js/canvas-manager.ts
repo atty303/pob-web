@@ -58,6 +58,7 @@ export class CanvasManager {
   private _containerWidth = 800;
   private _containerHeight = 600;
   private _isInitialScale = true; // Track if we need to calculate initial scale
+  private _initialScale = 1; // Store the calculated initial scale
 
   private onStateChange?: (state: CanvasState) => void;
   private onRenderingSizeChange?: (size: CanvasRenderingSize) => void;
@@ -68,6 +69,7 @@ export class CanvasManager {
     this.currentStyleHeight = config.minHeight;
     this._containerWidth = config.minWidth;
     this._containerHeight = config.minHeight;
+    this._initialScale = 1; // Default initial scale
   }
 
   setCallbacks(callbacks: {
@@ -281,7 +283,7 @@ export class CanvasManager {
   }
 
   resetZoom() {
-    this._scale = 1;
+    this._scale = this._initialScale;
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
     this._isInitialScale = false; // User explicitly reset, don't auto-scale
@@ -397,8 +399,12 @@ export class CanvasManager {
       // Use the larger scale (less zoom out) so at least one dimension fits
       const initialScale = Math.max(scaleToFitWidth, scaleToFitHeight);
 
-      // Constrain to min/max scale bounds
-      this._scale = Math.max(this._minScale, Math.min(this._maxScale, initialScale));
+      // Constrain to min/max scale bounds and store as initial scale
+      this._initialScale = Math.max(this._minScale, Math.min(this._maxScale, initialScale));
+      this._scale = this._initialScale;
+    } else {
+      // If canvas fits, initial scale is 1
+      this._initialScale = 1;
     }
   }
 
