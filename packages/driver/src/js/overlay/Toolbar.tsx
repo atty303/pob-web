@@ -62,20 +62,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {ExternalComponent && <div className="pw:flex-grow" />}
 
       <ToolbarButton
-        icon={fullscreenIcon}
-        tooltip={fullscreenTooltip}
-        onClick={handleFullscreenToggle}
-        isActive={isFullscreen}
-      />
-
-      <ToolbarButton
-        icon={<HiMagnifyingGlass size={24} />}
-        tooltip="Zoom Controls"
-        onClick={handleZoomToggle}
-        isActive={zoomControlVisible}
-      />
-
-      <ToolbarButton
         icon={<PiHandGrabbingThin size={24} />}
         tooltip="Toggle Pan Tool"
         onClick={handlePanModeToggle}
@@ -87,6 +73,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         tooltip="Toggle Virtual Keyboard"
         onClick={callbacks.onKeyboardToggle}
         isActive={keyboardVisible}
+      />
+
+      <ToolbarButton
+        icon={<HiMagnifyingGlass size={24} />}
+        tooltip="Zoom Controls"
+        onClick={handleZoomToggle}
+        isActive={zoomControlVisible}
+      />
+
+      <ToolbarButton
+        icon={fullscreenIcon}
+        tooltip={fullscreenTooltip}
+        onClick={handleFullscreenToggle}
+        isActive={isFullscreen}
       />
 
       {ExternalComponent && <div className="pw:flex-grow" />}
