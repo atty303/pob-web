@@ -102,18 +102,6 @@ export class Driver {
     // Set up callbacks for CanvasManager
     this.canvasManager.setCallbacks({
       onStateChange: (state: CanvasState) => {
-        // Update pan mode based on canvas state
-        if (state.needsPanning && !this.panModeEnabled) {
-          this.panModeEnabled = true;
-          this.mouseHandler?.setPanMode(true);
-          this.overlayManager?.updateState({ panModeEnabled: true });
-        } else if (!state.needsPanning && this.panModeEnabled) {
-          this.panModeEnabled = false;
-          this.mouseHandler?.setPanMode(false);
-          this.overlayManager?.updateState({ panModeEnabled: false });
-          this.canvasManager?.resetTransform();
-        }
-
         // Update overlay with current style size and fixed size state
         this.overlayManager?.updateState({
           currentCanvasSize: state.styleSize,
@@ -139,12 +127,6 @@ export class Driver {
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
     // CanvasManager now handles transforms internally
-
-    // Set initial pan mode if needed
-    const initialState = this.canvasManager.getCurrentState();
-    if (initialState.needsPanning) {
-      this.panModeEnabled = true;
-    }
 
     // Create overlay container - 100% size, in front of canvas
     const overlayContainer = document.createElement("div");

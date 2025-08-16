@@ -31,7 +31,6 @@ export interface ViewportTransform {
 export interface CanvasState {
   styleSize: CanvasStyleSize;
   containerSize: CanvasSize;
-  needsPanning: boolean;
   isFixedSize: boolean;
 }
 
@@ -200,7 +199,6 @@ export class CanvasManager {
     return {
       styleSize: { width: this.currentStyleWidth, height: this.currentStyleHeight },
       containerSize,
-      needsPanning: this.currentStyleWidth > containerSize.width || this.currentStyleHeight > containerSize.height,
       isFixedSize: this.isFixedSize,
     };
   }
@@ -391,7 +389,6 @@ export class CanvasManager {
     const state: CanvasState = {
       styleSize: { width: this.currentStyleWidth, height: this.currentStyleHeight },
       containerSize: { width: containerWidth, height: containerHeight },
-      needsPanning: this.currentStyleWidth > containerWidth || this.currentStyleHeight > containerHeight,
       isFixedSize: this.isFixedSize,
     };
 
