@@ -356,7 +356,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         visibility: isInitialized ? "visible" : "hidden",
       }}
     >
-      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:px-0.5 pw:pt-6">
+      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:px-0.5 pw:pt-6 pw:pb-2">
         <div className="">
           {keyLayout.map((row, rowIndex) => (
             <div
