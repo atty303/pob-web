@@ -358,54 +358,56 @@ export class MouseHandler {
         this.callbacks.onMouseMove();
       }
     } else if (e.touches.length === 2) {
-      // Two finger gesture
-      const touch1 = this.getTouchPosition(e.touches[0]);
-      const touch2 = this.getTouchPosition(e.touches[1]);
-      const currentDistance = this.calculateDistance(touch1, touch2);
-      const currentCenter = this.calculateCenter(touch1, touch2);
+      // Two finger gesture - only if not in three finger panning mode
+      if (!this._threeFingerPanning) {
+        const touch1 = this.getTouchPosition(e.touches[0]);
+        const touch2 = this.getTouchPosition(e.touches[1]);
+        const currentDistance = this.calculateDistance(touch1, touch2);
+        const currentCenter = this.calculateCenter(touch1, touch2);
 
-      const distanceDelta = currentDistance - this._twoFingerDistance;
-      const centerDelta = {
-        x: currentCenter.x - this._twoFingerCenter.x,
-        y: currentCenter.y - this._twoFingerCenter.y,
-      };
+        const distanceDelta = currentDistance - this._twoFingerDistance;
+        const centerDelta = {
+          x: currentCenter.x - this._twoFingerCenter.x,
+          y: currentCenter.y - this._twoFingerCenter.y,
+        };
 
-      if (!this._panModeEnabled) {
-        // Direct interaction mode: two finger movement becomes wheel
-        if (Math.abs(centerDelta.y) > Math.abs(centerDelta.x)) {
-          // Accumulate vertical movement for wheel sensitivity
-          this._wheelAccumulator += centerDelta.y;
-
-          // Only trigger wheel event when accumulated movement exceeds threshold
-          if (Math.abs(this._wheelAccumulator) >= MouseHandler.WHEEL_SENSITIVITY) {
-            const direction = this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP";
-            this.keyboardCallbacks.onKeyUp(direction, 0);
-            // Reset accumulator after firing wheel event
-            this._wheelAccumulator = 0;
-          }
-        }
-      } else {
-        // Pan mode: zoom and pan
-        // Determine if this is zoom or pan (increased threshold to avoid accidental zoom)
+        // Check for pinch zoom first (works regardless of pan mode)
         if (Math.abs(distanceDelta) > 10 && !this._isPanning) {
           this._isZooming = true;
           // Calculate relative scale change (not absolute scale)
           const scale = this._twoFingerDistance > 0 ? currentDistance / this._twoFingerDistance : 1;
           this.callbacks.onZoom?.(scale, this._twoFingerCenter.x, this._twoFingerCenter.y);
         } else if (!this._isZooming) {
-          // Always pan if not zooming (remove distance threshold after initial detection)
-          if (!this._isPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
-            this._isPanning = true;
-          }
+          // Handle panning and wheel events based on pan mode
+          if (this._panModeEnabled) {
+            // Pan mode: two finger panning
+            if (!this._isPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
+              this._isPanning = true;
+            }
 
-          if (this._isPanning) {
-            this.callbacks.onPan?.(centerDelta.x, centerDelta.y);
+            if (this._isPanning) {
+              this.callbacks.onPan?.(centerDelta.x, centerDelta.y);
+            }
+          } else {
+            // Direct interaction mode: two finger vertical movement becomes wheel
+            if (Math.abs(centerDelta.y) > Math.abs(centerDelta.x)) {
+              // Accumulate vertical movement for wheel sensitivity
+              this._wheelAccumulator += centerDelta.y;
+
+              // Only trigger wheel event when accumulated movement exceeds threshold
+              if (Math.abs(this._wheelAccumulator) >= MouseHandler.WHEEL_SENSITIVITY) {
+                const direction = this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP";
+                this.keyboardCallbacks.onKeyUp(direction, 0);
+                // Reset accumulator after firing wheel event
+                this._wheelAccumulator = 0;
+              }
+            }
           }
         }
-      }
 
-      this._twoFingerDistance = currentDistance;
-      this._twoFingerCenter = currentCenter;
+        this._twoFingerDistance = currentDistance;
+        this._twoFingerCenter = currentCenter;
+      }
     } else if (e.touches.length === 3) {
       // Three finger gesture - always pan regardless of pan mode
       const touch1 = this.getTouchPosition(e.touches[0]);
