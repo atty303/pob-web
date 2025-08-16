@@ -58,6 +58,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div className={containerClasses}>
+      {ExternalComponent && <div className="pw:flex-grow" />}
+
       <ToolbarButton
         icon={fullscreenIcon}
         tooltip={fullscreenTooltip}
@@ -85,6 +87,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         onClick={callbacks.onKeyboardToggle}
         isActive={keyboardVisible}
       />
+
+      {ExternalComponent && <div className="pw:flex-grow" />}
 
       {ExternalComponent && <ExternalComponent position={position} isLandscape={isLandscape} />}
 
