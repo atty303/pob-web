@@ -15,6 +15,7 @@ export default function PoBWindow(props: {
   onTitleChange: (title: string) => void;
   onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
   toolbarComponent?: React.ComponentType<{ position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }>;
+  onDriverReady?: (driver: Driver) => void;
 }) {
   const auth0 = useAuth0();
 
@@ -134,6 +135,9 @@ export default function PoBWindow(props: {
         onLayerVisibilityCallbackReadyRef.current?.((layer: number, sublayer: number, visible: boolean) => {
           _driver.setLayerVisible(layer, sublayer, visible);
         });
+
+        // Pass driver instance to parent
+        props.onDriverReady?.(_driver);
 
         setLoading(false);
       } catch (e) {

@@ -2,7 +2,7 @@ import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-import { MdFullscreen, MdFullscreenExit, MdOutlinePanTool, MdShowChart } from "react-icons/md";
+import { MdFullscreen, MdFullscreenExit, MdOutlinePanTool } from "react-icons/md";
 import { ToolbarButton } from "./ToolbarButton";
 import { ZoomControl } from "./ZoomControl";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
@@ -49,10 +49,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     callbacks.onFullscreenToggle();
   }, [toggleFullscreen, callbacks]);
 
-  const handlePerformanceToggle = useCallback(() => {
-    callbacks.onPerformanceToggle();
-  }, [callbacks]);
-
   const containerClasses = `pw:navbar pw:bg-base-200/95 pw:shadow-lg pw:select-none pw:relative pw:gap-1 ${
     isLandscape ? "pw:flex-col pw:justify-center pw:h-full" : "pw:flex-row pw:justify-center pw:w-full"
   }`;
@@ -88,13 +84,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         tooltip="Toggle Virtual Keyboard"
         onClick={callbacks.onKeyboardToggle}
         isActive={keyboardVisible}
-      />
-
-      <ToolbarButton
-        icon={<MdShowChart size={24} />}
-        tooltip="Toggle Performance Overlay"
-        onClick={handlePerformanceToggle}
-        isActive={performanceVisible}
       />
 
       {ExternalComponent && <ExternalComponent position={position} isLandscape={isLandscape} />}

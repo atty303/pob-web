@@ -572,4 +572,9 @@ export class Driver {
   }
 
   // Toolbar layout is now managed by React components
+
+  setPerformanceVisible(visible: boolean) {
+    this.performanceVisible = visible;
+    this.updateOverlayWithTransform();
+  }
 }

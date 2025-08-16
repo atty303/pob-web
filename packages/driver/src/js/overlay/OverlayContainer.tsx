@@ -42,6 +42,11 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [performanceOverlayVisible, setPerformanceOverlayVisible] = useState(performanceVisible);
 
+  // Update internal performance overlay state when external prop changes
+  useEffect(() => {
+    setPerformanceOverlayVisible(performanceVisible);
+  }, [performanceVisible]);
+
   // Update internal pan mode state when external prop changes
   useEffect(() => {
     if (externalPanMode !== undefined) {

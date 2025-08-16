@@ -1,4 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import type { Driver } from "pob-driver/src/js/driver";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -6,6 +7,7 @@ import { AuthButton } from "./AuthButton";
 import { HomeButton } from "./HomeButton";
 import PoBWindow from "./PoBWindow";
 import { SettingsButton } from "./SettingsButton";
+import { SettingsDialog } from "./SettingsDialog";
 
 const { useLocalStorage, useTitle } = use;
 
@@ -16,8 +18,11 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   useTitle(title ?? "pob.cool");
 
   const container = useRef<HTMLDivElement>(null);
+  const driverRef = useRef<Driver | null>(null);
+  const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
   const [optOutTutorial, setOptOutTutorial] = useLocalStorage("optOutTutorial", false);
+  const [performanceVisible, setPerformanceVisible] = useState(false);
 
   // Create toolbar components for driver toolbar
   const ToolbarComponents = ({
@@ -39,9 +44,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         <SettingsButton
           position={position}
           isLandscape={isLandscape}
-          game={p.game}
-          optOutTutorial={optOutTutorial}
-          setOptOutTutorial={setOptOutTutorial}
+          onOpenSettings={() => settingsDialogRef.current?.showModal()}
         />
       </>
     );
@@ -55,7 +58,23 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         onFrame={() => {}}
         onTitleChange={setTitle}
         onLayerVisibilityCallbackReady={() => {}}
+        onDriverReady={driver => {
+          driverRef.current = driver;
+        }}
         toolbarComponent={ToolbarComponents}
+      />
+
+      <SettingsDialog
+        ref={settingsDialogRef}
+        game={p.game}
+        optOutTutorial={optOutTutorial}
+        setOptOutTutorial={setOptOutTutorial}
+        performanceVisible={performanceVisible}
+        onPerformanceToggle={() => {
+          const newValue = !performanceVisible;
+          setPerformanceVisible(newValue);
+          driverRef.current?.setPerformanceVisible(newValue);
+        }}
       />
     </div>
   );
