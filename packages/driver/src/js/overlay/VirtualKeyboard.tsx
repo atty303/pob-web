@@ -39,7 +39,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
       // Landscape: toolbar is on the right, position keyboard on left side
       const availableWidth = viewportWidth - toolbarSize;
       const keyboardCenterX = availableWidth / 2;
-      const baselineX = viewportWidth / 2 - 200; // Default CSS centering point
+      const baselineX = viewportWidth / 2 - approxKeyboardWidth / 2; // Default CSS centering point
       initialX = keyboardCenterX - baselineX;
 
       // Position above bottom with some margin
