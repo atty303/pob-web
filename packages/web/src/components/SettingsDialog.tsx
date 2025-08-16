@@ -1,24 +1,15 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import {
-  ArrowTopRightOnSquareIcon,
-  ChartBarIcon,
-  HomeIcon,
-  LightBulbIcon,
-  UserIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowTopRightOnSquareIcon, ChartBarIcon, HomeIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { forwardRef } from "react";
 
 interface SettingsDialogProps {
   game: string;
-  optOutTutorial: boolean | undefined;
-  setOptOutTutorial: (value: boolean) => void;
   performanceVisible: boolean;
   onPerformanceToggle: () => void;
 }
 
 export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>(
-  ({ optOutTutorial, setOptOutTutorial, performanceVisible, onPerformanceToggle }, ref) => {
+  ({ performanceVisible, onPerformanceToggle }, ref) => {
     const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
     const closeDialog = () => {
       if (ref && typeof ref !== "function" && ref.current) {
@@ -116,22 +107,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
             <div className="pw:space-y-3">
               <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Preferences</h3>
               <div className="pw:space-y-3">
-                <label className="pw:flex pw:items-center pw:gap-3 pw:cursor-pointer pw:p-3 pw:rounded-lg pw:bg-base-100 pw:border pw:border-base-300 hover:pw:bg-base-200 pw:transition-colors">
-                  <input
-                    type="checkbox"
-                    className="pw:toggle pw:toggle-sm pw:toggle-primary"
-                    checked={!optOutTutorial}
-                    onChange={e => setOptOutTutorial(!e.target.checked)}
-                  />
-                  <div className="pw:flex pw:items-center pw:gap-2 pw:flex-1">
-                    <LightBulbIcon className="pw:size-4 pw:text-primary" />
-                    <div>
-                      <div className="pw:text-sm pw:font-medium">Tutorial</div>
-                      <div className="pw:text-xs pw:text-base-content/60">Show helpful tips for new users</div>
-                    </div>
-                  </div>
-                </label>
-
                 <label className="pw:flex pw:items-center pw:gap-3 pw:cursor-pointer pw:p-3 pw:rounded-lg pw:bg-base-100 pw:border pw:border-base-300 hover:pw:bg-base-200 pw:transition-colors">
                   <input
                     type="checkbox"

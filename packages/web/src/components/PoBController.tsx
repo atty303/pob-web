@@ -6,7 +6,7 @@ import PoBWindow from "./PoBWindow";
 import { SettingsButton } from "./SettingsButton";
 import { SettingsDialog } from "./SettingsDialog";
 
-const { useLocalStorage, useTitle } = use;
+const { useTitle } = use;
 
 export default function PoBController(p: { game: keyof Games; version: string; isHead: boolean }) {
   const [title, setTitle] = useState<string>();
@@ -16,7 +16,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const driverRef = useRef<Driver | null>(null);
   const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
-  const [optOutTutorial, setOptOutTutorial] = useLocalStorage("optOutTutorial", false);
   const [performanceVisible, setPerformanceVisible] = useState(false);
 
   // Create toolbar components for driver toolbar
@@ -50,8 +49,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       <SettingsDialog
         ref={settingsDialogRef}
         game={p.game}
-        optOutTutorial={optOutTutorial}
-        setOptOutTutorial={setOptOutTutorial}
         performanceVisible={performanceVisible}
         onPerformanceToggle={() => {
           const newValue = !performanceVisible;
