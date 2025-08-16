@@ -192,7 +192,7 @@ export class KeyboardState {
       this.keydown(domKey, doubleClick);
 
       // Only add keypress for character-generating keys
-      if (/^[a-z0-9]$/.test(domKey)) {
+      if (domKey.length === 1) {
         const transformedChar = this.applyShiftTransformation(domKey);
         this.keypress(transformedChar);
       }
