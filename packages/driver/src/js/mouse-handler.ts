@@ -350,6 +350,10 @@ export class MouseHandler {
       }
       this._allowMouseUpdates = false;
 
+      // Immediately disable 2-finger gestures when 3rd finger is detected
+      this._isZooming = false;
+      this._isPanning = false;
+
       const touch1 = this.getTouchPosition(e.touches[0]);
       const touch2 = this.getTouchPosition(e.touches[1]);
       const touch3 = this.getTouchPosition(e.touches[2]);
@@ -420,10 +424,14 @@ export class MouseHandler {
           y: currentCenter.y - this._twoFingerCenter.y,
         };
 
-        // Check for pinch zoom first (works regardless of pan mode)
-        if (Math.abs(distanceDelta) > 10 && !this._isPanning) {
+        // Check for pinch zoom - initial detection requires threshold, but continue smoothly once started
+        if (!this._isZooming && Math.abs(distanceDelta) > 5 && !this._isPanning) {
+          // Start zooming - threshold required for initial detection
           this._isZooming = true;
-          // Calculate relative scale change (not absolute scale)
+        }
+
+        if (this._isZooming && !this._isPanning) {
+          // Continue zooming smoothly without threshold
           const scale = this._twoFingerDistance > 0 ? currentDistance / this._twoFingerDistance : 1;
           this.callbacks.onZoom?.(scale, this._twoFingerCenter.x, this._twoFingerCenter.y);
         } else if (!this._isZooming && !this._panModeEnabled) {
@@ -465,6 +473,9 @@ export class MouseHandler {
       // Start three finger panning if movement detected
       if (!this._threeFingerPanning && (Math.abs(centerDelta.x) > 5 || Math.abs(centerDelta.y) > 5)) {
         this._threeFingerPanning = true;
+        // Disable any ongoing 2-finger gestures when 3-finger pan starts
+        this._isZooming = false;
+        this._isPanning = false;
       }
 
       if (this._threeFingerPanning) {
