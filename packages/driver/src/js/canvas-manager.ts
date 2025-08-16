@@ -299,7 +299,7 @@ export class CanvasManager {
     this._scale = this._initialScale;
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
-    this._isInitialScale = false; // User explicitly reset, don't auto-scale
+    this._isInitialScale = false;
     this._constrainTransform();
     this._updateCanvasTransform();
   }
@@ -310,7 +310,7 @@ export class CanvasManager {
     this._panTranslateY = 0;
     this._zoomTranslateX = 0;
     this._zoomTranslateY = 0;
-    this._isInitialScale = false; // User explicitly reset, don't auto-scale
+    this._isInitialScale = false;
     this._constrainTransform();
     this._updateCanvasTransform();
   }

@@ -20,7 +20,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
     return (
       <dialog ref={ref} className="pw:modal">
         <div className="pw:modal-box pw:max-w-2xl">
-          {/* Header */}
           <div className="pw:flex pw:items-center pw:justify-between pw:mb-4 pw:pb-2 pw:border-b pw:border-base-300">
             <div className="pw:flex pw:items-center pw:gap-2">
               <img className="pw:w-5 pw:h-5 pw:rounded" src="/favicon.png" alt="" />
@@ -31,9 +30,7 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
             </button>
           </div>
 
-          {/* Settings Content */}
           <div className="pw:space-y-5">
-            {/* Account Section */}
             <div className="pw:space-y-3">
               <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Account</h3>
 
@@ -87,7 +84,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
               )}
             </div>
 
-            {/* Navigation Section */}
             <div className="pw:space-y-3">
               <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Navigation</h3>
               <button
@@ -103,7 +99,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
               </button>
             </div>
 
-            {/* Preferences Section */}
             <div className="pw:space-y-3">
               <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Preferences</h3>
               <div className="pw:space-y-3">
@@ -125,7 +120,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
               </div>
             </div>
 
-            {/* Version Info */}
             <div className="pw:pt-3 pw:border-t pw:border-base-300">
               <p className="pw:text-xs pw:text-base-content/60">
                 Version {APP_VERSION}
@@ -141,7 +135,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
               </p>
             </div>
 
-            {/* Footer */}
             <div className="pw:pt-3 pw:border-t pw:border-base-300 pw:text-xs pw:text-base-content/60 pw:space-y-1">
               <p>This product isn't affiliated with or endorsed by Grinding Gear Games.</p>
               <p>
@@ -155,7 +148,6 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
           </div>
         </div>
 
-        {/* Modal backdrop - clicking closes the dialog */}
         <form method="dialog" className="pw:modal-backdrop">
           <button type="button">close</button>
         </form>

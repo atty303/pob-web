@@ -23,19 +23,16 @@ export class KeyboardHandler {
     private el: HTMLElement,
     private callbacks: KeyboardCallbacks,
   ) {
-    // Initialize keyboard state with callbacks that delegate to the provided callbacks
     this.keyboardState = new KeyboardState({
       onKeyDown: (key, doubleClick) => callbacks.onKeyDown(key, doubleClick, this.keyboardUIState),
       onKeyUp: (key, doubleClick) => callbacks.onKeyUp(key, doubleClick, this.keyboardUIState),
       onChar: (char, doubleClick) => callbacks.onChar(char, doubleClick, this.keyboardUIState),
     });
 
-    // Bind event handlers
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyPress = this.handleKeyPress.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
 
-    // Add event listeners
     el.addEventListener("keydown", this.handleKeyDown);
     el.addEventListener("keypress", this.handleKeyPress);
     el.addEventListener("keyup", this.handleKeyUp);
@@ -49,9 +46,8 @@ export class KeyboardHandler {
 
   private handleKeyDown(e: KeyboardEvent) {
     ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
-    const domKey = e.key; // Use DOM event key name directly
+    const domKey = e.key;
 
-    // Use keyboard state to handle all key logic including special character mappings
     this.keyboardState.addPhysicalKey(domKey);
     this.keyboardState.keydown(domKey, 0);
   }
@@ -63,9 +59,8 @@ export class KeyboardHandler {
 
   private handleKeyUp(e: KeyboardEvent) {
     e.preventDefault();
-    const domKey = e.key; // Use DOM event key name directly
+    const domKey = e.key;
 
-    // TODO: order is correct?
     this.keyboardState.removePhysicalKey(domKey);
     this.keyboardState.keyup(domKey, 0);
   }

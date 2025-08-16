@@ -31,7 +31,6 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
   const [canvasWidth, setCanvasWidth] = useState(currentCanvasSize.width.toString());
   const [canvasHeight, setCanvasHeight] = useState(currentCanvasSize.height.toString());
 
-  // Update local state when currentCanvasSize prop changes
   React.useEffect(() => {
     setCanvasWidth(currentCanvasSize.width.toString());
     setCanvasHeight(currentCanvasSize.height.toString());
@@ -97,10 +96,8 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
       className={`pw:absolute ${positionClasses} pw:z-50 pw:card pw:card-compact pw:bg-base-200 pw:shadow-xl pw:min-w-96`}
     >
       <div className="pw:card-body pw:space-y-3">
-        {/* Zoom Controls */}
         <div className="pw:flex pw:items-center pw:gap-3">
           <span className="pw:text-sm pw:text-base-content/80 pw:w-12">Zoom</span>
-          {/* Zoom Slider */}
           <input
             type="range"
             min={minZoom}
@@ -111,7 +108,6 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
             className="pw:range pw:range-sm pw:flex-1"
           />
 
-          {/* Zoom Display with Reset Button */}
           <div className="pw:join">
             <button
               type="button"
@@ -125,7 +121,6 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
           </div>
         </div>
 
-        {/* Canvas Size */}
         <div className="pw:flex pw:items-center pw:gap-3">
           <span className="pw:text-sm pw:text-base-content/80 pw:w-12">Size</span>
           <input

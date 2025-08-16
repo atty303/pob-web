@@ -36,7 +36,6 @@ export class Driver {
   private renderStats: RenderStats | null = null;
   private externalComponent: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined;
 
-  // Minimum canvas size for PoB to render correctly
   private readonly MIN_CANVAS_WIDTH = 1550;
   private readonly MIN_CANVAS_HEIGHT = 800;
   private readonly TOOLBAR_SIZE = 60;
@@ -46,7 +45,6 @@ export class Driver {
     readonly assetPrefix: string,
     readonly hostCallbacks: HostCallbacks,
   ) {
-    // Wrap the onFrame callback to also call pushFrame internally
     const originalOnFrame = this.hostCallbacks.onFrame;
     this.hostCallbacks.onFrame = (at: number, time: number, stats?: RenderStats) => {
       this.pushFrame(at, time, stats);
@@ -90,7 +88,6 @@ export class Driver {
       this.root.removeChild(child);
     }
 
-    // Initialize CanvasManager
     const canvasConfig: CanvasConfig = {
       minWidth: this.MIN_CANVAS_WIDTH,
       minHeight: this.MIN_CANVAS_HEIGHT,
@@ -99,18 +96,14 @@ export class Driver {
 
     this.canvasManager = new CanvasManager(canvasConfig);
 
-    // Set up callbacks for CanvasManager
     this.canvasManager.setCallbacks({
       onStateChange: (state: CanvasState) => {
-        // Update overlay with current style size and fixed size state
         this.overlayManager?.updateState({
           currentCanvasSize: state.styleSize,
           isFixedSize: state.isFixedSize,
         });
       },
       onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
-        // Notify worker of rendering size change
-        // Pass style size and pixel ratio separately to worker
         this.driverWorker?.resize({
           width: renderingSize.styleWidth,
           height: renderingSize.styleHeight,
@@ -119,16 +112,11 @@ export class Driver {
       },
     });
 
-    // Attach canvas manager to DOM
     const { canvas, container } = this.canvasManager.attachToDOM(root);
 
-    // Transfer canvas control to worker
     const offscreenCanvas = canvas.transferControlToOffscreen();
     this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
-    // CanvasManager now handles transforms internally
-
-    // Create overlay container - 100% size, in front of canvas
     const overlayContainer = document.createElement("div");
     overlayContainer.style.cssText = `
       position: relative;
@@ -140,43 +128,33 @@ export class Driver {
       z-index: 1000;
     `;
 
-    // Toolbar container will be managed by React
-
     root.style.position = "relative";
     root.appendChild(container);
     root.appendChild(overlayContainer);
 
-    // Set focus and tabIndex on container since UIEventManager is attached there
     container.tabIndex = 0;
     container.focus();
-    container.style.outline = "none"; // Remove focus outline
+    container.style.outline = "none";
 
-    // Listen for fullscreen changes
     document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
 
-    // Setup orientation and resize handlers
     this.setupOrientationAndResizeHandlers();
 
-    // Initial layout adjustment for canvas to avoid toolbar overlap
     this.adjustCanvasForOverlay();
 
-    // Create shared worker callback object to eliminate duplication
     const workerCallbacks = {
       onKeyDown: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
         this.driverWorker?.updateKeyboardState(keyboardState);
         this.driverWorker?.handleKeyDown(name, doubleClick);
       },
       onKeyUp: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
-        // Update keyboard state in worker, then call the wasm callback
         this.driverWorker?.updateKeyboardState(keyboardState);
         this.driverWorker?.handleKeyUp(name, doubleClick);
       },
       onChar: (char: string, doubleClick: number, keyboardState: KeyboardUIState) => {
-        // Update keyboard state in worker, then call the wasm callback
         this.driverWorker?.updateKeyboardState(keyboardState);
         this.driverWorker?.handleChar(char, doubleClick);
       },
-      // Convenience methods for when we already have states available
       keyDown: (name: string, doubleClick: number) => {
         const keyboardState = this.keyboardHandler!.keyboardUIState;
         workerCallbacks.onKeyDown(name, doubleClick, keyboardState);
@@ -191,14 +169,12 @@ export class Driver {
       },
     };
 
-    // Initialize keyboard handler
     this.keyboardHandler = new KeyboardHandler(container, {
       onKeyDown: workerCallbacks.onKeyDown,
       onKeyUp: workerCallbacks.onKeyUp,
       onChar: workerCallbacks.onChar,
     });
 
-    // Initialize mouse handler with integrated touch functionality
     this.mouseHandler = new MouseHandler(
       container,
       {
@@ -224,26 +200,21 @@ export class Driver {
         removePhysicalKey: (key: string) => this.keyboardHandler!.keyboardState.removePhysicalKey(key),
         hasKey: (key: string) => this.keyboardHandler!.keyboardState.hasKey(key),
         onKeyDown: (key, doubleClick) => {
-          // Mouse buttons affect keyboard state, so use the shared worker callbacks
           workerCallbacks.keyDown(key, doubleClick);
         },
         onKeyUp: (key, doubleClick) => {
-          // Mouse buttons affect keyboard state, so use the shared worker callbacks
           workerCallbacks.keyUp(key, doubleClick);
         },
       },
     );
 
-    // Initialize event handler for general events
     this.eventHandler = new EventHandler(container, {
       onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
     });
 
-    // Set initial pan mode state
     this.mouseHandler!.setPanMode(this.panModeEnabled);
     this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
 
-    // Initialize toolbar callbacks that delegate to keyboard handler
     const toolbarCallbacks: ToolbarCallbacks = {
       onZoomReset: () => {
         this.canvasManager?.resetZoom();
@@ -257,20 +228,16 @@ export class Driver {
       },
       onFixedSizeToggle: (isFixed: boolean) => {
         if (isFixed) {
-          // Fixed mode: keep current size as fixed
           const currentSize = this.canvasManager?.getStyleSize();
           if (currentSize) {
             this.canvasManager?.setCanvasStyleSize(currentSize.width, currentSize.height);
           }
         } else {
-          // Auto mode: reset to auto sizing
           this.canvasManager?.resetToAutoSize();
         }
         this.updateOverlayWithTransform();
       },
-      onLayoutChange: () => {
-        // Toolbar layout changes no longer affect canvas layout
-      },
+      onLayoutChange: () => {},
       onFullscreenToggle: () => {
         this.toggleFullscreen();
       },
@@ -278,16 +245,13 @@ export class Driver {
         this.panModeEnabled = enabled;
         this.mouseHandler!.setPanMode(enabled);
       },
-      onKeyboardToggle: () => {
-        // Keyboard toggle is handled by React state in OverlayContainer
-      },
+      onKeyboardToggle: () => {},
       onPerformanceToggle: () => {
         this.performanceVisible = !this.performanceVisible;
         this.updateOverlayWithTransform();
       },
     };
 
-    // Initialize overlay manager after handlers are created
     this.overlayManager = new ReactOverlayManager(overlayContainer);
     const currentState = this.canvasManager.getCurrentState();
     this.overlayManager.render({
@@ -367,7 +331,6 @@ export class Driver {
       return mouseState;
     }
 
-    // Transform container coordinates to canvas coordinates
     const canvasCoords = this.canvasManager.screenToCanvas(mouseState.x, mouseState.y);
     return {
       x: canvasCoords.x,
@@ -380,7 +343,6 @@ export class Driver {
       return;
     }
 
-    // Update overlay with current zoom level and canvas size
     const canvasState = this.canvasManager.getCurrentState();
     this.overlayManager?.updateState({
       currentZoom: this.canvasManager.transform.scale,
@@ -393,7 +355,6 @@ export class Driver {
     });
   }
 
-  // Public methods for external control
   resetTransform() {
     this.canvasManager?.resetTransform();
     this.updateOverlayWithTransform();
@@ -402,7 +363,6 @@ export class Driver {
   zoomTo(scale: number, centerX?: number, centerY?: number) {
     if (!this.canvasManager) return;
 
-    // Let CanvasManager handle coordinate calculation if center is not provided
     this.canvasManager.zoomTo(scale, centerX, centerY);
     this.updateOverlayWithTransform();
   }
@@ -410,7 +370,6 @@ export class Driver {
   setCanvasSize(width: number, height: number) {
     this.canvasManager?.setCanvasStyleSize(width, height);
 
-    // Reset transform to prevent invalid positions after size change
     this.canvasManager?.resetTransform();
     this.updateOverlayWithTransform();
   }
@@ -448,7 +407,6 @@ export class Driver {
         msRequestFullscreen?: () => void;
       };
 
-      // Check if we're currently in fullscreen
       const isFullscreen = !!(
         doc.fullscreenElement ||
         doc.webkitFullscreenElement ||
@@ -457,14 +415,11 @@ export class Driver {
       );
 
       if (!isFullscreen) {
-        // Enter fullscreen - try various vendor-prefixed methods
         if (elem.requestFullscreen) {
           await elem.requestFullscreen();
         } else if (elem.webkitRequestFullscreen) {
-          // iOS Safari uses webkitRequestFullscreen
           elem.webkitRequestFullscreen();
         } else if (elem.webkitEnterFullscreen) {
-          // Some mobile browsers use this
           elem.webkitEnterFullscreen();
         } else if (elem.mozRequestFullScreen) {
           elem.mozRequestFullScreen();
@@ -474,7 +429,6 @@ export class Driver {
           console.warn("Fullscreen API not supported on this device");
         }
       } else {
-        // Exit fullscreen - try various vendor-prefixed methods
         if (doc.exitFullscreen) {
           await doc.exitFullscreen();
         } else if (doc.webkitExitFullscreen) {
@@ -493,7 +447,6 @@ export class Driver {
   }
 
   private handleFullscreenChange() {
-    // Force layout recalculation after fullscreen change
     if (this.overlayManager) {
       this.handleLayoutChange();
     }
@@ -530,23 +483,16 @@ export class Driver {
 
     this.isHandlingLayoutChange = true;
 
-    // Use requestAnimationFrame to ensure browser layout calculations are complete
     requestAnimationFrame(() => {
-      // Adjust canvas for overlay after orientation change
       this.adjustCanvasForOverlay();
 
-      // Recalculate initial scale for new orientation
       this.canvasManager?.recalculateInitialScale();
 
-      // Update overlay with new transform
       this.updateOverlayWithTransform();
 
-      // Reset flag after layout is complete
       this.isHandlingLayoutChange = false;
     });
   }
-
-  // Toolbar layout is now managed by React components
 
   setPerformanceVisible(visible: boolean) {
     this.performanceVisible = visible;

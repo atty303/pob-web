@@ -12,7 +12,6 @@ interface VirtualKeyboardProps {
 }
 
 export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks, keyboardState }) => {
-  // Use state to track keyboard state changes for React reactivity
   const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
   const [symbolMode, setSymbolMode] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -21,39 +20,33 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   const [isInitialized, setIsInitialized] = useState(false);
   const keyboardRef = useRef<HTMLDivElement>(null);
 
-  // Calculate optimal initial position based on viewport and toolbar
   const calculateInitialPosition = useCallback(() => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const isLandscape = viewportWidth > viewportHeight;
 
-    // Approximate keyboard dimensions (will be refined once rendered)
     const approxKeyboardWidth = 400;
     const approxKeyboardHeight = 200;
-    const toolbarSize = 60; // From driver config
+    const toolbarSize = 60;
 
-    let initialX = 0; // Start centered horizontally
+    let initialX = 0;
     let initialY = 0;
 
     if (isLandscape) {
-      // Landscape: toolbar is on the right, position keyboard on left side
       const availableWidth = viewportWidth - toolbarSize;
       const keyboardCenterX = availableWidth / 2;
-      const baselineX = viewportWidth / 2 - approxKeyboardWidth / 2; // Default CSS centering point
+      const baselineX = viewportWidth / 2 - approxKeyboardWidth / 2;
       initialX = keyboardCenterX - baselineX;
 
-      // Position above bottom with some margin
-      initialY = -60; // Move up from default bottom position
+      initialY = -60;
     } else {
-      // Portrait: toolbar is at bottom, position keyboard above it
-      initialX = 0; // Keep centered
-      initialY = -(toolbarSize + 20); // Move up to avoid toolbar overlap
+      initialX = 0;
+      initialY = -(toolbarSize + 20);
     }
 
     return { x: initialX, y: initialY };
   }, []);
 
-  // Function to constrain position within viewport
   const constrainPositionToViewport = useCallback((pos: { x: number; y: number }) => {
     if (!keyboardRef.current) return pos;
 
@@ -61,50 +54,39 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // The keyboard is positioned with:
-    // left: 50%, bottom: 20px, marginLeft: -200px, transform: translate(x, y)
-    // So actual position is: left = 50% - 200px + x, bottom = 20px - y
     const keyboardWidth = keyboardRect.width;
     const keyboardHeight = keyboardRect.height;
 
-    // Calculate actual screen coordinates
     const actualLeft = viewportWidth / 2 - 200 + pos.x;
-    const actualBottom = 20 - pos.y; // bottom position (distance from bottom edge)
+    const actualBottom = 20 - pos.y;
     const actualTop = viewportHeight - actualBottom - keyboardHeight;
 
     let constrainedX = pos.x;
     let constrainedY = pos.y;
 
-    // Constrain X position (left and right edges)
     if (actualLeft < 0) {
       constrainedX = -(viewportWidth / 2 - 200);
     } else if (actualLeft + keyboardWidth > viewportWidth) {
       constrainedX = viewportWidth - keyboardWidth - (viewportWidth / 2 - 200);
     }
 
-    // Constrain Y position (top and bottom edges)
     if (actualTop < 0) {
-      // Too high - keyboard top edge above viewport top
       constrainedY = -(viewportHeight - keyboardHeight - 20);
     } else if (actualBottom < 0) {
-      // Too low - keyboard bottom edge below viewport bottom
       constrainedY = 20;
     }
 
     return { x: constrainedX, y: constrainedY };
   }, []);
 
-  // Get initial position (calculate once when first shown)
   const getInitialPosition = useCallback(() => {
     return calculateInitialPosition();
   }, [calculateInitialPosition]);
 
-  // Update local state when keyboard state changes
   const updateLocalState = useCallback(() => {
     setHeldKeys(new Set(keyboardState.heldKeys));
   }, [keyboardState]);
 
-  // Listen for keyboard state changes
   useEffect(() => {
     keyboardState.addChangeListener(updateLocalState);
     return () => {
@@ -112,10 +94,8 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     };
   }, [keyboardState, updateLocalState]);
 
-  // Initialize position only on first show
   useEffect(() => {
     if (isVisible && !isInitialized) {
-      // Use setTimeout to ensure the keyboard is rendered and we can get its dimensions
       const timer = setTimeout(() => {
         const initialPosition = getInitialPosition();
         setPosition(initialPosition);
@@ -125,16 +105,13 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     }
   }, [isVisible, isInitialized, getInitialPosition]);
 
-  // Handle keyboard container size changes (when overlay/canvas size changes)
   useEffect(() => {
     if (!isInitialized || !keyboardRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
-      // When container size changes, constrain keyboard position to stay within viewport
       setPosition(prevPosition => constrainPositionToViewport(prevPosition));
     });
 
-    // Observe the root container of the virtual keyboard
     const rootContainer = keyboardRef.current.closest('[style*="position: relative"]') || document.body;
     resizeObserver.observe(rootContainer);
 
@@ -143,7 +120,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     };
   }, [isInitialized, constrainPositionToViewport]);
 
-  // Handle viewport resize to constrain keyboard position
   useEffect(() => {
     const handleResize = () => {
       if (isInitialized) {
@@ -161,11 +137,11 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   }, [constrainPositionToViewport, isInitialized]);
 
   type KeyDefinition = {
-    event: string; // DOM event name
-    display: string; // What to show on the button
-    width?: string; // Optional custom width
-    isModifier?: boolean; // Whether this is a modifier key
-    isSpecial?: boolean; // Whether this is a special key
+    event: string;
+    display: string;
+    width?: string;
+    isModifier?: boolean;
+    isSpecial?: boolean;
   };
 
   const letterKeyLayout = useMemo(
@@ -298,7 +274,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     (eventKey: string, keyDef: KeyDefinition) => {
       const { isModifier = false } = keyDef;
 
-      // Handle special mode switching keys
       if (eventKey === "SymbolMode") {
         setSymbolMode(true);
         return;
@@ -374,11 +349,11 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         transform: `translate(${position.x}px, ${position.y}px)`,
         left: "50%",
         bottom: "20px",
-        marginLeft: "-200px", // Half of approximate keyboard width
+        marginLeft: "-200px",
         cursor: isDragging ? "grabbing" : "default",
         pointerEvents: "none",
-        display: isVisible ? "block" : "none", // Control visibility without unmounting
-        visibility: isInitialized ? "visible" : "hidden", // Hide until positioned
+        display: isVisible ? "block" : "none",
+        visibility: isInitialized ? "visible" : "hidden",
       }}
     >
       <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:px-0.5 pw:pt-6">
@@ -391,7 +366,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
               {row.map(keyDef => {
                 const { event, display, width = "38px", isModifier = false } = keyDef;
 
-                // Determine if this key should show as active (held or mode buttons)
                 const isActive =
                   (isModifier && heldKeys.has(event)) ||
                   (event === "SymbolMode" && symbolMode) ||
@@ -414,7 +388,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
           ))}
         </div>
 
-        {/* Drag Handle */}
         <div
           className="pw:absolute pw:top-1 pw:right-1 pw:w-6 pw:h-6 pw:flex pw:items-center pw:justify-center pw:text-base-content/60 pw:hover:text-base-content pw:cursor-grab pw:active:cursor-grabbing pw:bg-base-300/50 pw:rounded"
           onMouseDown={handleDragStart}

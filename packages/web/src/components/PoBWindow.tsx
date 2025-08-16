@@ -25,7 +25,6 @@ export default function PoBWindow(props: {
   const onTitleChangeRef = useRef(props.onTitleChange);
   const onLayerVisibilityCallbackReadyRef = useRef(props.onLayerVisibilityCallbackReady);
 
-  // Keep refs updated with latest props
   onFrameRef.current = props.onFrame;
   onTitleChangeRef.current = props.onTitleChange;
   onLayerVisibilityCallbackReadyRef.current = props.onLayerVisibilityCallbackReady;
@@ -56,7 +55,6 @@ export default function PoBWindow(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>();
 
-  // Update toolbar component when it changes
   useEffect(() => {
     if (driverRef.current && props.toolbarComponent) {
       driverRef.current.setExternalToolbarComponent(props.toolbarComponent);
@@ -126,17 +124,14 @@ export default function PoBWindow(props: {
         }
         if (container.current) _driver.attachToDOM(container.current);
 
-        // Set external toolbar component if provided
         if (props.toolbarComponent) {
           _driver.setExternalToolbarComponent(props.toolbarComponent);
         }
 
-        // Pass layer visibility control callback to parent
         onLayerVisibilityCallbackReadyRef.current?.((layer: number, sublayer: number, visible: boolean) => {
           _driver.setLayerVisible(layer, sublayer, visible);
         });
 
-        // Pass driver instance to parent
         props.onDriverReady?.(_driver);
 
         setLoading(false);

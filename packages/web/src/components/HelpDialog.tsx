@@ -23,7 +23,6 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
         <h2 className="pw:font-bold pw:text-lg pw:mb-4">Controls & Navigation</h2>
 
         <div className="pw:space-y-6">
-          {/* Control Mapping Table */}
           <div>
             <h3 className="pw:font-semibold pw:text-base pw:mb-3 pw:text-primary">Touch Controls</h3>
             <div className="pw:overflow-x-auto">
@@ -80,7 +79,6 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
             </p>
           </div>
 
-          {/* Tips */}
           <div>
             <h3 className="pw:font-semibold pw:text-base pw:mb-3 pw:text-primary">Tips</h3>
             <ul className="pw:list-disc pw:list-inside pw:space-y-1 pw:text-sm">

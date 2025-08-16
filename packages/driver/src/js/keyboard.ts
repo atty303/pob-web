@@ -1,16 +1,12 @@
-// Key mapping from DOM event names to PoB names
 const DOM_TO_POB_KEY_MAP = new Map<string, string>([
-  // Special keys
   ["Backspace", "BACK"],
   ["Tab", "TAB"],
   ["Enter", "RETURN"],
   ["Escape", "ESCAPE"],
   ["Space", " "],
-  // Modifier keys
   ["Control", "CTRL"],
   ["Shift", "SHIFT"],
   ["Alt", "ALT"],
-  // Navigation keys
   ["Pause", "PAUSE"],
   ["PageUp", "PAGEUP"],
   ["PageDown", "PAGEDOWN"],
@@ -23,7 +19,6 @@ const DOM_TO_POB_KEY_MAP = new Map<string, string>([
   ["ArrowDown", "DOWN"],
   ["ArrowLeft", "LEFT"],
   ["ArrowRight", "RIGHT"],
-  // Function keys
   ["F1", "F1"],
   ["F2", "F2"],
   ["F3", "F3"],
@@ -39,10 +34,8 @@ const DOM_TO_POB_KEY_MAP = new Map<string, string>([
   ["F13", "F13"],
   ["F14", "F14"],
   ["F15", "F15"],
-  // Lock keys
   ["NumLock", "NUMLOCK"],
   ["ScrollLock", "SCROLLLOCK"],
-  // Mouse buttons
   ["LEFTBUTTON", "LEFTBUTTON"],
   ["MIDDLEBUTTON", "MIDDLEBUTTON"],
   ["RIGHTBUTTON", "RIGHTBUTTON"],
@@ -60,7 +53,6 @@ const EXTRA_CHAR_MAP = new Map<string, string>([
   ["Escape", "\u001B"],
 ]);
 
-// Transform numbers and symbols when Shift is held
 const shiftNumberMap: Record<string, string> = {
   "1": "!",
   "2": "@",
@@ -74,7 +66,6 @@ const shiftNumberMap: Record<string, string> = {
   "0": ")",
 };
 
-// Additional symbol transformations
 const shiftSymbolMap: Record<string, string> = {
   "`": "~",
   "-": "_",
@@ -98,8 +89,8 @@ export type KeyboardStateCallbacks = {
 export type KeyboardStateChangeCallback = () => void;
 
 export class KeyboardState {
-  private _keys: Set<string> = new Set(); // DOM event names
-  private _heldKeys: Set<string> = new Set(); // DOM event names
+  private _keys: Set<string> = new Set();
+  private _heldKeys: Set<string> = new Set();
   private _callbacks: KeyboardStateCallbacks | undefined;
   private _changeCallbacks: Set<KeyboardStateChangeCallback> = new Set();
 
@@ -125,12 +116,10 @@ export class KeyboardState {
     }
   }
 
-  // DOM event names for internal state management
   get keys(): Set<string> {
     return new Set([...this._keys, ...this._heldKeys]);
   }
 
-  // PoB-mapped keys for worker communication
   get pobKeys(): Set<string> {
     const pobKeys = new Set<string>();
     for (const domKey of [...this._keys, ...this._heldKeys]) {
@@ -142,17 +131,13 @@ export class KeyboardState {
     return pobKeys;
   }
 
-  // Convert DOM event key name to PoB key name
   private domKeyToPobKey(domKey: string): string {
-    // Check special mappings first
     if (DOM_TO_POB_KEY_MAP.has(domKey)) {
       return DOM_TO_POB_KEY_MAP.get(domKey)!;
     }
-    // Single character keys (a-z, 0-9) map to lowercase
     if (domKey.length === 1) {
       return domKey.toLowerCase();
     }
-    // Default: return as-is for unmapped keys
     return domKey;
   }
 
@@ -164,34 +149,25 @@ export class KeyboardState {
   keydown(domKey: string, doubleClick = 0): void {
     const pobKey = this.domKeyToPobKey(domKey);
 
-    // Normal key press - add to temporary keys and call down
     this._keys.add(domKey);
     this._callbacks?.onKeyDown(pobKey, doubleClick);
 
-    // Handle special character mappings for keys that generate characters
-    // This is needed for PoB character input
     this.handleSpecialCharacter(domKey, doubleClick);
   }
 
-  // Virtual keyboard key press with modifier handling
   virtualKeyPress(domKey: string, isModifier = false, doubleClick = 0): void {
     if (isModifier) {
-      // Modifier keys use toggle hold behavior
       if (this._heldKeys.has(domKey)) {
-        // Key is already held, release it
         this._heldKeys.delete(domKey);
         this.keyup(domKey, doubleClick);
       } else {
-        // Key is not held, hold it
         this._heldKeys.add(domKey);
         this.keydown(domKey, doubleClick);
       }
       this.notifyChange();
     } else {
-      // Use same logic as physical keyboard: keydown handles special characters
       this.keydown(domKey, doubleClick);
 
-      // Only add keypress for character-generating keys
       if (domKey.length === 1) {
         const transformedChar = this.applyShiftTransformation(domKey);
         this.keypress(transformedChar);
@@ -208,7 +184,6 @@ export class KeyboardState {
       return domKey;
     }
 
-    // Transform letters to uppercase when Shift is held
     if (/^[a-z]$/.test(domKey)) {
       return domKey.toUpperCase();
     }
@@ -225,7 +200,6 @@ export class KeyboardState {
   }
 
   private handleSpecialCharacter(domKey: string, doubleClick: number): void {
-    // Handle special character mappings
     if (domKey === "Backspace") {
       this._callbacks?.onChar("\b", doubleClick);
     } else if (domKey === "Tab") {
@@ -239,23 +213,18 @@ export class KeyboardState {
     }
   }
 
-  // Method equivalent to DOM keyup event
   keyup(domKey: string, doubleClick = 0): void {
     if (this._keys.has(domKey)) {
       this._keys.delete(domKey);
       const pobKey = this.domKeyToPobKey(domKey);
       this._callbacks?.onKeyUp(pobKey, doubleClick);
     }
-    // Note: held keys are not released by this method
   }
 
-  // Method equivalent to DOM keypress event
   keypress(domKey: string, doubleClick = 0): void {
-    // Send the key as-is, matching original DOM keypress behavior
     this._callbacks?.onChar(domKey, doubleClick);
   }
 
-  // Direct key state manipulation for physical keyboard events
   addPhysicalKey(domKey: string): void {
     this._keys.add(domKey);
   }

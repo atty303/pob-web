@@ -21,7 +21,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const [performanceVisible, setPerformanceVisible] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
-  // Create toolbar components for driver toolbar
   const ToolbarComponents = ({
     position,
     isLandscape,
