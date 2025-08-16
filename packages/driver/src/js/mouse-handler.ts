@@ -211,7 +211,6 @@ export class MouseHandler {
       y: e.clientY - rect.top,
     };
 
-    // Update mouse state for wheel events
     this.updateMouseState(pos);
 
     const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
@@ -287,13 +286,11 @@ export class MouseHandler {
         this._lastTapTime = currentTime;
       }
     } else if (e.touches.length === 2) {
-      // Two finger touch - behavior depends on drag mode
       if (this._longPressTimer) {
         clearTimeout(this._longPressTimer);
         this._longPressTimer = null;
       }
 
-      // Cancel multi-touch prevention timer and disable mouse updates
       if (this._multiTouchPreventionTimer) {
         clearTimeout(this._multiTouchPreventionTimer);
         this._multiTouchPreventionTimer = null;
@@ -307,16 +304,12 @@ export class MouseHandler {
       this._isZooming = false;
       this._isPanning = false;
     } else if (e.touches.length === 3) {
-      // Three finger touch - initialize pan center
-
-      // Cancel multi-touch prevention timer and disable mouse updates
       if (this._multiTouchPreventionTimer) {
         clearTimeout(this._multiTouchPreventionTimer);
         this._multiTouchPreventionTimer = null;
       }
       this._allowMouseUpdates = false;
 
-      // Immediately disable 2-finger gestures when 3rd finger is detected
       this._isZooming = false;
       this._isPanning = false;
 
@@ -337,22 +330,17 @@ export class MouseHandler {
     e.preventDefault();
 
     if (e.touches.length === 1) {
-      // Single finger move - only update mouse position and send events for single touch
       const touch = e.touches[0];
       const pos = this.getTouchPosition(touch);
       this.updateMouseState(pos);
 
-      // Only process mouse movements if mouse updates are allowed
       if (this._allowMouseUpdates) {
         if (!this._panModeEnabled) {
-          // Direct interaction mode: check if we should start drag
           if (!this._isPanModeActive && this._longPressTimer) {
-            // Check if finger moved enough to start drag
             const touchData = this._touches.get(touch.identifier);
             if (touchData) {
               const distance = this.calculateDistance(touchData, pos);
               if (distance > 5) {
-                // Start drag - cancel long press and begin left button drag
                 clearTimeout(this._longPressTimer);
                 this._longPressTimer = null;
                 this._isPanModeActive = true;
@@ -363,26 +351,20 @@ export class MouseHandler {
           }
 
           if (this._isPanModeActive) {
-            // Send mouse move with button down (drag)
             this.callbacks.onMouseMove();
           } else {
-            // Just mouse move (no drag yet)
             this.callbacks.onMouseMove();
           }
         } else {
-          // Pan tool mode: just mouse move (no click drag, only for single touch)
           this.callbacks.onMouseMove();
         }
       }
     } else if (e.touches.length === 2) {
-      // Two finger gesture - only if not in three finger panning mode
       if (!this._threeFingerPanning) {
         const touch1 = this.getTouchPosition(e.touches[0]);
         const touch2 = this.getTouchPosition(e.touches[1]);
         const currentDistance = this.calculateDistance(touch1, touch2);
         const currentCenter = this.calculateCenter(touch1, touch2);
-
-        // Do NOT update mouse position during two-finger gestures to prevent mouse move events
 
         const distanceDelta = currentDistance - this._twoFingerDistance;
         const centerDelta = {
@@ -390,9 +372,7 @@ export class MouseHandler {
           y: currentCenter.y - this._twoFingerCenter.y,
         };
 
-        // Check for pinch zoom - initial detection requires threshold, but continue smoothly once started
         if (!this._isZooming && Math.abs(distanceDelta) > 5 && !this._isPanning) {
-          // Start zooming - threshold required for initial detection
           this._isZooming = true;
         }
 
@@ -483,7 +463,6 @@ export class MouseHandler {
       this._wheelAccumulator = 0; // Reset wheel accumulator
       this._threeFingerPanning = false; // Reset three finger panning
 
-      // Re-enable mouse updates when all touches end
       this._allowMouseUpdates = true;
     }
 
@@ -493,7 +472,6 @@ export class MouseHandler {
   handleTouchCancel(e: TouchEvent) {
     e.preventDefault();
 
-    // Clean up all touch state
     this._touches.clear();
 
     if (this._longPressTimer) {

@@ -178,7 +178,6 @@ const webgpuFormatTable: Record<number, WebGPUFormatDesc> = {
   [Format.RGBA8_UNORM_PACK8]: { format: "rgba8unorm", bytesPerPixel: 4, compressed: false },
   [Format.RGBA_DXT1_UNORM_BLOCK8]: { format: "bc1-rgba-unorm", bytesPerPixel: 8, compressed: true }, // 8 bytes per 4x4 block
   [Format.RGBA_BP_UNORM_BLOCK16]: { format: "bc7-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
-  // Add more compressed formats as needed
   [Format.RGB_DXT1_UNORM_BLOCK8]: { format: "bc1-rgba-unorm", bytesPerPixel: 8, compressed: true }, // 8 bytes per 4x4 block
   [Format.RGBA_DXT3_UNORM_BLOCK16]: { format: "bc2-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
   [Format.RGBA_DXT5_UNORM_BLOCK16]: { format: "bc3-rgba-unorm", bytesPerPixel: 16, compressed: true }, // 16 bytes per 4x4 block
@@ -315,10 +314,8 @@ export class WebGPUBackend implements RenderBackend {
       throw new Error("WebGPU not supported");
     }
 
-    // Request device with compressed texture features
     const requiredFeatures: GPUFeatureName[] = [];
 
-    // Check for texture compression features
     if (adapter.features.has("texture-compression-bc")) {
       requiredFeatures.push("texture-compression-bc");
     }
@@ -351,7 +348,6 @@ export class WebGPUBackend implements RenderBackend {
       alphaMode: "opaque",
     });
 
-    // Create samplers
     this.linearSampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear",
@@ -369,7 +365,6 @@ export class WebGPUBackend implements RenderBackend {
       addressModeV: "repeat",
     });
 
-    // Create bind group layout
     const bindGroupLayoutEntries: GPUBindGroupLayoutEntry[] = [
       {
         binding: 0,
@@ -383,7 +378,6 @@ export class WebGPUBackend implements RenderBackend {
       },
     ];
 
-    // Add texture bindings
     for (let i = 0; i < this.maxTextures; i++) {
       bindGroupLayoutEntries.push({
         binding: i + 2,
@@ -399,7 +393,6 @@ export class WebGPUBackend implements RenderBackend {
       entries: bindGroupLayoutEntries,
     });
 
-    // Create pipeline
     const vertexShaderCode = vertexShaderSource;
     const fragmentShaderCode = fragmentShaderSource(this.maxTextures);
 
@@ -472,13 +465,11 @@ export class WebGPUBackend implements RenderBackend {
       },
     });
 
-    // Create uniform buffer
     this.uniformBuffer = this.device.createBuffer({
       size: 64, // 4x4 matrix
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    // Create vertex buffer
     this.vertexBuffer = this.device.createBuffer({
       size: 1024 * 1024 * 4, // Match WebGL backend size
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -486,7 +477,6 @@ export class WebGPUBackend implements RenderBackend {
 
     this.setViewport(0, 0, this._canvas.width, this._canvas.height);
 
-    // Create default white texture
     this.defaultWhiteTexture = this.createDefaultTexture();
 
     this.initialized = true;
@@ -515,7 +505,6 @@ export class WebGPUBackend implements RenderBackend {
 
   end() {
     if (!this.initialized) {
-      // Skip rendering if not initialized yet
       return;
     }
     this.dispatch();
@@ -563,16 +552,13 @@ export class WebGPUBackend implements RenderBackend {
 
     this.dispatchCount++;
 
-    // Update uniform buffer
     const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
     this.device.queue.writeBuffer(this.uniformBuffer!, 0, matrix);
 
-    // Update vertex buffer
     const bufferData = this.vertices.buffer;
     const requiredSize = bufferData.byteLength;
 
     if (requiredSize > this.vertexBufferSize) {
-      // Recreate vertex buffer with larger size
       this.vertexBuffer?.destroy();
       this.vertexBuffer = this.device.createBuffer({
         size: requiredSize,
@@ -583,24 +569,19 @@ export class WebGPUBackend implements RenderBackend {
 
     this.device.queue.writeBuffer(this.vertexBuffer!, 0, bufferData);
 
-    // Create bind group
     const bindGroupEntries: GPUBindGroupEntry[] = [
       { binding: 0, resource: { buffer: this.uniformBuffer! } },
       { binding: 1, resource: this.linearSampler! },
     ];
 
-    // Add textures to bind group
-    // Create array to hold textures at correct indices
     const textureSlots: GPUTexture[] = new Array(this.maxTextures).fill(this.defaultWhiteTexture);
 
-    // Place each texture at its correct index
     for (const t of this.batchTextures.values()) {
       if (t.index < this.maxTextures) {
         textureSlots[t.index] = t.texture;
       }
     }
 
-    // Add all texture slots to bind group
     for (let i = 0; i < this.maxTextures; i++) {
       const texture = textureSlots[i];
       bindGroupEntries.push({
@@ -614,7 +595,6 @@ export class WebGPUBackend implements RenderBackend {
       entries: bindGroupEntries,
     });
 
-    // Record commands
     const commandEncoder = this.device.createCommandEncoder();
     const textureView = this.context.getCurrentTexture().createView();
 
@@ -678,19 +658,16 @@ export class WebGPUBackend implements RenderBackend {
     if (!texture) {
       const source = textureBitmap.source;
 
-      // Check if target is supported
       if (!targetTable[source.target]) {
         throw new Error(`Unsupported target: ${source.target}`);
       }
 
-      // Get proper format descriptor
       // For PNG images (Image type), always use rgba8unorm regardless of source.format
       const formatDesc =
         source.type === "Image"
           ? { format: "rgba8unorm" as GPUTextureFormat, bytesPerPixel: 4, compressed: false }
           : webgpuFormatFor(source.format, this.supportedFeatures);
 
-      // Ensure at least 1 mip level for consistency
       const mipLevels = Math.max(1, source.levels);
       // For array textures in WebGPU, ensure at least 1 layer but create as proper array
       const arrayLayers = Math.max(1, source.layers);
@@ -707,17 +684,13 @@ export class WebGPUBackend implements RenderBackend {
         dimension: "2d",
       });
 
-      // Upload texture data
       for (let layer = 0; layer < arrayLayers; ++layer) {
         for (let level = 0; level < mipLevels; ++level) {
           if (source.type === "Image") {
-            // Only process if we have data for this level
             // For PNG images (TARGET_2D), only upload to layer 0
             if (level < source.levels && (source.target === Target.TARGET_2D_ARRAY || layer === 0)) {
               const image = source.texture[level];
-              // Handle different image types
               if ("data" in image) {
-                // ImageData case - always RGBA8 format (4 bytes per pixel)
                 const imageData = (image as ImageData).data;
                 this.device.queue.writeTexture(
                   { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
@@ -743,14 +716,12 @@ export class WebGPUBackend implements RenderBackend {
               }
             }
           } else if (source.type === "Texture") {
-            // Only process if we have data for this level and layer
             if (level < source.levels && layer < source.layers) {
               const extent = source.texture.extentOf(level);
               const data = source.texture.dataOf(layer, 0, level);
 
               if (Format.isCompressed(source.texture.format)) {
                 if (formatDesc.compressed) {
-                  // Handle compressed texture data upload
                   // For BC formats, calculate bytes per row based on 4x4 blocks
                   const blocksWide = Math.ceil(extent[0] / 4);
                   const blocksHigh = Math.ceil(extent[1] / 4);

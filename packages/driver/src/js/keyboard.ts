@@ -45,7 +45,6 @@ const DOM_TO_POB_KEY_MAP = new Map<string, string>([
   ["WHEELDOWN", "WHEELDOWN"],
 ]);
 
-// Special character mappings for PoB
 const EXTRA_CHAR_MAP = new Map<string, string>([
   ["Backspace", "\b"],
   ["Tab", "\t"],
@@ -145,7 +144,6 @@ export class KeyboardState {
     return new Set(this._heldKeys);
   }
 
-  // Method equivalent to DOM keydown event
   keydown(domKey: string, doubleClick = 0): void {
     const pobKey = this.domKeyToPobKey(domKey);
 

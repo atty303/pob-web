@@ -227,7 +227,6 @@ export class CanvasManager {
     return this.canvasContainer;
   }
 
-  // Viewport transform methods
   get transform(): ViewportTransform {
     return {
       scale: this._scale,
@@ -240,16 +239,12 @@ export class CanvasManager {
     const newScale = Math.max(this._minScale, Math.min(this._maxScale, this._scale * scale));
     const scaleChange = newScale / this._scale;
 
-    // Calculate new zoom translation to keep center point fixed
-    // CRITICAL: Consider total translation (pan + zoom) for correct zoom center calculation
     const oldTotalTranslateX = this._panTranslateX + this._zoomTranslateX;
     const oldTotalTranslateY = this._panTranslateY + this._zoomTranslateY;
 
-    // Zoom around center point: total translation should keep center fixed
     const newTotalTranslateX = centerX - (centerX - oldTotalTranslateX) * scaleChange;
     const newTotalTranslateY = centerY - (centerY - oldTotalTranslateY) * scaleChange;
 
-    // Update zoom translation while preserving pan translation
     this._zoomTranslateX = newTotalTranslateX - this._panTranslateX;
     this._zoomTranslateY = newTotalTranslateY - this._panTranslateY;
     this._scale = newScale;
@@ -301,14 +296,7 @@ export class CanvasManager {
     this._isInitialScale = false;
   }
 
-  // Transform container coordinates to canvas coordinates
   screenToCanvas(containerX: number, containerY: number): { x: number; y: number } {
-    // PRACTICAL APPROACH:
-    // - Canvas has actual CSS transform: translate(panX+zoomX, panY+zoomY) scale(scale)
-    // - Mouse coordinates come from container space
-    // - Need complete inverse transform to get canvas logical coordinates
-    // - CSS: translate(tx, ty) scale(s) → Inverse: (containerX - tx) / s
-
     const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
     const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
 
@@ -320,7 +308,6 @@ export class CanvasManager {
     return result;
   }
 
-  // Transform canvas coordinates to screen coordinates
   canvasToScreen(canvasX: number, canvasY: number): { x: number; y: number } {
     const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
     const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
@@ -351,47 +338,37 @@ export class CanvasManager {
   }
 
   private updateCanvasSize(containerWidth: number, containerHeight: number) {
-    // Update container size for transform calculations
     this._containerWidth = containerWidth;
     this._containerHeight = containerHeight;
 
-    // Update style size if not fixed
     if (!this.isFixedSize) {
       const styleSize = this.calculateStyleSize(containerWidth, containerHeight);
       this.currentStyleWidth = styleSize.width;
       this.currentStyleHeight = styleSize.height;
     }
 
-    // Update canvas style size (DOM appearance only)
     this.updateCanvasStyleSize();
 
-    // Recalculate transform constraints with new container size
     this._constrainTransform();
     this._updateCanvasTransform();
 
-    // Notify changes
     this.notifyStateChange(containerWidth, containerHeight);
     this.notifyRenderingSizeChange();
   }
 
   private calculateInitialScale() {
-    // Check if both width and height don't fit in container
     const widthFits = this.currentStyleWidth <= this._containerWidth;
     const heightFits = this.currentStyleHeight <= this._containerHeight;
 
     if (!widthFits || !heightFits) {
-      // Calculate scale to fit width and height
       const scaleToFitWidth = this._containerWidth / this.currentStyleWidth;
       const scaleToFitHeight = this._containerHeight / this.currentStyleHeight;
 
-      // Use the larger scale (less zoom out) so at least one dimension fits
       const initialScale = Math.max(scaleToFitWidth, scaleToFitHeight);
 
-      // Constrain to min/max scale bounds and store as initial scale
       this._initialScale = Math.max(this._minScale, Math.min(this._maxScale, initialScale));
       this._scale = this._initialScale;
     } else {
-      // If canvas fits, initial scale is 1
       this._initialScale = 1;
     }
   }
@@ -399,8 +376,6 @@ export class CanvasManager {
   private updateCanvasStyleSize() {
     if (!this.canvas) return;
 
-    // Update CSS size only (visual appearance)
-    // Note: canvas.width/height (rendering resolution) is handled by worker after transferControlToOffscreen
     this.canvas.style.width = `${this.currentStyleWidth}px`;
     this.canvas.style.height = `${this.currentStyleHeight}px`;
   }
@@ -448,45 +423,34 @@ export class CanvasManager {
     const scaledWidth = this.currentStyleWidth * this._scale;
     const scaledHeight = this.currentStyleHeight * this._scale;
 
-    // Calculate total translation for constraints
     const totalTranslateX = this._panTranslateX + this._zoomTranslateX;
     const totalTranslateY = this._panTranslateY + this._zoomTranslateY;
 
     let newTotalTranslateX = totalTranslateX;
     let newTotalTranslateY = totalTranslateY;
 
-    // Constrain translation to keep canvas visible
     if (scaledWidth <= this._containerWidth) {
-      // Center horizontally if canvas is smaller than container
       newTotalTranslateX = Math.round((this._containerWidth - scaledWidth) / 2);
     } else {
-      // Constrain to prevent showing empty space
       const maxTranslateX = 0;
       const minTranslateX = this._containerWidth - scaledWidth;
       newTotalTranslateX = Math.max(minTranslateX, Math.min(maxTranslateX, totalTranslateX));
     }
 
     if (scaledHeight <= this._containerHeight) {
-      // Center vertically if canvas is smaller than container
       newTotalTranslateY = Math.round((this._containerHeight - scaledHeight) / 2);
     } else {
-      // Constrain to prevent showing empty space
       const maxTranslateY = 0;
       const minTranslateY = this._containerHeight - scaledHeight;
       newTotalTranslateY = Math.max(minTranslateY, Math.min(maxTranslateY, totalTranslateY));
     }
 
-    // CRITICAL: Adjust pan translation to maintain constraints while preserving zoom translation
-    // Zoom translation must remain stable for coordinate transformation consistency
     this._panTranslateX = newTotalTranslateX - this._zoomTranslateX;
     this._panTranslateY = newTotalTranslateY - this._zoomTranslateY;
-
-    // Constraint applied: keep canvas within visible bounds
   }
 
   private _updateCanvasTransform() {
     if (!this.canvas) return;
-    // Apply transform immediately and synchronously
     this.canvas.style.transform = this.generateTransformCSS();
   }
 }

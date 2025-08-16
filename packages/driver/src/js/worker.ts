@@ -227,16 +227,13 @@ export class DriverWorker {
   async setCanvas(canvas: OffscreenCanvas, useWebGPU: boolean) {
     try {
       if (useWebGPU && "gpu" in navigator) {
-        // Try to initialize WebGPU backend
         const backend = new WebGPUBackend(canvas);
-        // Wait for WebGPU initialization
         await backend.waitForInit();
         if (this.renderer) {
           this.renderer.backend = backend;
         }
         log.info(tag.backend, "Using WebGPU backend");
       } else {
-        // Fallback to WebGL2
         const backend = new WebGL1Backend(canvas);
         if (this.renderer) {
           this.renderer.backend = backend;
@@ -244,7 +241,6 @@ export class DriverWorker {
         log.info(tag.backend, "Using WebGL2 backend");
       }
     } catch (error) {
-      // If WebGPU fails, fallback to WebGL2
       log.warn(tag.backend, "Failed to initialize WebGPU, falling back to WebGL2", error);
       const backend = new WebGL1Backend(canvas);
       if (this.renderer) {
@@ -263,7 +259,6 @@ export class DriverWorker {
     this.dirtyCount = 2;
   }
 
-  // State update methods (separate from wasm callbacks)
   updateMouseState(mouseState: MouseState) {
     this.mouseState = mouseState;
   }
@@ -272,13 +267,11 @@ export class DriverWorker {
     this.keyboardState = keyboardState;
   }
 
-  // Mouse event handler
   handleMouseMove(mouseState: MouseState) {
     this.mouseState = mouseState;
     this.invalidate();
   }
 
-  // Keyboard event handlers
   handleKeyDown(name: string, doubleClick: number) {
     this.imports?.onKeyDown(name, doubleClick);
     this.invalidate();
@@ -321,7 +314,6 @@ export class DriverWorker {
     requestAnimationFrame(this.tick.bind(this));
   }
 
-  // js -> wasm
   private resolveImports(module: DriverModule): Imports {
     return {
       init: module.cwrap("init", "number", [], { async: true }),
@@ -337,7 +329,6 @@ export class DriverWorker {
     };
   }
 
-  // wasm -> js
   private exports(module: DriverModule) {
     return {
       fs: zenfs.fs,
