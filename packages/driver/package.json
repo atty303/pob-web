@@ -3,9 +3,7 @@
   "private": true,
   "version": "0.25.0",
   "type": "module",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "npm run build:debug && npm run build:release && npm run make-index",
     "build:debug": "emcmake cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
@@ -15,11 +13,14 @@
     "make-index": "node -e 'require(\"shelljs/global\"); const p = exec(\"npm prefix\", {silent: true}).stdout.trim(); const s = `node ${p}/node_modules/@zenfs/core/scripts/make-index.js`; exec(`${s} -o dist/index-release.json dist/release`); exec(`${s} -o dist/index-debug.json dist/debug`);'"
   },
   "dependencies": {
-    "@zenfs/core": "^1.11.3",
+    "@bokuweb/zstd-wasm": "^0.0.22",
     "@zenfs/archives": "^1.0.5",
+    "@zenfs/core": "^1.11.3",
     "@zenfs/dom": "^1.1.5",
     "comlink": "^4.4.1",
-    "@bokuweb/zstd-wasm": "^0.0.22",
-    "dds": "*"
+    "dds": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0"
   }
 }

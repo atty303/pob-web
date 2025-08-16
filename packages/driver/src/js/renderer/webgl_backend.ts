@@ -22,7 +22,6 @@ out vec3 v_TexId;
 
 void main(void) {
     v_TexCoord = a_TexCoord;
-    // Unpack color from uint32 to vec4
     v_TintColor = vec4(
         float((a_TintColor >> 24u) & 0xFFu) / 255.0,
         float((a_TintColor >> 16u) & 0xFFu) / 255.0,

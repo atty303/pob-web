@@ -1,0 +1,38 @@
+{
+  "name": "pob.cool - Path of Building Web",
+  "short_name": "pob.cool",
+  "description": "A web version of Path of Building character planner for Path of Exile",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["games", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Path of Exile 2",
+      "url": "/poe2",
+      "description": "Open Path of Exile 2 character planner"
+    },
+    {
+      "name": "Path of Exile 1",
+      "url": "/poe1",
+      "description": "Open Path of Exile 1 character planner"
+    }
+  ]
+}

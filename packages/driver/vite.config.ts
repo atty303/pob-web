@@ -1,4 +1,6 @@
 import * as path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import { defineConfig, searchForWorkspaceRoot } from "vite";
 import Inspect from "vite-plugin-inspect";
 
@@ -11,6 +13,8 @@ export default defineConfig(({ mode }) => ({
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), packerR2Dir],
     },
+    // Owner's Cloudflare Tunnel domain for mobile testing
+    allowedHosts: ["local.pob.cool"],
   },
   define: {
     __ASSET_PREFIX__: JSON.stringify(
@@ -34,5 +38,5 @@ export default defineConfig(({ mode }) => ({
       target: "es2020",
     },
   },
-  plugins: [Inspect()],
+  plugins: [react(), tailwindcss(), Inspect()],
 }));

@@ -404,7 +404,6 @@ export class Renderer {
     pos.y += height;
   }
 
-  // Get rendering statistics
   getStats(): RenderStats {
     return {
       frameCount: this.renderStats.frameCount,
@@ -414,7 +413,6 @@ export class Renderer {
     };
   }
 
-  // Reset statistics
   resetStats() {
     this.renderStats = {
       frameCount: 0,
@@ -424,7 +422,6 @@ export class Renderer {
     };
   }
 
-  // Get summary statistics
   getStatsSummary() {
     const totalDrawImage = this.renderStats.layerStats.reduce((sum, layer) => sum + layer.drawImageCount, 0);
     const totalDrawImageQuad = this.renderStats.layerStats.reduce((sum, layer) => sum + layer.drawImageQuadCount, 0);
@@ -442,7 +439,6 @@ export class Renderer {
     };
   }
 
-  // Layer visibility control
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
     const layerKey = `${layer}.${sublayer}`;
     this.layerVisibility.set(layerKey, visible);

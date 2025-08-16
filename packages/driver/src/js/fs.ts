@@ -85,7 +85,6 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   }
 
   async stat(path: string): Promise<zenfs.Stats> {
-    // log.debug(tag.kvfs, "stat", path);
     return this.statSync(path);
   }
   statSync(path: string): zenfs.Stats {

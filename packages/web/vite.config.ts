@@ -20,6 +20,13 @@ export default defineConfig(({ mode }) => ({
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), rootDir],
     },
+    // Owner's Cloudflare Tunnel domain for mobile testing
+    allowedHosts: ["local.pob.cool"],
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
   },
   build: {
     chunkSizeWarningLimit: 1024,

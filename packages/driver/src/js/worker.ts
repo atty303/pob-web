@@ -6,10 +6,11 @@ import { fs, Fetch } from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
-import type { UIState } from "./event";
 import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
+import type { KeyboardUIState } from "./keyboard-handler";
 import { log, tag } from "./logger";
+import type { MouseState } from "./mouse-handler";
 // @ts-ignore
 import {
   BinPackingTextRasterizer,
@@ -121,11 +122,8 @@ export class DriverWorker {
     height: 600,
     pixelRatio: 1,
   };
-  private uiState: UIState = {
-    x: 0,
-    y: 0,
-    keys: new Set(),
-  };
+  private mouseState: MouseState = { x: 0, y: 0 };
+  private keyboardState: KeyboardUIState = { keys: new Set() };
   private hostCallbacks: HostCallbacks | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
@@ -229,16 +227,13 @@ export class DriverWorker {
   async setCanvas(canvas: OffscreenCanvas, useWebGPU: boolean) {
     try {
       if (useWebGPU && "gpu" in navigator) {
-        // Try to initialize WebGPU backend
         const backend = new WebGPUBackend(canvas);
-        // Wait for WebGPU initialization
         await backend.waitForInit();
         if (this.renderer) {
           this.renderer.backend = backend;
         }
         log.info(tag.backend, "Using WebGPU backend");
       } else {
-        // Fallback to WebGL2
         const backend = new WebGL1Backend(canvas);
         if (this.renderer) {
           this.renderer.backend = backend;
@@ -246,7 +241,6 @@ export class DriverWorker {
         log.info(tag.backend, "Using WebGL2 backend");
       }
     } catch (error) {
-      // If WebGPU fails, fallback to WebGL2
       log.warn(tag.backend, "Failed to initialize WebGPU, falling back to WebGL2", error);
       const backend = new WebGL1Backend(canvas);
       if (this.renderer) {
@@ -265,25 +259,30 @@ export class DriverWorker {
     this.dirtyCount = 2;
   }
 
-  handleMouseMove(uiState: UIState) {
-    this.uiState = uiState;
+  updateMouseState(mouseState: MouseState) {
+    this.mouseState = mouseState;
+  }
+
+  updateKeyboardState(keyboardState: KeyboardUIState) {
+    this.keyboardState = keyboardState;
+  }
+
+  handleMouseMove(mouseState: MouseState) {
+    this.mouseState = mouseState;
     this.invalidate();
   }
 
-  handleKeyDown(name: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  handleKeyDown(name: string, doubleClick: number) {
     this.imports?.onKeyDown(name, doubleClick);
     this.invalidate();
   }
 
-  handleKeyUp(name: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  handleKeyUp(name: string, doubleClick: number) {
     this.imports?.onKeyUp(name, doubleClick);
     this.invalidate();
   }
 
-  handleChar(char: string, doubleClick: number, uiState: UIState) {
-    this.uiState = uiState;
+  handleChar(char: string, doubleClick: number) {
     this.imports?.onChar(char, doubleClick);
     this.invalidate();
   }
@@ -315,7 +314,6 @@ export class DriverWorker {
     requestAnimationFrame(this.tick.bind(this));
   }
 
-  // js -> wasm
   private resolveImports(module: DriverModule): Imports {
     return {
       init: module.cwrap("init", "number", [], { async: true }),
@@ -331,7 +329,6 @@ export class DriverWorker {
     };
   }
 
-  // wasm -> js
   private exports(module: DriverModule) {
     return {
       fs: zenfs.fs,
@@ -339,9 +336,9 @@ export class DriverWorker {
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,
-      getCursorPosX: () => this.uiState.x,
-      getCursorPosY: () => this.uiState.y,
-      isKeyDown: (name: string) => this.uiState.keys.has(name),
+      getCursorPosX: () => this.mouseState.x,
+      getCursorPosY: () => this.mouseState.y,
+      isKeyDown: (name: string) => this.keyboardState.keys.has(name),
       imageLoad: (handle: number, filename: string, flags: number) => {
         this.imageRepo?.load(handle, filename, flags).then(() => {
           this.invalidate();

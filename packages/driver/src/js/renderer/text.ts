@@ -236,12 +236,10 @@ class BinaryBinPack implements BinPack {
       const { index, rect } = found;
       const newRect = { width, height, x: rect.x, y: rect.y };
 
-      // Remove used rectangle and split free space
       this.freeRectangles.splice(index, 1);
       this.splitFreeRectangle(rect, width, height);
       return newRect;
     }
-    // No suitable free rectangle found
   }
 }
 

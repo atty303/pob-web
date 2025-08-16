@@ -41,7 +41,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en" className="h-full">
       <head>
         <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=1280, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="pob.cool" />
+        <meta name="theme-color" content="#1a1a1a" />
+        <link rel="manifest" href="/manifest.json" />
         <title>pob.cool</title>
         <meta property="og:title" content="pob.cool" />
         <meta property="og:description" content="A web version of Path of Building" />

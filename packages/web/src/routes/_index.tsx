@@ -68,7 +68,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="hero min-h-160" style={{ backgroundImage: "url('/hero-bg.webp')" }}>
+      <section className="hero min-h-160" style={{ backgroundImage: "url('/hero-bg.webp')" }} data-theme="dark">
         <div className="hero-overlay backdrop-blur-xs" />
         <div className="hero-content text-center flex flex-col items-center z-10">
           <div className="max-w-md">
