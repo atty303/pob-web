@@ -143,15 +143,18 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "b", display: "B" },
         { event: "n", display: "N" },
         { event: "m", display: "M" },
+        { event: "ArrowUp", display: "↑", isSpecial: true },
         { event: "Backspace", display: "⌫", isSpecial: true },
-        { event: "Delete", display: "Del", isSpecial: true },
       ],
       [
         { event: "SymbolMode", display: "!?#", width: "60px", isSpecial: true },
-        { event: "Control", display: "Ctrl", width: "60px", isModifier: true },
-        { event: "Alt", display: "Alt", width: "60px", isModifier: true },
+        { event: "Control", display: "Ctrl", isModifier: true },
+        { event: "Alt", display: "Alt", isModifier: true },
         { event: "Space", display: "Space", width: "120px", isSpecial: true },
         { event: "Enter", display: "↵", isSpecial: true },
+        { event: "ArrowLeft", display: "←", isSpecial: true },
+        { event: "ArrowDown", display: "↓", isSpecial: true },
+        { event: "ArrowRight", display: "→", isSpecial: true },
       ],
     ],
     [],
@@ -201,7 +204,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: ">", display: ">" },
         { event: "Tab", display: "Tab", width: "60px", isSpecial: true },
         { event: "Escape", display: "Esc", width: "60px", isSpecial: true },
-        { event: "Backspace", display: "⌫", isSpecial: true },
+        { event: "ArrowUp", display: "↑", isSpecial: true },
         { event: "Delete", display: "Del", isSpecial: true },
       ],
       [
@@ -210,6 +213,9 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         { event: "Alt", display: "Alt", width: "60px", isModifier: true },
         { event: "Space", display: "Space", width: "120px", isSpecial: true },
         { event: "Enter", display: "↵", isSpecial: true },
+        { event: "ArrowLeft", display: "←", isSpecial: true },
+        { event: "ArrowDown", display: "↓", isSpecial: true },
+        { event: "ArrowRight", display: "→", isSpecial: true },
       ],
     ],
     [],
@@ -306,7 +312,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         pointerEvents: "none",
       }}
     >
-      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto">
+      <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:p-0.5 pw:pt-6">
         <div className="pw:m-2 pw:gap-0.5">
           {keyLayout.map((row, rowIndex) => (
             <div
@@ -341,7 +347,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
 
         {/* Drag Handle */}
         <div
-          className="pw:absolute pw:bottom-1 pw:right-1 pw:w-6 pw:h-6 pw:flex pw:items-center pw:justify-center pw:text-base-content/60 pw:hover:text-base-content pw:cursor-grab pw:active:cursor-grabbing pw:bg-base-300/50 pw:rounded"
+          className="pw:absolute pw:top-1 pw:right-1 pw:w-6 pw:h-6 pw:flex pw:items-center pw:justify-center pw:text-base-content/60 pw:hover:text-base-content pw:cursor-grab pw:active:cursor-grabbing pw:bg-base-300/50 pw:rounded"
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
           style={{ touchAction: "none" }}

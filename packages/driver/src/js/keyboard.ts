@@ -162,7 +162,6 @@ export class KeyboardState {
 
   // Method equivalent to DOM keydown event
   keydown(domKey: string, doubleClick = 0): void {
-    console.log(`Key down: ${domKey}, doubleClick: ${doubleClick}`);
     const pobKey = this.domKeyToPobKey(domKey);
 
     // Normal key press - add to temporary keys and call down
@@ -242,7 +241,6 @@ export class KeyboardState {
 
   // Method equivalent to DOM keyup event
   keyup(domKey: string, doubleClick = 0): void {
-    console.log(`Key up: ${domKey}, doubleClick: ${doubleClick}`);
     if (this._keys.has(domKey)) {
       this._keys.delete(domKey);
       const pobKey = this.domKeyToPobKey(domKey);
@@ -253,7 +251,6 @@ export class KeyboardState {
 
   // Method equivalent to DOM keypress event
   keypress(domKey: string, doubleClick = 0): void {
-    console.log(`Key press: ${domKey}, doubleClick: ${doubleClick}`);
     // Send the key as-is, matching original DOM keypress behavior
     this._callbacks?.onChar(domKey, doubleClick);
   }

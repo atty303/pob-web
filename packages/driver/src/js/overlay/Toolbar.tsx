@@ -2,7 +2,8 @@ import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-import { MdFullscreen, MdFullscreenExit, MdOutlinePanTool } from "react-icons/md";
+import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
+import { PiHandGrabbingThin } from "react-icons/pi";
 import { ToolbarButton } from "./ToolbarButton";
 import { ZoomControl } from "./ZoomControl";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
@@ -75,7 +76,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       />
 
       <ToolbarButton
-        icon={<MdOutlinePanTool size={24} />}
+        icon={<PiHandGrabbingThin size={24} />}
         tooltip="Toggle Pan Tool"
         onClick={handlePanModeToggle}
         isActive={panModeEnabled}
