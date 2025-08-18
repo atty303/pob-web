@@ -53,7 +53,7 @@ set(DRIVER_LINK_FLAGS
         "--profiling-funcs"
         "-sUSE_ZLIB"
         "-sMODULARIZE"
-        "-sSTACK_SIZE=131072"
+        "-sSTACK_SIZE=1MB"
         "-sASYNCIFY"
         "-sASYNCIFY_STACK_SIZE=131072"
         "-sENVIRONMENT=worker"
