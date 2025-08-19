@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1](https://github.com/atty303/pob-web/compare/v0.27.0...v0.27.1) (2025-08-18)
+
+
+### Bug Fixes
+
+* **driver:** increase stack size ([a57cf01](https://github.com/atty303/pob-web/commit/a57cf011903bff45f4f4fd84876b4748bc2c67f3))
+
 ## [0.27.0](https://github.com/atty303/pob-web/compare/v0.26.0...v0.27.0) (2025-08-16)
 
 
