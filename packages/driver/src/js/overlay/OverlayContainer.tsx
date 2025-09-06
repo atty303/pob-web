@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { KeyboardState } from "../keyboard";
+import type { DOMKeyboardState } from "../keyboard";
 import "./overlay.css";
 import type { FrameData, RenderStats } from "./PerformanceOverlay";
 import { PerformanceOverlay } from "./PerformanceOverlay";
@@ -11,7 +11,7 @@ import type { ToolbarCallbacks, ToolbarPosition } from "./types";
 
 interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;
-  keyboardState: KeyboardState;
+  keyboardState: DOMKeyboardState;
   panModeEnabled?: boolean;
   currentZoom?: number;
   currentCanvasSize?: { width: number; height: number };
@@ -143,7 +143,7 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           externalComponent={externalComponent}
         />
       </div>
-      <VirtualKeyboard isVisible={keyboardVisible} callbacks={wrappedCallbacks} keyboardState={keyboardState} />
+      <VirtualKeyboard isVisible={keyboardVisible} keyboardState={keyboardState} />
       <PerformanceOverlay
         isVisible={performanceOverlayVisible}
         frames={frames}

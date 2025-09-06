@@ -1,4 +1,103 @@
-const DOM_TO_POB_KEY_MAP = new Map<string, string>([
+declare const DOMKeySymbol: unique symbol;
+/// A string that represents a key from the DOM KeyboardEvent.key property
+export type DOMKey = string & { [DOMKeySymbol]: never };
+
+/// A string that represents a key in Path of Building
+declare const PoBKeySymbol: unique symbol;
+export type PoBKey = string & { [PoBKeySymbol]: never };
+
+export type KeyboardStateCallbacks = {
+  onKeyDown: (state: PoBKeyboardState, key: PoBKey) => void;
+  onKeyUp: (state: PoBKeyboardState, key: PoBKey) => void;
+  onChar: (state: PoBKeyboardState, char: string) => void;
+};
+
+// Provides a view of the keyboard state in terms of PoB keys (including mouse buttons)
+export type PoBKeyboardState = {
+  pobKeys: Set<PoBKey>;
+
+  keydown: (pobKey: PoBKey, doubleClick: number) => void;
+  keyup: (pobKey: PoBKey) => void;
+  keypress: (char: string) => void;
+};
+export const PoBKeyboardState = {
+  make(callbacks: KeyboardStateCallbacks): PoBKeyboardState {
+    const keys = new Set<PoBKey>();
+
+    return {
+      pobKeys: keys,
+
+      keydown(pobKey: PoBKey): void {
+        keys.add(pobKey);
+        callbacks?.onKeyDown(this, pobKey);
+      },
+
+      keyup(pobKey: PoBKey): void {
+        keys.delete(pobKey);
+        callbacks?.onKeyUp(this, pobKey);
+      },
+
+      keypress(char: string): void {
+        callbacks?.onChar(this, char);
+      },
+    };
+  },
+};
+
+// Manages the state of the physical and virtual keyboard
+export type DOMKeyboardState = {
+  keydown: (domKey: DOMKey) => void;
+  keyup: (domKey: DOMKey) => void;
+  keypress: (char: string) => void;
+
+  virtualKeyPress: (domKey: DOMKey, isModifier: boolean) => Set<DOMKey>;
+};
+export const DOMKeyboardState = {
+  make(pobKeyboardState: PoBKeyboardState): DOMKeyboardState {
+    const heldKeys = new Set<DOMKey>();
+
+    return {
+      keydown(domKey: DOMKey) {
+        pobKeyboardState.keydown(domKeyToPobKey(domKey), 0);
+
+        const char = EXTRA_CHAR_MAP.get(domKey);
+        if (char) {
+          pobKeyboardState?.keypress(char);
+        }
+      },
+
+      keyup(domKey: DOMKey): void {
+        pobKeyboardState.keyup(domKeyToPobKey(domKey));
+      },
+
+      keypress(char: string): void {
+        pobKeyboardState.keypress(char);
+      },
+
+      virtualKeyPress(domKey: DOMKey, isModifier: boolean): Set<DOMKey> {
+        if (isModifier) {
+          if (heldKeys.has(domKey)) {
+            heldKeys.delete(domKey);
+            this.keyup(domKey);
+          } else {
+            heldKeys.add(domKey);
+            this.keydown(domKey);
+          }
+        } else {
+          this.keydown(domKey);
+          if (domKey.length === 1) {
+            const char = heldKeys.has("Shift" as DOMKey) ? applyShiftTransformation(domKey) : domKey;
+            this.keypress(char);
+          }
+          this.keyup(domKey);
+        }
+        return heldKeys;
+      },
+    };
+  },
+};
+
+const DOM_TO_POB_KEY_MAP: Map<DOMKey, PoBKey> = new Map([
   ["Backspace", "BACK"],
   ["Tab", "TAB"],
   ["Enter", "RETURN"],
@@ -43,200 +142,102 @@ const DOM_TO_POB_KEY_MAP = new Map<string, string>([
   ["MOUSE5", "MOUSE5"],
   ["WHEELUP", "WHEELUP"],
   ["WHEELDOWN", "WHEELDOWN"],
-]);
+] as [DOMKey, PoBKey][]);
 
-const EXTRA_CHAR_MAP = new Map<string, string>([
+const EXTRA_CHAR_MAP: Map<DOMKey, string> = new Map([
   ["Backspace", "\b"],
   ["Tab", "\t"],
   ["Enter", "\r"],
   ["Escape", "\u001B"],
-]);
+] as [DOMKey, string][]);
 
-const shiftNumberMap: Record<string, string> = {
-  "1": "!",
-  "2": "@",
-  "3": "#",
-  "4": "$",
-  "5": "%",
-  "6": "^",
-  "7": "&",
-  "8": "*",
-  "9": "(",
-  "0": ")",
-};
-
-const shiftSymbolMap: Record<string, string> = {
-  "`": "~",
-  "-": "_",
-  "=": "+",
-  "[": "{",
-  "]": "}",
-  "\\": "|",
-  ";": ":",
-  "'": '"',
-  ",": "<",
-  ".": ">",
-  "/": "?",
-};
-
-export type KeyboardStateCallbacks = {
-  onKeyDown: (key: string, doubleClick: number) => void;
-  onKeyUp: (key: string, doubleClick: number) => void;
-  onChar: (char: string, doubleClick: number) => void;
-};
-
-export type KeyboardStateChangeCallback = () => void;
-
-export class KeyboardState {
-  private _keys: Set<string> = new Set();
-  private _heldKeys: Set<string> = new Set();
-  private _callbacks: KeyboardStateCallbacks | undefined;
-  private _changeCallbacks: Set<KeyboardStateChangeCallback> = new Set();
-
-  constructor(callbacks?: KeyboardStateCallbacks) {
-    this._callbacks = callbacks;
-  }
-
-  setCallbacks(callbacks: KeyboardStateCallbacks) {
-    this._callbacks = callbacks;
-  }
-
-  addChangeListener(callback: KeyboardStateChangeCallback) {
-    this._changeCallbacks.add(callback);
-  }
-
-  removeChangeListener(callback: KeyboardStateChangeCallback) {
-    this._changeCallbacks.delete(callback);
-  }
-
-  private notifyChange() {
-    for (const callback of this._changeCallbacks) {
-      callback();
-    }
-  }
-
-  get keys(): Set<string> {
-    return new Set([...this._keys, ...this._heldKeys]);
-  }
-
-  get pobKeys(): Set<string> {
-    const pobKeys = new Set<string>();
-    for (const domKey of [...this._keys, ...this._heldKeys]) {
-      const pobKey = this.domKeyToPobKey(domKey);
-      if (pobKey) {
-        pobKeys.add(pobKey);
-      }
-    }
-    return pobKeys;
-  }
-
-  private domKeyToPobKey(domKey: string): string {
-    if (DOM_TO_POB_KEY_MAP.has(domKey)) {
-      return DOM_TO_POB_KEY_MAP.get(domKey)!;
-    }
-    if (domKey.length === 1) {
-      return domKey.toLowerCase();
-    }
-    return domKey;
-  }
-
-  get heldKeys(): Set<string> {
-    return new Set(this._heldKeys);
-  }
-
-  keydown(domKey: string, doubleClick = 0): void {
-    const pobKey = this.domKeyToPobKey(domKey);
-
-    this._keys.add(domKey);
-    this._callbacks?.onKeyDown(pobKey, doubleClick);
-
-    this.handleSpecialCharacter(domKey, doubleClick);
-  }
-
-  virtualKeyPress(domKey: string, isModifier = false, doubleClick = 0): void {
-    if (isModifier) {
-      if (this._heldKeys.has(domKey)) {
-        this._heldKeys.delete(domKey);
-        this.keyup(domKey, doubleClick);
-      } else {
-        this._heldKeys.add(domKey);
-        this.keydown(domKey, doubleClick);
-      }
-      this.notifyChange();
-    } else {
-      this.keydown(domKey, doubleClick);
-
-      if (domKey.length === 1) {
-        const transformedChar = this.applyShiftTransformation(domKey);
-        this.keypress(transformedChar);
-      }
-
-      this.keyup(domKey, doubleClick);
-    }
-  }
-
-  private applyShiftTransformation(domKey: string): string {
-    const isShiftHeld = this.hasKey("Shift");
-
-    if (!isShiftHeld) {
-      return domKey;
-    }
-
-    if (/^[a-z]$/.test(domKey)) {
-      return domKey.toUpperCase();
-    }
-
-    if (shiftNumberMap[domKey]) {
-      return shiftNumberMap[domKey];
-    }
-
-    if (shiftSymbolMap[domKey]) {
-      return shiftSymbolMap[domKey];
-    }
-
-    return domKey;
-  }
-
-  private handleSpecialCharacter(domKey: string, doubleClick: number): void {
-    if (domKey === "Backspace") {
-      this._callbacks?.onChar("\b", doubleClick);
-    } else if (domKey === "Tab") {
-      this._callbacks?.onChar("\t", doubleClick);
-    } else if (domKey === "Enter") {
-      this._callbacks?.onChar("\r", doubleClick);
-    } else if (domKey === "Escape") {
-      this._callbacks?.onChar("\u001B", doubleClick);
-    } else if (domKey === "Space") {
-      this._callbacks?.onChar(" ", doubleClick);
-    }
-  }
-
-  keyup(domKey: string, doubleClick = 0): void {
-    if (this._keys.has(domKey)) {
-      this._keys.delete(domKey);
-      const pobKey = this.domKeyToPobKey(domKey);
-      this._callbacks?.onKeyUp(pobKey, doubleClick);
-    }
-  }
-
-  keypress(domKey: string, doubleClick = 0): void {
-    this._callbacks?.onChar(domKey, doubleClick);
-  }
-
-  addPhysicalKey(domKey: string): void {
-    this._keys.add(domKey);
-  }
-
-  removePhysicalKey(domKey: string): void {
-    this._keys.delete(domKey);
-  }
-
-  hasKey(domKey: string): boolean {
-    return this._keys.has(domKey) || this._heldKeys.has(domKey);
-  }
-
-  clearAllKeys(): void {
-    this._keys.clear();
-    this._heldKeys.clear();
+function domKeyToPobKey(domKey: DOMKey): PoBKey {
+  if (DOM_TO_POB_KEY_MAP.has(domKey)) {
+    return DOM_TO_POB_KEY_MAP.get(domKey)!;
+  } else if (domKey.length === 1) {
+    return domKey.toLowerCase() as PoBKey;
+  } else {
+    return domKey as string as PoBKey;
   }
 }
+
+const SHIFT_MAP: Map<string, string> = new Map([
+  ["1", "!"],
+  ["2", "@"],
+  ["3", "#"],
+  ["4", "$"],
+  ["5", "%"],
+  ["6", "^"],
+  ["7", "&"],
+  ["8", "*"],
+  ["9", "("],
+  ["0", ")"],
+  ["`", "~"],
+  ["-", "_"],
+  ["=", "+"],
+  ["[", "{"],
+  ["]", "}"],
+  ["\\", "|"],
+  [";", ":"],
+  ["'", '"'],
+  [",", "<"],
+  [".", ">"],
+  ["/", "?"],
+]);
+
+function applyShiftTransformation(domKey: DOMKey): string {
+  if (/^[a-z]$/.test(domKey)) {
+    return domKey.toUpperCase();
+  }
+  const char = SHIFT_MAP.get(domKey);
+  if (char) {
+    return char;
+  } else {
+    return domKey;
+  }
+}
+
+// Manages the state of the keyboard, including currently pressed keys and held modifier keys
+// Handles DOM keyboard events and forwards them to the KeyboardState
+export type KeyboardHandler = {
+  destroy(): void;
+};
+export const KeyboardHandler = {
+  make(el: HTMLElement, keyboardState: DOMKeyboardState): KeyboardHandler {
+    const ac = new AbortController();
+    const signal = ac.signal;
+
+    el.addEventListener(
+      "keydown",
+      e => {
+        ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
+        keyboardState.keydown(e.key as DOMKey);
+      },
+      { signal },
+    );
+
+    el.addEventListener(
+      "keyup",
+      e => {
+        e.preventDefault();
+        keyboardState.keyup(e.key as DOMKey);
+      },
+      { signal },
+    );
+
+    el.addEventListener(
+      "keypress",
+      e => {
+        e.preventDefault();
+        keyboardState.keypress(e.key);
+      },
+      { signal },
+    );
+
+    return {
+      destroy() {
+        ac.abort();
+      },
+    };
+  },
+};

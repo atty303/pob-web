@@ -1,10 +1,13 @@
+import type { PoBKey, PoBKeyboardState } from "./keyboard";
+
 export type MouseState = {
   x: number;
   y: number;
 };
 
-function mouseString(e: MouseEvent) {
-  return ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"][e.button];
+const MOUSE_BUTTONS = ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"] as PoBKey[];
+function mouseString(e: MouseEvent): PoBKey | undefined {
+  return MOUSE_BUTTONS[e.button];
 }
 
 export type MouseCallbacks = {
@@ -32,6 +35,7 @@ export class MouseHandler {
   private _threeFingerCenter: { x: number; y: number } = { x: 0, y: 0 };
   private _multiTouchPreventionTimer: number | null = null;
   private _allowMouseUpdates = true;
+  private _isTouchLeftButtonDown = false;
 
   private _wheelAccumulator = 0;
   private static readonly WHEEL_SENSITIVITY = 4;
@@ -53,13 +57,7 @@ export class MouseHandler {
   constructor(
     private el: HTMLElement,
     private callbacks: MouseCallbacks,
-    private keyboardCallbacks: {
-      addPhysicalKey?: (key: string) => void;
-      removePhysicalKey?: (key: string) => void;
-      hasKey?: (key: string) => boolean;
-      onKeyDown: (key: string, doubleClick: number) => void;
-      onKeyUp: (key: string, doubleClick: number) => void;
-    },
+    private pobKeyboardState: PoBKeyboardState,
   ) {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -156,8 +154,7 @@ export class MouseHandler {
       this._isMousePanning = true;
       this._mouseStartPos = pos;
     } else if (name) {
-      this.keyboardCallbacks.addPhysicalKey?.(name);
-      this.keyboardCallbacks.onKeyDown(name, 0);
+      this.pobKeyboardState.keydown(name, 0);
     }
     this.el.focus();
   }
@@ -178,8 +175,7 @@ export class MouseHandler {
       this._isMousePanning = false;
       this._mouseStartPos = null;
     } else if (name) {
-      this.keyboardCallbacks.removePhysicalKey?.(name);
-      this.keyboardCallbacks.onKeyUp(name, -1); // TODO: 0
+      this.pobKeyboardState.keyup(name);
     }
     this.el.focus();
   }
@@ -197,7 +193,7 @@ export class MouseHandler {
     this.updateMouseState(pos);
 
     if (name) {
-      this.keyboardCallbacks.onKeyDown(name, 1);
+      this.pobKeyboardState.keydown(name, 1);
     }
     this.el.focus();
   }
@@ -213,8 +209,8 @@ export class MouseHandler {
 
     this.updateMouseState(pos);
 
-    const name = e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP";
-    this.keyboardCallbacks.onKeyUp(name, 0);
+    const name = (e.deltaY > 0 ? "WHEELDOWN" : "WHEELUP") as PoBKey;
+    this.pobKeyboardState.keyup(name);
     this.el.focus();
   }
 
@@ -278,8 +274,8 @@ export class MouseHandler {
         this._isPanModeActive = false;
 
         this._longPressTimer = window.setTimeout(() => {
-          this.keyboardCallbacks.onKeyDown("RIGHTBUTTON", 0);
-          this.keyboardCallbacks.onKeyUp("RIGHTBUTTON", 0);
+          this.pobKeyboardState.keydown("RIGHTBUTTON" as PoBKey, 0);
+          this.pobKeyboardState.keyup("RIGHTBUTTON" as PoBKey);
           this._longPressTimer = null;
         }, 300);
       } else {
@@ -344,8 +340,8 @@ export class MouseHandler {
                 clearTimeout(this._longPressTimer);
                 this._longPressTimer = null;
                 this._isPanModeActive = true;
-                this.keyboardCallbacks.addPhysicalKey?.("LEFTBUTTON");
-                this.keyboardCallbacks.onKeyDown("LEFTBUTTON", 0);
+                this.pobKeyboardState.keydown("LEFTBUTTON" as PoBKey, 0);
+                this._isTouchLeftButtonDown = true;
               }
             }
           }
@@ -384,8 +380,8 @@ export class MouseHandler {
             this._wheelAccumulator += centerDelta.y;
 
             if (Math.abs(this._wheelAccumulator) >= MouseHandler.WHEEL_SENSITIVITY) {
-              const direction = this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP";
-              this.keyboardCallbacks.onKeyUp(direction, 0);
+              const direction = (this._wheelAccumulator > 0 ? "WHEELDOWN" : "WHEELUP") as PoBKey;
+              this.pobKeyboardState.keyup(direction);
               this._wheelAccumulator = 0;
             }
           }
@@ -435,23 +431,18 @@ export class MouseHandler {
         if (this._isPanModeActive) {
           this._isPanModeActive = false;
 
-          if (this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
-            this.keyboardCallbacks.removePhysicalKey?.("LEFTBUTTON");
-            this.keyboardCallbacks.onKeyUp("LEFTBUTTON", 0);
+          if (this._isTouchLeftButtonDown) {
+            this.pobKeyboardState.keyup("LEFTBUTTON" as PoBKey);
+            this._isTouchLeftButtonDown = false;
           }
         } else if (this._longPressTimer) {
           clearTimeout(this._longPressTimer);
           this._longPressTimer = null;
 
           if (!this._isZooming && !this._isPanning) {
-            this.keyboardCallbacks.addPhysicalKey?.("LEFTBUTTON");
-            this.keyboardCallbacks.onKeyDown("LEFTBUTTON", 0);
-
+            this.pobKeyboardState.keydown("LEFTBUTTON" as PoBKey, 0);
             setTimeout(() => {
-              if (this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
-                this.keyboardCallbacks.removePhysicalKey?.("LEFTBUTTON");
-                this.keyboardCallbacks.onKeyUp("LEFTBUTTON", 0);
-              }
+              this.pobKeyboardState.keyup("LEFTBUTTON" as PoBKey);
             }, 50);
           }
         }
@@ -479,9 +470,8 @@ export class MouseHandler {
       this._longPressTimer = null;
     }
 
-    if (this._isPanModeActive && this.keyboardCallbacks.hasKey?.("LEFTBUTTON")) {
-      this.keyboardCallbacks.removePhysicalKey?.("LEFTBUTTON");
-      this.keyboardCallbacks.onKeyUp("LEFTBUTTON", 0);
+    if (this._isPanModeActive && this._isTouchLeftButtonDown) {
+      this.pobKeyboardState.keyup("LEFTBUTTON" as PoBKey);
     }
 
     this._isZooming = false;

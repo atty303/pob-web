@@ -1,18 +1,16 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
-import type { KeyboardState } from "../keyboard";
+import type { DOMKey, DOMKeyboardState } from "../keyboard";
 import { KeyButton } from "./KeyButton";
-import type { ToolbarCallbacks } from "./types";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;
-  callbacks: ToolbarCallbacks;
-  keyboardState: KeyboardState;
+  keyboardState: DOMKeyboardState;
 }
 
-export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, callbacks, keyboardState }) => {
-  const [heldKeys, setHeldKeys] = useState(keyboardState.heldKeys);
+export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, keyboardState }) => {
+  const [heldKeys, setHeldKeys] = useState(new Set<DOMKey>());
   const [symbolMode, setSymbolMode] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -26,7 +24,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
     const isLandscape = viewportWidth > viewportHeight;
 
     const approxKeyboardWidth = 400;
-    const approxKeyboardHeight = 200;
     const toolbarSize = 60;
 
     let initialX = 0;
@@ -82,17 +79,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
   const getInitialPosition = useCallback(() => {
     return calculateInitialPosition();
   }, [calculateInitialPosition]);
-
-  const updateLocalState = useCallback(() => {
-    setHeldKeys(new Set(keyboardState.heldKeys));
-  }, [keyboardState]);
-
-  useEffect(() => {
-    keyboardState.addChangeListener(updateLocalState);
-    return () => {
-      keyboardState.removeChangeListener(updateLocalState);
-    };
-  }, [keyboardState, updateLocalState]);
 
   useEffect(() => {
     if (isVisible && !isInitialized) {
@@ -282,7 +268,8 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
         return;
       }
 
-      keyboardState.virtualKeyPress(eventKey, isModifier, 0);
+      const newHeldKeys = keyboardState.virtualKeyPress(eventKey as DOMKey, isModifier);
+      setHeldKeys(new Set(newHeldKeys));
     },
     [keyboardState],
   );
@@ -367,7 +354,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, cal
                 const { event, display, width = "38px", isModifier = false } = keyDef;
 
                 const isActive =
-                  (isModifier && heldKeys.has(event)) ||
+                  (isModifier && heldKeys.has(event as DOMKey)) ||
                   (event === "SymbolMode" && symbolMode) ||
                   (event === "LetterMode" && !symbolMode);
 

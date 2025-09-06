@@ -32,4 +32,3 @@ export class EventHandler {
 }
 
 export type { MouseState } from "./mouse-handler";
-export type { KeyboardUIState } from "./keyboard-handler";

@@ -1,11 +1,10 @@
 import * as Comlink from "comlink";
 
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
-import { EventHandler, type VisibilityCallbacks } from "./event";
-import { type KeyboardCallbacks, KeyboardHandler, type KeyboardUIState } from "./keyboard-handler";
-import { type MouseCallbacks, MouseHandler, type MouseState } from "./mouse-handler";
-import { ReactOverlayManager, type ToolbarCallbacks, type ToolbarPosition } from "./overlay";
-import type { FrameData, RenderStats } from "./overlay/PerformanceOverlay";
+import { EventHandler } from "./event";
+import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard";
+import { MouseHandler, type MouseState } from "./mouse-handler";
+import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay";
 import type { ToolbarPosition as ToolbarPos } from "./overlay/types";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
@@ -21,6 +20,8 @@ export class Driver {
   private isStarted = false;
   private eventHandler: EventHandler | undefined;
   private mouseHandler: MouseHandler | undefined;
+  private pobKeyboardState: PoBKeyboardState | undefined;
+  private domKeyboardState: DOMKeyboardState | undefined;
   private keyboardHandler: KeyboardHandler | undefined;
   private root: HTMLElement | undefined;
   private worker: Worker | undefined;
@@ -142,38 +143,22 @@ export class Driver {
 
     this.adjustCanvasForOverlay();
 
-    const workerCallbacks = {
-      onKeyDown: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
-        this.driverWorker?.updateKeyboardState(keyboardState);
-        this.driverWorker?.handleKeyDown(name, doubleClick);
+    this.pobKeyboardState = PoBKeyboardState.make({
+      onKeyDown: (state: PoBKeyboardState, key: PoBKey) => {
+        this.driverWorker?.updateKeyboardState(state.pobKeys);
+        this.driverWorker?.handleKeyDown(key, 0);
       },
-      onKeyUp: (name: string, doubleClick: number, keyboardState: KeyboardUIState) => {
-        this.driverWorker?.updateKeyboardState(keyboardState);
-        this.driverWorker?.handleKeyUp(name, doubleClick);
+      onKeyUp: (state: PoBKeyboardState, key: PoBKey) => {
+        this.driverWorker?.updateKeyboardState(state.pobKeys);
+        this.driverWorker?.handleKeyUp(key, 0);
       },
-      onChar: (char: string, doubleClick: number, keyboardState: KeyboardUIState) => {
-        this.driverWorker?.updateKeyboardState(keyboardState);
-        this.driverWorker?.handleChar(char, doubleClick);
+      onChar: (state: PoBKeyboardState, key: string) => {
+        this.driverWorker?.updateKeyboardState(state.pobKeys);
+        this.driverWorker?.handleChar(key, 0);
       },
-      keyDown: (name: string, doubleClick: number) => {
-        const keyboardState = this.keyboardHandler!.keyboardUIState;
-        workerCallbacks.onKeyDown(name, doubleClick, keyboardState);
-      },
-      keyUp: (name: string, doubleClick: number) => {
-        const keyboardState = this.keyboardHandler!.keyboardUIState;
-        workerCallbacks.onKeyUp(name, doubleClick, keyboardState);
-      },
-      char: (char: string, doubleClick: number) => {
-        const keyboardState = this.keyboardHandler!.keyboardUIState;
-        workerCallbacks.onChar(char, doubleClick, keyboardState);
-      },
-    };
-
-    this.keyboardHandler = new KeyboardHandler(container, {
-      onKeyDown: workerCallbacks.onKeyDown,
-      onKeyUp: workerCallbacks.onKeyUp,
-      onChar: workerCallbacks.onChar,
     });
+    this.domKeyboardState = DOMKeyboardState.make(this.pobKeyboardState);
+    this.keyboardHandler = KeyboardHandler.make(container, this.domKeyboardState);
 
     this.mouseHandler = new MouseHandler(
       container,
@@ -195,17 +180,7 @@ export class Driver {
           this.updateOverlayWithTransform();
         },
       },
-      {
-        addPhysicalKey: (key: string) => this.keyboardHandler!.keyboardState.addPhysicalKey(key),
-        removePhysicalKey: (key: string) => this.keyboardHandler!.keyboardState.removePhysicalKey(key),
-        hasKey: (key: string) => this.keyboardHandler!.keyboardState.hasKey(key),
-        onKeyDown: (key, doubleClick) => {
-          workerCallbacks.keyDown(key, doubleClick);
-        },
-        onKeyUp: (key, doubleClick) => {
-          workerCallbacks.keyUp(key, doubleClick);
-        },
-      },
+      this.pobKeyboardState,
     );
 
     this.eventHandler = new EventHandler(container, {
@@ -256,7 +231,7 @@ export class Driver {
     const currentState = this.canvasManager.getCurrentState();
     this.overlayManager.render({
       callbacks: toolbarCallbacks,
-      keyboardState: this.keyboardHandler!.keyboardState,
+      keyboardState: this.domKeyboardState,
       panModeEnabled: this.panModeEnabled,
       currentZoom: this.canvasManager?.transform.scale ?? 1.0,
       currentCanvasSize: currentState.styleSize,

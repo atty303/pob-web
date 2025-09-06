@@ -8,7 +8,7 @@ import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
 import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
-import type { KeyboardUIState } from "./keyboard-handler";
+import type { PoBKey } from "./keyboard";
 import { log, tag } from "./logger";
 import type { MouseState } from "./mouse-handler";
 // @ts-ignore
@@ -123,7 +123,7 @@ export class DriverWorker {
     pixelRatio: 1,
   };
   private mouseState: MouseState = { x: 0, y: 0 };
-  private keyboardState: KeyboardUIState = { keys: new Set() };
+  private pressedKeys: Set<PoBKey> = new Set();
   private hostCallbacks: HostCallbacks | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
@@ -261,8 +261,8 @@ export class DriverWorker {
     this.mouseState = mouseState;
   }
 
-  updateKeyboardState(keyboardState: KeyboardUIState) {
-    this.keyboardState = keyboardState;
+  updateKeyboardState(keys: Set<PoBKey>) {
+    this.pressedKeys = keys;
   }
 
   handleMouseMove(mouseState: MouseState) {
@@ -342,7 +342,7 @@ export class DriverWorker {
       getScreenHeight: () => this.screenSize.height,
       getCursorPosX: () => this.mouseState.x,
       getCursorPosY: () => this.mouseState.y,
-      isKeyDown: (name: string) => this.keyboardState.keys.has(name),
+      isKeyDown: (name: string) => this.pressedKeys.has(name as PoBKey),
       imageLoad: (handle: number, filename: string, flags: number) => {
         this.imageRepo?.load(handle, filename, flags).then(() => {
           this.invalidate();
