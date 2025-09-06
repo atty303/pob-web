@@ -86,7 +86,7 @@ export class TextMetrics {
     }
 
     const lines = text.replaceAll(reColorGlobal, "").split("\n");
-    const result = Math.ceil(Math.max(0, ...lines.map(line => this.context.measureText(line).width)));
+    const result = Math.ceil(lines.reduce((max, line) => Math.max(max, this.context.measureText(line).width), 0));
 
     this.measureCache.set(cacheKey, result);
     return result;
