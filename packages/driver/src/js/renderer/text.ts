@@ -7,6 +7,9 @@ export async function loadFonts() {
   await loadFont("/LiberationSans-Regular.woff", "Liberation Sans");
   await loadFont("/LiberationSans-Bold.woff", "Liberation Sans Bold");
   await loadFont("/VeraMono.woff", "Bitstream Vera Mono");
+  await loadFont("/Fontin-Italic.woff", "Fontin Italic");
+  await loadFont("/Fontin-Regular.woff", "Fontin Regular");
+  await loadFont("/Fontin-SmallCaps.woff", "Fontin SmallCaps");
 }
 
 async function loadFont(url: string, family: string) {
@@ -25,6 +28,14 @@ function font(size: number, fontNum: number) {
       return `${fontSize}px Liberation Sans`;
     case 2:
       return `${fontSize}px Liberation Sans Bold`;
+    case 3:
+      return `${fontSize}px Fontin SmallCaps`;
+    case 4:
+      return `italic ${fontSize}px Fontin SmallCaps`;
+    case 5:
+      return `${fontSize}px Fontin Regular`;
+    case 6:
+      return `${fontSize}px Fontin Italic`;
     default:
       return `${fontSize}px Bitstream Vera Mono`;
   }
