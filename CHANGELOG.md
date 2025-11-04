@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.4](https://github.com/atty303/pob-web/compare/v0.27.3...v0.27.4) (2025-11-04)
+
+
+### Bug Fixes
+
+* **web:** add missing Fontin font files ([56d78f4](https://github.com/atty303/pob-web/commit/56d78f4e260d2ed1e3f4aa48d96a3264f15e6199))
+
 ## [0.27.3](https://github.com/atty303/pob-web/compare/v0.27.2...v0.27.3) (2025-11-04)
 
 
