@@ -34,6 +34,13 @@ end
 
 arg = {}
 
+jit = {
+  opt = {
+    start = function() end,
+    stop = function() end,
+  }
+}
+
 -- Rendering
 function RenderInit()
 end

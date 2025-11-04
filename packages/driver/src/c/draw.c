@@ -369,7 +369,7 @@ static int DrawImageQuad(lua_State *L) {
 }
 
 static const char *alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
-static const char *fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
+static const char *fontMap[8] = { "FIXED", "VAR", "VAR BOLD", "FONTIN SC", "FONTIN SC ITALIC", "FONTIN", "FONTIN ITALIC", NULL };
 
 static int DrawString(lua_State *L) {
     int n = lua_gettop(L);
