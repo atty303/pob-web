@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.3](https://github.com/atty303/pob-web/compare/v0.27.2...v0.27.3) (2025-11-04)
+
+
+### Bug Fixes
+
+* **driver:** add Fontin font loading ([fb6aa8c](https://github.com/atty303/pob-web/commit/fb6aa8ca1997df6b6fd2798ef7883921c5606313))
+* **driver:** add placeholder LuaJIT options ([9494309](https://github.com/atty303/pob-web/commit/94943097d6d670b907bb16cbc465e77bc33db150))
+* **driver:** bump version to 0.27.2 in package-lock.json ([c3eee25](https://github.com/atty303/pob-web/commit/c3eee258e332916e9dfef851fd162a8234198f1e))
+* PoB1 v2.57.0 compatibility ([#132](https://github.com/atty303/pob-web/issues/132)) ([f3d6768](https://github.com/atty303/pob-web/commit/f3d6768eda7dd630a3259e3b119aa0b66bbbe8bc))
+
 ## [0.27.2](https://github.com/atty303/pob-web/compare/v0.27.1...v0.27.2) (2025-09-06)
 
 
