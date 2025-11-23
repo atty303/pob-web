@@ -150,7 +150,7 @@ static int lcurl_easy_setopt(lua_State *L) {
             // no-op
             break;
         }
-        OPT_SSL_VERIFYHOST: {
+        case OPT_SSL_VERIFYHOST: {
             // no-op
             break;
         }
