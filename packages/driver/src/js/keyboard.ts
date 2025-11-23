@@ -7,7 +7,7 @@ declare const PoBKeySymbol: unique symbol;
 export type PoBKey = string & { [PoBKeySymbol]: never };
 
 export type KeyboardStateCallbacks = {
-  onKeyDown: (state: PoBKeyboardState, key: PoBKey) => void;
+  onKeyDown: (state: PoBKeyboardState, key: PoBKey, doubleClick: number) => void;
   onKeyUp: (state: PoBKeyboardState, key: PoBKey) => void;
   onChar: (state: PoBKeyboardState, char: string) => void;
 };
@@ -27,9 +27,11 @@ export const PoBKeyboardState = {
     return {
       pobKeys: keys,
 
-      keydown(pobKey: PoBKey): void {
-        keys.add(pobKey);
-        callbacks?.onKeyDown(this, pobKey);
+      keydown(pobKey: PoBKey, doubleclick: number): void {
+        if (doubleclick < 1) {
+          keys.add(pobKey);
+        }
+        callbacks?.onKeyDown(this, pobKey, doubleclick);
       },
 
       keyup(pobKey: PoBKey): void {
