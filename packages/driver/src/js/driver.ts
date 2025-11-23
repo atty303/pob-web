@@ -144,9 +144,10 @@ export class Driver {
     this.adjustCanvasForOverlay();
 
     this.pobKeyboardState = PoBKeyboardState.make({
-      onKeyDown: (state: PoBKeyboardState, key: PoBKey) => {
+      onKeyDown: (state: PoBKeyboardState, key: PoBKey, doubleClick: number) => {
         this.driverWorker?.updateKeyboardState(state.pobKeys);
-        this.driverWorker?.handleKeyDown(key, 0);
+        this.driverWorker?.handleKeyDown(key, doubleClick);
+        if (doubleClick > 0) this.driverWorker?.handleKeyUp(key, 0);
       },
       onKeyUp: (state: PoBKeyboardState, key: PoBKey) => {
         this.driverWorker?.updateKeyboardState(state.pobKeys);
