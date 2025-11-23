@@ -19,6 +19,9 @@ typedef struct {
 } Error;
 
 enum {
+    OPT_FOLLOWLOCATION = 52, // follow HTTP 3xx redirects
+    OPT_SSL_VERIFYPEER = 64, // verify the peer's SSL certificate
+    OPT_SSL_VERIFYHOST = 81, // verify the certificate's name against host
     OPT_HTTPHEADER = 10023,
     OPT_USERAGENT = 10018,
     OPT_ACCEPT_ENCODING = 10102,
@@ -136,6 +139,18 @@ static int lcurl_easy_setopt(lua_State *L) {
             break;
         }
         case OPT_PROXY: {
+            // no-op
+            break;
+        }
+        case OPT_FOLLOWLOCATION: {
+            // no-op
+            break;
+        }
+        case OPT_SSL_VERIFYPEER: {
+            // no-op
+            break;
+        }
+        OPT_SSL_VERIFYHOST: {
             // no-op
             break;
         }
@@ -389,6 +404,12 @@ int luaopen_lcurl(lua_State *L) {
 
     luaL_newlib(L, lcurl_functions);
 
+    lua_pushinteger(L, OPT_FOLLOWLOCATION);
+    lua_setfield(L, -2, "OPT_FOLLOWLOCATION");
+    lua_pushinteger(L, OPT_SSL_VERIFYPEER);
+    lua_setfield(L, -2, "OPT_SSL_VERIFYPEER");
+    lua_pushinteger(L, OPT_SSL_VERIFYHOST);
+    lua_setfield(L, -2, "OPT_SSL_VERIFYHOST");
     lua_pushinteger(L, OPT_HTTPHEADER);
     lua_setfield(L, -2, "OPT_HTTPHEADER");
     lua_pushinteger(L, OPT_USERAGENT);
