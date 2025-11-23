@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.27.5](https://github.com/atty303/pob-web/compare/v0.27.4...v0.27.5) (2025-11-23)
+
+
+### Bug Fixes
+
+* **driver:** add double-click support to keyboard event handling ([ee6e289](https://github.com/atty303/pob-web/commit/ee6e2893723433c219163d0e9b0b01c2689463e3))
+* **driver:** add double-click support to keyboard event handling ([#136](https://github.com/atty303/pob-web/issues/136)) ([ac2e811](https://github.com/atty303/pob-web/commit/ac2e8117d7b563329b764aa35623c0e542fa4ec6))
+* **driver:** add support for new lcurl options for SSL and redirects ([822f9b0](https://github.com/atty303/pob-web/commit/822f9b06ebde05330140d8290dfce4c98662f2cd))
+* **driver:** add support for new lcurl options for SSL and redirects ([125a7dd](https://github.com/atty303/pob-web/commit/125a7dd1fca3c2713a77581e55913b8dac6f6282))
+* **driver:** add support for new lcurl options for SSL and redirects ([#138](https://github.com/atty303/pob-web/issues/138)) ([1caa834](https://github.com/atty303/pob-web/commit/1caa834fd2db64e552b79c03ee2adf90f9403ad8))
+
 ## [0.27.4](https://github.com/atty303/pob-web/compare/v0.27.3...v0.27.4) (2025-11-04)
 
 
