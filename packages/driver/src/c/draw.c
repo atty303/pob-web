@@ -9,6 +9,12 @@
 
 static int st_layer = 0;
 
+// Track current draw color state
+static float st_color_r = 1.0f;
+static float st_color_g = 1.0f;
+static float st_color_b = 1.0f;
+static float st_color_a = 1.0f;
+
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
     DRAW_SET_LAYER = 2,
@@ -96,6 +102,12 @@ void draw_begin() {
     st_buffer.size = 0;
     st_buffer.capacity = 0;
     st_layer = 0;
+    
+    // Initialize color state to white
+    st_color_r = 1.0f;
+    st_color_g = 1.0f;
+    st_color_b = 1.0f;
+    st_color_a = 1.0f;
 }
 
 void draw_get_buffer(void **data, size_t *size) {
@@ -176,6 +188,12 @@ static int SetViewport(lua_State *L) {
 }
 
 static void draw_set_color(float r, float g, float b, float a) {
+    // Update tracked color state
+    st_color_r = r;
+    st_color_g = g;
+    st_color_b = b;
+    st_color_a = a;
+    
     SetColorCommand cmd = {DRAW_SET_COLOR, (uint8_t )(r * 255), (uint8_t)(g * 255), (uint8_t)(b * 255), (uint8_t)(a * 255)};
     draw_push(&cmd, sizeof(cmd));
 }
@@ -189,6 +207,14 @@ static void draw_set_color_escape(const char *text) {
 
     draw_push(cmd, sizeof(SetColorEscapeCommand) + text_size);
     free(cmd);
+}
+
+static int GetDrawColor(lua_State *L) {
+    lua_pushnumber(L, st_color_r);
+    lua_pushnumber(L, st_color_g);
+    lua_pushnumber(L, st_color_b);
+    lua_pushnumber(L, st_color_a);
+    return 4;
 }
 
 static int SetDrawColor(lua_State *L) {
@@ -450,6 +476,9 @@ void draw_init(lua_State *L) {
 
     lua_pushcclosure(L, SetViewport, 0);
     lua_setglobal(L, "SetViewport");
+
+    lua_pushcclosure(L, GetDrawColor, 0);
+    lua_setglobal(L, "GetDrawColor");
 
     lua_pushcclosure(L, SetDrawColor, 0);
     lua_setglobal(L, "SetDrawColor");
