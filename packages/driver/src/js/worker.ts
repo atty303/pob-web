@@ -128,6 +128,7 @@ export class DriverWorker {
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
   private dirtyCount = 0;
+  private _frameScheduled = false;
   private subScriptIndex = 1;
   private subScripts: SubScriptHost[] = [];
   private visible = false;
@@ -217,7 +218,6 @@ export class DriverWorker {
     await this.imports?.init();
     await this.imports?.start();
     this.invalidate();
-    this.tick();
   }
 
   destroy() {}
@@ -255,6 +255,14 @@ export class DriverWorker {
 
   invalidate() {
     this.dirtyCount = 2;
+    this.scheduleFrame();
+  }
+
+  private scheduleFrame() {
+    if (!this._frameScheduled) {
+      this._frameScheduled = true;
+      requestAnimationFrame(() => this.tick());
+    }
   }
 
   updateMouseState(mouseState: MouseState) {
@@ -303,6 +311,8 @@ export class DriverWorker {
   }
 
   private async tick() {
+    this._frameScheduled = false;
+
     if (this.visible && this.dirtyCount > 0) {
       try {
         const start = performance.now();
@@ -319,7 +329,10 @@ export class DriverWorker {
         throw error;
       }
     }
-    requestAnimationFrame(this.tick.bind(this));
+
+    if (this.visible && this.dirtyCount > 0) {
+      this.scheduleFrame();
+    }
   }
 
   private resolveImports(module: DriverModule): Imports {
