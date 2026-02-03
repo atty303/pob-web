@@ -216,7 +216,7 @@ export class DriverWorker {
 
     await this.imports?.init();
     await this.imports?.start();
-
+    this.invalidate();
     this.tick();
   }
 
@@ -287,10 +287,14 @@ export class DriverWorker {
 
   handleVisibilityChange(visible: boolean) {
     this.visible = visible;
+    if (visible) {
+      this.invalidate();
+    }
   }
 
   async loadBuildFromCode(code: string) {
     await this.imports?.loadBuildFromCode(code);
+    this.invalidate();
   }
 
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
@@ -299,7 +303,7 @@ export class DriverWorker {
   }
 
   private async tick() {
-    if (this.visible) {
+    if (this.visible && this.dirtyCount > 0) {
       try {
         const start = performance.now();
 
