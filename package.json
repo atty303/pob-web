@@ -1,7 +1,7 @@
 {
   "name": "@atty303/pob-web",
   "private": true,
-  "version": "0.27.5",
+  "version": "0.27.6",
   "workspaces": [
     "packages/dds",
     "packages/driver",
