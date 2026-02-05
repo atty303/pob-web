@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.6](https://github.com/atty303/pob-web/compare/v0.27.5...v0.27.6) (2026-02-05)
+
+
+### Bug Fixes
+
+* **driver:** add GetDrawColor to fix crash in PoB v0.13.0 ([2d71c36](https://github.com/atty303/pob-web/commit/2d71c361263f22b535b8b7d889c8110deeee07c7))
+* **driver:** add GetDrawColor to fix crash in PoB v0.13.0 ([#139](https://github.com/atty303/pob-web/issues/139)) ([dc11c7c](https://github.com/atty303/pob-web/commit/dc11c7c217483c68ead96b9f40014b280c22c4dc))
+
 ## [0.27.5](https://github.com/atty303/pob-web/compare/v0.27.4...v0.27.5) (2025-11-23)
 
 
