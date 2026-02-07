@@ -102,7 +102,7 @@ type MainCallbacks = {
 type Imports = {
   init: () => void;
   start: () => void;
-  loadBuildFromCode: (code: string) => void;
+  loadBuildFromCode: (code: string) => number;
   onFrame: () => void;
   onKeyUp: (name: string, doubleClick: number) => void;
   onKeyDown: (name: string, doubleClick: number) => void;
@@ -301,7 +301,10 @@ export class DriverWorker {
   }
 
   async loadBuildFromCode(code: string) {
-    await this.imports?.loadBuildFromCode(code);
+    const status = await this.imports?.loadBuildFromCode(code);
+    if (status !== undefined && status !== 0) {
+      throw new Error(`loadBuildFromCode failed (status=${status})`);
+    }
     this.invalidate();
   }
 

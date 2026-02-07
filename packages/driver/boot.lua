@@ -155,13 +155,38 @@ end
 
 local function runCallback(name, ...)
     local callback = GetCallback(name)
-    return callback(...)
+    if callback then
+        return callback(...)
+    end
+    if mainObject and type(mainObject[name]) == "function" then
+        return mainObject[name](mainObject, ...)
+    end
+    error("runCallback: no handler for '" .. tostring(name) .. "'")
 end
 
 function loadBuildFromCode(code)
-    mainObject.main:SetMode("BUILD", false, "")
-    local importTab = mainObject.main.modes["BUILD"].importTab
+    if not mainObject.main then
+        error("loadBuildFromCode: mainObject.main is nil")
+    end
+
+    -- Flush any pending state before import
+    runCallback("OnFrame")
+
+    if mainObject.main.mode ~= "BUILD" then
+        mainObject.main:SetMode("BUILD", false, "")
+        runCallback("OnFrame")
+    end
+
+    local importTab = mainObject.main.modes["BUILD"]
+        and mainObject.main.modes["BUILD"].importTab
+    if not importTab or not importTab.controls then
+        error("loadBuildFromCode: import tab controls not available")
+    end
+
     importTab.controls.importCodeIn:SetText(code, true)
     importTab.controls.importCodeMode.selIndex = 2
     importTab.controls.importCodeGo.onClick()
+
+    -- Flush to process the import
+    runCallback("OnFrame")
 end
