@@ -325,7 +325,7 @@ export class WebGL1Backend implements RenderBackend {
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
 
-    this.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number;
+    this.maxTextures = Math.min(gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number, 100);
 
     this.textureProgram = new ShaderProgram(
       gl,
