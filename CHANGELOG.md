@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.7](https://github.com/atty303/pob-web/compare/v0.27.6...v0.27.7) (2026-03-07)
+
+
+### Bug Fixes
+
+* 🐛 Cap WebGL gl.MAX_TEXTURE_IMAGE_UNITS to 100 ([f1e57e7](https://github.com/atty303/pob-web/commit/f1e57e7ae346d2341834d3c403a66f6b5467f0bd))
+* 🐛 Cap WebGL gl.MAX_TEXTURE_IMAGE_UNITS to 100 ([#146](https://github.com/atty303/pob-web/issues/146)) ([b084566](https://github.com/atty303/pob-web/commit/b08456682afa957d99381db9b7b0d94d494e3108))
+* **driver:** make loadBuildFromCode deterministic on running instances ([0b6a8eb](https://github.com/atty303/pob-web/commit/0b6a8eb181c51f92382f373c3ea9f86275817b30))
+* **driver:** make loadBuildFromCode deterministic on running instances ([#144](https://github.com/atty303/pob-web/issues/144)) ([90e32fa](https://github.com/atty303/pob-web/commit/90e32fa2d8fe1ebb71690e88912fd2e8730ecfec))
+
 ## [0.27.6](https://github.com/atty303/pob-web/compare/v0.27.5...v0.27.6) (2026-02-05)
 
 
