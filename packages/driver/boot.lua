@@ -190,3 +190,21 @@ function loadBuildFromCode(code)
     -- Flush to process the import
     runCallback("OnFrame")
 end
+
+function getBuildCode()
+    if not mainObject.main then
+        error("getBuildCode: mainObject.main is nil")
+    end
+
+    local build = mainObject.main.modes["BUILD"]
+    if not build then
+        error("getBuildCode: not in BUILD mode")
+    end
+
+    local xmlText = build:SaveDB("code")
+    if not xmlText then
+        error("getBuildCode: SaveDB returned nil")
+    end
+
+    return common.base64.encode(Deflate(xmlText)):gsub("+","-"):gsub("/","_")
+end
