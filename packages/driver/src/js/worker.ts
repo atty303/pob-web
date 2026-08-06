@@ -103,6 +103,7 @@ type Imports = {
   init: () => void;
   start: () => void;
   loadBuildFromCode: (code: string) => number;
+  getBuildCode: () => string;
   onFrame: () => void;
   onKeyUp: (name: string, doubleClick: number) => void;
   onKeyDown: (name: string, doubleClick: number) => void;
@@ -308,6 +309,14 @@ export class DriverWorker {
     this.invalidate();
   }
 
+  async getBuildCode(): Promise<string> {
+    const code = await this.imports?.getBuildCode();
+    if (!code) {
+      throw new Error("getBuildCode failed");
+    }
+    return code;
+  }
+
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
     this.renderer?.setLayerVisible(layer, sublayer, visible);
     this.invalidate();
@@ -343,6 +352,7 @@ export class DriverWorker {
       init: module.cwrap("init", "number", [], { async: true }),
       start: module.cwrap("start", "number", [], { async: true }),
       loadBuildFromCode: module.cwrap("load_build_from_code", "number", ["string"], { async: true }),
+      getBuildCode: module.cwrap("get_build_code", "string", [], { async: true }),
       onFrame: module.cwrap("on_frame", "number", [], { async: true }),
       onKeyUp: module.cwrap("on_key_up", "number", ["string", "number"]),
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),

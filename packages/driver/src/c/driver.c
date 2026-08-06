@@ -558,3 +558,27 @@ int load_build_from_code(const char *code) {
     }
     return 0;
 }
+
+static char *s_build_code = NULL;
+
+EMSCRIPTEN_KEEPALIVE
+const char* get_build_code() {
+    lua_State *L = GL;
+
+    free(s_build_code);
+    s_build_code = NULL;
+
+    lua_getglobal(L, "getBuildCode");
+    if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+        lua_pop(L, 1);
+        return NULL;
+    }
+
+    size_t len;
+    const char *code = lua_tolstring(L, -1, &len);
+    s_build_code = malloc(len + 1);
+    memcpy(s_build_code, code, len + 1);
+    lua_pop(L, 1);
+    return s_build_code;
+}
