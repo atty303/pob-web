@@ -1,20 +1,95 @@
 [tools]
-node = "24"
+node = "24.12.0"
 emsdk = "4.0.11"
-cmake = "latest"
-ninja = "latest"
+cmake = "4.3.3"
+ninja = "1.13.2"
 
-hk = "latest"
-pkl = "latest"
-actionlint = "latest"
+hk = "1.36.0"
+pkl = "0.31.0"
+actionlint = "1.7.12"
+"npm:@playwright/mcp" = "0.0.79"
+"npm:playwright" = "1.63.0-alpha-2026-08-05"
+
+[settings]
+lockfile = true
 
 [tasks.install]
-run = "npm install"
+run = "npm ci"
 sources = [
   "package.json",
   "package-lock.json"
 ]
 outputs = { auto = true }
+
+[tasks.check]
+description = "Run generated-file and static checks"
+run = """
+npm exec -w packages/web -- react-router typegen
+hk check --all
+"""
+depends = ["driver:build"]
+
+[tasks."playwright:mcp"]
+description = "Start Playwright MCP with coordinate-based Vision Mode"
+run = """
+playwright_root="$(mise where npm:playwright)"
+chromium_path="$(node -e '
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const store = path.join(process.argv[1], "node_modules", ".mise");
+  const entry = fs.readdirSync(store).find(name => {
+    try {
+      return require(path.join(store, name, "node_modules", "playwright", "package.json")).name === "playwright";
+    } catch {
+      return false;
+    }
+  });
+  if (!entry) throw new Error("mise-managed Playwright package not found");
+  process.stdout.write(require(path.join(store, entry, "node_modules", "playwright")).chromium.executablePath());
+' "$playwright_root")"
+if [ ! -x "$chromium_path" ]; then
+  echo "Chromium is not installed; run 'mise run visual:setup' first" >&2
+  exit 1
+fi
+
+args=(--caps=vision --isolated --viewport-size=1440x900 --executable-path="$chromium_path")
+[ "${PLAYWRIGHT_MCP_HEADED:-}" = "1" ] || args+=(--headless)
+exec playwright-mcp "${args[@]}"
+"""
+
+[tasks."visual:setup"]
+description = "Install the Chromium browser used for visual verification"
+run = "playwright install chromium"
+
+[tasks."visual:dev"]
+description = "Start the driver UI for interactive visual verification"
+usage = """
+flag "--game <game>" {
+  help "Game to run"
+  choices "poe1" "poe2" "le"
+  default "poe2"
+}
+flag "--version <version>" help="Game version to run; defaults to the current head"
+flag "--build <build>" {
+  help "Build type to run"
+  choices "release" "debug"
+  default "release"
+}
+"""
+run = """
+export RUN_GAME="${usage_game?}"
+export RUN_VERSION="${usage_version:-}"
+export RUN_BUILD="${usage_build?}"
+export POB_COOL_ASSET=true
+
+if [ -z "$RUN_VERSION" ]; then
+  RUN_VERSION="$(node -e 'const versions = require("./version.json"); process.stdout.write(versions[process.env.RUN_GAME].head)')"
+  export RUN_VERSION
+fi
+
+npm run -w packages/driver dev -- --host 127.0.0.1 --port 5173 --strictPort
+"""
+depends = ["driver:build"]
 
 [tasks.pack]
 description = "Pack the distribution from upstream repository"
@@ -40,7 +115,10 @@ sources = [
   "vendor/lua/**/*",
   "vendor/luautf8/**/*",
 ]
-outputs = [ "packages/driver/build/**/*" ]
+outputs = [
+  "packages/driver/build/**/*",
+  "packages/driver/dist/**/*",
+]
 depends = ["install"]
 
 [tasks."driver:dev"]

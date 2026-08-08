@@ -15,11 +15,23 @@ export default defineConfig(({ mode }) => ({
     },
     // Owner's Cloudflare Tunnel domain for mobile testing
     allowedHosts: ["local.pob.cool"],
+    proxy:
+      mode === "development" && process.env.POB_COOL_ASSET !== undefined
+        ? {
+            "/__pob_asset": {
+              target: "https://asset.pob.cool",
+              changeOrigin: true,
+              rewrite: path => path.replace(/^\/__pob_asset/, ""),
+            },
+          }
+        : undefined,
   },
   define: {
     __ASSET_PREFIX__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined
-        ? `/@fs/${packerR2Dir}`
+      mode === "development"
+        ? process.env.POB_COOL_ASSET === undefined
+          ? `/@fs/${packerR2Dir}`
+          : "/__pob_asset"
         : "https://asset.pob.cool",
     ),
     __RUN_GAME__: JSON.stringify(process.env.RUN_GAME ?? "poe2"),

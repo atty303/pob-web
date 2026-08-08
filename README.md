@@ -77,6 +77,25 @@ You need to build the driver first.
 mise run web:dev
 ```
 
+### Visual verification with Codex
+
+Install the mise-managed Playwright browser before starting Codex in this trusted repository:
+
+```bash
+mise install
+mise run visual:setup
+```
+
+Invoke `$canvas-visual-verification` from Codex to start the driver UI and inspect its Canvas/WebGL interface with
+Playwright MCP Vision Mode. The browser is stored in Playwright's standard OS cache and is not committed. Headless mode
+is the default; start Codex with `PLAYWRIGHT_MCP_HEADED=1` when a visible browser is needed for investigation.
+
+Run the repository checks separately from visual verification:
+
+```bash
+mise run check
+```
+
 ### pob.cool maintenance for owners
 
 If you are the owner of pob.cool, you can set `MISE_ENV=pob-cool` to enable mise tasks.
