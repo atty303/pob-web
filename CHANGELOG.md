@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.29.0](https://github.com/atty303/pob-web/compare/v0.28.0...v0.29.0) (2026-08-09)
+
+
+### Features
+
+* **sentry:** add intentional issue test path ([d05cb7e](https://github.com/atty303/pob-web/commit/d05cb7e22a14d33cf5dff8084b9d89a1990b98fd))
+* **sync:** test upstream compatibility ([335d674](https://github.com/atty303/pob-web/commit/335d674a24a7ac69553495640f7732876dd65601))
+* **sync:** test upstream compatibility ([#162](https://github.com/atty303/pob-web/issues/162)) ([602c02c](https://github.com/atty303/pob-web/commit/602c02cf0c2dc3501f158fcc883ca0f26860a367))
+
+
+### Bug Fixes
+
+* **ci:** avoid undeclared ripgrep dependency ([5fd2f14](https://github.com/atty303/pob-web/commit/5fd2f142ebc49b578c0259b046acbfd7f406dd83))
+* **ci:** use available app token action ([60300fd](https://github.com/atty303/pob-web/commit/60300fd0c3a2e2fd98cc95ab2f3d301f1f58583d))
+* **driver:** prevent bridge memory corruption ([40634e4](https://github.com/atty303/pob-web/commit/40634e46f6a33abeeaa88e9da42b35233312d84c))
+* **driver:** prevent bridge memory corruption ([#160](https://github.com/atty303/pob-web/issues/160)) ([613bdeb](https://github.com/atty303/pob-web/commit/613bdeb8e055f79e73866b67290fc886183e2f72))
+* **driver:** upload WebAssembly source maps ([466bbeb](https://github.com/atty303/pob-web/commit/466bbeb2f02cfb8479691a895c4c5b3499cf9ab0))
+* **sync:** use available app token action ([866cb42](https://github.com/atty303/pob-web/commit/866cb4219919338b40eb8fcbddd33edbe16f1fb1))
+* **sync:** use POSIX task arguments ([2457768](https://github.com/atty303/pob-web/commit/2457768f4ecd82752c60004614ccb7f9d8e87ab4))
+* **web:** isolate development document responses ([843b9dd](https://github.com/atty303/pob-web/commit/843b9dda57fffcc10930fa16851eaebb79a2fc8e))
+
+
+### Performance Improvements
+
+* **driver:** optimize Emscripten runtime build ([1f3ceea](https://github.com/atty303/pob-web/commit/1f3ceea7a51224059164edcbda355375b4b68d44))
+* **driver:** optimize Lua short-string table lookups ([16341c4](https://github.com/atty303/pob-web/commit/16341c496f9da063ff8e16dc37df462125193cf8))
+* **driver:** replace Asyncify and optimize Emscripten runtime ([#158](https://github.com/atty303/pob-web/issues/158)) ([ddec123](https://github.com/atty303/pob-web/commit/ddec123a9139380108fe6fb2ab5d4e15dad5d10c))
+
 ## [0.28.0](https://github.com/atty303/pob-web/compare/v0.27.7...v0.28.0) (2026-08-09)
 
 
