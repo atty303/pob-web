@@ -11,5 +11,5 @@
     "types": ["@webgpu/types"],
     "jsx": "react-jsx"
   },
-  "include": ["src/js"]
+  "include": ["src/js", "test"]
 }
