@@ -51,6 +51,7 @@ type Imports = {
   loadBuildFromCode: (code: string) => number;
   getBuildCode: () => string;
   onFrame: () => void;
+  sentryTestCrash: () => void;
   onKeyUp: (name: string, doubleClick: number) => void;
   onKeyDown: (name: string, doubleClick: number) => void;
   onChar: (char: string, doubleClick: number) => void;
@@ -245,6 +246,10 @@ export class DriverWorker {
     this.invalidate();
   }
 
+  triggerSentryTestCrash() {
+    this.imports?.sentryTestCrash();
+  }
+
   private async tick() {
     this._frameScheduled = false;
 
@@ -277,6 +282,7 @@ export class DriverWorker {
       loadBuildFromCode: module.cwrap("load_build_from_code", "number", ["string"]),
       getBuildCode: module.cwrap("get_build_code", "string", []),
       onFrame: module.cwrap("on_frame", "number", []),
+      sentryTestCrash: module.cwrap("sentry_test_crash", null, []),
       onKeyUp: module.cwrap("on_key_up", "number", ["string", "number"]),
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),
       onChar: module.cwrap("on_char", "number", ["string", "number"]),

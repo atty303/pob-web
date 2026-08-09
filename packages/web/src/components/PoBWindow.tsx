@@ -17,7 +17,7 @@ export default function PoBWindow(props: {
   onTitleChange: (title: string) => void;
   onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
   toolbarComponent?: React.ComponentType<{ position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }>;
-  onDriverReady?: (driver: Driver) => void;
+  onDriverReady?: (driver: Driver | null) => void;
 }) {
   const auth0 = useAuth0();
 
@@ -26,10 +26,12 @@ export default function PoBWindow(props: {
   const onFrameRef = useRef(props.onFrame);
   const onTitleChangeRef = useRef(props.onTitleChange);
   const onLayerVisibilityCallbackReadyRef = useRef(props.onLayerVisibilityCallbackReady);
+  const onDriverReadyRef = useRef(props.onDriverReady);
 
   onFrameRef.current = props.onFrame;
   onTitleChangeRef.current = props.onTitleChange;
   onLayerVisibilityCallbackReadyRef.current = props.onLayerVisibilityCallbackReady;
+  onDriverReadyRef.current = props.onDriverReady;
 
   const [token, setToken] = useState<string>();
   useEffect(() => {
@@ -66,6 +68,7 @@ export default function PoBWindow(props: {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: toolbarComponent is handled separately
   useEffect(() => {
+    onDriverReadyRef.current?.(null);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
@@ -137,7 +140,7 @@ export default function PoBWindow(props: {
           _driver.setLayerVisible(layer, sublayer, visible);
         });
 
-        props.onDriverReady?.(_driver);
+        onDriverReadyRef.current?.(_driver);
 
         setLoading(false);
       } catch (e) {
@@ -151,6 +154,7 @@ export default function PoBWindow(props: {
       _driver.detachFromDOM();
       _driver.destory();
       driverRef.current = null;
+      onDriverReadyRef.current?.(null);
       setLoading(true);
     };
   }, [props.game, props.version, token, buildCode]);

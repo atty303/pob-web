@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "build": "npm run build:debug && npm run build:release",
-    "build:debug": "cmake -E rm -rf dist/debug && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug -DPOB_WASM_PROFILING=${POB_WASM_PROFILING:-OFF} && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
-    "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release -DPOB_WASM_PROFILING=${POB_WASM_PROFILING:-OFF} && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "build:debug": "cmake -E rm -rf dist/debug && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
     "dev": "vite",
     "test": "tsx --test test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
     "test:performance": "playwright test --config playwright.performance.config.ts",

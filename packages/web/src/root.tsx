@@ -12,6 +12,7 @@ import type { Route } from "./+types/root";
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
+    release: __SENTRY_RELEASE__,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration(),

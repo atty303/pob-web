@@ -46,6 +46,8 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
   },
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
+    __SENTRY_RELEASE__:
+      process.env.VITE_SENTRY_RELEASE === undefined ? "undefined" : JSON.stringify(process.env.VITE_SENTRY_RELEASE),
     __VERSION_URL__: JSON.stringify(
       mode === "test" || (mode === "development" && process.env.POB_COOL_ASSET === undefined)
         ? `/@fs/${rootDir}/version.json`
