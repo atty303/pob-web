@@ -107,7 +107,13 @@ export class ImageRepository {
           log.warn(tag.texture, `Failed to load DDS: src=${src}`, e);
         }
       } else {
-        const image = await createImageBitmap(blob);
+        let image: ImageBitmap;
+        try {
+          image = await createImageBitmap(blob);
+        } catch (error) {
+          log.warn(tag.texture, `Failed to load image: src=${src}`, error);
+          return;
+        }
         if (flags & TextureFlags.TF_NOMIPMAP) {
           holder.textureSource = TextureSource.newImage(image, flags);
         } else {

@@ -1,18 +1,15 @@
 import { expect, test } from "@playwright/test";
-
-const releases = [
-  { game: "poe1", version: "v2.67.2" },
-  { game: "poe2", version: "v0.23.1" },
-  { game: "le", version: "v0.12.0" },
-] as const;
+import { releases } from "./releases";
 
 for (const release of releases) {
-  test(`${release.game} ${release.version} starts, renders, and zooms`, async ({ page }) => {
+  test(`${release.game} ${release.version} loads items, renders, and zooms`, async ({ page }) => {
+    const consoleMessages: string[] = [];
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];
     let webgl2Backend = false;
 
     page.on("console", message => {
+      consoleMessages.push(message.text());
       if (message.type() === "error") consoleErrors.push(message.text());
       if (message.text().includes("Using WebGL2 backend")) webgl2Backend = true;
     });
@@ -28,6 +25,24 @@ for (const release of releases) {
           0,
         ) ?? 0) > 0,
     );
+
+    let itemLoadPoll = 0;
+    await expect
+      .poll(
+        async () => {
+          await page.mouse.move(10 + (itemLoadPoll++ % 2), 10);
+          const state = await page.evaluate(() => window.__POB_TEST__);
+          if (state?.errors.length) {
+            throw new Error(`Driver reported errors while loading items:\n${state.errors.join("\n")}`);
+          }
+          return {
+            uniquesLoaded: consoleMessages.includes("Uniques loaded"),
+            raresLoaded: consoleMessages.includes("Rares loaded"),
+          };
+        },
+        { timeout: 45_000 },
+      )
+      .toEqual({ uniquesLoaded: true, raresLoaded: true });
 
     const state = await page.evaluate(() => window.__POB_TEST__);
     expect(state?.title).not.toBe("");

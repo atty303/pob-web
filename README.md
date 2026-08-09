@@ -100,19 +100,22 @@ mise run check:full
 ```
 
 `mise run check` includes focused tests for driver keyboard state, Canvas transforms, and draw-command interpretation.
-For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, run:
+For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, pack their assets and run:
 
 ```bash
 mise run visual:setup
+mise run pack --game poe1 --tag v2.66.2
+mise run pack --game poe2 --tag v0.23.1
+mise run pack --game le --tag v0.12.0
 mise run test:e2e:driver
 mise run test:e2e:web
 ```
 
-The driver runtime suite downloads game assets from `asset.pob.cool`, starts each release in Chromium, and checks
-WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. The web runtime suite checks the
+The driver runtime suite uses locally packed assets by default, starts each release in Chromium, and checks item database
+loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
+`mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
 critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. Both are intentionally kept out of the fast/full checks and CI because they depend on the external asset
-service.
+control. Both suites are intentionally kept out of the fast/full checks and CI.
 
 ### pob.cool maintenance for owners
 

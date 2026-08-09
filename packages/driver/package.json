@@ -13,7 +13,7 @@
     "dev": "vite",
     "test": "tsx --test test/unit/*.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:serve": "POB_COOL_ASSET=true vite --mode test --host 127.0.0.1 --port 5173 --strictPort",
+    "test:e2e:serve": "vite --mode test --host 127.0.0.1 --port 5173 --strictPort",
     "preview": "vite preview",
     "make-index": "node -e 'require(\"shelljs/global\"); const p = exec(\"npm prefix\", {silent: true}).stdout.trim(); const s = `node ${p}/node_modules/@zenfs/core/scripts/make-index.js`; exec(`${s} -o dist/index-release.json dist/release`); exec(`${s} -o dist/index-debug.json dist/debug`);'"
   },

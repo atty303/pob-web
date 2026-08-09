@@ -35,7 +35,15 @@ depends = ["install"]
 
 [tasks."test:e2e:driver"]
 description = "Run local driver runtime tests for all supported games"
-run = "npm run test:e2e -w packages/driver"
+usage = 'flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"'
+run = """
+if [ -n "$usage_pob_cool_asset" ]; then
+  export POB_COOL_ASSET=true
+else
+  unset POB_COOL_ASSET
+fi
+npm run test:e2e -w packages/driver
+"""
 depends = ["driver:build"]
 
 [tasks."test:e2e:web"]
@@ -90,16 +98,29 @@ flag "--build <build>" {
   choices "release" "debug"
   default "release"
 }
+flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"
 """
 run = """
 export RUN_GAME="${usage_game?}"
 export RUN_VERSION="${usage_version:-}"
 export RUN_BUILD="${usage_build?}"
-export POB_COOL_ASSET=true
+if [ -n "$usage_pob_cool_asset" ]; then
+  export POB_COOL_ASSET=true
+else
+  unset POB_COOL_ASSET
+fi
 
 if [ -z "$RUN_VERSION" ]; then
   RUN_VERSION="$(node -e 'const versions = require("./version.json"); process.stdout.write(versions[process.env.RUN_GAME].head)')"
   export RUN_VERSION
+fi
+
+if [ -z "${POB_COOL_ASSET:-}" ]; then
+  asset_path="packages/packer/r2/games/$RUN_GAME/versions/$RUN_VERSION/root.zip"
+  if [ ! -f "$asset_path" ]; then
+    echo "Local assets are missing. Run: mise run pack --game $RUN_GAME --tag $RUN_VERSION" >&2
+    exit 1
+  fi
 fi
 
 npm run -w packages/driver dev -- --host 127.0.0.1 --port 5173 --strictPort
