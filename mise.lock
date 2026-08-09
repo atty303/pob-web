@@ -86,7 +86,7 @@ url = "https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-win
 url_api = "https://api.github.com/repos/Kitware/CMake/releases/assets/426407532"
 
 [[tools.emsdk]]
-version = "4.0.11"
+version = "6.0.6"
 backend = "vfox:emsdk"
 
 [tools.emsdk."platforms.linux-arm64"]
