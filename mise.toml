@@ -124,11 +124,18 @@ depends = ["benchmark:setup"]
 
 [tasks.check]
 description = "Run generated-file, static, and driver checks"
+usage = 'arg "[files]" var=#true'
 run = """
 npm exec -w packages/web -- react-router typegen
-hk check --all
+if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
 """
 depends = ["install", "test:driver", "test:upstream-sync", "driver:build"]
+
+[tasks.fix]
+description = "Fix formatting and lint issues"
+usage = 'arg "[files]" var=#true'
+run = 'if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk fix "$@"'
+depends = ["install"]
 
 [tasks."check:full"]
 description = "Run all checks and production builds"
