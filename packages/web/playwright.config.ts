@@ -14,6 +14,10 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "off",
   },
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.ts", use: { browserName: "firefox" } },
+  ],
   webServer: {
     command: "npm run test:e2e:serve",
     url: "http://127.0.0.1:5174",

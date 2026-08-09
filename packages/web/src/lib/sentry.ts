@@ -34,7 +34,7 @@ export function associateEmscriptenWasmImage(event: SentryEvent, image: WasmDebu
   let associated = false;
   for (const exception of event.exception?.values ?? []) {
     for (const frame of exception.stacktrace?.frames ?? []) {
-      if (frame.platform === "native" && frame.instruction_addr && frame.filename?.startsWith("wasm://wasm/")) {
+      if (frame.platform === "native" && frame.instruction_addr && !frame.addr_mode) {
         frame.addr_mode = `rel:${imageIndex}`;
         associated = true;
       }
