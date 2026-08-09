@@ -59,12 +59,12 @@ deno test --allow-read --allow-write tools/sentry-upload
 description = "Verify production Wasm source map generation"
 run = """
 test -f packages/driver/dist/release/driver.wasm.map
-llvm-objdump -h packages/driver/dist/release/driver.wasm | rg -q 'sourceMappingURL'
-if llvm-objdump -h packages/driver/dist/release/driver.wasm | rg -q '[.]debug_'; then
+llvm-objdump -h packages/driver/dist/release/driver.wasm | grep -q 'sourceMappingURL'
+if llvm-objdump -h packages/driver/dist/release/driver.wasm | grep -q '[.]debug_'; then
   echo 'release Wasm contains DWARF sections' >&2
   exit 1
 fi
-rg -q 'src/c/driver[.]c' packages/driver/dist/release/driver.wasm.map
+grep -q 'src/c/driver[.]c' packages/driver/dist/release/driver.wasm.map
 """
 depends = ["driver:build"]
 
