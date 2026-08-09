@@ -1,5 +1,12 @@
 # Repository guidance
 
+## Version control
+
+- In a colocated Jujutsu workspace, Jujutsu does not snapshot a changed submodule HEAD. After committing an authorized
+  change inside the submodule, update only its parent gitlink with `git add <submodule>` and
+  `git commit --only <submodule>`, then run `jj git import`. This is the sole exception to the rule that
+  parent-repository writes use `jj`; preserve unrelated parent changes.
+
 ## Project boundaries
 
 - This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed upstream
