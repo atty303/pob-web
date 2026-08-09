@@ -7,3 +7,24 @@ required = true
 
 [mcp_servers.playwright.tools.browser_close]
 approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_resize]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_mouse_click_xy]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_mouse_wheel]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_mouse_drag_xy]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_evaluate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_press_key]
+approval_mode = "approve"
