@@ -281,6 +281,14 @@ export class Driver {
     return this.driverWorker?.loadBuildFromCode(code);
   }
 
+  async getBuildCode(): Promise<string> {
+    const code = await this.driverWorker?.getBuildCode();
+    if (!code) {
+      throw new Error("getBuildCode failed");
+    }
+    return code;
+  }
+
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
   }
