@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <emscripten.h>
 #include "draw.h"
+#include "byte_buffer.h"
 #include "lauxlib.h"
 #include "image.h"
 
@@ -80,21 +81,10 @@ typedef struct {
 
 #pragma pack(pop)
 
-typedef struct {
-    uint8_t *data;
-    size_t size;
-    size_t capacity;
-} Buffer;
-
-static Buffer st_buffer = {0};
+static ByteBuffer st_buffer = {0};
 
 static void draw_push(const void *data, size_t size) {
-    if (st_buffer.size + size > st_buffer.capacity) {
-        st_buffer.capacity = st_buffer.size + 65536;
-        st_buffer.data = realloc(st_buffer.data, st_buffer.capacity);
-    }
-    memcpy(st_buffer.data + st_buffer.size, data, size);
-    st_buffer.size += size;
+    byte_buffer_append(&st_buffer, data, size);
 }
 
 void draw_begin() {
@@ -116,8 +106,7 @@ void draw_get_buffer(void **data, size_t *size) {
 }
 
 void draw_end() {
-    free(st_buffer.data);
-    st_buffer.data = NULL;
+    byte_buffer_free(&st_buffer);
 }
 
 static int GetScreenSize(lua_State *L) {
@@ -200,10 +189,11 @@ static void draw_set_color(float r, float g, float b, float a) {
 
 static void draw_set_color_escape(const char *text) {
     size_t text_size = strlen(text);
+    if (text_size > UINT16_MAX) text_size = UINT16_MAX;
     SetColorEscapeCommand *cmd = malloc(sizeof(SetColorEscapeCommand) + text_size);
     cmd->type = DRAW_SET_COLOR_ESCAPE;
     cmd->text_size = text_size;
-    strncpy(cmd->text, text, strlen(text));
+    memcpy(cmd->text, text, text_size);
 
     draw_push(cmd, sizeof(SetColorEscapeCommand) + text_size);
     free(cmd);
@@ -409,6 +399,7 @@ static int DrawString(lua_State *L) {
 
     const char *text = lua_tostring(L, 6);
     size_t text_size = strlen(text);
+    if (text_size > UINT16_MAX) text_size = UINT16_MAX;
     DrawStringCommand *cmd = malloc(sizeof(DrawStringCommand) + text_size);
     cmd->type = DRAW_STRING;
     cmd->x = lua_tonumber(L, 1);
@@ -417,7 +408,7 @@ static int DrawString(lua_State *L) {
     cmd->height = lua_tointeger(L, 4); // TODO: check range
     cmd->font = luaL_checkoption(L, 5, "FIXED", fontMap);
     cmd->text_size = text_size;
-    strncpy(cmd->text, text, strlen(text));
+    memcpy(cmd->text, text, text_size);
 
     draw_push(cmd, sizeof(DrawStringCommand) + text_size);
     free(cmd);
