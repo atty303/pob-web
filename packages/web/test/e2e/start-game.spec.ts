@@ -12,6 +12,7 @@ test("the landing page starts a rendered Path of Exile 2 session", async ({ page
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
+  expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
   await expect(page.getByRole("link", { name: "Start for Path of Exile 1" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start for Path of Exile 2" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start for Last Epoch" })).toBeVisible();

@@ -33,6 +33,8 @@ export default function handleRequest(
         const stream = createReadableStreamFromReadable(body);
 
         responseHeaders.set("Content-Type", "text/html");
+        responseHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+        responseHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
 
         resolve(
           new Response(stream, {
