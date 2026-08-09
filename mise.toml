@@ -56,10 +56,10 @@ flag "--output <path>"
 flag "--dry-run"
 """
 run = """
-args=(collect --game "${usage_game?}" --version-file "${usage_version_file?}" --output "${usage_output?}")
-[ -n "$usage_dry_run" ] && args+=(--dry-run)
+set -- collect --game "${usage_game?}" --version-file "${usage_version_file?}" --output "${usage_output?}"
+[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
 deno run --allow-env --allow-net=api.github.com --allow-read --allow-write --allow-run=mise \
-  tools/upstream-sync/main.ts "${args[@]}"
+  tools/upstream-sync/main.ts "$@"
 """
 
 [tasks."upstream-sync:merge"]
@@ -70,9 +70,9 @@ flag "--results-directory <path>"
 flag "--dry-run"
 """
 run = """
-args=(merge --version-file "${usage_version_file?}" --results-directory "${usage_results_directory?}")
-[ -n "$usage_dry_run" ] && args+=(--dry-run)
-deno run --allow-env --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts "${args[@]}"
+set -- merge --version-file "${usage_version_file?}" --results-directory "${usage_results_directory?}"
+[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
+deno run --allow-env --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts "$@"
 """
 
 [tasks."test:e2e:driver"]
