@@ -37,6 +37,8 @@ add_executable(${PROJECT_NAME}
         src/c/driver.c
         src/c/draw.c
         src/c/draw.h
+        src/c/byte_buffer.c
+        src/c/byte_buffer.h
         src/c/image.c
         src/c/image.h
         src/c/fs.c
@@ -48,9 +50,20 @@ add_executable(${PROJECT_NAME}
         src/c/wasmfs/nodefs_js.cpp
         src/c/sub.c
         src/c/sub.h
+        src/c/sub_serialization.c
+        src/c/sub_serialization.h
         src/c/lcurl.c
         src/c/lcurl.h
 )
+
+enable_testing()
+add_executable(driver_bridge_test
+        test/c/bridge_test.c
+        src/c/byte_buffer.c
+        src/c/sub_serialization.c
+)
+target_include_directories(driver_bridge_test PRIVATE src/c)
+add_test(NAME driver_bridge_test COMMAND driver_bridge_test)
 
 set(DRIVER_LINK_FLAGS
         "-flto"

@@ -1,4 +1,5 @@
 #include "sub.h"
+#include "sub_serialization.h"
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lcurl.h"
@@ -8,112 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    TYPE_DOUBLE,
-    TYPE_BOOLEAN,
-    TYPE_STRING
-} DataType;
-
-typedef union {
-    double doubleValue;
-    int intValue;
-    const char *stringValue; // NULL if not present
-} DataValue;
-
-typedef struct {
-    DataType type;
-    DataValue value;
-} DataItem;
-
-size_t serialize(DataItem *data, size_t count, unsigned char **buffer) {
-    size_t totalSize = sizeof(size_t);
-    for (size_t i = 0; i < count; ++i) {
-        totalSize += sizeof(DataType);
-        switch (data[i].type) {
-            case TYPE_DOUBLE:
-                totalSize += sizeof(double);
-                break;
-            case TYPE_BOOLEAN:
-                totalSize += sizeof(int);
-                break;
-            case TYPE_STRING:
-                totalSize += sizeof(size_t) + (data[i].value.stringValue ? strlen(data[i].value.stringValue) + 1 : 0);
-                break;
-        }
-    }
-
-    *buffer = (unsigned char *)malloc(totalSize);
-    unsigned char *ptr = *buffer;
-
-    memcpy(ptr, &count, sizeof(size_t));
-    ptr += sizeof(size_t);
-
-    for (size_t i = 0; i < count; ++i) {
-        memcpy(ptr, &data[i].type, sizeof(DataType));
-        ptr += sizeof(DataType);
-        switch (data[i].type) {
-            case TYPE_DOUBLE:
-                memcpy(ptr, &data[i].value.doubleValue, sizeof(double));
-                ptr += sizeof(float);
-                break;
-            case TYPE_BOOLEAN:
-                memcpy(ptr, &data[i].value.intValue, sizeof(int));
-                ptr += sizeof(int);
-                break;
-            case TYPE_STRING: {
-                size_t stringLen = data[i].value.stringValue ? strlen(data[i].value.stringValue) + 1 : 0;
-                memcpy(ptr, &stringLen, sizeof(size_t));
-                ptr += sizeof(size_t);
-                if (stringLen > 0) {
-                    memcpy(ptr, data[i].value.stringValue, stringLen);
-                    ptr += stringLen;
-                }
-                break;
-            }
-        }
-    }
-
-    return totalSize;
-}
-
-DataItem* deserialize(const unsigned char *buffer, int *count) {
-    const unsigned char *ptr = buffer;
-
-    memcpy(count, ptr, sizeof(int));
-    ptr += sizeof(int);
-
-    DataItem *data = (DataItem *)malloc(*count * sizeof(DataItem));
-    for (int i = 0; i < *count; ++i) {
-        memcpy(&data[i].type, ptr, sizeof(DataType));
-        ptr += sizeof(DataType);
-        switch (data[i].type) {
-            case TYPE_DOUBLE:
-                memcpy(&data[i].value.doubleValue, ptr, sizeof(double));
-                ptr += sizeof(float);
-                break;
-            case TYPE_BOOLEAN:
-                memcpy(&data[i].value.intValue, ptr, sizeof(int));
-                ptr += sizeof(int);
-                break;
-            case TYPE_STRING: {
-                size_t stringLen;
-                memcpy(&stringLen, ptr, sizeof(size_t));
-                ptr += sizeof(size_t);
-                if (stringLen > 0) {
-                    data[i].value.stringValue = (char *)malloc(stringLen);
-                    memcpy((void *)data[i].value.stringValue, ptr, stringLen);
-                    ptr += stringLen;
-                } else {
-                    data[i].value.stringValue = NULL;
-                }
-                break;
-            }
-        }
-    }
-
-    return data;
-}
 
 EM_JS(int, launch_sub_script, (const char *script, const char *funcs, const char *subs, size_t size, void *data), {
     try {
@@ -151,6 +46,7 @@ static size_t lua_serialize(lua_State *L, int offset, uint8_t **serializedData) 
         }
     }
     size_t dataSize = serialize(data, dataCount, serializedData);
+    free(data);
     lua_settop(L, offset - 1);
     return dataSize;
 }
@@ -176,7 +72,7 @@ int sub_lua_deserialize(lua_State *L, const uint8_t *serializedData) {
                 break;
         }
     }
-    free(data);
+    free_deserialized_data(data, dataCount);
     return dataCount;
 }
 

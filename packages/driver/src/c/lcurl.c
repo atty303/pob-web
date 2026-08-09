@@ -304,6 +304,7 @@ static int lcurl_easy_perform(lua_State *L) {
         }
     }
 
+    free((void *)response);
     lua_pushnil(L);
     lua_pushnil(L);
     return 2;

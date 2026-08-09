@@ -32,7 +32,7 @@ depends = ["install"]
 [tasks."test:driver"]
 description = "Run focused driver behavior tests"
 run = "npm test -w packages/driver"
-depends = ["install"]
+depends = ["driver:build"]
 
 [tasks."test:e2e:driver"]
 description = "Run local driver runtime tests for all supported games"
@@ -166,6 +166,7 @@ sources = [
   "packages/driver/*.cmake",
   "packages/driver/*.json",
   "packages/driver/src/c/**/*",
+  "packages/driver/test/c/**/*",
   "vendor/lua/**/*",
   "vendor/luautf8/**/*",
 ]
