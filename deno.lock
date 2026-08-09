@@ -1,0 +1,205 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@cliffy/command@1.2.1": "1.2.1",
+    "jsr:@cliffy/flags@1.2.1": "1.2.1",
+    "jsr:@cliffy/internal@1.2.1": "1.2.1",
+    "jsr:@cliffy/table@1.2.1": "1.2.1",
+    "jsr:@david/console-static-text@~0.3.4": "0.3.4",
+    "jsr:@david/dax@0.49.0": "0.49.0",
+    "jsr:@david/path@0.3": "0.3.3",
+    "jsr:@david/path@~0.3.2": "0.3.3",
+    "jsr:@david/shell@0.6": "0.6.0",
+    "jsr:@david/which@0.7": "0.7.3",
+    "jsr:@david/which@~0.7.1": "0.7.3",
+    "jsr:@std/assert@1.0.19": "1.0.19",
+    "jsr:@std/bytes@^1.0.6": "1.0.6",
+    "jsr:@std/fmt@1": "1.0.10",
+    "jsr:@std/fmt@^1.0.10": "1.0.10",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
+    "jsr:@std/internal@^1.0.14": "1.0.14",
+    "jsr:@std/io@0.225": "0.225.3",
+    "jsr:@std/path@1": "1.1.6",
+    "jsr:@std/path@1.1.6": "1.1.6",
+    "jsr:@std/path@^1.1.6": "1.1.6",
+    "jsr:@std/text@^1.0.19": "1.0.19"
+  },
+  "jsr": {
+    "@cliffy/command@1.2.1": {
+      "integrity": "b7b017c81560d96580ea810c8564566884d8194416f6fc06bfdc8846e8fd590f",
+      "dependencies": [
+        "jsr:@cliffy/flags",
+        "jsr:@cliffy/internal",
+        "jsr:@cliffy/table",
+        "jsr:@std/fmt@^1.0.10",
+        "jsr:@std/text"
+      ]
+    },
+    "@cliffy/flags@1.2.1": {
+      "integrity": "10034920ef7595db586fecec5a3b10a4ec800c513cbbc368414cd748dac706fb",
+      "dependencies": [
+        "jsr:@cliffy/internal",
+        "jsr:@std/text"
+      ]
+    },
+    "@cliffy/internal@1.2.1": {
+      "integrity": "e398f41c6839d3d4d249c963bfcb1058013091425926d53a3cb482b1ca70684b"
+    },
+    "@cliffy/table@1.2.1": {
+      "integrity": "be333e62f2c754f8bf75a38c8177515b152040572c9f75298e9bcef1314b82ff",
+      "dependencies": [
+        "jsr:@std/fmt@^1.0.10"
+      ]
+    },
+    "@david/console-static-text@0.3.4": {
+      "integrity": "1c596f500b075ff3c8bab1d328ca7148a88067fd9a506b16a73eeaf230c229fd"
+    },
+    "@david/dax@0.49.0": {
+      "integrity": "9876274ff7cffd4d91c5e4bd362e55330bcecd3df8c4450d7c3db46e50e83111",
+      "dependencies": [
+        "jsr:@david/console-static-text",
+        "jsr:@david/path@~0.3.2",
+        "jsr:@david/shell",
+        "jsr:@david/which@0.7",
+        "jsr:@std/fmt@1"
+      ]
+    },
+    "@david/path@0.3.3": {
+      "integrity": "19887b1c4ff36d1719b1697b4c10071853f13a85cf60e8713f6a6947e86271b0",
+      "dependencies": [
+        "jsr:@std/path@^1.1.6"
+      ]
+    },
+    "@david/shell@0.6.0": {
+      "integrity": "c58b1005b95ea16195d437cccebae3cd939c7b242a12067f37943b3d114dbf17",
+      "dependencies": [
+        "jsr:@david/console-static-text",
+        "jsr:@david/path@0.3",
+        "jsr:@david/which@~0.7.1",
+        "jsr:@std/fmt@1",
+        "jsr:@std/io",
+        "jsr:@std/path@1"
+      ]
+    },
+    "@david/which@0.7.3": {
+      "integrity": "ad6697179c4a153b774c59d06ebc056c4f87a9c27117ff74eecb120c245a2aea"
+    },
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal@^1.0.12"
+      ]
+    },
+    "@std/bytes@1.0.6": {
+      "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
+    },
+    "@std/fmt@1.0.10": {
+      "integrity": "90dfba288802ac6de82fb31d0917eb9e4450b9925b954d5e51fc29ac07419db5"
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    },
+    "@std/io@0.225.3": {
+      "integrity": "27b07b591384d12d7b568f39e61dff966b8230559122df1e9fd11cc068f7ddd1",
+      "dependencies": [
+        "jsr:@std/bytes"
+      ]
+    },
+    "@std/path@1.1.6": {
+      "integrity": "c68485c2a4dfbb5ae3cc74fae4e8c4e5d874cf8a8ed12927917235c758b46cbe",
+      "dependencies": [
+        "jsr:@std/internal@^1.0.14"
+      ]
+    },
+    "@std/text@1.0.19": {
+      "integrity": "003a0e032d360e8c3a4e0410fb792c77a66bd6553fee9d60c6ec1bce30d29223"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@cliffy/command@1.2.1",
+      "jsr:@david/dax@0.49.0",
+      "jsr:@std/assert@1.0.19",
+      "jsr:@std/path@1.1.6"
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:@biomejs/biome@^2.5.7",
+        "npm:@bokuweb/zstd-wasm@^0.0.22",
+        "npm:@cloudflare/workers-types@^5.20260809.1",
+        "npm:@playwright/test@1.63.0-alpha-2026-08-05",
+        "npm:@react-router/dev@^7.18.2",
+        "npm:@tailwindcss/typography@~0.5.20",
+        "npm:@tailwindcss/vite@^4.3.3",
+        "npm:@types/adm-zip@~0.5.8",
+        "npm:@types/emscripten@^1.41.5",
+        "npm:@types/node@^24.13.3",
+        "npm:@types/react-dom@^18.3.7",
+        "npm:@types/react@^18.3.31",
+        "npm:@types/shelljs@~0.8.17",
+        "npm:@vitejs/plugin-react@^5.2.0",
+        "npm:@webgpu/types@~0.1.71",
+        "npm:concurrently@^8.2.2",
+        "npm:daisyui@^5.7.16",
+        "npm:tailwindcss@^4.3.3",
+        "npm:tsx@^4.23.11",
+        "npm:typescript@^5.9.3",
+        "npm:vite-plugin-inspect@^10.3.0",
+        "npm:vite-plugin-static-copy@^2.3.2",
+        "npm:vite@^6.4.3",
+        "npm:wrangler@^4.120.0"
+      ]
+    },
+    "members": {
+      "packages/driver": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@bokuweb/zstd-wasm@^0.0.22",
+            "npm:@zenfs/archives@^1.0.5",
+            "npm:@zenfs/core@^1.11.4",
+            "npm:@zenfs/dom@^1.1.5",
+            "npm:comlink@^4.4.1",
+            "npm:dds@*",
+            "npm:react-dom@^18.2.0",
+            "npm:react-icons@^5.7.0",
+            "npm:react@^18.2.0"
+          ]
+        }
+      },
+      "packages/packer": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@bokuweb/zstd-wasm@^0.0.22",
+            "npm:adm-zip@0.6",
+            "npm:dds@*",
+            "npm:image-dimensions@^2.5.1",
+            "npm:pob-game@*",
+            "npm:shelljs@~0.8.5"
+          ]
+        }
+      },
+      "packages/web": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@auth0/auth0-react@^2.23.0",
+            "npm:@headlessui/react@^2.2.10",
+            "npm:@heroicons/react@^2.2.0",
+            "npm:@react-router/fs-routes@^7.18.2",
+            "npm:@react-router/node@^7.18.2",
+            "npm:@sentry/react@^10.69.0",
+            "npm:dayjs@^1.11.21",
+            "npm:isbot@^5.2.1",
+            "npm:jose@^5.10.0",
+            "npm:missionlog@^1.8.8",
+            "npm:pob-driver@*",
+            "npm:pob-game@*",
+            "npm:react-dom@^18.3.1",
+            "npm:react-router@^7.18.2",
+            "npm:react-use@^17.6.1",
+            "npm:react@^18.3.1"
+          ]
+        }
+      }
+    }
+  }
+}

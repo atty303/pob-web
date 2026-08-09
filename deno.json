@@ -1,0 +1,18 @@
+{
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@1.2.1",
+    "@david/dax": "jsr:@david/dax@0.49.0",
+    "@std/assert": "jsr:@std/assert@1.0.19",
+    "@std/path": "jsr:@std/path@1.1.6"
+  },
+  "fmt": {
+    "lineWidth": 120,
+    "semiColons": true,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}
