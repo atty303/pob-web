@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
   return {
     logLevel: "info",
     server: {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
       fs: {
         allow: [searchForWorkspaceRoot(process.cwd()), packerR2Dir],
       },

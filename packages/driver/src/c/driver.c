@@ -149,8 +149,8 @@ static int Copy(lua_State *L) {
     return 0;
 }
 
-EM_ASYNC_JS(int, paste, (), {
-    var text = await Module.paste();
+EM_JS(int, paste, (), {
+    var text = Module.rpcCall("paste").value;
     var lengthBytes = lengthBytesUTF8(text) + 1;
     var stringOnWasmHeap = Module._malloc(lengthBytes);
     stringToUTF8(text, stringOnWasmHeap, lengthBytes);

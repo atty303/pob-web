@@ -198,12 +198,24 @@ static int lcurl_easy_setopt_url(lua_State *L) {
     return 0;
 }
 
-EM_ASYNC_JS(const char *, fetch, (const char *url, const char *headers, const char *body), {
+EM_JS(const char *, fetch, (const char *url, const char *headers, const char *body), {
     const reqHeaders = headers ? UTF8ToString(headers) : undefined;
     const reqBody = body ? UTF8ToString(body) : undefined;
 
-    const res = await Module.bridge.fetch(UTF8ToString(url), reqHeaders, reqBody);
-    const j = JSON.parse(res);
+    const requestHeaders = reqHeaders
+        ? Object.fromEntries(reqHeaders.split("\n").map(line => line.split(":"))
+            .filter(parts => parts.length === 2).map(([key, value]) => [key.trim(), value.trim()]))
+        : {};
+    let response;
+    try {
+        response = Module.rpcCall("fetch", [UTF8ToString(url), requestHeaders, reqBody], undefined, 64 * 1024 * 1024).value;
+    } catch (e) {
+        response = {error: e instanceof Error ? e.message : String(e)};
+    }
+    const j = {
+        ...response,
+        header: Object.entries(response.headers || {}).map(([key, value]) => `${key}: ${value}`).join("\n"),
+    };
 
     const resBody = ""+j.body;
     const resBodyLen = lengthBytesUTF8(resBody);

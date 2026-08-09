@@ -115,9 +115,9 @@ DataItem* deserialize(const unsigned char *buffer, int *count) {
     return data;
 }
 
-EM_ASYNC_JS(int, launch_sub_script, (const char *script, const char *funcs, const char *subs, size_t size, void *data), {
+EM_JS(int, launch_sub_script, (const char *script, const char *funcs, const char *subs, size_t size, void *data), {
     try {
-        return await Module.launchSubScript(UTF8ToString(script), UTF8ToString(funcs), UTF8ToString(subs), size, data);
+        return Module.rpcCall("subscript_start", [UTF8ToString(script)], HEAPU8.slice(data, data + size)).value;
     } catch (e) {
         console.error("launch_sub_script error", e);
         return 0;
@@ -207,12 +207,8 @@ static int LaunchSubScript(lua_State *L) {
     return 1;
 }
 
-EM_ASYNC_JS(void, abort_sub_script, (int id), {
-    try {
-        await Module.abortSubScript(id);
-    } catch (e) {
-        console.error("abort_sub_script error", e);
-    }
+EM_JS(void, abort_sub_script, (int id), {
+    Module.rpcCall("subscript_abort", [id]);
 })
 
 // Call from main worker
@@ -236,10 +232,7 @@ static int IsSubScriptRunning(lua_State *L) {
 
     int id = (int)lua_touserdata(L, 1);
 
-    int r = EM_ASM_INT({
-        return Module.isSubScriptRunning($0);
-    }, id);
-
+    int r = EM_ASM_INT({ return Module.rpcCall("subscript_running", [$0]).value; }, id);
     lua_pushboolean(L, r);
 
     return 1;
