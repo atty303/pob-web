@@ -85,10 +85,6 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
                 src: normalizePath(path.join(rootDir, "packages/driver/dist/release/!(*.debug.wasm)")),
                 dest: "dist/release/",
               },
-              {
-                src: normalizePath(path.join(rootDir, "packages/driver/dist/test/*")),
-                dest: "dist/test/",
-              },
             ],
           }),
         ]
