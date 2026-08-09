@@ -74,3 +74,24 @@ for (const release of releases) {
     expect(consoleErrors).toEqual([]);
   });
 }
+
+test("the current build exports and reloads through the Lua runtime", async ({ page }) => {
+  await page.goto("/?game=poe1&version=v2.66.2");
+  await page.waitForFunction(() => window.__POB_TEST__?.started === true);
+
+  const initialCode = await page.evaluate(() => {
+    const getBuildCode = window.__POB_TEST__?.getBuildCode;
+    if (!getBuildCode) throw new Error("getBuildCode test hook is unavailable");
+    return getBuildCode();
+  });
+  if (!initialCode) throw new Error("getBuildCode returned no code");
+  await page.evaluate(code => {
+    const loadBuildFromCode = window.__POB_TEST__?.loadBuildFromCode;
+    if (!loadBuildFromCode) throw new Error("loadBuildFromCode test hook is unavailable");
+    return loadBuildFromCode(code);
+  }, initialCode);
+  const roundTrippedCode = await page.evaluate(() => window.__POB_TEST__?.getBuildCode?.());
+  expect(roundTrippedCode).toMatch(/^[A-Za-z0-9_=-]+$/);
+  expect(roundTrippedCode).not.toBe(initialCode);
+  expect((await page.evaluate(() => window.__POB_TEST__?.errors)) ?? []).toEqual([]);
+});

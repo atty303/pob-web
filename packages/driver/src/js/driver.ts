@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 
+import BrokerWorkerObject from "./broker?worker";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
 import { EventHandler } from "./event";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard";
@@ -8,6 +9,17 @@ import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCall
 import type { ToolbarPosition as ToolbarPos } from "./overlay/types";
 import type { DriverWorker, HostCallbacks } from "./worker";
 import WorkerObject from "./worker?worker";
+
+type AsyncBroker = {
+  start(
+    port: MessagePort,
+    eventPort: MessagePort,
+    assetPrefix: string,
+    config: FilesystemConfig,
+    fetchCallback: HostCallbacks["onFetch"],
+    pasteCallback: () => Promise<string>,
+  ): Promise<void>;
+};
 
 export type FilesystemConfig = {
   userDirectory: string;
@@ -25,6 +37,8 @@ export class Driver {
   private keyboardHandler: KeyboardHandler | undefined;
   private root: HTMLElement | undefined;
   private worker: Worker | undefined;
+  private brokerWorker: Worker | undefined;
+  private broker: Comlink.Remote<AsyncBroker> | undefined;
   private driverWorker: Comlink.Remote<DriverWorker> | undefined;
   private overlayManager: ReactOverlayManager | undefined;
   private canvasManager: CanvasManager | undefined;
@@ -55,30 +69,57 @@ export class Driver {
 
   async start(fileSystemConfig: FilesystemConfig) {
     if (this.isStarted) throw new Error("Already started");
+    if (!globalThis.crossOriginIsolated || typeof SharedArrayBuffer !== "function") {
+      throw new Error("Path of Building requires cross-origin isolation and SharedArrayBuffer support");
+    }
     this.isStarted = true;
 
-    this.worker = new WorkerObject();
-    this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
+    try {
+      this.brokerWorker = new BrokerWorkerObject();
+      this.broker = Comlink.wrap<AsyncBroker>(this.brokerWorker);
+      const channel = new MessageChannel();
+      const eventChannel = new MessageChannel();
+      await this.broker.start(
+        Comlink.transfer(channel.port1, [channel.port1]),
+        Comlink.transfer(eventChannel.port1, [eventChannel.port1]),
+        this.assetPrefix,
+        fileSystemConfig,
+        Comlink.proxy(this.hostCallbacks.onFetch),
+        Comlink.proxy(() => this.paste()),
+      );
 
-    return this.driverWorker.start(
-      this.build,
-      this.assetPrefix,
-      fileSystemConfig,
-      Comlink.proxy(this.hostCallbacks.onError),
-      Comlink.proxy(this.hostCallbacks.onFrame),
-      Comlink.proxy(this.hostCallbacks.onFetch),
-      Comlink.proxy(this.hostCallbacks.onTitleChange),
-      Comlink.proxy((text: string) => this.copy(text)),
-      Comlink.proxy(() => this.paste()),
-      Comlink.proxy(url => {
-        window.open(url, "_blank");
-      }),
-    );
+      this.worker = new WorkerObject();
+      this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
+
+      return await this.driverWorker.start(
+        this.build,
+        this.assetPrefix,
+        Comlink.transfer(channel.port2, [channel.port2]),
+        Comlink.transfer(eventChannel.port2, [eventChannel.port2]),
+        Comlink.proxy(this.hostCallbacks.onError),
+        Comlink.proxy(this.hostCallbacks.onFrame),
+        Comlink.proxy(this.hostCallbacks.onTitleChange),
+        Comlink.proxy((text: string) => this.copy(text)),
+        Comlink.proxy(url => {
+          window.open(url, "_blank");
+        }),
+      );
+    } catch (error) {
+      this.worker?.terminate();
+      this.brokerWorker?.terminate();
+      this.worker = undefined;
+      this.brokerWorker = undefined;
+      this.driverWorker = undefined;
+      this.broker = undefined;
+      this.isStarted = false;
+      throw error;
+    }
   }
 
   destory() {
     this.driverWorker?.destroy();
     this.worker?.terminate();
+    this.brokerWorker?.terminate();
   }
 
   attachToDOM(root: HTMLElement, useWebGPU = false) {

@@ -13,6 +13,10 @@ import { Driver } from "./driver";
         renderStats: null,
         title: "",
         errors: [] as string[],
+        frameSamples: [],
+        resetFrameSamples() {
+          this.frameSamples = [];
+        },
       }
     : undefined;
 
@@ -26,9 +30,10 @@ import { Driver } from "./driver";
       testState?.errors.push(String(error));
       console.error(error);
     },
-    onFrame: (_at, _time, stats) => {
+    onFrame: (_at, time, stats) => {
       if (testState) {
         testState.frameCount += 1;
+        testState.frameSamples.push({ totalTime: time, rendererTime: stats?.lastFrameTime ?? 0 });
         if (stats) testState.renderStats = stats;
       }
     },
@@ -49,5 +54,9 @@ import { Driver } from "./driver";
   if (root) {
     driver.attachToDOM(root);
   }
-  if (testState) testState.started = true;
+  if (testState) {
+    testState.started = true;
+    testState.loadBuildFromCode = code => driver.loadBuildFromCode(code);
+    testState.getBuildCode = () => driver.getBuildCode();
+  }
 })();

@@ -7,6 +7,7 @@ ninja = "1.13.2"
 hk = "1.36.0"
 pkl = "0.31.0"
 actionlint = "1.7.12"
+shellcheck = "0.11.0"
 "npm:@playwright/mcp" = "0.0.79"
 
 [settings]
@@ -50,6 +51,21 @@ depends = ["driver:build"]
 description = "Run the local web-to-driver critical-path test"
 run = "npm run test:e2e -w packages/web"
 depends = ["driver:build"]
+
+[tasks."benchmark:setup"]
+description = "Install the Chromium and Firefox browsers used for driver benchmarks"
+run = "npm exec -- playwright install chromium firefox"
+depends = ["install"]
+
+[tasks."benchmark:driver"]
+description = "Benchmark a release driver build in Chromium and Firefox"
+run = '''
+export RUN_BUILD=release
+unset POB_COOL_ASSET
+npm run -w packages/driver build:release
+npm run -w packages/driver test:performance
+'''
+depends = ["benchmark:setup"]
 
 [tasks.check]
 description = "Run generated-file, static, and driver checks"

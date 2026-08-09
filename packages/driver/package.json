@@ -7,15 +7,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:debug && npm run build:release && npm run make-index",
-    "build:debug": "cmake -E rm -rf dist/debug && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
-    "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "build": "npm run build:debug && npm run build:release",
+    "build:debug": "cmake -E rm -rf dist/debug && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug -DPOB_WASM_PROFILING=${POB_WASM_PROFILING:-OFF} && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release -DPOB_WASM_PROFILING=${POB_WASM_PROFILING:-OFF} && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
     "dev": "vite",
     "test": "tsx --test test/unit/*.test.ts",
+    "test:performance": "playwright test --config playwright.performance.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:serve": "vite --mode test --host 127.0.0.1 --port 5173 --strictPort",
-    "preview": "vite preview",
-    "make-index": "node -e 'require(\"shelljs/global\"); const p = exec(\"npm prefix\", {silent: true}).stdout.trim(); const s = `node ${p}/node_modules/@zenfs/core/scripts/make-index.js`; exec(`${s} -o dist/index-release.json dist/release`); exec(`${s} -o dist/index-debug.json dist/debug`);'"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.22",

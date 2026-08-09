@@ -99,9 +99,8 @@ mise run check
 mise run check:full
 ```
 
-For the investigation into Asyncify's Firefox performance impact and the design for removing Asyncify, see
-[Asyncify and Firefox performance investigation](docs/asyncify-firefox-investigation.md) and
-[Async runtime migration guide](docs/async-runtime-migration.md).
+For the adopted async runtime design, see
+[ADR 0001: Use Atomics RPC without native Wasm SJLJ](docs/adr/0001-async-runtime-and-sjlj.md).
 
 `mise run check` includes focused tests for driver keyboard state, Canvas transforms, and draw-command interpretation.
 For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, pack their assets and run:
@@ -119,7 +118,8 @@ The driver runtime suite uses locally packed assets by default, starts each rele
 loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
 `mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
 critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. Both suites are intentionally kept out of the fast/full checks and CI.
+control. Both suites are intentionally kept out of the fast/full checks and CI. Run `mise run benchmark:driver` to
+install its browser runtimes and collect five steady-state PoE 1 frame medians in both Chromium and Firefox.
 
 ### pob.cool maintenance for owners
 

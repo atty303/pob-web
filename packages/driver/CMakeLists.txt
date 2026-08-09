@@ -4,6 +4,8 @@ project("driver")
 
 STRING (TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
+option(POB_WASM_PROFILING "Keep Wasm function names and emit profiling symbols" OFF)
+
 add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/boot.c
         COMMAND ${CMAKE_COMMAND} -E echo "Writing boot.lua to boot.c"
@@ -16,17 +18,21 @@ file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
 
-add_compile_options("-flto" "-g" "-gsource-map" "-sUSE_ZLIB" "-DLUA_USE_DLOPEN")
+add_compile_options("-flto" "-sUSE_ZLIB")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options("-O0" "-g3")
+    add_compile_options("-O0" "-g3" "-gsource-map")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options("-O3")
+endif()
+if(POB_WASM_PROFILING)
+    add_compile_options("-g" "-gsource-map")
 endif()
 set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 
 add_executable(${PROJECT_NAME}
         ${LUA_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/luautf8/lutf8lib.c
         ${CMAKE_BINARY_DIR}/boot.c
         src/c/driver.c
         src/c/draw.c
@@ -49,23 +55,20 @@ add_executable(${PROJECT_NAME}
 set(DRIVER_LINK_FLAGS
         "-flto"
         "--no-entry"
-        "--emit-symbol-map"
-        "--profiling-funcs"
         "-sUSE_ZLIB"
         "-sMODULARIZE"
         "-sSTACK_SIZE=1MB"
-        "-sASYNCIFY"
-        "-sASYNCIFY_STACK_SIZE=131072"
         "-sENVIRONMENT=worker"
         "-sALLOW_MEMORY_GROWTH"
+        "-sMALLOC=mimalloc"
         "-sWASMFS"
         "-sSTRICT"
         "-sINCOMING_MODULE_JS_API=[print,printErr]"
-        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8,Asyncify"
-        "-sASYNCIFY_IMPORTS=js_wasmfs_node_read"
-        "-sMAIN_MODULE"
-        "-sERROR_ON_UNDEFINED_SYMBOLS=0"
+        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8"
 )
+if(POB_WASM_PROFILING)
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "--emit-symbol-map" "--profiling-funcs")
+endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")
 endif()
@@ -74,27 +77,4 @@ target_link_options(${PROJECT_NAME} PRIVATE ${DRIVER_LINK_FLAGS})
 set_target_properties(${PROJECT_NAME}
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dist/${CMAKE_BUILD_TYPE_LOWER}
-)
-
-
-# Add for building `vendor/luautf8` as a SIDE_MODULE and outputting `luautf8.so`
-add_executable(luautf8
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/luautf8/lutf8lib.c
-)
-
-set_target_properties(luautf8
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist/${CMAKE_BUILD_TYPE_LOWER}
-        OUTPUT_NAME "lua-utf8"
-        SUFFIX ".wasm"
-)
-
-target_compile_options(luautf8 PRIVATE
-        "-flto" "-g" "-gsource-map" "-sSIDE_MODULE"
-)
-
-target_link_options(luautf8 PRIVATE
-        "-flto"
-        "-sSIDE_MODULE"
-        "-sSTRICT"
 )

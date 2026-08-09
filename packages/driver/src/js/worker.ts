@@ -1,12 +1,6 @@
 /// <reference types="emscripten" />
 
-import { Zip } from "@zenfs/archives";
-import * as zenfs from "@zenfs/core";
-import { fs, Fetch } from "@zenfs/core";
-import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
-import type { FilesystemConfig } from "./driver";
-import { CloudflareKV } from "./fs";
 import { ImageRepository } from "./image";
 import type { PoBKey } from "./keyboard";
 import { log, tag } from "./logger";
@@ -22,57 +16,11 @@ import {
   WebGPUBackend,
   loadFonts,
 } from "./renderer";
-import type { SubScriptWorker } from "./sub";
-import WorkerObject from "./sub?worker";
-
-import indexDebug from "../../dist/index-debug.json";
-import indexRelease from "../../dist/index-release.json";
-
-const fetchIndex = {
-  debug: indexDebug,
-  release: indexRelease,
-};
-
-export class SubScriptHost {
-  private worker: Worker | undefined;
-  private subScriptWorker: Comlink.Remote<SubScriptWorker> | undefined;
-
-  constructor(
-    readonly script: string,
-    readonly funcs: string,
-    readonly subs: string,
-    readonly data: Uint8Array,
-    readonly onFinished: (data: Uint8Array) => void,
-    readonly onError: (message: string) => void,
-    readonly onFetch: HostCallbacks["onFetch"],
-  ) {}
-
-  async start() {
-    this.worker = new WorkerObject();
-    this.subScriptWorker = Comlink.wrap<SubScriptWorker>(this.worker);
-    this.subScriptWorker
-      .start(
-        this.script,
-        this.data,
-        Comlink.proxy(this.onFinished),
-        Comlink.proxy(this.onError),
-        Comlink.proxy(this.onFetch),
-      )
-      .then(() => {});
-  }
-
-  async terminate() {
-    this.worker?.terminate();
-    this.worker = undefined;
-  }
-
-  isRunning() {
-    return this.worker !== undefined;
-  }
-}
+import { createRpcClient } from "./rpc";
 
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;
+  rpcCall: ReturnType<typeof createRpcClient>;
 }
 
 type OnFetchFunction = (
@@ -95,7 +43,6 @@ export type HostCallbacks = {
 
 type MainCallbacks = {
   copy: (text: string) => void;
-  paste: () => Promise<string>;
   openUrl: (url: string) => void;
 };
 
@@ -125,25 +72,22 @@ export class DriverWorker {
   };
   private mouseState: MouseState = { x: 0, y: 0 };
   private pressedKeys: Set<PoBKey> = new Set();
-  private hostCallbacks: HostCallbacks | undefined;
+  private hostCallbacks: Omit<HostCallbacks, "onFetch"> | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
   private dirtyCount = 0;
   private _frameScheduled = false;
-  private subScriptIndex = 1;
-  private subScripts: SubScriptHost[] = [];
   private visible = false;
 
   async start(
     build: "debug" | "release",
     assetPrefix: string,
-    fileSystemConfig: FilesystemConfig,
+    rpcPort: MessagePort,
+    eventPort: MessagePort,
     onError: HostCallbacks["onError"],
     onFrame: HostCallbacks["onFrame"],
-    onFetch: HostCallbacks["onFetch"],
     onTitleChange: HostCallbacks["onTitleChange"],
     copy: MainCallbacks["copy"],
-    paste: MainCallbacks["paste"],
     openUrl: MainCallbacks["openUrl"],
   ) {
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
@@ -156,68 +100,48 @@ export class DriverWorker {
     this.hostCallbacks = {
       onError,
       onFrame,
-      onFetch,
       onTitleChange,
     };
     this.mainCallbacks = {
       copy,
-      paste,
       openUrl,
     };
 
     const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
       default: EmscriptenModuleFactory<DriverModule>;
     };
+    const rpcCall = createRpcClient(rpcPort);
     const module = await driver.default({
       print: console.log,
       printErr: console.warn,
+      rpcCall,
     });
-
-    const fetchBase = import.meta.resolve(`../../dist/${build}/`);
-    const rootZip = await fetch(`${assetPrefix}/root.zip`);
-    await zenfs.configure({
-      mounts: {
-        "/root": {
-          backend: Zip,
-          data: await rootZip.arrayBuffer(),
-          name: "root.zip",
-        },
-        "/lib/lua": {
-          backend: Fetch,
-          index: fetchIndex[build],
-          baseUrl: fetchBase,
-        },
-        "/user": {
-          backend: WebAccess,
-          handle: await navigator.storage.getDirectory(),
-          disableAsyncCache: true,
-        },
-      },
-    });
-
-    if (fileSystemConfig.cloudflareKvAccessToken) {
-      const kvFs = await zenfs.resolveMountConfig({
-        backend: CloudflareKV,
-        prefix: fileSystemConfig.cloudflareKvPrefix,
-        token: fileSystemConfig.cloudflareKvAccessToken,
-        namespace: fileSystemConfig.cloudflareKvUserNamespace,
-      });
-
-      const pobUserDir = `/user/${fileSystemConfig.userDirectory}`;
-
-      const cloudDir = `${pobUserDir}/Builds/Cloud`;
-      if (!(await zenfs.promises.exists(cloudDir))) await zenfs.promises.mkdir(cloudDir, { recursive: true });
-      zenfs.mount(cloudDir, kvFs);
-
-      const publicDir = `${cloudDir}/Public`;
-      if (!(await zenfs.promises.exists(publicDir))) await zenfs.promises.mkdir(publicDir);
-    }
 
     Object.assign(module, this.exports(module));
     this.imports = this.resolveImports(module);
+    eventPort.onmessage = ({
+      data,
+    }: MessageEvent<{
+      type: "subscript_finished" | "subscript_error";
+      id: number;
+      data?: Uint8Array;
+      message?: string;
+    }>) => {
+      if (data.type === "subscript_finished") {
+        const result = data.data ?? new Uint8Array();
+        const wasmData = module._malloc(result.length);
+        module.HEAPU8.set(result, wasmData);
+        this.imports?.onSubScriptFinished(data.id, wasmData);
+        module._free(wasmData);
+      } else {
+        this.imports?.onSubScriptError(data.id, data.message ?? "Subscript failed");
+      }
+      this.invalidate();
+    };
+    eventPort.start();
 
-    await this.imports?.init();
-    await this.imports?.start();
+    this.imports?.init();
+    this.imports?.start();
     this.invalidate();
   }
 
@@ -302,7 +226,7 @@ export class DriverWorker {
   }
 
   async loadBuildFromCode(code: string) {
-    const status = await this.imports?.loadBuildFromCode(code);
+    const status = this.imports?.loadBuildFromCode(code);
     if (status !== undefined && status !== 0) {
       throw new Error(`loadBuildFromCode failed (status=${status})`);
     }
@@ -310,7 +234,7 @@ export class DriverWorker {
   }
 
   async getBuildCode(): Promise<string> {
-    const code = await this.imports?.getBuildCode();
+    const code = this.imports?.getBuildCode();
     if (!code) {
       throw new Error("getBuildCode failed");
     }
@@ -329,7 +253,7 @@ export class DriverWorker {
       try {
         const start = performance.now();
 
-        await this.imports?.onFrame();
+        this.imports?.onFrame();
 
         const time = performance.now() - start;
         const stats = this.renderer?.getStats();
@@ -349,11 +273,11 @@ export class DriverWorker {
 
   private resolveImports(module: DriverModule): Imports {
     return {
-      init: module.cwrap("init", "number", [], { async: true }),
-      start: module.cwrap("start", "number", [], { async: true }),
-      loadBuildFromCode: module.cwrap("load_build_from_code", "number", ["string"], { async: true }),
-      getBuildCode: module.cwrap("get_build_code", "string", [], { async: true }),
-      onFrame: module.cwrap("on_frame", "number", [], { async: true }),
+      init: module.cwrap("init", "number", []),
+      start: module.cwrap("start", "number", []),
+      loadBuildFromCode: module.cwrap("load_build_from_code", "number", ["string"]),
+      getBuildCode: module.cwrap("get_build_code", "string", []),
+      onFrame: module.cwrap("on_frame", "number", []),
       onKeyUp: module.cwrap("on_key_up", "number", ["string", "number"]),
       onKeyDown: module.cwrap("on_key_down", "number", ["string", "number"]),
       onChar: module.cwrap("on_char", "number", ["string", "number"]),
@@ -365,7 +289,6 @@ export class DriverWorker {
 
   private exports(module: DriverModule) {
     return {
-      fs: zenfs.fs,
       onError: (message: string) => this.hostCallbacks?.onError(new Error(`Error in lua: ${message}`)),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
@@ -385,78 +308,8 @@ export class DriverWorker {
       getStringCursorIndex: (size: number, font: number, text: string, cursorX: number, cursorY: number) =>
         this.textMetrics?.measureCursorIndex(size, font, text, cursorX, cursorY) ?? 0,
       copy: (text: string) => this.mainCallbacks?.copy(text),
-      paste: () => this.mainCallbacks?.paste(),
       openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
-      launchSubScript: async (script: string, funcs: string, subs: string, size: number, data: number) => {
-        const id = this.subScriptIndex;
-        const dataArray = new Uint8Array(size);
-        dataArray.set(new Uint8Array(module.HEAPU8.buffer, data, size));
-        const subScript = new SubScriptHost(
-          script,
-          funcs,
-          subs,
-          dataArray,
-          (data: Uint8Array) => {
-            this.subScripts[id]?.terminate();
-            delete this.subScripts[id];
-
-            const wasmData = module._malloc(data.length);
-            module.HEAPU8.set(data, wasmData);
-            const ret = this.imports?.onSubScriptFinished(id, wasmData);
-            module._free(wasmData);
-
-            log.debug(tag.subscript, "onSubScriptFinished callback done", { ret });
-            this.invalidate();
-          },
-          (message: string) => {
-            this.subScripts[id]?.terminate();
-            delete this.subScripts[id];
-
-            const ret = this.imports?.onSubScriptError(id, message);
-            log.debug(tag.subscript, "onSubScriptError callback done", { ret });
-            this.invalidate();
-          },
-          this.hostCallbacks?.onFetch ??
-            (() => Promise.resolve({ error: "onFetch not implemented", body: "", headers: {}, status: 500 })),
-        );
-
-        this.subScripts[id] = subScript;
-        await subScript.start();
-        return this.subScriptIndex++;
-      },
-      abortSubScript: async (id: number) => {
-        await this.subScripts[id]?.terminate();
-      },
-      isSubScriptRunning: (id: number) => {
-        return this.subScripts[id]?.isRunning() ?? false;
-      },
     };
-  }
-}
-
-async function printFileSystemTree(path: string) {
-  async function buildTree(currentPath: string, depth = 0): Promise<string> {
-    const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
-    const indent = " ".repeat(depth * 2);
-    let tree = "";
-
-    for (const entry of entries) {
-      const entryPath = `${currentPath}/${entry.name}`;
-      if (entry.isDirectory()) {
-        tree += `${indent}📁 ${entry.name}\n${await buildTree(entryPath, depth + 1)}`;
-      } else {
-        tree += `${indent}📄 ${entry.name}\n`;
-      }
-    }
-
-    return tree;
-  }
-
-  try {
-    const tree = await buildTree(path);
-    console.log(tree);
-  } catch (error) {
-    console.error(`Error reading file system at ${path}:`, error);
   }
 }
 
