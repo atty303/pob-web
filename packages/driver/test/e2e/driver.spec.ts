@@ -44,7 +44,12 @@ for (const release of releases) {
       )
       .toEqual({ uniquesLoaded: true, raresLoaded: true });
 
+    await page.waitForTimeout(3_000);
+
     const state = await page.evaluate(() => window.__POB_TEST__);
+    expect(state?.errors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    expect(consoleErrors).toEqual([]);
     expect(state?.title).not.toBe("");
     expect(webgl2Backend).toBe(true);
 
