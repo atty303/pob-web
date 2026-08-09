@@ -22,6 +22,9 @@
   behavior. This is also the required pull-request validation.
 - Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual
   development.
+- Before running separate `mise run` processes in parallel, check whether they share a dependency that mutates the same
+  workspace or cache. If they do, such as a shared `npm ci`, complete that dependency once before parallelizing the
+  downstream tasks.
 - Keep generated build output out of version control. Regenerate it through the relevant `mise` task.
 
 ## Verification
