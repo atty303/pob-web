@@ -114,7 +114,7 @@ function orthoMatrix(
   top: number,
   near: number,
   far: number,
-): Float32Array {
+): Float32Array<ArrayBuffer> {
   return new Float32Array([
     2 / (right - left),
     0,
@@ -196,7 +196,7 @@ const targetTable: Record<Target, boolean> = {
 };
 
 class VertexBuffer {
-  private _buffer: Float32Array;
+  private _buffer: Float32Array<ArrayBuffer>;
   private offset: number;
 
   constructor() {
@@ -536,7 +536,7 @@ export class WebGPUBackend implements RenderBackend {
       const bytesPerPixel = storedTexture?.formatDesc.bytesPerPixel ?? 4;
       this.device.queue.writeTexture(
         { texture: t.texture, origin: { x: sub.x, y: sub.y } },
-        sub.source as ArrayBufferView,
+        sub.source,
         { bytesPerRow: sub.width * bytesPerPixel },
         { width: sub.width, height: sub.height, depthOrArrayLayers: 1 },
       );
@@ -733,7 +733,7 @@ export class WebGPUBackend implements RenderBackend {
 
                   this.device.queue.writeTexture(
                     { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-                    new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                    new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength),
                     {
                       bytesPerRow,
                       rowsPerImage: blocksHigh,
@@ -746,7 +746,7 @@ export class WebGPUBackend implements RenderBackend {
               } else {
                 this.device.queue.writeTexture(
                   { texture: gpuTexture, mipLevel: level, origin: { z: layer } },
-                  new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                  new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength),
                   { bytesPerRow: extent[0] * formatDesc.bytesPerPixel },
                   { width: extent[0], height: extent[1], depthOrArrayLayers: 1 },
                 );

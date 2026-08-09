@@ -6,7 +6,7 @@ import type React from "react";
 import { useState } from "react";
 
 import "./lib/logger";
-import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse } from "react-router";
+import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
 
 if (import.meta.env.VITE_SENTRY_DSN) {

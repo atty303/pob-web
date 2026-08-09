@@ -8,6 +8,7 @@ import { log, tag } from "../lib/logger";
 import ErrorDialog from "./ErrorDialog";
 
 const { useHash } = use;
+type FetchResult = Awaited<ReturnType<ConstructorParameters<typeof Driver>[2]["onFetch"]>>;
 
 export default function PoBWindow(props: {
   game: Game;
@@ -75,7 +76,7 @@ export default function PoBWindow(props: {
       },
       onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
       onFetch: async (url, headers, body) => {
-        let rep = undefined;
+        let rep: FetchResult | undefined;
 
         if (url.startsWith("https://pobb.in/")) {
           try {
@@ -87,6 +88,7 @@ export default function PoBWindow(props: {
             if (r.ok) {
               rep = {
                 body: await r.text(),
+                error: undefined,
                 headers: Object.fromEntries(r.headers.entries()),
                 status: r.status,
               };
@@ -102,7 +104,7 @@ export default function PoBWindow(props: {
             method: "POST",
             body: JSON.stringify({ url, headers, body }),
           });
-          rep = await r.json();
+          rep = (await r.json()) as FetchResult;
         }
 
         return rep;

@@ -4,7 +4,7 @@ import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
 import { CloudflareKV } from "./fs";
-import { type RpcResult, exposeRpcPort, prepareFetchHeaders } from "./rpc";
+import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc";
 import type { SubScriptWorker } from "./sub";
 import SubWorkerObject from "./sub?worker";
 

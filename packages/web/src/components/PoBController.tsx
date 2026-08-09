@@ -24,7 +24,10 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const ToolbarComponents = ({
     position,
     isLandscape,
-  }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => {
+  }: {
+    position: "top" | "bottom" | "left" | "right";
+    isLandscape: boolean;
+  }) => {
     return (
       <>
         <SettingsButton
