@@ -1,5 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
+const sentryDsn =
+  process.env.SENTRY_LIVE_TEST === "1" ? process.env.SENTRY_LIVE_DSN : "https://public@o0.ingest.sentry.io/0";
+
+if (!sentryDsn) throw new Error("SENTRY_LIVE_DSN is required when SENTRY_LIVE_TEST=1");
+
 export default defineConfig({
   testDir: "test/e2e",
   fullyParallel: false,
@@ -21,7 +26,7 @@ export default defineConfig({
   webServer: {
     command: "npm run test:e2e:serve",
     url: "http://127.0.0.1:5174",
-    env: { VITE_SENTRY_DSN: "https://public@o0.ingest.sentry.io/0" },
+    env: { VITE_SENTRY_DSN: sentryDsn },
     reuseExistingServer: false,
     timeout: 30_000,
   },

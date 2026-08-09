@@ -133,6 +133,16 @@ description = "Run the local web-to-driver critical-path test"
 run = "npm run test:e2e -w packages/web"
 depends = ["driver:build"]
 
+[tasks."test:sentry:live"]
+description = "Verify Chromium and Firefox Wasm symbolication through Sentry"
+run = """
+test -n "${SENTRY_LIVE_AUTH_TOKEN:-}" || { echo 'SENTRY_LIVE_AUTH_TOKEN is required' >&2; exit 1; }
+test -n "${SENTRY_LIVE_DSN:-}" || { echo 'SENTRY_LIVE_DSN is required' >&2; exit 1; }
+SENTRY_AUTH_TOKEN="$SENTRY_LIVE_AUTH_TOKEN" sentry-cli debug-files upload --org "${SENTRY_LIVE_ORG:-atty303}" --project "${SENTRY_LIVE_PROJECT:-pob-web}" --type wasm --include-sources --wait packages/driver/dist/release/driver.wasm.debug.wasm
+SENTRY_LIVE_TEST=1 npm run test:e2e -w packages/web -- sentry-wasm.spec.ts
+"""
+depends = ["driver:build"]
+
 [tasks."benchmark:setup"]
 description = "Install the Chromium and Firefox browsers used for driver benchmarks"
 run = "npm exec -- playwright install chromium firefox"

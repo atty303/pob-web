@@ -9,7 +9,7 @@ declare global {
 }
 
 Sentry.init({
-  dsn: "https://public@o0.ingest.sentry.io/0",
+  dsn: import.meta.env.VITE_SENTRY_DSN,
   integrations: wasmIntegrations,
 });
 

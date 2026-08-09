@@ -128,6 +128,12 @@ The full browser suites are intentionally kept out of the fast/full checks and p
 `mise run benchmark:driver` to install its browser runtimes and collect five steady-state PoE 1 frame medians in both
 Chromium and Firefox.
 
+To verify the complete Wasm symbolication path without deploying, set `SENTRY_LIVE_AUTH_TOKEN` and `SENTRY_LIVE_DSN`,
+then run `mise run test:sentry:live`. These test-only variables are separate from deployment credentials. The task uploads
+the local Wasm debug file, sends intentional traps from Chromium and Firefox, and waits for both events to resolve to the
+test functions in `driver.c`. The token requires `org:ci` and `project:read`; `SENTRY_LIVE_ORG` and
+`SENTRY_LIVE_PROJECT` override the default project.
+
 ### pob.cool maintenance for owners
 
 If you are the owner of pob.cool, you can set `MISE_ENV=pob-cool` to enable mise tasks.

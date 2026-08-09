@@ -66,6 +66,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
   },
   optimizeDeps: {
     exclude: ["@bokuweb/zstd-wasm"],
+    include: ["@sentry/react", "react", "react-dom", "react-use"],
     esbuildOptions: {
       target: "es2020",
     },
