@@ -119,7 +119,8 @@ The driver runtime suite uses locally packed assets by default, starts each rele
 loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
 `mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
 critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. Both suites are intentionally kept out of the fast/full checks and CI.
+control. Both suites are intentionally kept out of the fast/full checks and CI. Run `mise run benchmark:driver` to
+install its browser runtimes and collect five steady-state PoE 1 frame medians in both Chromium and Firefox.
 
 ### pob.cool maintenance for owners
 

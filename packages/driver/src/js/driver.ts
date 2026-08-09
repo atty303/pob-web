@@ -14,7 +14,6 @@ type AsyncBroker = {
   start(
     port: MessagePort,
     eventPort: MessagePort,
-    build: "debug" | "release",
     assetPrefix: string,
     config: FilesystemConfig,
     fetchCallback: HostCallbacks["onFetch"],
@@ -83,7 +82,6 @@ export class Driver {
       await this.broker.start(
         Comlink.transfer(channel.port1, [channel.port1]),
         Comlink.transfer(eventChannel.port1, [eventChannel.port1]),
-        this.build,
         this.assetPrefix,
         fileSystemConfig,
         Comlink.proxy(this.hostCallbacks.onFetch),

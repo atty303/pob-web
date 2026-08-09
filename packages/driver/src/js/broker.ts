@@ -1,17 +1,12 @@
 import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
-import { Fetch } from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
-import indexDebug from "../../dist/index-debug.json";
-import indexRelease from "../../dist/index-release.json";
 import type { FilesystemConfig } from "./driver";
 import { CloudflareKV } from "./fs";
 import { type RpcResult, exposeRpcPort, prepareFetchHeaders } from "./rpc";
 import type { SubScriptWorker } from "./sub";
 import SubWorkerObject from "./sub?worker";
-
-const indexes = { debug: indexDebug, release: indexRelease };
 
 type BrokerCallbacks = {
   fetch: (url: string, headers: Record<string, string>, body?: string) => Promise<unknown>;
@@ -27,7 +22,6 @@ class AsyncBroker {
   async start(
     port: MessagePort,
     eventPort: MessagePort,
-    build: "debug" | "release",
     assetPrefix: string,
     config: FilesystemConfig,
     fetchCallback: BrokerCallbacks["fetch"],
@@ -39,7 +33,6 @@ class AsyncBroker {
     await zenfs.configure({
       mounts: {
         "/root": { backend: Zip, data: await rootZip.arrayBuffer(), name: "root.zip" },
-        "/lib/lua": { backend: Fetch, index: indexes[build], baseUrl: import.meta.resolve(`../../dist/${build}/`) },
         "/user": {
           backend: WebAccess,
           handle: await navigator.storage.getDirectory(),

@@ -124,9 +124,9 @@ boundaries use synchronous broker imports:
 6. Decide exception handling separately. Do not make a JSPI-driven
    `-fwasm-exceptions` change part of the Atomics migration unless benchmarks and
    browser support justify it.
-7. Reassess `-sMAIN_MODULE` and the `lua-utf8` side module independently. Static
-   linkage reduced complexity in the diagnostic build, but it is not required by
-   the Atomics design.
+7. Keep `lua-utf8` statically linked and avoid `-sMAIN_MODULE`. This is independent
+   of the Atomics protocol, but restores normal dead-code elimination and removes
+   the dynamic loader from the generated JavaScript.
 
 Search the generated JavaScript and build logs for Asyncify after removal; a
 successful compile alone does not prove that no compatibility path remains.

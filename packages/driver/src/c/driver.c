@@ -14,6 +14,7 @@
 #include "lcurl.h"
 
 extern backend_t wasmfs_create_nodefs_backend(const char* root);
+extern int luaopen_utf8(lua_State *L);
 
 extern const char *boot_lua;
 static lua_State *GL;
@@ -320,6 +321,10 @@ int init() {
 
     // Open standard libraries
     luaL_openlibs(GL);
+    luaL_getsubtable(L, LUA_REGISTRYINDEX, "_PRELOAD");
+    lua_pushcfunction(L, luaopen_utf8);
+    lua_setfield(L, -2, "lua-utf8");
+    lua_pop(L, 1);
 
     // Handle lua errors
     lua_atpanic(L, at_panic);
@@ -389,8 +394,6 @@ int init() {
     // pob-web specific
     lua_pushcclosure(L, DownloadPage, 0);
     lua_setglobal(L, "DownloadPage");
-
-    luaL_dostring(L, "package.cpath = '/app/lib/lua/?.wasm;' .. package.cpath");
 
     return 0;
 }
