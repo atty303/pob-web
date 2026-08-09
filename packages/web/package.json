@@ -27,7 +27,7 @@
     "test:e2e": "playwright test",
     "test:e2e:serve": "react-router dev --mode test --host 127.0.0.1 --port 5174 --strictPort",
     "preview": "react-router preview",
-    "deploy": "DEPLOYMENT=cloudflare npm run build && npm run deploy:pages",
+    "deploy": "mise run web:deploy",
     "deploy:pages": "wrangler pages deploy build/client --project-name pob-web"
   }
 }

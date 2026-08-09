@@ -10,6 +10,7 @@ pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 "npm:@playwright/mcp" = "0.0.79"
+sentry-cli = "3.6.2"
 
 [settings]
 lockfile = true
@@ -44,6 +45,28 @@ deno check tools/upstream-sync/main.ts tools/upstream-sync/*_test.ts
 deno test --allow-read --allow-write tools/upstream-sync
 deno run tools/upstream-sync/main.ts --help >/dev/null
 """
+
+[tasks."test:sentry-upload"]
+description = "Check and test the Sentry source map upload tooling"
+run = """
+deno fmt --check deno.json tools/sentry-upload
+deno lint tools/sentry-upload
+deno check tools/sentry-upload/main.ts tools/sentry-upload/main_test.ts
+deno test --allow-read --allow-write tools/sentry-upload
+"""
+
+[tasks."test:driver:sourcemap"]
+description = "Verify production Wasm source map generation"
+run = """
+test -f packages/driver/dist/release/driver.wasm.map
+llvm-objdump -h packages/driver/dist/release/driver.wasm | rg -q 'sourceMappingURL'
+if llvm-objdump -h packages/driver/dist/release/driver.wasm | rg -q '[.]debug_'; then
+  echo 'release Wasm contains DWARF sections' >&2
+  exit 1
+fi
+rg -q 'src/c/driver[.]c' packages/driver/dist/release/driver.wasm.map
+"""
+depends = ["driver:build"]
 
 [tasks."upstream-sync:collect"]
 description = "Discover, sync, and test new releases for one game"
@@ -129,7 +152,7 @@ run = """
 npm exec -w packages/web -- react-router typegen
 if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
 """
-depends = ["install", "test:driver", "test:upstream-sync", "driver:build"]
+depends = ["install", "test:driver", "test:driver:sourcemap", "test:sentry-upload", "test:upstream-sync", "driver:build"]
 
 [tasks.fix]
 description = "Fix formatting and lint issues"
@@ -261,6 +284,20 @@ depends = ["driver:build"]
 description = "Build the web package"
 run = "npm run -w packages/web build"
 depends = ["driver:build"]
+
+[tasks."sentry:upload"]
+description = "Upload the current production source maps to Sentry"
+run = "deno run --allow-env=SENTRY_AUTH_TOKEN,SENTRY_RELEASE --allow-read --allow-run=sentry-cli tools/sentry-upload/main.ts"
+
+[tasks."web:deploy"]
+description = "Build, upload source maps, and deploy the web package"
+run = """
+export DEPLOYMENT=cloudflare
+npm run -w packages/web build
+mise run sentry:upload
+npm run -w packages/web deploy:pages
+"""
+depends = ["install", "driver:build"]
 
 [tasks."web:dev"]
 description = "Start dev server for web"

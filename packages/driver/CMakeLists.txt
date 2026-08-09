@@ -4,8 +4,6 @@ project("driver")
 
 STRING (TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
-option(POB_WASM_PROFILING "Keep Wasm function names and emit profiling symbols" OFF)
-
 add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/boot.c
         COMMAND ${CMAKE_COMMAND} -E echo "Writing boot.lua to boot.c"
@@ -18,15 +16,12 @@ file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
 
-add_compile_options("-flto" "-sUSE_ZLIB")
+add_compile_options("-flto" "-gsource-map" "-sUSE_ZLIB")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options("-O0" "-g3" "-gsource-map")
+    add_compile_options("-O0")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options("-O3")
-endif()
-if(POB_WASM_PROFILING)
-    add_compile_options("-g" "-gsource-map")
 endif()
 set(CMAKE_EXECUTABLE_SUFFIX ".mjs")
 
@@ -79,11 +74,11 @@ set(DRIVER_LINK_FLAGS
         "-sINCOMING_MODULE_JS_API=[print,printErr]"
         "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8"
 )
-if(POB_WASM_PROFILING)
-    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "--emit-symbol-map" "--profiling-funcs")
-endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-g3" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-gsource-map")
 endif()
 target_link_options(${PROJECT_NAME} PRIVATE ${DRIVER_LINK_FLAGS})
 
