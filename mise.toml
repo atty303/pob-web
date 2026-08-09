@@ -21,13 +21,26 @@ sources = [
 ]
 outputs = { auto = true }
 
+[tasks.setup]
+description = "Set up dependencies, submodules, and repository hooks"
+run = """
+git submodule update --init --recursive
+hk install --mise
+"""
+depends = ["install"]
+
 [tasks.check]
-description = "Run generated-file and static checks"
+description = "Run fast generated-file and static checks"
 run = """
 npm exec -w packages/web -- react-router typegen
 hk check --all
 """
-depends = ["driver:build"]
+depends = ["install"]
+
+[tasks."check:full"]
+description = "Run all checks and production builds"
+run = "mise run --skip-deps web:build"
+depends = ["check", "driver:build"]
 
 [tasks."playwright:mcp"]
 description = "Start Playwright MCP with coordinate-based Vision Mode"

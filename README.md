@@ -48,9 +48,10 @@ git submodule update
 ### Install dependencies
 
 ```bash
-mise install
-hk install --mise
+mise run setup
 ```
+
+This installs the pinned tools and npm dependencies, initializes the submodules, and installs the repository hooks.
 
 ### Pack upstream PoB
 
@@ -82,7 +83,7 @@ mise run web:dev
 Install the mise-managed Playwright browser before starting Codex in this trusted repository:
 
 ```bash
-mise install
+mise run setup
 mise run visual:setup
 ```
 
@@ -90,10 +91,12 @@ Invoke `$canvas-visual-verification` from Codex to start the driver UI and inspe
 Playwright MCP Vision Mode. The browser is stored in Playwright's standard OS cache and is not committed. Headless mode
 is the default; start Codex with `PLAYWRIGHT_MCP_HEADED=1` when a visible browser is needed for investigation.
 
-Run the repository checks separately from visual verification:
+Use the fast check during development. Run the full check, including the WebAssembly and web builds, before completing
+build-related or cross-package changes:
 
 ```bash
 mise run check
+mise run check:full
 ```
 
 ### pob.cool maintenance for owners

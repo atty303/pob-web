@@ -6,7 +6,7 @@
       "install": false
     }
   },
-  "initializeCommand": "git submodule update --init --recursive",
+  "postCreateCommand": "mise run setup",
   "customizations": {
     "vscode": {
       "extensions": ["hverlin.mise-vscode"]

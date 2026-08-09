@@ -8,7 +8,7 @@ const rootDir = path.resolve(__dirname, "../..");
 const packerR2Dir = path.resolve(__dirname, "../packer/r2");
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, isSsrBuild }) => ({
   server: {
     host: true,
     proxy: {
@@ -58,8 +58,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     reactRouter(),
     tailwindcss(),
-    viteStaticCopy({
-      targets: [{ src: normalizePath(path.join(rootDir, "packages/driver/dist/*")), dest: "dist/" }],
-    }),
+    ...(!isSsrBuild
+      ? [
+          viteStaticCopy({
+            targets: [{ src: normalizePath(path.join(rootDir, "packages/driver/dist/*")), dest: "dist/" }],
+          }),
+        ]
+      : []),
   ],
 }));

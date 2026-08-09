@@ -1,0 +1,28 @@
+name: check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+          path: ~/.npm
+
+      - uses: jdx/mise-action@v2
+
+      - name: Check and build
+        run: mise run check:full

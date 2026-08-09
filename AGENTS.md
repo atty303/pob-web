@@ -1,86 +1,35 @@
-# CLAUDE.md
+# Repository guidance
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Project boundaries
 
-## Project Overview
+- This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed upstream
+  assets unmodified; implement browser-specific behavior in this repository's packages.
+- The npm workspaces are `packages/dds`, `packages/driver`, `packages/game`, `packages/packer`, and `packages/web`. See
+  `README.md` for the user-facing architecture and development overview.
+- Do not add dependencies without prior approval. Use the versions and lockfiles managed by `mise` and npm.
 
-pob-web is a browser-based version of Path of Building (PoB), a character build planner for Path of Exile. It runs the original PoB Lua code in the browser using WebAssembly.
+## Development workflow
 
-## Architecture
+- Use `mise` tasks as the canonical entry points instead of invoking their underlying tools directly.
+- Run `mise run setup` once after cloning to install dependencies, initialize submodules, and install repository hooks.
+- Run `mise run check` for the fast local validation loop.
+- Run `mise run check:full` before completing changes that affect builds, package boundaries, WebAssembly, CI, or release
+  behavior. This is also the required pull-request validation.
+- Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual
+  development.
+- Keep generated build output out of version control. Regenerate it through the relevant `mise` task.
 
-The project uses a monorepo structure with npm workspaces:
+## Verification
 
-- **packages/dds**: Microsoft DirectDraw Surface (.DDS) file parser
-- **packages/driver**: PoB driver that emulates the desktop PoB window environment using vanilla JS and WebGL
-- **packages/game**: Game data definitions
-- **packages/packer**: Tool to package upstream PoB releases for browser use
-- **packages/web**: React web application that hosts the driver
+- Match verification effort to the changed behavior. Prefer static checks and focused tests before builds or interactive
+  verification.
+- For Canvas/WebGL behavior, use the repository's `canvas-visual-verification` skill when it is available. It defines the
+  required browser setup, observations, and evidence.
+- The DDS file under `packages/dds/src/dds.test.ts` is a manual asset-processing script, not a self-contained automated
+  test; do not treat it as coverage or run it without the referenced packed assets.
 
-Key architecture points:
-- Original PoB Lua code runs via a custom Lua 5.2 interpreter compiled to WebAssembly using Emscripten
-- SimpleGraphic module is reimplemented in C to bridge with the JS driver
-- WebGL is used for rendering
-- Builds are stored in browser localStorage, with cloud storage available for logged-in users
+## Driver overlay styling
 
-## Development Commands
-
-### Prerequisites
-```bash
-# Install mise (version manager)
-# Install dependencies
-mise install
-hk install --mise
-
-# Clone submodules (required for vendor/lua)
-git submodule init
-git submodule update
-```
-
-### Core Development Tasks
-```bash
-# Pack upstream PoB assets (required before first run)
-mise run pack --game poe2 --tag v0.8.0
-
-# Run driver development server
-mise run driver:dev --game poe2 --version v0.8.0
-
-# Run web app development server
-mise run web:dev
-
-# Build driver
-mise run driver:build
-
-# Build web app
-mise run web:build
-```
-
-### Linting
-```bash
-hk fix --all
-```
-
-## Development Workflow
-
-1. Before starting development, pack the upstream PoB assets for the version you want to work with
-2. The driver must be built before running the web app
-3. Use `mise run driver:dev` for driver-only development
-4. Use `mise run web:dev` for full web application development
-5. The project uses Biome for code formatting and linting
-
-## Important Notes
-
-- Network access goes through a CORS proxy
-- POESESSID cookies are rejected for security
-- No modifications are made to the original PoB code, only behavioral changes through the driver
-- The project supports multiple games: poe1, poe2, and Last Epoch (le)
-
-## Driver Overlay Components
-
-The driver includes React overlay components for mobile interface elements (virtual keyboard, zoom controls, toolbar buttons). These components use scoped TailwindCSS styling:
-
-- **CSS Scoping**: All TailwindCSS classes in overlay components must use the `pw:` prefix
-- **Example**: Use `pw:absolute pw:z-50 pw:p-3` instead of `absolute z-50 p-3`
-- **Configuration**: TailwindCSS is configured with `@theme { --prefix: pw:; }` in `packages/driver/src/js/overlay/overlay.css`
-- **Browser Compatibility**: The `pw:` prefix approach ensures compatibility with older browsers (including Amazon Silk Browser) that don't support CSS layers
-
-When working with overlay components, always use the `pw:` prefix for TailwindCSS classes to maintain proper CSS scoping and prevent conflicts with external stylesheets.
+- All Tailwind CSS utilities in driver overlay components must use the `pw:` prefix defined in
+  `packages/driver/src/js/overlay/overlay.css` (for example, `pw:absolute pw:p-3`). This keeps overlay styles scoped and
+  compatible with browsers that do not support CSS layers, including Amazon Silk Browser.

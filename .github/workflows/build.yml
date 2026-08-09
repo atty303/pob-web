@@ -40,11 +40,8 @@ jobs:
 
       - uses: jdx/mise-action@v2
 
-      - name: "Check"
-        run: mise run check
-
-      - name: "Build"
-        run: mise run web:build
+      - name: "Check and build"
+        run: mise run check:full
 
       - name: Deploy
         if: ${{ steps.release-please.outputs.release_created }}
