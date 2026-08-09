@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowImportingTsExtensions": true,
     "module": "ES2022",
     "moduleResolution": "bundler",
     "noEmit": true,

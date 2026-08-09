@@ -85,6 +85,38 @@ checksum = "sha256:935ade9e5e8723583c07f44c5592cea2a1c8f65c56ca7e07b34c025c880e0
 url = "https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-windows-x86_64.zip"
 url_api = "https://api.github.com/repos/Kitware/CMake/releases/assets/426407532"
 
+[[tools.deno]]
+version = "2.9.3"
+backend = "core:deno"
+
+[tools.deno."platforms.linux-arm64"]
+checksum = "sha256:1a9b610fb536ac72ded978a2bec9d8bc2af96365709bea10ba02e617b1410133"
+url = "https://dl.deno.land/release/v2.9.3/deno-aarch64-unknown-linux-gnu.zip"
+
+[tools.deno."platforms.linux-arm64-musl"]
+checksum = "sha256:1a9b610fb536ac72ded978a2bec9d8bc2af96365709bea10ba02e617b1410133"
+url = "https://dl.deno.land/release/v2.9.3/deno-aarch64-unknown-linux-gnu.zip"
+
+[tools.deno."platforms.linux-x64"]
+checksum = "sha256:c4b10edac3e33cba510bd0e5783526d753a148071a9f0e86c693ea48b50512f2"
+url = "https://dl.deno.land/release/v2.9.3/deno-x86_64-unknown-linux-gnu.zip"
+
+[tools.deno."platforms.linux-x64-musl"]
+checksum = "sha256:c4b10edac3e33cba510bd0e5783526d753a148071a9f0e86c693ea48b50512f2"
+url = "https://dl.deno.land/release/v2.9.3/deno-x86_64-unknown-linux-gnu.zip"
+
+[tools.deno."platforms.macos-arm64"]
+checksum = "sha256:fecdfd2f962061c796eda4ce4c5753fdec33cdea4af4b5d1c513cf68f4e98955"
+url = "https://dl.deno.land/release/v2.9.3/deno-aarch64-apple-darwin.zip"
+
+[tools.deno."platforms.macos-x64"]
+checksum = "sha256:03d9afd3e950cb56f4da221bd447c8ea0bd99967a6a428ae887c4bd1d8a5f516"
+url = "https://dl.deno.land/release/v2.9.3/deno-x86_64-apple-darwin.zip"
+
+[tools.deno."platforms.windows-x64"]
+checksum = "sha256:5cf26da4e823b9a925220b57b25787d3b8a33729dd8e3d37681fcb57050f0050"
+url = "https://dl.deno.land/release/v2.9.3/deno-x86_64-pc-windows-msvc.zip"
+
 [[tools.emsdk]]
 version = "6.0.6"
 backend = "vfox:emsdk"
@@ -111,28 +143,38 @@ url = "https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz"
 url = "https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz"
 
 [[tools.hk]]
-version = "1.36.0"
+version = "1.54.1"
 backend = "aqua:jdx/hk"
 
 [tools.hk."platforms.linux-arm64"]
-checksum = "sha256:51cf51e2035038ee64d772e71f8daf4978380ef82faffee2b12c413f009341ab"
-url = "https://github.com/jdx/hk/releases/download/v1.36.0/hk-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/352898789"
+checksum = "sha256:e00420ef742e2e222c2030253a8fa868033daf43fe670de17c2e6957dc577443"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018166"
+
+[tools.hk."platforms.linux-arm64-musl"]
+checksum = "sha256:a98f4e8d97bc4e07bef4528201f3dced2b2a9b3881ced92d0d38935a89b7ecfa"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018162"
 
 [tools.hk."platforms.linux-x64"]
-checksum = "sha256:d20fa0be3f1135abc74471670306ae0353ad2336804595362293f0c8460952e7"
-url = "https://github.com/jdx/hk/releases/download/v1.36.0/hk-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/352898788"
+checksum = "sha256:20775cfb4e8065aa25e790d888856d4d62cc2e688725c010f8a5fc112aa759b5"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018180"
+
+[tools.hk."platforms.linux-x64-musl"]
+checksum = "sha256:a78ee242f310d329843b36e41766df9b45ef29609c7424a6d84244b278f8cb3d"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018181"
 
 [tools.hk."platforms.macos-arm64"]
-checksum = "sha256:553ff3c7c18d91f1c1dcdbae44315db0324b52336b5a02ed5b9c382f08499b3b"
-url = "https://github.com/jdx/hk/releases/download/v1.36.0/hk-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/352898790"
+checksum = "sha256:8384262050e5f523c58af9e23cd92e2274e38cf95b4e72cf66f63545afa149b2"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018164"
 
 [tools.hk."platforms.windows-x64"]
-checksum = "sha256:1f12218ccad806a3f49bcf521f86b6825fbd89486e830c1c04f72e3796f84589"
-url = "https://github.com/jdx/hk/releases/download/v1.36.0/hk-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/jdx/hk/releases/assets/352898786"
+checksum = "sha256:32c28a6ec024ddfd59482334f0225f6e6c5202fdb3a5fdc74f3c987a1fd08007"
+url = "https://github.com/jdx/hk/releases/download/v1.54.1/hk-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/jdx/hk/releases/assets/505018165"
 
 [[tools.ninja]]
 version = "1.13.2"

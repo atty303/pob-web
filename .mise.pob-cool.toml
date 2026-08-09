@@ -17,6 +17,12 @@ run = """
 aws s3 sync --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_URL} packages/packer/r2/games/{{option(name="game")}}/versions/{{option(name="tag")}} "s3://pob-web/games/{{option(name="game")}}/versions/{{option(name="tag")}}"
 """
 
+[tasks."sync:metadata"]
+description = "Upload version metadata to Cloudflare R2"
+run = """
+aws s3 cp --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_URL} {{option(name="file")}} s3://pob-web/version.json
+"""
+
 [tasks.deploy]
 description = "Deploy the web package to Cloudflare Pages"
 run = "npm run deploy -w packages/web"

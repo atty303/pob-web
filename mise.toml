@@ -1,10 +1,11 @@
 [tools]
 node = "24.12.0"
+deno = "2.9.3"
 emsdk = "6.0.6"
 cmake = "4.3.3"
 ninja = "1.13.2"
 
-hk = "1.36.0"
+hk = "1.54.1"
 pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
@@ -34,10 +35,64 @@ description = "Run focused driver behavior tests"
 run = "npm test -w packages/driver"
 depends = ["driver:build"]
 
-[tasks."test:e2e:driver"]
-description = "Run local driver runtime tests for all supported games"
-usage = 'flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"'
+[tasks."test:upstream-sync"]
+description = "Check and test the upstream sync tooling"
 run = """
+deno fmt --check deno.json tools/upstream-sync
+deno lint tools/upstream-sync
+deno check tools/upstream-sync/main.ts tools/upstream-sync/*_test.ts
+deno test --allow-read --allow-write tools/upstream-sync
+deno run tools/upstream-sync/main.ts --help >/dev/null
+"""
+
+[tasks."upstream-sync:collect"]
+description = "Discover, sync, and test new releases for one game"
+usage = """
+flag "--game <game>" {
+  choices "poe1" "poe2" "le"
+}
+flag "--version-file <path>" { default "version.json" }
+flag "--output <path>"
+flag "--dry-run"
+"""
+run = """
+set -- collect --game "${usage_game?}" --version-file "${usage_version_file?}" --output "${usage_output?}"
+[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
+deno run --allow-env --allow-net=api.github.com --allow-read --allow-write --allow-run=mise \
+  tools/upstream-sync/main.ts "$@"
+"""
+
+[tasks."upstream-sync:merge"]
+description = "Merge matrix compatibility results into version metadata"
+usage = """
+flag "--version-file <path>" { default "version.json" }
+flag "--results-directory <path>"
+flag "--dry-run"
+"""
+run = """
+set -- merge --version-file "${usage_version_file?}" --results-directory "${usage_results_directory?}"
+[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
+deno run --allow-env --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts "$@"
+"""
+
+[tasks."test:e2e:driver"]
+description = "Run local driver runtime tests"
+usage = """
+flag "--game <game>" { choices "poe1" "poe2" "le" }
+flag "--version <version>"
+flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"
+"""
+run = """
+if { [ -n "$usage_game" ] && [ -z "$usage_version" ]; } || { [ -z "$usage_game" ] && [ -n "$usage_version" ]; }; then
+  echo "--game and --version must be provided together" >&2
+  exit 2
+fi
+if [ -n "$usage_game" ]; then
+  export RUN_GAME="$usage_game"
+  export RUN_VERSION="$usage_version"
+else
+  unset RUN_GAME RUN_VERSION
+fi
 if [ -n "$usage_pob_cool_asset" ]; then
   export POB_COOL_ASSET=true
 else
@@ -69,11 +124,18 @@ depends = ["benchmark:setup"]
 
 [tasks.check]
 description = "Run generated-file, static, and driver checks"
+usage = 'arg "[files]" var=#true'
 run = """
 npm exec -w packages/web -- react-router typegen
-hk check --all
+if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
 """
-depends = ["install", "test:driver", "driver:build"]
+depends = ["install", "test:driver", "test:upstream-sync", "driver:build"]
+
+[tasks.fix]
+description = "Fix formatting and lint issues"
+usage = 'arg "[files]" var=#true'
+run = 'if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk fix "$@"'
+depends = ["install"]
 
 [tasks."check:full"]
 description = "Run all checks and production builds"
@@ -147,12 +209,6 @@ depends = ["driver:build"]
 description = "Pack the distribution from upstream repository"
 run = """
 npm run -w packages/packer pack {{option(name="tag")}} {{option(name="game")}} clone
-"""
-
-[tasks.print-game-data]
-description = "Print game data"
-run = """
-npx tsx -e 'import {gameData} from "pob-game/src"; console.log(JSON.stringify(gameData))'
 """
 
 [tasks."driver:build"]

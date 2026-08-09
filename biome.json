@@ -26,5 +26,12 @@
       "correctness": { "useHookAtTopLevel": "off" },
       "suspicious": { "noArrayIndexKey": "off", "useIterableCallbackReturn": "off" }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["tools/upstream-sync/**"],
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    }
+  ]
 }

@@ -118,12 +118,24 @@ The driver runtime suite uses locally packed assets by default, starts each rele
 loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
 `mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
 critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. Both suites are intentionally kept out of the fast/full checks and CI. Run `mise run benchmark:driver` to
-install its browser runtimes and collect five steady-state PoE 1 frame medians in both Chromium and Firefox.
+control. To run only the startup compatibility scenario for one packed release, pass `--game` and `--version` together:
+
+```bash
+mise run test:e2e:driver --game poe2 --version v0.23.1
+```
+
+The full browser suites are intentionally kept out of the fast/full checks and pull-request CI. Run
+`mise run benchmark:driver` to install its browser runtimes and collect five steady-state PoE 1 frame medians in both
+Chromium and Firefox.
 
 ### pob.cool maintenance for owners
 
 If you are the owner of pob.cool, you can set `MISE_ENV=pob-cool` to enable mise tasks.
+
+The hourly upstream sync runs the targeted driver E2E after uploading each new release. Its result is stored in
+`version.json`: `tested` releases are eligible to become the default version, while `failed` releases remain selectable
+but do not replace the current default. Releases without a result predate this check and appear as `Untested` in the
+version list.
 
 ## Architecture
 

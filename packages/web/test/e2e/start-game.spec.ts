@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
 
-test("the landing page starts a rendered Path of Exile 2 session", async ({ page }) => {
+test("the landing page shows compatibility results and starts a rendered Path of Exile 2 session", async ({ page }) => {
+  await page.route("**/version.json", route =>
+    route.fulfill({
+      json: {
+        poe1: {
+          head: "v2.66.2",
+          versions: [
+            { value: "v2.66.2", date: "2026-01-03T00:00:00Z", testResult: "tested" },
+            { value: "failed", date: "2026-01-02T00:00:00Z", testResult: "failed" },
+            { value: "legacy", date: "2026-01-01T00:00:00Z" },
+          ],
+        },
+        poe2: { head: "v0.23.1", versions: [{ value: "v0.23.1", date: "2026-01-01T00:00:00Z" }] },
+        le: { head: "v0.12.0", versions: [{ value: "v0.12.0", date: "2026-01-01T00:00:00Z" }] },
+      },
+    }),
+  );
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   let webgl2Backend = false;
@@ -16,6 +32,9 @@ test("the landing page starts a rendered Path of Exile 2 session", async ({ page
   await expect(page.getByRole("link", { name: "Start for Path of Exile 1" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start for Path of Exile 2" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start for Last Epoch" })).toBeVisible();
+  await expect(page.getByText("Tested", { exact: true })).toBeVisible();
+  await expect(page.getByText("Failed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Untested", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("link", { name: "Start for Path of Exile 2" }).click();
   await expect(page).toHaveURL(/\/poe2$/);

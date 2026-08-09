@@ -1,35 +1,42 @@
 name: Check for new releases
+
 on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Perform a dry run without making any changes'
+        description: Perform a dry run without making external changes
+        type: boolean
         required: false
-        default: 'true'
+        default: true
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   check-release:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        game: [ poe1, poe2, le ]
+        game: [poe1, poe2, le]
     env:
-        VERSION_FILE: "version.json"
-        GAME: ${{ matrix.game }}
-        UPDATE_HEAD: "true"
-        DRY_RUN: "${{ github.event.inputs.dry_run || 'false' }}"
+      GAME: ${{ matrix.game }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      GITHUB_TOKEN: ${{ github.token }}
+      R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      MISE_SOPS_STRICT: 'false'
+      MISE_ENV: pob-cool
     steps:
-      - uses: actions/create-github-app-token@v4
-        id: app-token
-        with:
-          app-id: ${{ secrets.TOKEN_APP_ID }}
-          private-key: ${{ secrets.TOKEN_PRIVATE_KEY }}
-
       - uses: actions/checkout@v6
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          ref: ${{ github.ref_name }}
 
       - name: Cache npm dependencies
         uses: actions/cache@v5
@@ -37,192 +44,72 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
-          path: |
-            ~/.npm
+          path: ~/.npm
 
       - uses: jdx/mise-action@v3
       - run: mise run install
 
-      - name: Get latest releases
-        id: get_releases
-        uses: actions/github-script@v9
+      - name: Sync and test new releases
+        run: |
+          args=(--game "$GAME" --output ".artifacts/$GAME.json")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          mise run upstream-sync:collect "${args[@]}"
+
+      - name: Upload compatibility result
+        uses: actions/upload-artifact@v7
         with:
-          script: |
-            let gamesJson = "";
-            await exec.exec("mise", ["run", "print-game-data"], {
-              listeners: {
-                stdout: (data) => {
-                  gamesJson += data.toString();
-                },
-              },
-            });
-            const games = JSON.parse(gamesJson);
+          name: upstream-sync-${{ matrix.game }}
+          path: .artifacts/${{ matrix.game }}.json
+          retention-days: 1
 
-            const { owner, name: repo } = games[process.env.GAME].repository;
-            if (!owner || !repo) {
-              throw new Error('Invalid game specified.');
-            }
-
-            const tags = [];
-
-            const query = `
-              query($owner: String!, $repo: String!, $cursor: String) {
-                repository(owner: $owner, name: $repo) {
-                  refs(
-                    refPrefix: "refs/tags/",
-                    first: 100,
-                    after: $cursor,
-                  ) {
-                    totalCount
-                    pageInfo {
-                      hasNextPage
-                      endCursor
-                    }
-                    nodes {
-                      name
-                      target {
-                        ... on Commit {
-                          committedDate
-                        }
-                        ... on Tag {
-                          target {
-                            ... on Commit {
-                              committedDate
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            let cursor = null;
-
-            while (true) {
-              const result = await github.graphql(query, {
-                owner,
-                repo,
-                cursor,
-              });
-
-              for (const node of result.repository.refs.nodes) {
-                const date = node.target?.target?.committedDate || node.target?.committedDate;
-                if (date) {
-                  tags.push({ name: node.name, committedDate: date });
-                }
-              }
-
-              const pageInfo = result.repository.refs.pageInfo;
-              if (!pageInfo.hasNextPage) {
-                break;
-              }
-              cursor = pageInfo.endCursor;
-            }
-
-            tags.sort((a, b) => new Date(b.committedDate) - new Date(a.committedDate));
-
-            const latestTags = tags.slice(0, 10);
-
-            core.info(`Latest 10 tags: ${JSON.stringify(latestTags, null, 2)}`);
-            return latestTags;
-
-      - name: Determine new versions
-        id: new_versions
-        env:
-          LATEST_TAGS: ${{ steps.get_releases.outputs.result }}
-        uses: actions/github-script@v9
+  update-versions:
+    runs-on: ubuntu-latest
+    needs: check-release
+    env:
+      VERSION_FILE: version.json
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      MISE_SOPS_STRICT: 'false'
+      MISE_ENV: pob-cool
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
         with:
-          script: |
-            const fs = require('fs');
+          app-id: ${{ secrets.TOKEN_APP_ID }}
+          private-key: ${{ secrets.TOKEN_PRIVATE_KEY }}
 
-            const latestTags = JSON.parse(process.env.LATEST_TAGS);
-
-            const versions = JSON.parse(fs.readFileSync(process.env.VERSION_FILE, 'utf8'));
-            const knownVersions = versions[process.env.GAME].versions;
-
-            const newTags = latestTags.filter(tag => !knownVersions.some(known => known.value === tag.name));
-            core.info(`New tags: ${JSON.stringify(newTags, null, 2)}`);
-
-            if (newTags.length === 0) {
-              core.notice(`No new tags found for ${process.env.GAME}.`);
-              return null;
-            } else {
-              core.summary.addHeading(`New tags for ${process.env.GAME}`, '2');
-              const table = [
-                [
-                  { data: "Tag", header: true },
-                  { data: "Date", header: true },
-                ],
-                newTags.flatMap(tag => [
-                  { data: tag.name },
-                  { data: tag.committedDate },
-                ]),
-              ];
-              core.summary.addTable(table);
-            }
-
-            return newTags.length > 0 ? newTags : null;
-
-      - name: Pack and sync new versions
-        if: steps.new_versions.outputs.result != 'null'
-        env:
-          NEW_TAGS: ${{ steps.new_versions.outputs.result }}
-          R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          MISE_SOPS_STRICT: "false"
-          MISE_ENV: pob-cool
-        uses: actions/github-script@v9
+      - uses: actions/checkout@v6
         with:
-          script: |
-            const newTags = JSON.parse(process.env.NEW_TAGS);
-            for (const tag of newTags) {
-              await exec.exec(`mise run pack --game ${process.env.GAME} --tag ${tag.name}`);
-              if (process.env.DRY_RUN !== 'true') {
-                await exec.exec(`mise run sync --game ${process.env.GAME} --tag ${tag.name}`);
-              }
-            }
+          ref: ${{ github.ref_name }}
+          token: ${{ steps.app-token.outputs.token }}
 
-      - name: Update version.json
-        if: steps.new_versions.outputs.result != 'null'
-        env:
-          NEW_TAGS: ${{ steps.new_versions.outputs.result }}
-          R2_ENDPOINT_URL: https://621480c42e70995622a2d0a86bb7751c.r2.cloudflarestorage.com
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        uses: actions/github-script@v9
+      - uses: jdx/mise-action@v3
+
+      - name: Download compatibility results
+        uses: actions/download-artifact@v8
         with:
-          script: |
-            const fs = require('fs');
+          pattern: upstream-sync-*
+          path: .artifacts
+          merge-multiple: true
 
-            const newTags = JSON.parse(process.env.NEW_TAGS);
-            const versions = JSON.parse(fs.readFileSync(process.env.VERSION_FILE, 'utf8'));
-
-            versions[process.env.GAME].versions = [
-              ...newTags.map(tag => ({ value: tag.name, date: tag.committedDate })),
-              ...versions[process.env.GAME].versions,
-            ];
-
-            if (process.env.UPDATE_HEAD === 'true') {
-              versions[process.env.GAME].head = newTags[0].name;
-            }
-
-            core.info(`Updated versions: ${JSON.stringify(versions, null, 2)}`);
-            fs.writeFileSync(process.env.VERSION_FILE, JSON.stringify(versions, null, 2));
-
-            if (process.env.DRY_RUN !== 'true') {
-              await exec.exec(`aws s3 cp --checksum-algorithm=CRC32 --region auto --endpoint-url ${process.env.R2_ENDPOINT_URL} version.json s3://pob-web/version.json`);
-            }
+      - name: Update version metadata
+        run: |
+          args=(--results-directory .artifacts)
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          mise run upstream-sync:merge "${args[@]}"
 
       - name: Commit changes
-        if: steps.new_versions.outputs.result != 'null' && env.DRY_RUN != 'true'
+        if: env.DRY_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          if git diff --quiet -- "$VERSION_FILE"; then
+            exit 0
+          fi
           git config user.name "atty303-bot[bot]"
           git config user.email "atty303-bot[bot]@users.noreply.github.com"
           git add "$VERSION_FILE"
-          git commit -m "Update version.json with new releases (update head: $UPDATE_HEAD)"
+          git commit -m "Update version.json with tested upstream releases"
           git push

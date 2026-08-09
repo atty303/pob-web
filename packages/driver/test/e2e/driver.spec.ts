@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { releases } from "./releases";
+import { releases, targetRelease } from "./releases";
 
 for (const release of releases) {
   test(`${release.game} ${release.version} loads items, renders, and zooms`, async ({ page }) => {
@@ -76,6 +76,7 @@ for (const release of releases) {
 }
 
 test("the current build exports and reloads through the Lua runtime", async ({ page }) => {
+  test.skip(targetRelease !== undefined, "Targeted compatibility checks only run the startup scenario");
   await page.goto("/?game=poe1&version=v2.66.2");
   await page.waitForFunction(() => window.__POB_TEST__?.started === true);
 

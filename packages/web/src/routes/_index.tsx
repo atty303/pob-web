@@ -33,6 +33,17 @@ export async function clientLoader(args: Route.ClientLoaderArgs) {
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
+  function testResultBadge(testResult: "tested" | "failed" | undefined) {
+    switch (testResult) {
+      case "tested":
+        return <span className="badge badge-success badge-sm">Tested</span>;
+      case "failed":
+        return <span className="badge badge-error badge-sm">Failed</span>;
+      default:
+        return <span className="badge badge-ghost badge-sm">Untested</span>;
+    }
+  }
+
   function versionTable(game: keyof Games) {
     return (
       <div className="card bg-base-100 shadow-md p-4 w-full">
@@ -43,6 +54,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               <tr>
                 <th>Version</th>
                 <th>Release Date</th>
+                <th>Compatibility</th>
                 <th />
               </tr>
             </thead>
@@ -51,6 +63,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 <tr key={_.value}>
                   <td>{_.value}</td>
                   <td>{dayjs.utc(_.date).local().format("ll")}</td>
+                  <td>{testResultBadge(_.testResult)}</td>
                   <td>
                     <Link to={`/${game}/versions/${_.value}`} className="btn btn-primary btn-xs">
                       <ArrowRightIcon className="size-4" />
