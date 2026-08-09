@@ -52,12 +52,12 @@ run = "npm run test:e2e -w packages/web"
 depends = ["driver:build"]
 
 [tasks.check]
-description = "Run fast generated-file and static checks"
+description = "Run generated-file, static, and driver checks"
 run = """
 npm exec -w packages/web -- react-router typegen
 hk check --all
 """
-depends = ["install", "test:driver"]
+depends = ["install", "test:driver", "driver:build"]
 
 [tasks."check:full"]
 description = "Run all checks and production builds"
