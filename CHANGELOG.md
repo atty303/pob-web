@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.29.1](https://github.com/atty303/pob-web/compare/v0.29.0...v0.29.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **driver:** restore cross-browser performance benchmark ([d402631](https://github.com/atty303/pob-web/commit/d4026319fa10b139e967c59f2517033e09f885bd))
+* improve driver diagnostics and overlay behavior ([#164](https://github.com/atty303/pob-web/issues/164)) ([3c38e30](https://github.com/atty303/pob-web/commit/3c38e3063c5256a7b492210d0f4afd7bcf359db9))
+* **sentry:** symbolize WebAssembly crashes ([7859e52](https://github.com/atty303/pob-web/commit/7859e529fc038232545a99fe5ba5e438945b4c20))
+* **web:** allow clean production builds ([97f7b94](https://github.com/atty303/pob-web/commit/97f7b945ce167131c2f0d6ce2ea9a6ab728fc310))
+* **web:** restore overlay toolbar layout ([c928a73](https://github.com/atty303/pob-web/commit/c928a73459235ad851f25f2d376d19295a9de3da))
+
 ## [0.29.0](https://github.com/atty303/pob-web/compare/v0.28.0...v0.29.0) (2026-08-09)
 
 
