@@ -4,8 +4,11 @@ import baseConfig from "./playwright.config";
 export default defineConfig({
   ...baseConfig,
   testDir: "test/performance",
-  repeatEach: 3,
+  repeatEach: 5,
   reporter: "line",
   timeout: 90_000,
-  projects: [{ name: "firefox", use: { ...devices["Desktop Firefox"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+  ],
 });

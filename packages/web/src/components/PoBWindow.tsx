@@ -5,6 +5,7 @@ import { type Game, gameData } from "pob-game/src";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import { log, tag } from "../lib/logger";
+import { registerSentryWorker } from "../lib/sentry";
 import ErrorDialog from "./ErrorDialog";
 
 const { useHash } = use;
@@ -72,48 +73,53 @@ export default function PoBWindow(props: {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
-    const _driver = new Driver("release", assetPrefix, {
-      onError: error => {
-        setError(error);
-        setShowErrorDialog(true);
-      },
-      onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
-      onFetch: async (url, headers, body) => {
-        let rep: FetchResult | undefined;
+    const _driver = new Driver(
+      "release",
+      assetPrefix,
+      {
+        onError: error => {
+          setError(error);
+          setShowErrorDialog(true);
+        },
+        onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
+        onFetch: async (url, headers, body) => {
+          let rep: FetchResult | undefined;
 
-        if (url.startsWith("https://pobb.in/")) {
-          try {
-            const r = await fetch(url, {
-              method: body ? "POST" : "GET",
-              body,
-              headers,
-            });
-            if (r.ok) {
-              rep = {
-                body: await r.text(),
-                error: undefined,
-                headers: Object.fromEntries(r.headers.entries()),
-                status: r.status,
-              };
-              log.debug(tag.pob, "CORS fetch success", url, rep);
+          if (url.startsWith("https://pobb.in/")) {
+            try {
+              const r = await fetch(url, {
+                method: body ? "POST" : "GET",
+                body,
+                headers,
+              });
+              if (r.ok) {
+                rep = {
+                  body: await r.text(),
+                  error: undefined,
+                  headers: Object.fromEntries(r.headers.entries()),
+                  status: r.status,
+                };
+                log.debug(tag.pob, "CORS fetch success", url, rep);
+              }
+            } catch (e) {
+              log.warn(tag.pob, "CORS fetch error", e);
             }
-          } catch (e) {
-            log.warn(tag.pob, "CORS fetch error", e);
           }
-        }
 
-        if (!rep) {
-          const r = await fetch("/api/fetch", {
-            method: "POST",
-            body: JSON.stringify({ url, headers, body }),
-          });
-          rep = (await r.json()) as FetchResult;
-        }
+          if (!rep) {
+            const r = await fetch("/api/fetch", {
+              method: "POST",
+              body: JSON.stringify({ url, headers, body }),
+            });
+            rep = (await r.json()) as FetchResult;
+          }
 
-        return rep;
+          return rep;
+        },
+        onTitleChange: title => onTitleChangeRef.current(title),
       },
-      onTitleChange: title => onTitleChangeRef.current(title),
-    });
+      { onWorkerCreated: registerSentryWorker },
+    );
 
     driverRef.current = _driver;
 

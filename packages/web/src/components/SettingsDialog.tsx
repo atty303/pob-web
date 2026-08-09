@@ -6,10 +6,17 @@ interface SettingsDialogProps {
   game: string;
   performanceVisible: boolean;
   onPerformanceToggle: () => void;
+  sentryTest?: {
+    driverReady: boolean;
+    pending: boolean;
+    status?: string;
+    stack?: string;
+    captureIssue: (kind: "javascript" | "wasm") => void;
+  };
 }
 
 export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>(
-  ({ performanceVisible, onPerformanceToggle }, ref) => {
+  ({ performanceVisible, onPerformanceToggle, sentryTest }, ref) => {
     const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
     const closeDialog = () => {
       if (ref && typeof ref !== "function" && ref.current) {
@@ -119,6 +126,42 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
                 </label>
               </div>
             </div>
+
+            {sentryTest && (
+              <div className="pw:space-y-3">
+                <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80">Sentry test issue</h3>
+                <div className="pw:flex pw:flex-wrap pw:gap-2">
+                  <button
+                    type="button"
+                    className="pw:btn pw:btn-sm"
+                    disabled={sentryTest.pending}
+                    onClick={() => sentryTest.captureIssue("javascript")}
+                  >
+                    Record JavaScript issue
+                  </button>
+                  <button
+                    type="button"
+                    className="pw:btn pw:btn-sm pw:btn-error"
+                    disabled={!sentryTest.driverReady || sentryTest.pending}
+                    onClick={() => sentryTest.captureIssue("wasm")}
+                  >
+                    Record WASM issue
+                  </button>
+                </div>
+                {sentryTest.status && <p className="pw:text-sm">{sentryTest.status}</p>}
+                {sentryTest.stack && (
+                  <details className="pw:max-w-xl pw:text-sm">
+                    <summary>Captured stack</summary>
+                    <pre
+                      data-testid="sentry-test-stack"
+                      className="pw:mt-2 pw:max-h-48 pw:overflow-auto pw:whitespace-pre-wrap"
+                    >
+                      {sentryTest.stack}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
 
             <div className="pw:pt-3 pw:border-t pw:border-base-300">
               <p className="pw:text-xs pw:text-base-content/60">

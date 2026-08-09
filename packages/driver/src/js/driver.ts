@@ -28,6 +28,10 @@ export type FilesystemConfig = {
   cloudflareKvUserNamespace: string | undefined;
 };
 
+export type DriverLifecycleCallbacks = {
+  onWorkerCreated?: (worker: Worker) => void;
+};
+
 export class Driver {
   private isStarted = false;
   private eventHandler: EventHandler | undefined;
@@ -59,6 +63,7 @@ export class Driver {
     readonly build: "debug" | "release",
     readonly assetPrefix: string,
     readonly hostCallbacks: HostCallbacks,
+    readonly lifecycleCallbacks: DriverLifecycleCallbacks = {},
   ) {
     const originalOnFrame = this.hostCallbacks.onFrame;
     this.hostCallbacks.onFrame = (at: number, time: number, stats?: RenderStats) => {
@@ -89,6 +94,7 @@ export class Driver {
       );
 
       this.worker = new WorkerObject();
+      this.lifecycleCallbacks.onWorkerCreated?.(this.worker);
       this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
 
       return await this.driverWorker.start(

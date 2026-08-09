@@ -16,6 +16,11 @@ import {
   WebGPUBackend,
 } from "./renderer";
 import { createRpcClient } from "./rpc";
+import { registerSentryWasm } from "./sentry-wasm";
+
+const setSentryWasmCodeFile = registerSentryWasm(self);
+const debugWasmUrl = new URL("../../dist/debug/driver.wasm", import.meta.url).href;
+const releaseWasmUrl = new URL("../../dist/release/driver.wasm", import.meta.url).href;
 
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;
@@ -110,11 +115,15 @@ export class DriverWorker {
     const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
       default: EmscriptenModuleFactory<DriverModule>;
     };
+    const wasmUrl = build === "release" ? releaseWasmUrl : debugWasmUrl;
+    setSentryWasmCodeFile(wasmUrl);
+    const wasmBinary = await fetch(wasmUrl).then(response => response.arrayBuffer());
     const rpcCall = createRpcClient(rpcPort);
     const module = await driver.default({
       print: console.log,
       printErr: console.warn,
       rpcCall,
+      wasmBinary,
     });
 
     Object.assign(module, this.exports(module));
