@@ -9,3 +9,6 @@ build/
 r2/
 .wrangler
 .react-router/
+.playwright-mcp/
+playwright-report/
+test-results/

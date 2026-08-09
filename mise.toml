@@ -8,7 +8,6 @@ hk = "1.36.0"
 pkl = "0.31.0"
 actionlint = "1.7.12"
 "npm:@playwright/mcp" = "0.0.79"
-"npm:playwright" = "1.63.0-alpha-2026-08-05"
 
 [settings]
 lockfile = true
@@ -29,13 +28,23 @@ hk install --mise
 """
 depends = ["install"]
 
+[tasks."test:driver"]
+description = "Run focused driver behavior tests"
+run = "npm test -w packages/driver"
+depends = ["install"]
+
+[tasks."test:e2e:driver"]
+description = "Run local driver runtime tests for all supported games"
+run = "npm run test:e2e -w packages/driver"
+depends = ["driver:build"]
+
 [tasks.check]
 description = "Run fast generated-file and static checks"
 run = """
 npm exec -w packages/web -- react-router typegen
 hk check --all
 """
-depends = ["install"]
+depends = ["install", "test:driver"]
 
 [tasks."check:full"]
 description = "Run all checks and production builds"
@@ -44,22 +53,9 @@ depends = ["check", "driver:build"]
 
 [tasks."playwright:mcp"]
 description = "Start Playwright MCP with coordinate-based Vision Mode"
+depends = ["install"]
 run = """
-playwright_root="$(mise where npm:playwright)"
-chromium_path="$(node -e '
-  const fs = require("node:fs");
-  const path = require("node:path");
-  const store = path.join(process.argv[1], "node_modules", ".mise");
-  const entry = fs.readdirSync(store).find(name => {
-    try {
-      return require(path.join(store, name, "node_modules", "playwright", "package.json")).name === "playwright";
-    } catch {
-      return false;
-    }
-  });
-  if (!entry) throw new Error("mise-managed Playwright package not found");
-  process.stdout.write(require(path.join(store, entry, "node_modules", "playwright")).chromium.executablePath());
-' "$playwright_root")"
+chromium_path="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
 if [ ! -x "$chromium_path" ]; then
   echo "Chromium is not installed; run 'mise run visual:setup' first" >&2
   exit 1
@@ -72,7 +68,8 @@ exec playwright-mcp "${args[@]}"
 
 [tasks."visual:setup"]
 description = "Install the Chromium browser used for visual verification"
-run = "playwright install chromium"
+depends = ["install"]
+run = "npm exec -- playwright install chromium"
 
 [tasks."visual:dev"]
 description = "Start the driver UI for interactive visual verification"

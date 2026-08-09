@@ -80,7 +80,7 @@ mise run web:dev
 
 ### Visual verification with Codex
 
-Install the mise-managed Playwright browser before starting Codex in this trusted repository:
+Install the workspace Playwright browser before starting Codex in this trusted repository:
 
 ```bash
 mise run setup
@@ -98,6 +98,18 @@ build-related or cross-package changes:
 mise run check
 mise run check:full
 ```
+
+`mise run check` includes focused tests for driver keyboard state, Canvas transforms, and draw-command interpretation.
+For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, run:
+
+```bash
+mise run visual:setup
+mise run test:e2e:driver
+```
+
+The runtime suite downloads game assets from `asset.pob.cool`, starts each release in Chromium, and checks WebAssembly
+startup, WebGL2 rendering, frame statistics, and the DOM zoom control. It is intentionally kept out of the fast/full
+checks and CI because it depends on the external asset service.
 
 ### pob.cool maintenance for owners
 

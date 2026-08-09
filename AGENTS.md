@@ -13,6 +13,9 @@
 - Use `mise` tasks as the canonical entry points instead of invoking their underlying tools directly.
 - Run `mise run setup` once after cloning to install dependencies, initialize submodules, and install repository hooks.
 - Run `mise run check` for the fast local validation loop.
+- Run `mise run test:driver` for focused driver behavior tests. It is included in `mise run check`.
+- Run `mise run test:e2e:driver` when changing driver startup, rendering, input, overlays, or game-version integration.
+  This local-only suite uses fixed releases from `asset.pob.cool`; install its Chromium with `mise run visual:setup`.
 - Run `mise run check:full` before completing changes that affect builds, package boundaries, WebAssembly, CI, or release
   behavior. This is also the required pull-request validation.
 - Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual
@@ -24,7 +27,8 @@
 - Match verification effort to the changed behavior. Prefer static checks and focused tests before builds or interactive
   verification.
 - For Canvas/WebGL behavior, use the repository's `canvas-visual-verification` skill when it is available. It defines the
-  required browser setup, observations, and evidence.
+  required browser setup, observations, and evidence. Run the automated driver E2E suite first, then use the skill for
+  visual behavior that the stable DOM assertions do not cover.
 - The DDS file under `packages/dds/src/dds.test.ts` is a manual asset-processing script, not a self-contained automated
   test; do not treat it as coverage or run it without the referenced packed assets.
 

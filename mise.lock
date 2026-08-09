@@ -209,10 +209,6 @@ url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-win-x64.zip"
 version = "0.0.79"
 backend = "npm:@playwright/mcp"
 
-[[tools."npm:playwright"]]
-version = "1.63.0-alpha-2026-08-05"
-backend = "npm:playwright"
-
 [[tools.pkl]]
 version = "0.31.0"
 backend = "aqua:apple/pkl"
