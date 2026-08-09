@@ -99,9 +99,8 @@ mise run check
 mise run check:full
 ```
 
-For the investigation into Asyncify's Firefox performance impact and the design for removing Asyncify, see
-[Asyncify and Firefox performance investigation](docs/asyncify-firefox-investigation.md) and
-[Async runtime migration guide](docs/async-runtime-migration.md).
+For the adopted async runtime design, see
+[ADR 0001: Use Atomics RPC without native Wasm SJLJ](docs/adr/0001-async-runtime-and-sjlj.md).
 
 `mise run check` includes focused tests for driver keyboard state, Canvas transforms, and draw-command interpretation.
 For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, pack their assets and run:
