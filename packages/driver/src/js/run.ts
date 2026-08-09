@@ -49,5 +49,9 @@ import { Driver } from "./driver";
   if (root) {
     driver.attachToDOM(root);
   }
-  if (testState) testState.started = true;
+  if (testState) {
+    testState.started = true;
+    testState.loadBuildFromCode = code => driver.loadBuildFromCode(code);
+    testState.getBuildCode = () => driver.getBuildCode();
+  }
 })();

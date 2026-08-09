@@ -11,6 +11,8 @@ type PoBTestState = {
   renderStats: import("./overlay").RenderStats | null;
   title: string;
   errors: string[];
+  loadBuildFromCode?: (code: string) => Promise<void>;
+  getBuildCode?: () => Promise<string>;
 };
 
 interface Window {
