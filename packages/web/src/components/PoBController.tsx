@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/react";
 import type { Driver } from "pob-driver/src/js/driver";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import * as use from "react-use";
 import type { Games } from "../routes/_game";
@@ -49,14 +49,8 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     }
   };
 
-  const ToolbarComponents = ({
-    position,
-    isLandscape,
-  }: {
-    position: "top" | "bottom" | "left" | "right";
-    isLandscape: boolean;
-  }) => {
-    return (
+  const ToolbarComponents = useCallback(
+    ({ position, isLandscape }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => (
       <>
         <SettingsButton
           position={position}
@@ -65,8 +59,9 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         />
         <HelpButton position={position} isLandscape={isLandscape} onOpenHelp={() => setHelpDialogOpen(true)} />
       </>
-    );
-  };
+    ),
+    [],
+  );
 
   return (
     <div
@@ -95,42 +90,20 @@ export default function PoBController(p: { game: keyof Games; version: string; i
           setPerformanceVisible(newValue);
           driverRef.current?.setPerformanceVisible(newValue);
         }}
+        sentryTest={
+          searchParams.has("sentry-test")
+            ? {
+                driverReady,
+                pending: sentryTestPending,
+                status: sentryTestStatus,
+                stack: sentryTestStack,
+                captureIssue: captureSentryTestIssue,
+              }
+            : undefined
+        }
       />
 
       <HelpDialog isOpen={helpDialogOpen} onClose={() => setHelpDialogOpen(false)} />
-
-      {searchParams.has("sentry-test") && (
-        <aside className="absolute top-4 left-1/2 z-[2000] -translate-x-1/2 rounded-box bg-base-200 p-4 shadow-xl">
-          <p className="mb-3 font-semibold">Sentry test issue</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="btn btn-sm"
-              disabled={sentryTestPending}
-              onClick={() => captureSentryTestIssue("javascript")}
-            >
-              Record JavaScript issue
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-error"
-              disabled={!driverReady || sentryTestPending}
-              onClick={() => captureSentryTestIssue("wasm")}
-            >
-              Record WASM issue
-            </button>
-          </div>
-          {sentryTestStatus && <p className="mt-3 text-sm">{sentryTestStatus}</p>}
-          {sentryTestStack && (
-            <details className="mt-3 max-w-xl text-sm">
-              <summary>Captured stack</summary>
-              <pre data-testid="sentry-test-stack" className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap">
-                {sentryTestStack}
-              </pre>
-            </details>
-          )}
-        </aside>
-      )}
     </div>
   );
 }

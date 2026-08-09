@@ -62,9 +62,12 @@ test("the landing page shows compatibility results and starts a rendered Path of
   expect(consoleErrors).toEqual([]);
 
   await page.goto("/poe2?sentry-test");
-  const recordWasmIssue = page.getByRole("button", { name: "Record WASM issue" });
+  await expect(page.getByRole("button", { name: "Record WASM issue" })).toBeHidden();
+  await page.getByRole("button", { name: "Settings" }).click();
+  const settingsDialog = page.getByRole("dialog");
+  const recordWasmIssue = settingsDialog.getByRole("button", { name: "Record WASM issue" });
   await expect(recordWasmIssue).toBeEnabled({ timeout: 45_000 });
   await recordWasmIssue.click();
-  await expect(page.getByText(/^(Recorded|Timed out sending) wasm issue: [0-9a-f]{32}$/)).toBeVisible();
-  await expect(page.getByTestId("sentry-test-stack")).toContainText(/wasm-function|wasm:\/\/wasm/);
+  await expect(settingsDialog.getByText(/^(Recorded|Timed out sending) wasm issue: [0-9a-f]{32}$/)).toBeVisible();
+  await expect(settingsDialog.getByTestId("sentry-test-stack")).toContainText(/wasm-function|wasm:\/\/wasm/);
 });
