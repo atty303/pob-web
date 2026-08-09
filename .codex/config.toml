@@ -4,3 +4,6 @@ args = ["run", "playwright:mcp"]
 startup_timeout_sec = 120
 tool_timeout_sec = 120
 required = true
+
+[mcp_servers.playwright.tools.browser_close]
+approval_mode = "approve"
