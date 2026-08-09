@@ -8,6 +8,7 @@ import { useState } from "react";
 import "./lib/logger";
 import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
+import { wasmIntegrations } from "./lib/sentry";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -17,6 +18,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration(),
       Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
+      ...wasmIntegrations,
     ],
     enableLogs: true,
     // Performance Monitoring

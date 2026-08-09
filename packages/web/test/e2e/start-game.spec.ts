@@ -1,6 +1,19 @@
 import { expect, test } from "@playwright/test";
 
 test("the landing page shows compatibility results and starts a rendered Path of Exile 2 session", async ({ page }) => {
+  const sentryEvents: unknown[] = [];
+  await page.route("https://*.ingest.sentry.io/**", async route => {
+    for (const line of route.request().postData()?.split("\n") ?? []) {
+      try {
+        const payload: unknown = JSON.parse(line);
+        if (payload && typeof payload === "object" && "exception" in payload) sentryEvents.push(payload);
+      } catch {
+        // Envelope headers and payloads are newline-delimited and not every line is an event.
+      }
+    }
+    await route.fulfill({ status: 200, json: {} });
+  });
+
   await page.route("**/version.json", route =>
     route.fulfill({
       json: {
@@ -70,4 +83,35 @@ test("the landing page shows compatibility results and starts a rendered Path of
   await recordWasmIssue.click();
   await expect(settingsDialog.getByText(/^(Recorded|Timed out sending) wasm issue: [0-9a-f]{32}$/)).toBeVisible();
   await expect(settingsDialog.getByTestId("sentry-test-stack")).toContainText(/wasm-function|wasm:\/\/wasm/);
+  await expect
+    .poll(() => sentryEvents)
+    .toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          debug_meta: {
+            images: expect.arrayContaining([
+              expect.objectContaining({
+                type: "wasm",
+                code_file: expect.stringMatching(/driver(?:-[^/]+)?\.wasm$/),
+              }),
+            ]),
+          },
+          exception: {
+            values: expect.arrayContaining([
+              expect.objectContaining({
+                stacktrace: {
+                  frames: expect.arrayContaining([
+                    expect.objectContaining({
+                      platform: "native",
+                      instruction_addr: expect.stringMatching(/^0x[0-9a-f]+$/i),
+                      addr_mode: expect.stringMatching(/^rel:\d+$/),
+                    }),
+                  ]),
+                },
+              }),
+            ]),
+          },
+        }),
+      ]),
+    );
 });

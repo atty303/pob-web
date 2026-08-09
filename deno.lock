@@ -155,6 +155,7 @@
         "packageJson": {
           "dependencies": [
             "npm:@bokuweb/zstd-wasm@^0.0.22",
+            "npm:@sentry/wasm@^10.69.0",
             "npm:@zenfs/archives@^1.0.5",
             "npm:@zenfs/core@^1.11.4",
             "npm:@zenfs/dom@^1.1.5",
@@ -187,6 +188,7 @@
             "npm:@react-router/fs-routes@^7.18.2",
             "npm:@react-router/node@^7.18.2",
             "npm:@sentry/react@^10.69.0",
+            "npm:@sentry/wasm@^10.69.0",
             "npm:dayjs@^1.11.21",
             "npm:isbot@^5.2.1",
             "npm:jose@^5.10.0",

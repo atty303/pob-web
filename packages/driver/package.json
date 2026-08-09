@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.22",
+    "@sentry/wasm": "^10.69.0",
     "@zenfs/archives": "^1.0.5",
     "@zenfs/core": "^1.11.4",
     "@zenfs/dom": "^1.1.5",

@@ -10,6 +10,7 @@
     "@react-router/fs-routes": "^7.18.2",
     "@sentry/react": "^10.69.0",
     "@heroicons/react": "^2.2.0",
+    "@sentry/wasm": "^10.69.0",
     "isbot": "^5.2.1",
     "jose": "^5.10.0",
     "missionlog": "^1.8.8",

@@ -17,6 +17,7 @@ export default defineConfig({
   webServer: {
     command: "npm run test:e2e:serve",
     url: "http://127.0.0.1:5174",
+    env: { VITE_SENTRY_DSN: "https://public@o0.ingest.sentry.io/0" },
     reuseExistingServer: false,
     timeout: 30_000,
   },

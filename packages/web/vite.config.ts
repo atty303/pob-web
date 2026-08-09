@@ -76,7 +76,20 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     ...(!isSsrBuild
       ? [
           viteStaticCopy({
-            targets: [{ src: normalizePath(path.join(rootDir, "packages/driver/dist/*")), dest: "dist/" }],
+            targets: [
+              {
+                src: normalizePath(path.join(rootDir, "packages/driver/dist/debug/*")),
+                dest: "dist/debug/",
+              },
+              {
+                src: normalizePath(path.join(rootDir, "packages/driver/dist/release/!(*.debug.wasm)")),
+                dest: "dist/release/",
+              },
+              {
+                src: normalizePath(path.join(rootDir, "packages/driver/dist/test/*")),
+                dest: "dist/test/",
+              },
+            ],
           }),
         ]
       : []),

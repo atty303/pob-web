@@ -16,7 +16,7 @@ file(GLOB_RECURSE LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/*.c)
 list(REMOVE_ITEM LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/lua.c)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua)
 
-add_compile_options("-flto" "-gsource-map" "-sUSE_ZLIB")
+add_compile_options("-flto" "-g" "-sUSE_ZLIB")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options("-O0")
 endif()
@@ -62,6 +62,7 @@ add_test(NAME driver_bridge_test COMMAND driver_bridge_test)
 
 set(DRIVER_LINK_FLAGS
         "-flto"
+        "-Wl,--build-id=sha1"
         "--no-entry"
         "-sUSE_ZLIB"
         "-sMODULARIZE"
@@ -71,14 +72,14 @@ set(DRIVER_LINK_FLAGS
         "-sMALLOC=mimalloc"
         "-sWASMFS"
         "-sSTRICT"
-        "-sINCOMING_MODULE_JS_API=[print,printErr]"
+        "-sINCOMING_MODULE_JS_API=[print,printErr,wasmBinary]"
         "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8"
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-g3" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-gsource-map")
+    set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-gseparate-dwarf")
 endif()
 target_link_options(${PROJECT_NAME} PRIVATE ${DRIVER_LINK_FLAGS})
 
