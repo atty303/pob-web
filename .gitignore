@@ -12,3 +12,4 @@ r2/
 .playwright-mcp/
 playwright-report/
 test-results/
+*.local.toml
