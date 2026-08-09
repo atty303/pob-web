@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.28.0](https://github.com/atty303/pob-web/compare/v0.27.7...v0.28.0) (2026-08-09)
+
+
+### Features
+
+* **driver:** add getBuildCode() to extract current build as shareable code ([00ec8e8](https://github.com/atty303/pob-web/commit/00ec8e8fa40c5465dc02bf5b655fb7723e15c1b7))
+* **driver:** add getBuildCode() to extract current build as shareable code ([#150](https://github.com/atty303/pob-web/issues/150)) ([136ba09](https://github.com/atty303/pob-web/commit/136ba09c707264440bd2b40c22ec860216e71743))
+
+
+### Bug Fixes
+
+* **ci:** build driver before static checks ([ec64053](https://github.com/atty303/pob-web/commit/ec640534b20735d96db93d927f6c83a5d5eceb97))
+* **ci:** quote version file path ([4e66e54](https://github.com/atty303/pob-web/commit/4e66e541fc821b356c3adeb1e88c475a11681a59))
+* **driver:** load PoE items with LuaJIT semantics ([c9e4d58](https://github.com/atty303/pob-web/commit/c9e4d58f14dd56746fd797c43d6165c5d865f83d))
+* **driver:** load PoE items with LuaJIT semantics ([#155](https://github.com/atty303/pob-web/issues/155)) ([448b338](https://github.com/atty303/pob-web/commit/448b338d0570dd555ac633fa158f789293981492)), closes [#154](https://github.com/atty303/pob-web/issues/154)
+
 ## [0.27.7](https://github.com/atty303/pob-web/compare/v0.27.6...v0.27.7) (2026-03-07)
 
 
