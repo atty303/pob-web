@@ -1,5 +1,5 @@
-amends "package://github.com/jdx/hk/releases/download/v1.2.0/hk@1.2.0#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v1.2.0/hk@1.2.0#/Builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v1.54.1/hk@1.54.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.54.1/hk@1.54.1#/Builtins.pkl"
 
 local linters = new Mapping<String, Step> {
 
@@ -20,22 +20,20 @@ local linters = new Mapping<String, Step> {
         prefix = "mise exec -- "
     }
 
-    ["actionlint"] = (Builtins.actionlint) {
-        prefix = "mise exec -- "
-    }
+    ["actionlint"] = (Builtins.actionlint)
 }
 
 hooks {
     ["pre-commit"] {
         fix = true
-        stash = null
+        stash = "git"
         steps {
             ...linters
         }
     }
     ["fix"] {
         fix = true
-        stash = null
+        stash = "git"
         steps = linters
     }
     ["check"] {

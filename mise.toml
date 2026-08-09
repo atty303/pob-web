@@ -5,7 +5,7 @@ emsdk = "6.0.6"
 cmake = "4.3.3"
 ninja = "1.13.2"
 
-hk = "1.36.0"
+hk = "1.54.1"
 pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
