@@ -16,6 +16,8 @@
 - Run `mise run test:driver` for focused driver behavior tests. It is included in `mise run check`.
 - Run `mise run test:e2e:driver` when changing driver startup, rendering, input, overlays, or game-version integration.
   This local-only suite uses fixed releases from `asset.pob.cool`; install its Chromium with `mise run visual:setup`.
+- Run `mise run test:e2e:web` when changing the landing page, routing, version loading, web-to-driver integration, or web
+  toolbar controls. This local-only suite uses the repository version metadata and `asset.pob.cool` game assets.
 - Run `mise run check:full` before completing changes that affect builds, package boundaries, WebAssembly, CI, or release
   behavior. This is also the required pull-request validation.
 - Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual

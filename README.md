@@ -105,11 +105,14 @@ For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch release
 ```bash
 mise run visual:setup
 mise run test:e2e:driver
+mise run test:e2e:web
 ```
 
-The runtime suite downloads game assets from `asset.pob.cool`, starts each release in Chromium, and checks WebAssembly
-startup, WebGL2 rendering, frame statistics, and the DOM zoom control. It is intentionally kept out of the fast/full
-checks and CI because it depends on the external asset service.
+The driver runtime suite downloads game assets from `asset.pob.cool`, starts each release in Chromium, and checks
+WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. The web runtime suite checks the
+critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
+control. Both are intentionally kept out of the fast/full checks and CI because they depend on the external asset
+service.
 
 ### pob.cool maintenance for owners
 

@@ -13,6 +13,15 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     host: true,
     proxy: {
       "/api": "http://localhost:8788",
+      ...(mode === "test"
+        ? {
+            "/__pob_asset": {
+              target: "https://asset.pob.cool",
+              changeOrigin: true,
+              rewrite: path => path.replace(/^\/__pob_asset/, ""),
+            },
+          }
+        : {}),
     },
     sourcemapIgnoreList(file) {
       return file.includes("node_modules") || file.includes("logger.ts");
@@ -36,14 +45,16 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
     __VERSION_URL__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined
+      mode === "test" || (mode === "development" && process.env.POB_COOL_ASSET === undefined)
         ? `/@fs/${rootDir}/version.json`
         : "https://asset.pob.cool/version.json",
     ),
     __ASSET_PREFIX__: JSON.stringify(
-      mode === "development" && process.env.POB_COOL_ASSET === undefined
-        ? `/@fs/${packerR2Dir}`
-        : "https://asset.pob.cool",
+      mode === "test"
+        ? "/__pob_asset"
+        : mode === "development" && process.env.POB_COOL_ASSET === undefined
+          ? `/@fs/${packerR2Dir}`
+          : "https://asset.pob.cool",
     ),
   },
   worker: {

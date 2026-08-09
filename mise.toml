@@ -38,6 +38,11 @@ description = "Run local driver runtime tests for all supported games"
 run = "npm run test:e2e -w packages/driver"
 depends = ["driver:build"]
 
+[tasks."test:e2e:web"]
+description = "Run the local web-to-driver critical-path test"
+run = "npm run test:e2e -w packages/web"
+depends = ["driver:build"]
+
 [tasks.check]
 description = "Run fast generated-file and static checks"
 run = """
