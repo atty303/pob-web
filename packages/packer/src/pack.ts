@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as zstd from "@bokuweb/zstd-wasm";
 import AdmZip from "adm-zip";
 import { parseDDSDX10 } from "dds/src";
-import imageSize from "image-size";
+import { imageDimensionsFromData } from "image-dimensions";
 import { gameData, isGame } from "pob-game/src";
 import { default as shelljs } from "shelljs";
 
@@ -132,4 +132,12 @@ function ddsSize(file: string) {
     width: tex.extent[0],
     height: tex.extent[1],
   };
+}
+
+function imageSize(file: string) {
+  const dimensions = imageDimensionsFromData(fs.readFileSync(file));
+  if (!dimensions) {
+    throw new Error(`Unsupported or invalid image: ${file}`);
+  }
+  return dimensions;
 }

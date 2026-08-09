@@ -20,12 +20,12 @@
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.22",
     "@zenfs/archives": "^1.0.5",
-    "@zenfs/core": "^1.11.3",
+    "@zenfs/core": "^1.11.4",
     "@zenfs/dom": "^1.1.5",
     "comlink": "^4.4.1",
     "dds": "*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.7.0"
   }
 }

@@ -30,7 +30,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   private readonly fetch: (
     method: string,
     path: string,
-    body?: Uint8Array,
+    body?: Uint8Array<ArrayBuffer>,
     headers?: Record<string, string>,
   ) => Promise<Response>;
   private cache: Map<string, Stats> = new Map();
@@ -41,7 +41,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     readonly ns: string | undefined,
   ) {
     super(0x43464b56 /*CFKV*/, "cloudflare-kvfs");
-    this.fetch = (method: string, path: string, body?: Uint8Array, headers?: Record<string, string>) => {
+    this.fetch = (method: string, path: string, body?: Uint8Array<ArrayBuffer>, headers?: Record<string, string>) => {
       log.debug(tag.kvfs, "fetch", method, path);
       const url = `${prefix}${path}`;
       return fetch(url, {

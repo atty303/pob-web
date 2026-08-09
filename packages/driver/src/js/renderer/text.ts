@@ -256,11 +256,11 @@ class BinaryBinPack implements BinPack {
 
 export class BinPackingTextRasterizer {
   private size: { width: number; height: number };
-  // @ts-ignore
+  // @ts-expect-error
   private canvas: OffscreenCanvas;
-  // @ts-ignore
+  // @ts-expect-error
   private context: OffscreenCanvasRenderingContext2D;
-  // @ts-ignore
+  // @ts-expect-error
   private packer: BinPack;
   private cache: Map<string, TextRender[]> = new Map();
   private generation = 0;

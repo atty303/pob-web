@@ -7,7 +7,13 @@ import type { TextRasterizer, TextRender } from "./text";
 export type TextureBitmap = {
   id: string;
   source: TextureSource;
-  updateSubImage?: () => { x: number; y: number; width: number; height: number; source: ArrayBufferView };
+  updateSubImage?: () => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    source: ArrayBufferView<ArrayBuffer>;
+  };
 };
 
 const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {

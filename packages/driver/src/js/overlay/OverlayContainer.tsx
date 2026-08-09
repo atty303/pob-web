@@ -6,8 +6,8 @@ import "./overlay.css";
 import type { FrameData, RenderStats } from "./PerformanceOverlay";
 import { PerformanceOverlay } from "./PerformanceOverlay";
 import { Toolbar } from "./Toolbar";
-import { VirtualKeyboard } from "./VirtualKeyboard";
 import type { ToolbarCallbacks, ToolbarPosition } from "./types";
+import { VirtualKeyboard } from "./VirtualKeyboard";
 
 interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;

@@ -4,14 +4,14 @@
   "version": "0.28.0",
   "type": "module",
   "dependencies": {
-    "@auth0/auth0-react": "^2.2.4",
-    "@headlessui/react": "^2.2.0",
+    "@auth0/auth0-react": "^2.23.0",
+    "@headlessui/react": "^2.2.10",
     "@react-router/node": "^7.18.2",
     "@react-router/fs-routes": "^7.18.2",
-    "@sentry/react": "^10.5.0",
+    "@sentry/react": "^10.69.0",
     "@heroicons/react": "^2.2.0",
-    "isbot": "^5",
-    "jose": "^5.3.0",
+    "isbot": "^5.2.1",
+    "jose": "^5.10.0",
     "missionlog": "^1.8.8",
     "pob-driver": "*",
     "pob-game": "*",
@@ -19,7 +19,7 @@
     "react-dom": "^18.3.1",
     "react-router": "^7.18.2",
     "react-use": "^17.6.1",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.21"
   },
   "scripts": {
     "dev": "concurrently \"react-router dev\" \"wrangler pages dev . --compatibility-date=2024-05-11\"",

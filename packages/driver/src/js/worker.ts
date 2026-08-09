@@ -5,16 +5,15 @@ import { ImageRepository } from "./image";
 import type { PoBKey } from "./keyboard";
 import { log, tag } from "./logger";
 import type { MouseState } from "./mouse-handler";
-// @ts-ignore
 import {
   BinPackingTextRasterizer,
-  type RenderStats,
+  loadFonts,
   Renderer,
+  type RenderStats,
   TextMetrics,
   type TextRasterizer,
   WebGL1Backend,
   WebGPUBackend,
-  loadFonts,
 } from "./renderer";
 import { createRpcClient } from "./rpc";
 

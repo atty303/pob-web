@@ -1,5 +1,5 @@
 import * as zstd from "@bokuweb/zstd-wasm";
-import { Format, Target, Texture, parseDDSDX10 } from "dds/src";
+import { Format, parseDDSDX10, Target, Texture } from "dds/src";
 import { log, tag } from "./logger";
 
 export type TextureSource = {
