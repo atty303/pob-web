@@ -334,6 +334,10 @@ export class Driver {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
   }
 
+  triggerSentryTestCrash() {
+    return this.driverWorker?.triggerSentryTestCrash();
+  }
+
   pushFrame(at: number, renderTime: number, stats?: RenderStats) {
     this.frames = [...this.frames, { at, renderTime }].slice(-60); // Keep last 60 frames
     if (stats) {

@@ -450,6 +450,15 @@ int on_frame() {
     return 0;
 }
 
+__attribute__((noinline)) static void sentry_test_trap() {
+    __builtin_trap();
+}
+
+EMSCRIPTEN_KEEPALIVE
+void sentry_test_crash() {
+    sentry_test_trap();
+}
+
 EMSCRIPTEN_KEEPALIVE
 int on_key_down(const char *name, int double_click) {
     lua_State *L = GL;
