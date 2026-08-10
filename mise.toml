@@ -248,7 +248,7 @@ if [ -z "${POB_COOL_ASSET:-}" ]; then
   fi
 fi
 
-npm run -w packages/driver dev -- --host 127.0.0.1 --port 5173 --strictPort
+npm run -w packages/driver dev -- --host 127.0.0.1
 """
 depends = ["driver:build"]
 
@@ -300,7 +300,7 @@ export RUN_VERSION="${usage_version?}"
 export RUN_BUILD="${usage_build?}"
 [ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
 
-npm run -w packages/driver dev
+npm run -w packages/driver dev -- --port 5173 --strictPort
 """
 depends = ["driver:build"]
 

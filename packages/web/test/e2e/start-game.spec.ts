@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../../../tools/playwright";
 
 test("the landing page shows compatibility results and starts a rendered Path of Exile 2 session", async ({ page }) => {
   await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));

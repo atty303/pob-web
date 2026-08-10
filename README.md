@@ -64,6 +64,7 @@ mise run pack --game poe2 --tag v0.8.0
 ### Run driver shell
 
 Set up a development server for the PoB web driver alone.
+The human-facing development task uses port 5173 because `asset.pob.cool` allows that development origin.
 
 ```bash
 mise run driver:dev --game poe2 --version v0.8.0
@@ -73,6 +74,8 @@ mise run driver:dev --game poe2 --version v0.8.0
 
 Set up a web application development server.
 You need to build the driver first.
+This human-facing task also requires port 5173 and fails instead of selecting another port when it is occupied.
+Its local Cloudflare Pages server and inspector use operating-system-assigned ports, which are forwarded to the frontend automatically.
 
 ```bash
 mise run web:dev
@@ -118,7 +121,9 @@ The driver runtime suite uses locally packed assets by default, starts each rele
 loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
 `mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
 critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. To run only the startup compatibility scenario for one packed release, pass `--game` and `--version` together:
+control. Browser tests and MCP visual verification select an available development-server port and use the URL reported
+by Vite, so they can run alongside the human-facing port 5173 server. To run only the startup compatibility scenario for
+one packed release, pass `--game` and `--version` together:
 
 ```bash
 mise run test:e2e:driver --game poe2 --version v0.23.1

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../../../tools/playwright";
 import { releases, targetRelease } from "./releases";
 
 for (const release of releases) {

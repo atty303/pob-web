@@ -3,6 +3,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+import { wranglerDev } from "./wrangler-dev";
 
 const rootDir = path.resolve(__dirname, "../..");
 const packerR2Dir = path.resolve(__dirname, "../packer/r2");
@@ -72,6 +73,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     },
   },
   plugins: [
+    ...(mode === "development" ? [wranglerDev()] : []),
     reactRouter(),
     tailwindcss(),
     ...(!isSsrBuild

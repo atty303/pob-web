@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../../../tools/playwright";
 
 const WARMUP_FRAMES = 20;
 const MEASURED_FRAMES = 200;

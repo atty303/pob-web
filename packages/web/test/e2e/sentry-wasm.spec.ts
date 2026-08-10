@@ -1,5 +1,5 @@
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../../../tools/playwright";
 
 type SentryEvent = {
   debug_meta?: { images?: Array<{ type?: string; code_file?: string }> };

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../../../tools/playwright";
 
 test("expected asset failures show recovery details without offering a pob.cool report", async ({ page }) => {
   await page.addInitScript(() => {

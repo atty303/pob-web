@@ -14,7 +14,7 @@
     "test": "tsx --test test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
     "test:performance": "playwright test --config playwright.performance.config.ts",
     "test:e2e": "playwright test",
-    "test:e2e:serve": "vite --mode test --host 127.0.0.1 --port 5173 --strictPort",
+    "test:e2e:serve": "vite --mode test --host 127.0.0.1",
     "preview": "vite preview"
   },
   "dependencies": {
