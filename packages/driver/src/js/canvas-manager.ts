@@ -292,7 +292,7 @@ export class CanvasManager {
     const cy = centerY ?? this._containerHeight / 2;
 
     this.resetZoom();
-    this.zoom(scale, cx, cy);
+    this.zoom(scale / this._initialScale, cx, cy);
     this._isInitialScale = false;
   }
 

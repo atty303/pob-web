@@ -1,6 +1,7 @@
 /// <reference types="emscripten" />
 
 import * as Comlink from "comlink";
+import { markEnvironmentError } from "./error";
 import { ImageRepository } from "./image";
 import type { PoBKey } from "./keyboard";
 import { log, tag } from "./logger";
@@ -112,12 +113,22 @@ export class DriverWorker {
       openUrl,
     };
 
-    const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
-      default: EmscriptenModuleFactory<DriverModule>;
-    };
+    let driver: { default: EmscriptenModuleFactory<DriverModule> };
+    try {
+      driver = (await import(`../../dist/${build}/driver.mjs`)) as typeof driver;
+    } catch (error) {
+      throw markEnvironmentError(error, "assetLoad");
+    }
     const wasmUrl = build === "release" ? releaseWasmUrl : debugWasmUrl;
     setSentryWasmCodeFile(wasmUrl);
-    const wasmBinary = await fetch(wasmUrl).then(response => response.arrayBuffer());
+    let wasmBinary: ArrayBuffer;
+    try {
+      const response = await fetch(wasmUrl);
+      if (!response.ok) throw new Error(`Failed to load driver Wasm (${response.status} ${response.statusText})`);
+      wasmBinary = await response.arrayBuffer();
+    } catch (error) {
+      throw markEnvironmentError(error, "assetLoad");
+    }
     const rpcCall = createRpcClient(rpcPort);
     const module = await driver.default({
       print: console.log,
@@ -273,9 +284,9 @@ export class DriverWorker {
         this.hostCallbacks?.onFrame(start, time, stats);
         this.dirtyCount -= 1;
       } catch (error) {
-        log.error(tag.worker, "Error during frame processing", error);
         this.hostCallbacks?.onError(error);
-        throw error;
+        this.dirtyCount = 0;
+        return;
       }
     }
 

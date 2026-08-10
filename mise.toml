@@ -36,6 +36,11 @@ description = "Run focused driver behavior tests"
 run = "npm test -w packages/driver"
 depends = ["driver:build"]
 
+[tasks."test:web"]
+description = "Run focused web behavior tests"
+run = "npm test -w packages/web"
+depends = ["install"]
+
 [tasks."test:upstream-sync"]
 description = "Check and test the upstream sync tooling"
 run = """
@@ -165,7 +170,7 @@ run = """
 npm exec -w packages/web -- react-router typegen
 if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
 """
-depends = ["install", "test:driver", "test:driver:debuginfo", "test:sentry-upload", "test:upstream-sync", "driver:build"]
+depends = ["install", "test:driver", "test:web", "test:driver:debuginfo", "test:sentry-upload", "test:upstream-sync", "driver:build"]
 
 [tasks.fix]
 description = "Fix formatting and lint issues"

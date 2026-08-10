@@ -7,6 +7,20 @@ export type RpcRequest = {
 
 export type RpcResult<T = unknown> = { value: T; data?: Uint8Array };
 
+export type RpcErrorMetadata = { message?: string; code?: string; name?: string };
+
+export function restoreRpcError(metadata: RpcErrorMetadata, fallbackMessage: string): Error {
+  const error = new Error(metadata.message ?? fallbackMessage);
+  if (metadata.name) error.name = metadata.name;
+  Object.assign(error, { code: metadata.code });
+  return error;
+}
+
+export function rpcErrorMetadata(cause: unknown): RpcErrorMetadata {
+  const error = cause as Error & { code?: string };
+  return { message: error.message, code: error.code, name: error.name };
+}
+
 const HEADER_BYTES = 16;
 const RPC_TIMEOUT_MS = 120_000;
 const encoder = new TextEncoder();
@@ -39,15 +53,9 @@ export function createRpcClient(port: MessagePort) {
     const bytes = new Uint8Array(shared, HEADER_BYTES);
     const metadataBytes = new Uint8Array(jsonLength);
     metadataBytes.set(bytes.subarray(0, jsonLength));
-    const metadata = JSON.parse(decoder.decode(metadataBytes)) as {
-      value?: T;
-      message?: string;
-      code?: string;
-    };
+    const metadata = JSON.parse(decoder.decode(metadataBytes)) as RpcErrorMetadata & { value?: T };
     if (Atomics.load(control, 0) !== 1) {
-      const error = new Error(metadata.message ?? `RPC ${operation} failed`);
-      Object.assign(error, { code: metadata.code });
-      throw error;
+      throw restoreRpcError(metadata, `RPC ${operation} failed`);
     }
     const resultData = dataLength ? new Uint8Array(dataLength) : undefined;
     resultData?.set(bytes.subarray(jsonLength, jsonLength + dataLength));
@@ -74,8 +82,7 @@ export function exposeRpcPort(
       Atomics.store(control, 2, binary.length);
       Atomics.store(control, 0, 1);
     } catch (cause) {
-      const error = cause as Error & { code?: string };
-      const metadata = encoder.encode(JSON.stringify({ message: error.message, code: error.code }));
+      const metadata = encoder.encode(JSON.stringify(rpcErrorMetadata(cause)));
       output.set(metadata.subarray(0, output.length));
       Atomics.store(control, 1, Math.min(metadata.length, output.length));
       Atomics.store(control, 0, 2);

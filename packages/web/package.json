@@ -25,6 +25,7 @@
   "scripts": {
     "dev": "concurrently \"react-router dev\" \"wrangler pages dev . --compatibility-date=2024-05-11\"",
     "build": "react-router typegen && tsc && react-router build",
+    "test": "tsx --test test/unit/*.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:serve": "react-router dev --mode test --host 127.0.0.1 --port 5174 --strictPort",
     "preview": "react-router preview",

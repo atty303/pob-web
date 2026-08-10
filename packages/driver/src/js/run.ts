@@ -52,7 +52,7 @@ import { Driver } from "./driver";
   });
   const root = document.querySelector("#window") as HTMLElement;
   if (root) {
-    driver.attachToDOM(root);
+    await driver.attachToDOM(root);
   }
   if (testState) {
     testState.started = true;

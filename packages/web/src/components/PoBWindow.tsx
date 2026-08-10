@@ -1,9 +1,16 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import * as Sentry from "@sentry/react";
 import { Driver } from "pob-driver/src/js/driver";
 import type { RenderStats } from "pob-driver/src/js/renderer";
 import { type Game, gameData } from "pob-game/src";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
+import {
+  collectDiagnosticReport,
+  createDiagnosticReport,
+  type DiagnosticReport,
+  type ErrorPhase,
+} from "../lib/error-report";
 import { log, tag } from "../lib/logger";
 import { registerSentryWorker } from "../lib/sentry";
 import ErrorDialog from "./ErrorDialog";
@@ -58,7 +65,7 @@ export default function PoBWindow(props: {
   }, [hash]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>();
+  const [errorReport, setErrorReport] = useState<DiagnosticReport>();
   const [showErrorDialog, setShowErrorDialog] = useState(true);
 
   useEffect(() => {
@@ -70,16 +77,35 @@ export default function PoBWindow(props: {
   // biome-ignore lint/correctness/useExhaustiveDependencies: toolbarComponent is handled separately
   useEffect(() => {
     onDriverReadyRef.current?.(null);
+    setErrorReport(undefined);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);
+
+    const showError = (error: unknown, phase: ErrorPhase) => {
+      const report = createDiagnosticReport({ error, phase, game: props.game, pobVersion: props.version });
+      collectDiagnosticReport(report, {
+        warn: value => log.warn(tag.pob, "Expected environment error", value),
+        error: value => log.error(tag.pob, "Path of Building error", value),
+        captureException: (exception, context) => {
+          Sentry.withScope(scope => {
+            scope.setTag("pob.game", context.game);
+            scope.setTag("pob.version", context.pobVersion);
+            scope.setTag("pob.error_phase", context.phase);
+            scope.setContext("pob.diagnostics", context);
+            Sentry.captureException(exception);
+          });
+        },
+      });
+      setErrorReport(report);
+      setShowErrorDialog(true);
+    };
 
     const _driver = new Driver(
       "release",
       assetPrefix,
       {
         onError: error => {
-          setError(error);
-          setShowErrorDialog(true);
+          showError(error, "driver-runtime");
         },
         onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
         onFetch: async (url, headers, body) => {
@@ -124,6 +150,7 @@ export default function PoBWindow(props: {
     driverRef.current = _driver;
 
     (async () => {
+      let phase: ErrorPhase = "driver-start";
       try {
         await _driver.start({
           userDirectory: gameData[props.game].userDirectory,
@@ -133,10 +160,12 @@ export default function PoBWindow(props: {
         });
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {
+          phase = "build-load";
           log.info(tag.pob, "loading build from ", buildCode);
           await _driver.loadBuildFromCode(buildCode);
         }
-        if (container.current) _driver.attachToDOM(container.current);
+        phase = "renderer-attach";
+        if (container.current) await _driver.attachToDOM(container.current);
 
         if (props.toolbarComponent) {
           _driver.setExternalToolbarComponent(props.toolbarComponent);
@@ -150,8 +179,7 @@ export default function PoBWindow(props: {
 
         setLoading(false);
       } catch (e) {
-        setError(e);
-        setShowErrorDialog(true);
+        showError(e, phase);
         setLoading(false);
       }
     })();
@@ -165,13 +193,12 @@ export default function PoBWindow(props: {
     };
   }, [props.game, props.version, token, buildCode]);
 
-  if (error) {
-    log.error(tag.pob, error);
+  if (errorReport) {
     return (
       <>
         {showErrorDialog && (
           <ErrorDialog
-            error={error}
+            report={errorReport}
             onReload={() => window.location.reload()}
             onClose={() => setShowErrorDialog(false)}
           />

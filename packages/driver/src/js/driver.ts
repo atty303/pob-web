@@ -2,6 +2,7 @@ import * as Comlink from "comlink";
 
 import BrokerWorkerObject from "./broker?worker";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
+import { markEnvironmentError } from "./error";
 import { EventHandler } from "./event";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard";
 import { MouseHandler, type MouseState } from "./mouse-handler";
@@ -75,7 +76,10 @@ export class Driver {
   async start(fileSystemConfig: FilesystemConfig) {
     if (this.isStarted) throw new Error("Already started");
     if (!globalThis.crossOriginIsolated || typeof SharedArrayBuffer !== "function") {
-      throw new Error("Path of Building requires cross-origin isolation and SharedArrayBuffer support");
+      throw markEnvironmentError(
+        new Error("Path of Building requires cross-origin isolation and SharedArrayBuffer support"),
+        "capability",
+      );
     }
     this.isStarted = true;
 
@@ -128,7 +132,7 @@ export class Driver {
     this.brokerWorker?.terminate();
   }
 
-  attachToDOM(root: HTMLElement, useWebGPU = false) {
+  async attachToDOM(root: HTMLElement, useWebGPU = false): Promise<void> {
     if (this.root) throw new Error("Already attached");
     this.root = root;
 
@@ -161,9 +165,11 @@ export class Driver {
     });
 
     const { canvas, container } = this.canvasManager.attachToDOM(root);
+    root.style.position = "relative";
+    root.appendChild(container);
 
     const offscreenCanvas = canvas.transferControlToOffscreen();
-    this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
+    await this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
 
     const overlayContainer = document.createElement("div");
     overlayContainer.style.cssText = `
@@ -176,8 +182,6 @@ export class Driver {
       z-index: 1000;
     `;
 
-    root.style.position = "relative";
-    root.appendChild(container);
     root.appendChild(overlayContainer);
 
     container.tabIndex = 0;
