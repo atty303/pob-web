@@ -14,15 +14,6 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     host: true,
     proxy: {
       "/api": "http://localhost:8788",
-      ...(mode === "test"
-        ? {
-            "/__pob_asset": {
-              target: "https://asset.pob.cool",
-              changeOrigin: true,
-              rewrite: path => path.replace(/^\/__pob_asset/, ""),
-            },
-          }
-        : {}),
     },
     sourcemapIgnoreList(file) {
       return file.includes("node_modules") || file.includes("logger.ts");
@@ -56,7 +47,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     ),
     __ASSET_PREFIX__: JSON.stringify(
       mode === "test"
-        ? "/__pob_asset"
+        ? `/@fs/${packerR2Dir}`
         : mode === "development" && process.env.POB_COOL_ASSET === undefined
           ? `/@fs/${packerR2Dir}`
           : "https://asset.pob.cool",

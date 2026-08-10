@@ -9,7 +9,7 @@ const packerR2Dir = path.resolve(__dirname, "../packer/r2");
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isDriverShell = mode === "development" || mode === "test";
-  const usePobCoolAsset = process.env.POB_COOL_ASSET === "true";
+  const usePobCoolAsset = mode === "development" && process.env.POB_COOL_ASSET === "true";
 
   return {
     logLevel: "info",

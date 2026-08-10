@@ -111,31 +111,33 @@ description = "Run local driver runtime tests"
 usage = """
 flag "--game <game>" { choices "poe1" "poe2" "le" }
 flag "--version <version>"
-flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"
 """
 run = """
-if { [ -n "$usage_game" ] && [ -z "$usage_version" ]; } || { [ -z "$usage_game" ] && [ -n "$usage_version" ]; }; then
-  echo "--game and --version must be provided together" >&2
+if [ -z "$usage_game" ] && [ -n "$usage_version" ]; then
+  echo "--version requires --game" >&2
   exit 2
 fi
 if [ -n "$usage_game" ]; then
   export RUN_GAME="$usage_game"
-  export RUN_VERSION="$usage_version"
+  if [ -n "$usage_version" ]; then
+    export RUN_VERSION="$usage_version"
+  else
+    unset RUN_VERSION
+  fi
 else
   unset RUN_GAME RUN_VERSION
 fi
-if [ -n "$usage_pob_cool_asset" ]; then
-  export POB_COOL_ASSET=true
-else
-  unset POB_COOL_ASSET
-fi
+npm exec -- tsx tools/pack-e2e-assets.ts driver
 npm run test:e2e -w packages/driver
 """
 depends = ["driver:build"]
 
 [tasks."test:e2e:web"]
 description = "Run the local web-to-driver critical-path test"
-run = "npm run test:e2e -w packages/web"
+run = """
+npm exec -- tsx tools/pack-e2e-assets.ts web
+npm run test:e2e -w packages/web
+"""
 depends = ["driver:build"]
 
 [tasks."test:sentry:live"]
@@ -144,6 +146,7 @@ run = """
 test -n "${SENTRY_LIVE_AUTH_TOKEN:-}" || { echo 'SENTRY_LIVE_AUTH_TOKEN is required' >&2; exit 1; }
 test -n "${SENTRY_LIVE_DSN:-}" || { echo 'SENTRY_LIVE_DSN is required' >&2; exit 1; }
 SENTRY_AUTH_TOKEN="$SENTRY_LIVE_AUTH_TOKEN" sentry-cli debug-files upload --org "${SENTRY_LIVE_ORG:-atty303}" --project "${SENTRY_LIVE_PROJECT:-pob-web}" --type wasm --include-sources --wait packages/driver/dist/release/driver.wasm.debug.wasm
+npm exec -- tsx tools/pack-e2e-assets.ts web
 SENTRY_LIVE_TEST=1 npm run test:e2e -w packages/web -- sentry-wasm.spec.ts
 """
 depends = ["driver:build"]
@@ -156,8 +159,11 @@ depends = ["install"]
 [tasks."benchmark:driver"]
 description = "Benchmark a release driver build in Chromium and Firefox"
 run = '''
+export RUN_GAME=poe1
+export RUN_VERSION=v2.66.2
 export RUN_BUILD=release
 unset POB_COOL_ASSET
+npm exec -- tsx tools/pack-e2e-assets.ts driver
 npm run -w packages/driver build:release
 npm run -w packages/driver test:performance
 '''
@@ -254,9 +260,14 @@ depends = ["driver:build"]
 
 [tasks.pack]
 description = "Pack the distribution from upstream repository"
-run = """
-npm run -w packages/packer pack {{option(name="tag")}} {{option(name="game")}} clone
+usage = """
+flag "--game <game>" { choices "poe1" "poe2" "le" }
+flag "--tag <tag>"
 """
+run = """
+npm run -w packages/packer pack "${usage_tag?}" "${usage_game?}" clone
+"""
+depends = ["install"]
 
 [tasks."driver:build"]
 description = "Build the driver package"

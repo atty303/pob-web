@@ -50,10 +50,10 @@ Deno.test("collectGameResult syncs each release and records E2E failures without
     ["driver:build"],
     ["pack", "--game", "poe1", "--tag", "v3"],
     ["sync", "--game", "poe1", "--tag", "v3"],
-    ["test:e2e:driver", "--game", "poe1", "--version", "v3", "--pob-cool-asset"],
+    ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
     ["pack", "--game", "poe1", "--tag", "v2"],
     ["sync", "--game", "poe1", "--tag", "v2"],
-    ["test:e2e:driver", "--game", "poe1", "--version", "v2", "--pob-cool-asset"],
+    ["test:e2e:driver", "--game", "poe1", "--version", "v2"],
   ]);
 });
 
@@ -72,7 +72,6 @@ Deno.test("collectGameResult dry run skips R2 asset sync", async () => {
   assertEquals(commands.some((command) => command[0] === "sync"), false);
   const e2eCommands = commands.filter((command) => command[0] === "test:e2e:driver");
   assertEquals(e2eCommands.length, 2);
-  assertEquals(e2eCommands.some((command) => command.includes("--pob-cool-asset")), false);
 });
 
 Deno.test("collectGameResult stops when a prerequisite fails", async () => {

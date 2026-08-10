@@ -1,4 +1,8 @@
+import { createRequire } from "node:module";
 import { expect, test } from "../../../../tools/playwright";
+
+const versions = createRequire(import.meta.url)("../../../../version.json") as { poe2: { head: string } };
+const poe2Head = versions.poe2.head;
 
 test("expected asset failures show recovery details without offering a pob.cool report", async ({ page }) => {
   await page.addInitScript(() => {
@@ -33,9 +37,9 @@ test("pob.cool reporting is gated by an upstream reproduction check", async ({ p
 
   await expect(page.getByRole("heading", { name: "Path of Building encountered an error" })).toBeVisible();
   await expect(page.getByText("Before reporting this to pob.cool")).toBeVisible();
-  await expect(page.getByRole("link", { name: "v0.23.1" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: poe2Head })).toHaveAttribute(
     "href",
-    "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases/tag/v0.23.1",
+    `https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases/tag/${poe2Head}`,
   );
   await expect(page.getByRole("button", { name: "Report a pob.cool issue" })).toBeDisabled();
 

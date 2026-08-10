@@ -1,9 +1,11 @@
+import { createRequire } from "node:module";
 import { expect, test } from "../../../../tools/playwright";
 
-test("the landing page shows compatibility results and starts a rendered Path of Exile 2 session", async ({ page }) => {
-  await page.setViewportSize({ width: 1024, height: 900 });
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
+const versions = createRequire(import.meta.url)("../../../../version.json") as { poe2: { head: string } };
+const poe2Head = versions.poe2.head;
 
+test("the landing page shows compatibility results", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
   await page.route("**/version.json", route =>
     route.fulfill({
       json: {
@@ -20,6 +22,22 @@ test("the landing page shows compatibility results and starts a rendered Path of
       },
     }),
   );
+
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Start for Path of Exile 1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start for Path of Exile 2" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start for Last Epoch" })).toBeVisible();
+  await expect(page.getByText("Tested", { exact: true })).toBeVisible();
+  await expect(page.getByText("Failed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Untested", { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
+    true,
+  );
+});
+
+test("the landing page starts the current Path of Exile 2 head from local assets", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   let webgl2Backend = false;
@@ -32,16 +50,11 @@ test("the landing page shows compatibility results and starts a rendered Path of
 
   await page.goto("/");
   expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
-  await expect(page.getByRole("link", { name: "Start for Path of Exile 1" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Start for Path of Exile 2" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Start for Last Epoch" })).toBeVisible();
-  await expect(page.getByText("Tested", { exact: true })).toBeVisible();
-  await expect(page.getByText("Failed", { exact: true })).toBeVisible();
-  await expect(page.getByText("Untested", { exact: true }).first()).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
-    true,
+  const rootZipRequest = page.waitForRequest(request =>
+    request.url().includes(`/games/poe2/versions/${poe2Head}/root.zip`),
   );
   await page.getByRole("link", { name: "Start for Path of Exile 2" }).click();
+  await rootZipRequest;
   await expect(page).toHaveURL(/\/poe2$/);
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible({ timeout: 45_000 });
   await expect.poll(() => page.title()).not.toBe("pob.cool");
