@@ -1,4 +1,5 @@
 import { expect, test } from "../../../../tools/playwright.mts";
+import { waitForPoBReady } from "./pob.mts";
 import { releases, targeted } from "./releases.mts";
 
 for (const release of releases) {
@@ -16,15 +17,7 @@ for (const release of releases) {
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.goto(`/?game=${release.game}&version=${release.version}`);
-    await page.waitForFunction(
-      () =>
-        window.__POB_TEST__?.started === true &&
-        window.__POB_TEST__.frameCount > 0 &&
-        (window.__POB_TEST__.renderStats?.layerStats.reduce(
-            (count, layer) => count + layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount,
-            0,
-          ) ?? 0) > 0,
-    );
+    await waitForPoBReady(page);
 
     let itemLoadPoll = 0;
     await expect

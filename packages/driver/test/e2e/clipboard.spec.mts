@@ -1,7 +1,9 @@
 import { expect, test } from "../../../../tools/playwright.mts";
+import { clickPoBAndWaitForInput, typePoB, waitForPoBReady } from "./pob.mts";
 import { releases, targeted } from "./releases.mts";
 
 const TREE_SEARCH = { x: 450, y: 885 };
+const TREE_TAB = { x: 40, y: 96 };
 
 test.describe("clipboard", () => {
   test.skip(targeted, "Clipboard round trips only run in the complete compatibility suite");
@@ -32,7 +34,7 @@ test.describe("clipboard", () => {
       );
     });
     await writeSystemClipboard(page, token);
-    await page.mouse.click(TREE_SEARCH.x, TREE_SEARCH.y);
+    await clickPoBAndWaitForInput(page, TREE_SEARCH);
     const pasteFrame = await currentDriverFrame(page);
     await page.keyboard.press("Control+V");
     await waitForDriverFrames(page, pasteFrame, 1);
@@ -65,7 +67,6 @@ test.describe("clipboard", () => {
     await page.evaluate((text) => {
       (globalThis as typeof globalThis & { __CLIPBOARD_TEXT__: string }).__CLIPBOARD_TEXT__ = text;
     }, token);
-    await page.mouse.click(TREE_SEARCH.x, TREE_SEARCH.y);
     await page.getByRole("button", { name: "Toggle Virtual Keyboard" }).click();
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
     const pasteFrame = await currentDriverFrame(page);
@@ -89,7 +90,7 @@ test.describe("clipboard", () => {
     await openTreeSearch(page);
 
     const token = `physicaltyping${Date.now()}`;
-    await page.keyboard.type(token);
+    await typePoB(page, token);
     await page.getByRole("button", { name: "Toggle Virtual Keyboard" }).click();
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
     await page.getByRole("button", { name: "A", exact: true }).click();
@@ -119,7 +120,7 @@ test.describe("clipboard", () => {
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await openTreeSearch(page);
 
-    await page.mouse.click(TREE_SEARCH.x, TREE_SEARCH.y, { button: "right" });
+    await clickPoBAndWaitForInput(page, TREE_SEARCH, "right");
     await expect.poll(() =>
       page.evaluate(() =>
         (globalThis as typeof globalThis & { __CLIPBOARD_READ_ATTEMPTED__?: boolean })
@@ -133,11 +134,16 @@ test.describe("clipboard", () => {
 });
 
 async function openTreeSearch(page: import("@playwright/test").Page): Promise<void> {
+  await openPoB(page);
+  await clickPoBAndWaitForInput(page, TREE_TAB);
+  await clickPoBAndWaitForInput(page, TREE_SEARCH);
+}
+
+async function openPoB(page: import("@playwright/test").Page): Promise<void> {
   const release = releases.find(({ game }) => game === "poe1");
   if (!release) throw new Error("The default E2E releases do not include Path of Exile 1");
   await page.goto(`/?game=${release.game}&version=${release.version}`);
-  await page.waitForFunction(() => window.__POB_TEST__?.started === true && (window.__POB_TEST__?.frameCount ?? 0) > 0);
-  await page.mouse.click(TREE_SEARCH.x, TREE_SEARCH.y);
+  await waitForPoBReady(page);
 }
 
 async function writeSystemClipboard(page: import("@playwright/test").Page, text: string): Promise<void> {
