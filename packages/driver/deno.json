@@ -1,0 +1,28 @@
+{
+  "name": "pob-driver",
+  "version": "0.29.2",
+  "exports": {
+    "./driver": "./src/js/driver.ts",
+    "./error": "./src/js/error.ts",
+    "./renderer": "./src/js/renderer/index.ts"
+  },
+  "publish": false,
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["deno.ns", "dom", "dom.iterable", "es2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["./src/js/vite-env.d.ts", "@types/emscripten", "@webgpu/types"]
+  },
+  "tasks": {
+    "build": "deno task build:debug && deno task build:release",
+    "build:debug": "cmake -E rm -rf dist/debug && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Debug && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "deno test --no-check --allow-env --allow-read=../../version.json test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
+    "test:e2e": "playwright test",
+    "test:e2e:serve": "vite --mode test --host 127.0.0.1",
+    "test:performance": "playwright test --config playwright.performance.config.mts"
+  }
+}

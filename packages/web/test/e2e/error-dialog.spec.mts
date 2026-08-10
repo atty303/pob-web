@@ -1,7 +1,8 @@
-import { createRequire } from "node:module";
-import { expect, test } from "../../../../tools/playwright";
+import { expect, test } from "../../../../tools/playwright.mts";
 
-const versions = createRequire(import.meta.url)("../../../../version.json") as { poe2: { head: string } };
+const versions = JSON.parse(Deno.readTextFileSync(new URL("../../../../version.json", import.meta.url))) as {
+  poe2: { head: string };
+};
 const poe2Head = versions.poe2.head;
 
 test("expected asset failures show recovery details without offering a pob.cool report", async ({ page }) => {
@@ -10,9 +11,10 @@ test("expected asset failures show recovery details without offering a pob.cool 
       value: { writeText: async () => {} },
     });
   });
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
-  await page.route("**/games/poe2/versions/*/root.zip", route =>
-    route.fulfill({ status: 503, contentType: "text/plain", body: "temporarily unavailable" }),
+  await page.route("https://*.ingest.sentry.io/**", (route) => route.fulfill({ status: 200, json: {} }));
+  await page.route(
+    "**/games/poe2/versions/*/root.zip",
+    (route) => route.fulfill({ status: 503, contentType: "text/plain", body: "temporarily unavailable" }),
   );
 
   await page.goto("/poe2");
@@ -28,9 +30,10 @@ test("expected asset failures show recovery details without offering a pob.cool 
 });
 
 test("pob.cool reporting is gated by an upstream reproduction check", async ({ page }) => {
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
-  await page.route("**/games/poe2/versions/*/root.zip", route =>
-    route.fulfill({ status: 200, contentType: "application/zip", body: "not a zip archive" }),
+  await page.route("https://*.ingest.sentry.io/**", (route) => route.fulfill({ status: 200, json: {} }));
+  await page.route(
+    "**/games/poe2/versions/*/root.zip",
+    (route) => route.fulfill({ status: 200, contentType: "application/zip", body: "not a zip archive" }),
   );
 
   await page.goto("/poe2");

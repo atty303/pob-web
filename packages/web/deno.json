@@ -1,0 +1,25 @@
+{
+  "name": "pob-web",
+  "version": "0.29.2",
+  "exports": "./src/root.tsx",
+  "publish": false,
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["deno.ns", "dom", "dom.iterable", "es2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["./src/vite-env.d.ts", "@cloudflare/workers-types", "@types/emscripten", "@webgpu/types"],
+    "rootDirs": [".", "./.react-router/types"]
+  },
+  "tasks": {
+    "build": "react-router typegen && react-router build",
+    "deploy": "mise run web:deploy",
+    "deploy:pages": "wrangler pages deploy build/client --project-name pob-web",
+    "dev": "react-router dev --port 5173 --strictPort",
+    "preview": "react-router preview",
+    "test": "deno test --no-check test/unit/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:serve": "react-router dev --mode test --host 127.0.0.1",
+    "typegen": "react-router typegen"
+  }
+}

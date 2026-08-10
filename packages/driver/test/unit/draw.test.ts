@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import { DrawCommandInterpreter } from "../../src/js/draw";
+import { assertEquals, assertThrows } from "@std/assert";
+import { DrawCommandInterpreter } from "../../src/js/draw.ts";
 
 const setLayer = (layer: number, sublayer: number) => {
   const bytes = new Uint8Array(5);
@@ -42,7 +41,7 @@ const join = (...commands: Uint8Array[]) => {
   return new DataView(bytes.buffer);
 };
 
-test("sort orders layers and replays the current viewport on a new layer", () => {
+Deno.test("sort orders layers and replays the current viewport on a new layer", () => {
   const view = join(
     setViewport(1, 2, 800, 600),
     setViewport(9, 10, 1024, 768),
@@ -53,17 +52,17 @@ test("sort orders layers and replays the current viewport on a new layer", () =>
 
   const layers = DrawCommandInterpreter.sort(view);
 
-  assert.deepEqual(
-    layers.map(layer => [layer.layer, layer.sublayer]),
+  assertEquals(
+    layers.map((layer) => [layer.layer, layer.sublayer]),
     [
       [0, 0],
       [1, 0],
       [2, 0],
     ],
   );
-  assert.equal(layers[1].ranges[0].length, 17);
-  assert.deepEqual(
-    layers[2].ranges.map(range => range.length),
+  assertEquals(layers[1].ranges[0].length, 17);
+  assertEquals(
+    layers[2].ranges.map((range) => range.length),
     [17, 5],
   );
 
@@ -76,28 +75,29 @@ test("sort orders layers and replays the current viewport on a new layer", () =>
     onDrawImageQuad: () => {},
     onDrawString: () => {},
   });
-  assert.deepEqual(replayedViewports, [[9, 10, 1024, 768]]);
+  assertEquals(replayedViewports, [[9, 10, 1024, 768]]);
 });
 
-test("runRange decodes variable-length color escape and string commands", () => {
+Deno.test("runRange decodes variable-length color escape and string commands", () => {
   const view = join(variableCommand(5, "^x"), variableCommand(8, "hello"));
   const events: string[] = [];
 
   DrawCommandInterpreter.runRange({ offset: 0, length: view.byteLength }, view, {
     onSetViewport: () => {},
     onSetColor: () => {},
-    onSetColorEscape: text => events.push(`escape:${text}`),
+    onSetColorEscape: (text) => events.push(`escape:${text}`),
     onDrawImage: () => {},
     onDrawImageQuad: () => {},
     onDrawString: (_x, _y, _align, _height, _font, text) => events.push(`string:${text}`),
   });
 
-  assert.deepEqual(events, ["escape:^x", "string:hello"]);
+  assertEquals(events, ["escape:^x", "string:hello"]);
 });
 
-test("sort rejects unknown commands", () => {
-  assert.throws(
+Deno.test("sort rejects unknown commands", () => {
+  assertThrows(
     () => DrawCommandInterpreter.sort(new DataView(new Uint8Array([255]).buffer)),
-    /Unknown command type: 255/,
+    Error,
+    "Unknown command type: 255",
   );
 });

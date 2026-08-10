@@ -1,4 +1,4 @@
-export { type LayerStats, Renderer, type RenderStats } from "./renderer";
-export * from "./text";
-export { WebGL1Backend } from "./webgl_backend";
-export { WebGPUBackend } from "./webgpu_backend";
+export { type LayerStats, Renderer, type RenderStats } from "./renderer.ts";
+export * from "./text.ts";
+export { WebGL1Backend } from "./webgl_backend.ts";
+export { WebGPUBackend } from "./webgpu_backend.ts";

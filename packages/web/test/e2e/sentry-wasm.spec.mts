@@ -1,5 +1,5 @@
-import path from "node:path";
-import { expect, test } from "../../../../tools/playwright";
+import * as path from "@std/path";
+import { expect, test } from "../../../../tools/playwright.mts";
 
 type SentryEvent = {
   debug_meta?: { images?: Array<{ type?: string; code_file?: string }> };
@@ -28,28 +28,28 @@ type SentryApiEvent = {
   }>;
 };
 
-const liveSentry = process.env.SENTRY_LIVE_TEST === "1";
+const liveSentry = Deno.env.get("SENTRY_LIVE_TEST") === "1";
 
 const symbolicatedWasmFrames = (event: SentryApiEvent): SymbolicatedFrame[] =>
   event.entries
-    ?.filter(entry => entry.type === "exception")
-    .flatMap(entry => entry.data?.values ?? [])
-    .flatMap(value => value.stacktrace?.frames ?? [])
-    .filter(frame => /(?:^|\/)driver\.c$/.test(frame.filename ?? frame.absPath ?? "")) ?? [];
+    ?.filter((entry) => entry.type === "exception")
+    .flatMap((entry) => entry.data?.values ?? [])
+    .flatMap((value) => value.stacktrace?.frames ?? [])
+    .filter((frame) => /(?:^|\/)driver\.c$/.test(frame.filename ?? frame.absPath ?? "")) ?? [];
 
 const waitForSymbolication = async (eventId: string): Promise<SymbolicatedFrame[]> => {
-  const token = process.env.SENTRY_LIVE_AUTH_TOKEN;
+  const token = Deno.env.get("SENTRY_LIVE_AUTH_TOKEN");
   if (!token) throw new Error("SENTRY_LIVE_AUTH_TOKEN must be able to read events from the Sentry project");
 
-  const org = process.env.SENTRY_LIVE_ORG ?? "atty303";
-  const project = process.env.SENTRY_LIVE_PROJECT ?? "pob-web";
+  const org = Deno.env.get("SENTRY_LIVE_ORG") ?? "atty303";
+  const project = Deno.env.get("SENTRY_LIVE_PROJECT") ?? "pob-web";
   const endpoint = `https://sentry.io/api/0/projects/${org}/${project}/events/${eventId}/`;
   const deadline = Date.now() + 90_000;
 
   while (Date.now() < deadline) {
     const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
     if (response.status === 404) {
-      await new Promise(resolve => setTimeout(resolve, 1_000));
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
       continue;
     }
     if (!response.ok) {
@@ -57,9 +57,9 @@ const waitForSymbolication = async (eventId: string): Promise<SymbolicatedFrame[
     }
 
     const frames = symbolicatedWasmFrames((await response.json()) as SentryApiEvent);
-    const functions = new Set(frames.map(frame => frame.function));
+    const functions = new Set(frames.map((frame) => frame.function));
     if (functions.has("sentry_test_crash") && functions.has("sentry_test_trap")) return frames;
-    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
 
   throw new Error(`Sentry did not symbolize event ${eventId} to the driver.c test frames within 90 seconds`);
@@ -69,7 +69,7 @@ test("associates worker WebAssembly frames with their debug image", async ({ pag
   test.setTimeout(liveSentry ? 150_000 : 60_000);
   const sentryEvents: SentryEvent[] = [];
   if (!liveSentry) {
-    await page.route("https://*.ingest.sentry.io/**", async route => {
+    await page.route("https://*.ingest.sentry.io/**", async (route) => {
       for (const line of route.request().postData()?.split("\n") ?? []) {
         try {
           const payload: unknown = JSON.parse(line);
@@ -84,13 +84,13 @@ test("associates worker WebAssembly frames with their debug image", async ({ pag
     });
   }
 
-  const fixturePath = path.resolve(import.meta.dirname, "fixtures/sentry-wasm.html");
+  const fixturePath = path.resolve(path.dirname(path.fromFileUrl(import.meta.url)), "fixtures/sentry-wasm.html");
   await page.goto(`/@fs${fixturePath}`);
   await expect
     .poll(() =>
       page.evaluate(
         () => typeof (window as Window & { __triggerSentryWasmTest?: unknown }).__triggerSentryWasmTest === "function",
-      ),
+      )
     )
     .toBe(true);
 
@@ -103,26 +103,24 @@ test("associates worker WebAssembly frames with their debug image", async ({ pag
 
   if (liveSentry) {
     const frames = await waitForSymbolication(eventId);
-    expect(frames.find(frame => frame.function === "sentry_test_crash")?.lineNo).toBeGreaterThan(0);
-    expect(frames.find(frame => frame.function === "sentry_test_trap")?.lineNo).toBeGreaterThan(0);
+    expect(frames.find((frame) => frame.function === "sentry_test_crash")?.lineNo).toBeGreaterThan(0);
+    expect(frames.find((frame) => frame.function === "sentry_test_trap")?.lineNo).toBeGreaterThan(0);
     return;
   }
 
   await expect
     .poll(() =>
-      sentryEvents.some(event => {
-        const imageIndex =
-          event.debug_meta?.images?.findIndex(
-            image => image.type === "wasm" && /driver(?:-[^/]+)?\.wasm$/.test(image.code_file ?? ""),
-          ) ?? -1;
+      sentryEvents.some((event) => {
+        const imageIndex = event.debug_meta?.images?.findIndex(
+          (image) => image.type === "wasm" && /driver(?:-[^/]+)?\.wasm$/.test(image.code_file ?? ""),
+        ) ?? -1;
         if (imageIndex < 0) return false;
 
-        const nativeFrames =
-          event.exception?.values
-            ?.flatMap(value => value.stacktrace?.frames ?? [])
-            .filter(frame => frame.platform === "native" && /^0x[0-9a-f]+$/i.test(frame.instruction_addr ?? "")) ?? [];
-        return nativeFrames.length > 0 && nativeFrames.every(frame => frame.addr_mode === `rel:${imageIndex}`);
-      }),
+        const nativeFrames = event.exception?.values
+          ?.flatMap((value) => value.stacktrace?.frames ?? [])
+          .filter((frame) => frame.platform === "native" && /^0x[0-9a-f]+$/i.test(frame.instruction_addr ?? "")) ?? [];
+        return nativeFrames.length > 0 && nativeFrames.every((frame) => frame.addr_mode === `rel:${imageIndex}`);
+      })
     )
     .toBe(true);
 });

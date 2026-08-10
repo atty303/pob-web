@@ -1,15 +1,17 @@
 import * as Comlink from "comlink";
 
-import BrokerWorkerObject from "./broker?worker";
-import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager";
-import { markEnvironmentError } from "./error";
-import { EventHandler } from "./event";
-import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard";
-import { MouseHandler, type MouseState } from "./mouse-handler";
-import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay";
-import type { ToolbarPosition as ToolbarPos } from "./overlay/types";
-import type { DriverWorker, HostCallbacks } from "./worker";
-import WorkerObject from "./worker?worker";
+// @ts-types="./vite-worker.d.ts"
+import BrokerWorkerObject from "./broker.ts?worker";
+import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager.ts";
+import { markEnvironmentError } from "./error.ts";
+import { EventHandler } from "./event.ts";
+import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard.ts";
+import { MouseHandler, type MouseState } from "./mouse-handler.ts";
+import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay/index.ts";
+import type { ToolbarPosition as ToolbarPos } from "./overlay/types.ts";
+import type { DriverWorker, HostCallbacks } from "./worker.ts";
+// @ts-types="./vite-worker.d.ts"
+import WorkerObject from "./worker.ts?worker";
 
 type AsyncBroker = {
   start(
@@ -84,8 +86,9 @@ export class Driver {
     this.isStarted = true;
 
     try {
-      this.brokerWorker = new BrokerWorkerObject();
-      this.broker = Comlink.wrap<AsyncBroker>(this.brokerWorker);
+      const brokerWorker = new BrokerWorkerObject();
+      this.brokerWorker = brokerWorker;
+      this.broker = Comlink.wrap<AsyncBroker>(brokerWorker);
       const channel = new MessageChannel();
       const eventChannel = new MessageChannel();
       await this.broker.start(
@@ -97,9 +100,10 @@ export class Driver {
         Comlink.proxy(() => this.paste()),
       );
 
-      this.worker = new WorkerObject();
-      this.lifecycleCallbacks.onWorkerCreated?.(this.worker);
-      this.driverWorker = Comlink.wrap<DriverWorker>(this.worker);
+      const worker = new WorkerObject();
+      this.worker = worker;
+      this.lifecycleCallbacks.onWorkerCreated?.(worker);
+      this.driverWorker = Comlink.wrap<DriverWorker>(worker);
 
       return await this.driverWorker.start(
         this.build,
@@ -110,7 +114,7 @@ export class Driver {
         Comlink.proxy(this.hostCallbacks.onFrame),
         Comlink.proxy(this.hostCallbacks.onTitleChange),
         Comlink.proxy((text: string) => this.copy(text)),
-        Comlink.proxy(url => {
+        Comlink.proxy((url) => {
           window.open(url, "_blank");
         }),
       );
@@ -219,7 +223,7 @@ export class Driver {
           const transformedMouse = this.transformMouseCoordinates(this.mouseHandler!.mouseState);
           this.driverWorker?.handleMouseMove(transformedMouse);
         },
-        onMouseStateUpdate: mouseState => {
+        onMouseStateUpdate: (mouseState) => {
           const transformedMouse = this.transformMouseCoordinates(mouseState);
           this.driverWorker?.handleMouseMove(transformedMouse);
         },
@@ -236,7 +240,7 @@ export class Driver {
     );
 
     this.eventHandler = new EventHandler(container, {
-      onVisibilityChange: visible => this.driverWorker?.handleVisibilityChange(visible),
+      onVisibilityChange: (visible) => this.driverWorker?.handleVisibilityChange(visible),
     });
 
     this.mouseHandler!.setPanMode(this.panModeEnabled);

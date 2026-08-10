@@ -410,7 +410,7 @@ export class CanvasManager {
   private setupResizeObserver() {
     if (!this.canvasContainer) return;
 
-    this.resizeObserver = new ResizeObserver(entries => {
+    this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         this.updateCanvasSize(entry.contentRect.width, entry.contentRect.height);
       }

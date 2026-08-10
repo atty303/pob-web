@@ -1,16 +1,16 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "node",
+  "release-type": "simple",
   "include-component-in-tag": false,
   "extra-files": [
     {
       "type": "json",
-      "path": "packages/driver/package.json",
+      "path": "packages/driver/deno.json",
       "jsonpath": "$.version"
     },
     {
       "type": "json",
-      "path": "packages/web/package.json",
+      "path": "packages/web/deno.json",
       "jsonpath": "$.version"
     }
   ],

@@ -1,19 +1,24 @@
-import { type ChildProcess, spawn } from "node:child_process";
 import type { Plugin } from "vite";
 
-type Exit = { code: number | null; signal: NodeJS.Signals | null };
+type Exit = { code: number; signal: string | null };
 const startupTimeoutMs = 30_000;
 
-function terminate(child: ChildProcess, exit: Promise<Exit>) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
+function terminate(child: Deno.ChildProcess, exit: Promise<Exit>) {
+  try {
+    child.kill("SIGTERM");
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+    return;
+  }
 
-  child.kill("SIGTERM");
-  const force = setTimeout(() => child.kill("SIGKILL"), 5_000);
-  force.unref();
-  void exit.then(
-    () => clearTimeout(force),
-    () => clearTimeout(force),
-  );
+  const force = setTimeout(() => {
+    try {
+      child.kill("SIGKILL");
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  }, 5_000);
+  void exit.finally(() => clearTimeout(force));
 }
 
 export function wranglerDev(): Plugin {
@@ -21,9 +26,8 @@ export function wranglerDev(): Plugin {
     name: "pob-web:wrangler-dev",
     apply: "serve",
     async configureServer(server) {
-      const child = spawn(
-        "wrangler",
-        [
+      const child = new Deno.Command("wrangler", {
+        args: [
           "pages",
           "dev",
           ".",
@@ -32,42 +36,30 @@ export function wranglerDev(): Plugin {
           "--inspector-port=0",
           "--show-interactive-dev-session=false",
         ],
-        {
-          cwd: import.meta.dirname,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
+        cwd: import.meta.dirname,
+        stdin: "null",
+        stdout: "piped",
+        stderr: "piped",
+      }).spawn();
 
       let output = "";
       let resolveURL: (url: string) => void;
-      const url = new Promise<string>(resolve => {
-        resolveURL = resolve;
-      });
-      const collect = (chunk: Buffer) => {
-        const text = chunk.toString();
+      const url = new Promise<string>((resolve) => resolveURL = resolve);
+      const collect = (text: string) => {
         output = `${output}${text}`.slice(-8_192);
         const match = output.match(/Ready on (http:\/\/[^\s]+)/);
         if (match) resolveURL(match[1]);
       };
-      child.stdout.on("data", chunk => {
-        process.stdout.write(chunk);
-        collect(chunk);
-      });
-      child.stderr.on("data", chunk => {
-        process.stderr.write(chunk);
-        collect(chunk);
-      });
+      void forward(child.stdout, Deno.stdout, collect);
+      void forward(child.stderr, Deno.stderr, collect);
 
-      const exit = new Promise<Exit>((resolve, reject) => {
-        child.once("error", reject);
-        child.once("exit", (code, signal) => resolve({ code, signal }));
-      });
-      const removeExitCleanup = () => process.off("exit", cleanupOnExit);
-      const cleanupOnExit = () => child.kill("SIGTERM");
-      process.once("exit", cleanupOnExit);
+      const exit = child.status.then(({ code, signal }) => ({ code, signal }));
+      const cleanupOnUnload = () => terminate(child, exit);
+      globalThis.addEventListener("unload", cleanupOnUnload, { once: true });
+      const removeUnloadCleanup = () => globalThis.removeEventListener("unload", cleanupOnUnload);
 
       let target: string;
-      let startupTimeout: NodeJS.Timeout | undefined;
+      let startupTimeout: ReturnType<typeof setTimeout> | undefined;
       const timedOut = new Promise<never>((_, reject) => {
         startupTimeout = setTimeout(
           () => reject(new Error(`Wrangler did not become ready within ${startupTimeoutMs}ms`)),
@@ -83,11 +75,11 @@ export function wranglerDev(): Plugin {
           timedOut,
         ]);
       } catch (error) {
-        removeExitCleanup();
+        removeUnloadCleanup();
         terminate(child, exit);
         throw error;
       } finally {
-        if (startupTimeout) clearTimeout(startupTimeout);
+        if (startupTimeout !== undefined) clearTimeout(startupTimeout);
       }
 
       server.config.server.proxy ??= {};
@@ -97,27 +89,31 @@ export function wranglerDev(): Plugin {
       const stop = () => {
         if (stopping) return;
         stopping = true;
-        removeExitCleanup();
+        removeUnloadCleanup();
         terminate(child, exit);
       };
       server.httpServer?.once("close", stop);
 
-      void exit.then(
-        ({ code, signal }) => {
-          removeExitCleanup();
-          if (stopping) return;
-          process.exitCode = code && code !== 0 ? code : 1;
-          server.config.logger.error(`Wrangler stopped unexpectedly (code ${code}, signal ${signal})`);
-          void server.close();
-        },
-        error => {
-          removeExitCleanup();
-          if (stopping) return;
-          process.exitCode = 1;
-          server.config.logger.error("Wrangler process failed", { error });
-          void server.close();
-        },
-      );
+      void exit.then(({ code, signal }) => {
+        removeUnloadCleanup();
+        if (stopping) return;
+        Deno.exitCode = code !== 0 ? code : 1;
+        server.config.logger.error(`Wrangler stopped unexpectedly (code ${code}, signal ${signal})`);
+        void server.close();
+      });
     },
   };
+}
+
+async function forward(
+  stream: ReadableStream<Uint8Array>,
+  destination: { write(data: Uint8Array): Promise<number> },
+  collect: (text: string) => void,
+): Promise<void> {
+  const decoder = new TextDecoder();
+  for await (const chunk of stream) {
+    await destination.write(chunk);
+    collect(decoder.decode(chunk, { stream: true }));
+  }
+  collect(decoder.decode());
 }

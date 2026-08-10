@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/react";
-import { Driver, type FilesystemConfig } from "pob-driver/src/js/driver";
-import versions from "../../../../../version.json";
-import { registerSentryWorker, wasmIntegrations } from "../../../src/lib/sentry";
+import { Driver, type FilesystemConfig } from "pob-driver/driver";
+import versions from "../../../../../version.json" with { type: "json" };
+import { registerSentryWorker, wasmIntegrations } from "../../../src/lib/sentry.ts";
 
 declare const __ASSET_PREFIX__: string;
 
@@ -20,7 +20,7 @@ const driver = new Driver(
   "release",
   `${__ASSET_PREFIX__}/games/poe2/versions/${versions.poe2.head}`,
   {
-    onError: error => {
+    onError: (error) => {
       throw error;
     },
     onFrame: () => {},

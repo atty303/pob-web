@@ -1,12 +1,13 @@
-import { createRequire } from "node:module";
-import { expect, test } from "../../../../tools/playwright";
+import { expect, test } from "../../../../tools/playwright.mts";
 
-const versions = createRequire(import.meta.url)("../../../../version.json") as { poe2: { head: string } };
+const versions = JSON.parse(Deno.readTextFileSync(new URL("../../../../version.json", import.meta.url))) as {
+  poe2: { head: string };
+};
 const poe2Head = versions.poe2.head;
 
 test("the landing page shows compatibility results", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
-  await page.route("**/version.json", route =>
+  await page.route("**/version.json", (route) =>
     route.fulfill({
       json: {
         poe1: {
@@ -20,8 +21,7 @@ test("the landing page shows compatibility results", async ({ page }) => {
         poe2: { head: "v0.23.1", versions: [{ value: "v0.23.1", date: "2026-01-01T00:00:00Z" }] },
         le: { head: "v0.12.0", versions: [{ value: "v0.12.0", date: "2026-01-01T00:00:00Z" }] },
       },
-    }),
-  );
+    }));
 
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Start for Path of Exile 1" })).toBeVisible();
@@ -37,21 +37,21 @@ test("the landing page shows compatibility results", async ({ page }) => {
 
 test("the landing page starts the current Path of Exile 2 head from local assets", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
+  await page.route("https://*.ingest.sentry.io/**", (route) => route.fulfill({ status: 200, json: {} }));
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   let webgl2Backend = false;
 
-  page.on("console", message => {
+  page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
     if (message.text().includes("Using WebGL2 backend")) webgl2Backend = true;
   });
-  page.on("pageerror", error => pageErrors.push(error.message));
+  page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.goto("/");
   expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
-  const rootZipRequest = page.waitForRequest(request =>
-    request.url().includes(`/games/poe2/versions/${poe2Head}/root.zip`),
+  const rootZipRequest = page.waitForRequest((request) =>
+    request.url().includes(`/games/poe2/versions/${poe2Head}/root.zip`)
   );
   await page.getByRole("link", { name: "Start for Path of Exile 2" }).click();
   await rootZipRequest;
@@ -61,7 +61,7 @@ test("the landing page starts the current Path of Exile 2 head from local assets
 
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveCount(1);
-  const dimensions = await canvas.evaluate(element => {
+  const dimensions = await canvas.evaluate((element) => {
     const transferredCanvas = element as HTMLCanvasElement;
     return { width: transferredCanvas.width, height: transferredCanvas.height };
   });

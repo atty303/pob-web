@@ -1,10 +1,10 @@
-import { Format, Target } from "dds/src";
-import { markEnvironmentError } from "../error";
-import { TextureFlags } from "../image";
-import { log, tag } from "../logger";
-import type { RenderBackend } from "./backend";
-import type { TextureBitmap } from "./renderer";
-import { type FormatDesc, glFormatFor } from "./webgl";
+import { Format, Target } from "dds";
+import { markEnvironmentError } from "../error.ts";
+import { TextureFlags } from "../image.ts";
+import { log, tag } from "../logger.ts";
+import type { RenderBackend } from "./backend.ts";
+import type { TextureBitmap } from "./renderer.ts";
+import { type FormatDesc, glFormatFor } from "./webgl.ts";
 
 const vertexShaderSource = `#version 300 es
 uniform mat4 u_MvpMatrix;
@@ -227,8 +227,7 @@ class VertexBuffer {
     const baseVertex = this.quadCount * 4;
 
     // Pack color into uint32
-    const packedColor =
-      (Math.round(tintColor[0] * 255) << 24) |
+    const packedColor = (Math.round(tintColor[0] * 255) << 24) |
       (Math.round(tintColor[1] * 255) << 16) |
       (Math.round(tintColor[2] * 255) << 8) |
       Math.round(tintColor[3] * 255);
@@ -332,7 +331,7 @@ export class WebGL1Backend implements RenderBackend {
       gl,
       vertexShaderSource,
       textureFragmentShaderSource(this.maxTextures),
-      program => {
+      (program) => {
         const position = gl.getAttribLocation(program, "a_Position");
         if (position < 0) throw new Error("Failed to get attribute location");
 
@@ -388,7 +387,7 @@ export class WebGL1Backend implements RenderBackend {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo);
 
-    this.textureProgram.use(p => {
+    this.textureProgram.use((p) => {
       const stride = 48; // 12 * 4 bytes
       gl.enableVertexAttribArray(p.position);
       gl.vertexAttribPointer(p.position, 2, gl.FLOAT, false, stride, 0);
@@ -516,7 +515,7 @@ export class WebGL1Backend implements RenderBackend {
     } else {
       gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, indexData);
     }
-    this.textureProgram.use(p => {
+    this.textureProgram.use((p) => {
       // Set up the viewport
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
       const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);

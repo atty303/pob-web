@@ -1,5 +1,5 @@
-import { D3dFmt, Ddpf, Format, Swizzle } from "./format";
-import { StorageLinear } from "./storage";
+import { D3dFmt, Ddpf, Format, Swizzle } from "./format.ts";
+import { StorageLinear } from "./storage.ts";
 
 export class Texture {
   private baseLayer: number;
@@ -434,8 +434,8 @@ class Cache {
       this.imageMemorySize[level] = this.storage.levelSize(this.baseLevel + level);
     }
 
-    this.globalMemorySize =
-      this.storage.layerSize(this.baseFace, this.maxFace, this.baseLevel, this.maxLevel) * this.layers;
+    this.globalMemorySize = this.storage.layerSize(this.baseFace, this.maxFace, this.baseLevel, this.maxLevel) *
+      this.layers;
   }
 
   getBaseAddress(layer: number, face: number, level: number) {

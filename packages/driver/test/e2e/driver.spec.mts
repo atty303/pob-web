@@ -1,5 +1,5 @@
-import { expect, test } from "../../../../tools/playwright";
-import { releases, targeted } from "./releases";
+import { expect, test } from "../../../../tools/playwright.mts";
+import { releases, targeted } from "./releases.mts";
 
 for (const release of releases) {
   test(`${release.game} ${release.version} loads items, renders, and zooms`, async ({ page }) => {
@@ -8,12 +8,12 @@ for (const release of releases) {
     const pageErrors: string[] = [];
     let webgl2Backend = false;
 
-    page.on("console", message => {
+    page.on("console", (message) => {
       consoleMessages.push(message.text());
       if (message.type() === "error") consoleErrors.push(message.text());
       if (message.text().includes("Using WebGL2 backend")) webgl2Backend = true;
     });
-    page.on("pageerror", error => pageErrors.push(error.message));
+    page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.goto(`/?game=${release.game}&version=${release.version}`);
     await page.waitForFunction(
@@ -21,9 +21,9 @@ for (const release of releases) {
         window.__POB_TEST__?.started === true &&
         window.__POB_TEST__.frameCount > 0 &&
         (window.__POB_TEST__.renderStats?.layerStats.reduce(
-          (count, layer) => count + layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount,
-          0,
-        ) ?? 0) > 0,
+            (count, layer) => count + layer.drawImageCount + layer.drawImageQuadCount + layer.drawStringCount,
+            0,
+          ) ?? 0) > 0,
     );
 
     let itemLoadPoll = 0;
@@ -55,7 +55,7 @@ for (const release of releases) {
 
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
-    const dimensions = await canvas.evaluate(element => {
+    const dimensions = await canvas.evaluate((element) => {
       const transferredCanvas = element as HTMLCanvasElement;
       return { width: transferredCanvas.width, height: transferredCanvas.height };
     });
@@ -66,7 +66,7 @@ for (const release of releases) {
     const slider = page.getByRole("slider");
     await slider.fill("1.2");
     await expect(slider).toHaveValue("1.2");
-    await expect.poll(() => canvas.evaluate(element => element.style.transform)).toContain("scale(1.2)");
+    await expect.poll(() => canvas.evaluate((element) => element.style.transform)).toContain("scale(1.2)");
 
     const finalState = await page.evaluate(() => window.__POB_TEST__);
     expect(finalState?.errors).toEqual([]);
@@ -77,7 +77,7 @@ for (const release of releases) {
 
 test("the current build exports and reloads through the Lua runtime", async ({ page }) => {
   test.skip(targeted, "Targeted compatibility checks only run the startup scenario");
-  const release = releases.find(candidate => candidate.game === "poe1");
+  const release = releases.find((candidate) => candidate.game === "poe1");
   if (!release) throw new Error("The default E2E releases do not include Path of Exile 1");
   await page.goto(`/?game=${release.game}&version=${release.version}`);
   await page.waitForFunction(() => window.__POB_TEST__?.started === true);
@@ -88,7 +88,7 @@ test("the current build exports and reloads through the Lua runtime", async ({ p
     return getBuildCode();
   });
   if (!initialCode) throw new Error("getBuildCode returned no code");
-  await page.evaluate(code => {
+  await page.evaluate((code) => {
     const loadBuildFromCode = window.__POB_TEST__?.loadBuildFromCode;
     if (!loadBuildFromCode) throw new Error("loadBuildFromCode test hook is unavailable");
     return loadBuildFromCode(code);

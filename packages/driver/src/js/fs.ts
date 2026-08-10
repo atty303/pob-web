@@ -1,7 +1,7 @@
 import type { Backend } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
 import { Errno, ErrnoError, Stats } from "@zenfs/core";
-import { log, tag } from "./logger";
+import { log, tag } from "./logger.ts";
 
 class FetchError extends Error {
   constructor(
@@ -40,7 +40,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     readonly token: string,
     readonly ns: string | undefined,
   ) {
-    super(0x43464b56 /*CFKV*/, "cloudflare-kvfs");
+    super(0x43464b56, /*CFKV*/ "cloudflare-kvfs");
     this.fetch = (method: string, path: string, body?: Uint8Array<ArrayBuffer>, headers?: Record<string, string>) => {
       log.debug(tag.kvfs, "fetch", method, path);
       const url = `${prefix}${path}`;
@@ -56,7 +56,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     };
   }
 
-  async ready(): Promise<void> {
+  override async ready(): Promise<void> {
     await this.reload();
   }
 
@@ -184,9 +184,9 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   readdirSync(path: string): string[] {
     const prefix = !path.endsWith("/") ? `${path}/` : path;
     return [...this.cache.keys()]
-      .filter(_ => _.startsWith(prefix) && _.substring(prefix.length).split("/").length === 1)
-      .map(_ => _.substring(prefix.length))
-      .filter(_ => _.length > 0);
+      .filter((_) => _.startsWith(prefix) && _.substring(prefix.length).split("/").length === 1)
+      .map((_) => _.substring(prefix.length))
+      .filter((_) => _.length > 0);
   }
 
   link(_srcpath: string, _dstpath: string): Promise<void> {

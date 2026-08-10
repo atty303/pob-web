@@ -1,4 +1,4 @@
-import type { PoBKey, PoBKeyboardState } from "./keyboard";
+import type { PoBKey, PoBKeyboardState } from "./keyboard.ts";
 
 export type MouseState = {
   x: number;
@@ -446,7 +446,6 @@ export class MouseHandler {
             }, 50);
           }
         }
-      } else {
       }
 
       this._isZooming = false;

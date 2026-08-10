@@ -1,190 +1,172 @@
-import { createHash } from "node:crypto";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { Command } from "@cliffy/command";
+import $ from "@david/dax";
+import { copy, ensureDir, exists, walk } from "@std/fs";
+import { dirname, extname, fromFileUrl, join, relative, resolve } from "@std/path";
 import * as zstd from "@bokuweb/zstd-wasm";
 import AdmZip from "adm-zip";
-import { parseDDSDX10 } from "dds/src";
+import { parseDDSDX10 } from "dds";
 import { imageDimensionsFromData } from "image-dimensions";
-import { gameData, isGame } from "pob-game/src";
-import { default as shelljs } from "shelljs";
+import { gameData, isGame } from "pob-game";
+import { Buffer } from "node:buffer";
 
-shelljs.config.verbose = false;
-shelljs.config.fatal = true;
+const { args: [tag, game, mode] } = await new Command()
+  .name("pack")
+  .description("Pack an upstream Path of Building release")
+  .arguments("<tag:string> <game:string> [mode:string]")
+  .parse(Deno.args);
 
-const clone = process.argv[4] === "clone";
+if (!isGame(game)) throw new Error(`Unsupported game: ${game}`);
+if (mode !== undefined && mode !== "clone") throw new Error(`Unsupported mode: ${mode}`);
 
-const tag = process.argv[2];
-if (!tag) {
-  console.error("Invalid tag");
-  process.exit(1);
-}
-
-const game = process.argv[3];
-if (!game || !isGame(game)) {
-  console.error("Invalid game");
-  process.exit(1);
-}
+const clone = mode === "clone";
 const def = gameData[game];
-
 const buildDir = `build/${game}/${tag}`;
-shelljs.mkdir("-p", buildDir);
-
-// Mirror of the R2 directory structure
 const r2Dir = `r2/games/${game}/versions/${tag}`;
-shelljs.mkdir("-p", r2Dir);
+await ensureDir(buildDir);
+await ensureDir(r2Dir);
 
 const cacheMarker = `${r2Dir}/.pack-input.sha256`;
-const inputHash = packInputHash();
+const inputHash = await packInputHash();
 if (
   clone &&
-  fs.existsSync(`${r2Dir}/root.zip`) &&
-  fs.existsSync(`${r2Dir}/root`) &&
-  fs.existsSync(cacheMarker) &&
-  fs.readFileSync(cacheMarker, "utf8") === inputHash
+  await exists(`${r2Dir}/root.zip`) &&
+  await exists(`${r2Dir}/root`) &&
+  await exists(cacheMarker) &&
+  await Deno.readTextFile(cacheMarker) === inputHash
 ) {
   console.log(`Reusing packed ${game} ${tag}`);
-  process.exit(0);
+  Deno.exit(0);
 }
 
 console.log(`Packing ${game} ${tag}`);
-shelljs.rm("-rf", r2Dir);
-shelljs.mkdir("-p", r2Dir);
-
+await remove(r2Dir);
+await ensureDir(r2Dir);
 await zstd.init();
 
 const remote = `https://github.com/${def.repository.owner}/${def.repository.name}.git`;
 const repoDir = `${buildDir}/repo`;
-
 if (clone) {
-  shelljs.rm("-rf", buildDir);
-  shelljs.exec(`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`, { fatal: true });
+  await remove(buildDir);
+  await $`git clone --depth 1 --branch=${tag} ${remote} ${repoDir}`;
 }
 
-const outputFile = [];
-
+const imageIndex: string[] = [];
 const zip = new AdmZip();
-
 const basePath = `${repoDir}/src`;
-for (const file of shelljs.find(basePath)) {
-  const relPath = path.relative(basePath, file).replace(/\\/g, "/");
-
+for await (const entry of walk(basePath, { includeDirs: true, followSymlinks: false })) {
+  const relPath = relative(basePath, entry.path).replaceAll("\\", "/");
   if (relPath.startsWith("Export")) continue;
-  if (fs.statSync(file).isDirectory()) {
-    if (relPath.length > 0) {
-      zip.addFile(`${relPath}/`, null as unknown as Buffer);
-    }
+  if (entry.isDirectory) {
+    if (relPath) zip.addFile(`${relPath}/`, Buffer.alloc(0));
     continue;
   }
 
-  const isImage = path.extname(file) === ".png" || path.extname(file) === ".jpg";
-  const isDDS = file.endsWith(".dds.zst");
+  const extension = extname(entry.path);
+  const isImage = extension === ".png" || extension === ".jpg";
+  const isDDS = entry.path.endsWith(".dds.zst");
   if (isImage || isDDS) {
-    const { width, height } = isDDS ? ddsSize(file) : imageSize(file);
-    outputFile.push(`${relPath}\t${width}\t${height}`);
+    const { width, height } = isDDS ? await ddsSize(entry.path) : await imageSize(entry.path);
+    imageIndex.push(`${relPath}\t${width}\t${height}`);
+    zip.addFile(relPath, Buffer.alloc(0));
 
-    // PoB runs existence checks against the image file, but actual reading is done in the browser so we include an empty file in the zip
-    zip.addFile(relPath, Buffer.of());
-
-    const dest = `${r2Dir}/root/${relPath}`;
-    shelljs.mkdir("-p", path.dirname(dest));
-    shelljs.cp(file, dest);
+    const destination = `${r2Dir}/root/${relPath}`;
+    await ensureDir(dirname(destination));
+    await copy(entry.path, destination, { overwrite: true });
   }
 
-  if (
-    path.extname(file) === ".lua" ||
-    path.extname(file) === ".zip" ||
-    path.extname(file).startsWith(".part") ||
-    path.extname(file).startsWith(".json")
-  ) {
-    const content = fs.readFileSync(file);
-
-    // patching
-    const newRelPath = relPath.replace(/Specific_Skill_Stat_Descriptions/g, "specific_skill_stat_descriptions");
-    const newContent = (() => {
-      if (relPath.endsWith("StatDescriber.lua")) {
-        return Buffer.from(
-          content.toString().replace(/Specific_Skill_Stat_Descriptions/g, "specific_skill_stat_descriptions"),
-        );
-      } else {
-        return content;
-      }
-    })();
-
-    zip.addFile(newRelPath, newContent);
+  if (extension === ".lua" || extension === ".zip" || extension.startsWith(".part") || extension.startsWith(".json")) {
+    const content = await Deno.readFile(entry.path);
+    const newRelPath = relPath.replaceAll("Specific_Skill_Stat_Descriptions", "specific_skill_stat_descriptions");
+    const newContent = relPath.endsWith("StatDescriber.lua")
+      ? new TextEncoder().encode(
+        new TextDecoder().decode(content).replaceAll(
+          "Specific_Skill_Stat_Descriptions",
+          "specific_skill_stat_descriptions",
+        ),
+      )
+      : content;
+    zip.addFile(newRelPath, Buffer.from(newContent));
   }
 }
 
-const basePath2 = `${repoDir}/runtime/lua`;
-for (const file of shelljs.find(basePath2)) {
-  const relPath = path.relative(basePath2, file).replace(/\\/g, "/");
-  if (path.extname(file) === ".lua") {
-    zip.addFile(`lua/${relPath}`, fs.readFileSync(file));
-  }
+const luaPath = `${repoDir}/runtime/lua`;
+for await (const entry of walk(luaPath, { includeDirs: false, exts: [".lua"] })) {
+  const relPath = relative(luaPath, entry.path).replaceAll("\\", "/");
+  zip.addFile(`lua/${relPath}`, Buffer.from(await Deno.readFile(entry.path)));
 }
 
-zip.addFile(".image.tsv", Buffer.from(outputFile.join("\n")));
-
-const manifest = shelljs.sed(
+zip.addFile(".image.tsv", Buffer.from(imageIndex.join("\n")));
+const manifest = (await Deno.readTextFile(`${repoDir}/manifest.xml`)).replace(
   /<Version number="([0-9.]+)" \/>/,
-  `<Version number="$1" platform="win32" branch="master" />`,
-  `${repoDir}/manifest.xml`,
+  '<Version number="$1" platform="win32" branch="master" />',
 );
-zip.addFile("installed.cfg", Buffer.from(""));
+zip.addFile("installed.cfg", Buffer.alloc(0));
 zip.addFile("manifest.xml", Buffer.from(manifest));
-zip.addFile("changelog.txt", fs.readFileSync(`${repoDir}/changelog.txt`));
-zip.addFile("help.txt", fs.readFileSync(`${repoDir}/help.txt`));
-zip.addFile("LICENSE.md", fs.readFileSync(`${repoDir}/LICENSE.md`));
+for (const file of ["changelog.txt", "help.txt", "LICENSE.md"]) {
+  zip.addFile(file, Buffer.from(await Deno.readFile(`${repoDir}/${file}`)));
+}
 
-zip.writeZip(`${buildDir}/root.zip`);
-shelljs.cp(`${buildDir}/root.zip`, `${r2Dir}/root.zip`);
+const rootZip = Buffer.from(zip.toBuffer());
+await Deno.writeFile(`${buildDir}/root.zip`, rootZip);
+await Deno.writeFile(`${r2Dir}/root.zip`, rootZip);
 
-// For development, put the root.zip (and its extracted contents) where it is expected
 const rootDir = `${buildDir}/root-zipfs`;
-shelljs.rm("-rf", rootDir);
-shelljs.mkdir("-p", rootDir);
+await remove(rootDir);
+await ensureDir(rootDir);
 zip.extractAllTo(rootDir, true);
-fs.writeFileSync(cacheMarker, inputHash);
+await Deno.writeTextFile(cacheMarker, inputHash);
 
-function packInputHash() {
-  const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
+async function packInputHash(): Promise<string> {
+  const workspaceRoot = resolve(dirname(fromFileUrl(import.meta.url)), "../../..");
   const inputs = [
-    "package.json",
-    "package-lock.json",
+    "deno.json",
+    "deno.lock",
     "packages/dds/src",
     "packages/game/src",
-    "packages/packer/package.json",
+    "packages/packer/deno.json",
     "packages/packer/src",
   ];
-  const files = inputs.flatMap(input => filesUnder(path.join(workspaceRoot, input))).sort();
-  const hash = createHash("sha256");
+  const files: string[] = [];
+  for (const input of inputs) {
+    const target = join(workspaceRoot, input);
+    const stat = await Deno.stat(target);
+    if (stat.isFile) files.push(target);
+    else for await (const entry of walk(target, { includeDirs: false })) files.push(entry.path);
+  }
+  files.sort();
+
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
   for (const file of files) {
-    hash.update(path.relative(workspaceRoot, file));
-    hash.update("\0");
-    hash.update(fs.readFileSync(file));
-    hash.update("\0");
+    chunks.push(encoder.encode(`${relative(workspaceRoot, file)}\0`));
+    chunks.push(await Deno.readFile(file));
+    chunks.push(Uint8Array.of(0));
   }
-  return hash.digest("hex");
-}
-
-function filesUnder(target: string): string[] {
-  const stat = fs.statSync(target);
-  if (stat.isFile()) return [target];
-  return fs.readdirSync(target, { withFileTypes: true }).flatMap(entry => filesUnder(path.join(target, entry.name)));
-}
-
-function ddsSize(file: string) {
-  const data = zstd.decompress(fs.readFileSync(file));
-  const tex = parseDDSDX10(data);
-  return {
-    width: tex.extent[0],
-    height: tex.extent[1],
-  };
-}
-
-function imageSize(file: string) {
-  const dimensions = imageDimensionsFromData(fs.readFileSync(file));
-  if (!dimensions) {
-    throw new Error(`Unsupported or invalid image: ${file}`);
+  const bytes = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
   }
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function remove(path: string): Promise<void> {
+  try {
+    await Deno.remove(path, { recursive: true });
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+}
+
+async function ddsSize(file: string) {
+  const tex = parseDDSDX10(zstd.decompress(await Deno.readFile(file)));
+  return { width: tex.extent[0], height: tex.extent[1] };
+}
+
+async function imageSize(file: string) {
+  const dimensions = imageDimensionsFromData(await Deno.readFile(file));
+  if (!dimensions) throw new Error(`Unsupported or invalid image: ${file}`);
   return dimensions;
 }

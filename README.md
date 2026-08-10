@@ -9,14 +9,16 @@ This is browser version of [Path of Building](https://pathofbuilding.community/)
 - Run the PoB in your browser, that's all.
 - You can select the version of the PoB to run.
 - Saved builds are stored in the browser's local storage.
-   - The `Cloud` folder appears when you are logged into the site. Builds saved there are stored in the cloud and can be accessed from anywhere.
+  - The `Cloud` folder appears when you are logged into the site. Builds saved there are stored in the cloud and can be
+    accessed from anywhere.
 - You can load a build by specifying a hash in the URL.
-   - eg. https://pob.cool/#build=https://pobb.in/WwTAYwulVav6
+  - eg. https://pob.cool/#build=https://pobb.in/WwTAYwulVav6
 
 ## Limitations
 
 - Network access is through our CORS proxy, so all users have the same source IP. This will likely cause rate limiting.
-- For security reasons, requests containing the POESESSID cookie will be unconditionally rejected. Do not enter POESESSID in the PoB of this site.
+- For security reasons, requests containing the POESESSID cookie will be unconditionally rejected. Do not enter
+  POESESSID in the PoB of this site.
 
 ## Principle
 
@@ -32,7 +34,8 @@ This is browser version of [Path of Building](https://pathofbuilding.community/)
 
 ### Clone the repository
 
-This repository includes a [submodule](https://gist.github.com/gitaarik/8735255) in `vendor/lua`. To include the submodule when cloning the repository, use the `--recurse-submodules` flag:
+This repository includes a [submodule](https://gist.github.com/gitaarik/8735255) in `vendor/lua`. To include the
+submodule when cloning the repository, use the `--recurse-submodules` flag:
 
 ```bash
 git clone --recurse-submodules <repository-url>
@@ -51,11 +54,13 @@ git submodule update
 mise run setup
 ```
 
-This installs the pinned tools and npm dependencies, initializes the submodules, and installs the repository hooks.
+This installs the pinned tools and Deno-managed dependencies, initializes the submodules, and installs the repository
+hooks.
 
 ### Pack upstream PoB
 
-Before running the development server, you need to pack the upstream PoB assets into a structure that the driver can use.
+Before running the development server, you need to pack the upstream PoB assets into a structure that the driver can
+use.
 
 ```bash
 mise run pack --game poe2 --tag v0.8.0
@@ -63,8 +68,8 @@ mise run pack --game poe2 --tag v0.8.0
 
 ### Run driver shell
 
-Set up a development server for the PoB web driver alone.
-The human-facing development task uses port 5173 because `asset.pob.cool` allows that development origin.
+Set up a development server for the PoB web driver alone. The human-facing development task uses port 5173 because
+`asset.pob.cool` allows that development origin.
 
 ```bash
 mise run driver:dev --game poe2 --version v0.8.0
@@ -72,10 +77,9 @@ mise run driver:dev --game poe2 --version v0.8.0
 
 ### Run web app
 
-Set up a web application development server.
-You need to build the driver first.
-This human-facing task also requires port 5173 and fails instead of selecting another port when it is occupied.
-Its local Cloudflare Pages server and inspector use operating-system-assigned ports, which are forwarded to the frontend automatically.
+Set up a web application development server. You need to build the driver first. This human-facing task also requires
+port 5173 and fails instead of selecting another port when it is occupied. Its local Cloudflare Pages server and
+inspector use operating-system-assigned ports, which are forwarded to the frontend automatically.
 
 ```bash
 mise run web:dev
@@ -94,12 +98,12 @@ Invoke `$canvas-visual-verification` from Codex to start the driver UI and inspe
 Playwright MCP Vision Mode. The browser is stored in Playwright's standard OS cache and is not committed. Headless mode
 is the default; start Codex with `PLAYWRIGHT_MCP_HEADED=1` when a visible browser is needed for investigation.
 
-Use the fast check during development. Run the full check, including the WebAssembly and web builds, before completing
+Use the fast check during development. Run the full test, including the WebAssembly and web builds, before completing
 build-related or cross-package changes:
 
 ```bash
 mise run check
-mise run check:full
+mise run test
 ```
 
 For the adopted async runtime design, see
@@ -119,8 +123,8 @@ change. The driver runtime suite starts each head in Chromium and checks item da
 WebGL2 rendering, frame statistics, and the DOM zoom control. The web runtime suite checks the critical path from the
 landing page through version loading and routing to a rendered driver session and web toolbar control. Browser tests and
 MCP visual verification select an available development-server port and use the URL reported by Vite, so they can run
-alongside the human-facing port 5173 server. To run only one game's current head, pass `--game`; add `--version` only for
-a release-specific compatibility check:
+alongside the human-facing port 5173 server. To run only one game's current head, pass `--game`; add `--version` only
+for a release-specific compatibility check:
 
 ```bash
 mise run test:e2e:driver --game poe2
@@ -132,9 +136,9 @@ The full browser suites are intentionally kept out of the fast/full checks and p
 Chromium and Firefox.
 
 To verify the complete Wasm symbolication path without deploying, set `SENTRY_LIVE_AUTH_TOKEN` and `SENTRY_LIVE_DSN`,
-then run `mise run test:sentry:live`. These test-only variables are separate from deployment credentials. The task uploads
-the local Wasm debug file, sends intentional traps from Chromium and Firefox, and waits for both events to resolve to the
-test functions in `driver.c`. The token requires `org:ci` and `project:read`; `SENTRY_LIVE_ORG` and
+then run `mise run test:sentry:live`. These test-only variables are separate from deployment credentials. The task
+uploads the local Wasm debug file, sends intentional traps from Chromium and Firefox, and waits for both events to
+resolve to the test functions in `driver.c`. The token requires `org:ci` and `project:read`; `SENTRY_LIVE_ORG` and
 `SENTRY_LIVE_PROJECT` override the default project.
 
 ### pob.cool maintenance for owners
@@ -249,14 +253,20 @@ graph TB
 
 ### Core Architecture
 
-**WebAssembly Runtime**: The heart of pob-web is a custom Lua 5.2 interpreter compiled to WebAssembly using Emscripten. This allows the original Path of Building Lua codebase to run unmodified in the browser, maintaining 100% compatibility with the desktop version.
+**WebAssembly Runtime**: The heart of pob-web is a custom Lua 5.2 interpreter compiled to WebAssembly using Emscripten.
+This allows the original Path of Building Lua codebase to run unmodified in the browser, maintaining 100% compatibility
+with the desktop version.
 
-**C Bridge Layer**: A critical component written in C (`packages/driver/src/c/`) acts as a bridge between the Lua runtime and the JavaScript driver. This includes:
+**C Bridge Layer**: A critical component written in C (`packages/driver/src/c/`) acts as a bridge between the Lua
+runtime and the JavaScript driver. This includes:
+
 - Custom implementations of PoB's graphics modules (equivalent to SimpleGraphic)
 - File system abstraction using Emscripten's WASMFS
 - Memory management and data marshaling between Lua and JavaScript contexts
 
-**JavaScript Driver**: The `packages/driver` emulates the desktop PoB window environment using vanilla JavaScript and WebGL:
+**JavaScript Driver**: The `packages/driver` emulates the desktop PoB window environment using vanilla JavaScript and
+WebGL:
+
 - **Canvas Management**: Handles multiple rendering contexts and viewport management
 - **Event System**: Translates browser events (mouse, keyboard, touch) to PoB-compatible input
 - **WebGL Renderer**: Hardware-accelerated rendering pipeline that interprets PoB's drawing commands
@@ -265,16 +275,19 @@ graph TB
 ### Asset Pipeline
 
 **Upstream Integration**: The `packages/packer` tool automatically processes releases from upstream PoB repositories:
+
 - Downloads and extracts game assets, Lua scripts, and data files
 - Compresses textures and optimizes assets for web delivery
 - Generates manifest files for efficient loading
 - Supports multiple games (PoE1, PoE2, Last Epoch) with version management
 
-**Content Delivery**: Assets are served via CDN (asset.pob.cool) in production, with local filesystem fallback during development using Vite's virtual filesystem.
+**Content Delivery**: Assets are served via CDN (asset.pob.cool) in production, with local filesystem fallback during
+development using Vite's virtual filesystem.
 
 ### Web Application
 
 **React Frontend**: The `packages/web` provides the user-facing application:
+
 - React Router v7 with server-side rendering capabilities
 - Cloudflare Pages deployment with Workers functions for API endpoints
 - Auth0 integration for user authentication and cloud storage
@@ -289,4 +302,5 @@ graph TB
 5. **Network Isolation**: CORS proxy for external API calls while maintaining security
 6. **Asset Optimization**: Balancing file size with loading performance for large game databases
 
-This architecture enables running complex desktop software in the browser while maintaining the principle of zero modifications to the original PoB codebase.
+This architecture enables running complex desktop software in the browser while maintaining the principle of zero
+modifications to the original PoB codebase.

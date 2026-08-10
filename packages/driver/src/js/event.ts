@@ -31,4 +31,4 @@ export class EventHandler {
   }
 }
 
-export type { MouseState } from "./mouse-handler";
+export type { MouseState } from "./mouse-handler.ts";

@@ -1,25 +1,27 @@
 import * as zstd from "@bokuweb/zstd-wasm";
-import { Format, parseDDSDX10, Target, Texture } from "dds/src";
-import { log, tag } from "./logger";
+import { Format, parseDDSDX10, Target, Texture } from "dds";
+import { log, tag } from "./logger.ts";
 
-export type TextureSource = {
-  flags: number;
-  target: Target;
-  format: Format;
-  width: number;
-  height: number;
-  layers: number;
-  levels: number;
-} & (
-  | {
+export type TextureSource =
+  & {
+    flags: number;
+    target: Target;
+    format: Format;
+    width: number;
+    height: number;
+    layers: number;
+    levels: number;
+  }
+  & (
+    | {
       type: "Image";
       texture: (ImageBitmap | OffscreenCanvas | ImageData)[];
     }
-  | {
+    | {
       type: "Texture";
       texture: Texture;
     }
-);
+  );
 
 export namespace TextureSource {
   export function newImage(texture: ImageBitmap | OffscreenCanvas | ImageData, flags: number): TextureSource {

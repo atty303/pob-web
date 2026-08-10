@@ -1,5 +1,4 @@
 [tools]
-node = "24.12.0"
 deno = "2.9.3"
 emsdk = "6.0.6"
 cmake = "4.3.3"
@@ -9,71 +8,45 @@ hk = "1.54.1"
 pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
-"npm:@playwright/mcp" = "0.0.79"
 sentry-cli = "3.6.2"
 
 [settings]
 lockfile = true
 
 [tasks.install]
-run = "npm ci"
+run = "deno ci"
 sources = [
-  "package.json",
-  "package-lock.json"
+  "deno.json",
+  "deno.lock",
+  "packages/*/deno.json"
 ]
 outputs = { auto = true }
 
 [tasks.setup]
 description = "Set up dependencies, submodules, and repository hooks"
-run = """
-git submodule update --init --recursive
-hk install --mise
-"""
-depends = ["install"]
+run = "deno task repo setup"
 
 [tasks."test:driver"]
 description = "Run focused driver behavior tests"
-run = "npm test -w packages/driver"
+run = "deno task --filter pob-driver test"
 depends = ["driver:build"]
 
 [tasks."test:web"]
 description = "Run focused web behavior tests"
-run = "npm test -w packages/web"
+run = "deno task --filter pob-web test"
 depends = ["install"]
 
 [tasks."test:upstream-sync"]
 description = "Check and test the upstream sync tooling"
-run = """
-deno fmt --check deno.json tools/upstream-sync
-deno lint tools/upstream-sync
-deno check tools/upstream-sync/main.ts tools/upstream-sync/*_test.ts
-deno test --allow-read --allow-write tools/upstream-sync
-deno run tools/upstream-sync/main.ts --help >/dev/null
-"""
+run = "deno task repo test-tool upstream-sync"
 
 [tasks."test:sentry-upload"]
 description = "Check and test the Sentry debug information upload tooling"
-run = """
-deno fmt --check deno.json tools/sentry-upload
-deno lint tools/sentry-upload
-deno check tools/sentry-upload/main.ts tools/sentry-upload/main_test.ts
-deno test --allow-read --allow-write tools/sentry-upload
-"""
+run = "deno task repo test-tool sentry-upload"
 
 [tasks."test:driver:debuginfo"]
 description = "Verify production Wasm debug information generation"
-run = """
-test -f packages/driver/dist/release/driver.wasm.debug.wasm
-llvm-objdump -h packages/driver/dist/release/driver.wasm | grep -q 'build_id'
-llvm-objdump -h packages/driver/dist/release/driver.wasm | grep -q 'external_debug_info'
-if llvm-objdump -h packages/driver/dist/release/driver.wasm | grep -q '[.]debug_'; then
-  echo 'release Wasm contains DWARF sections' >&2
-  exit 1
-fi
-llvm-objdump -h packages/driver/dist/release/driver.wasm.debug.wasm | grep -q '[.]debug_info'
-sentry-cli debug-files check packages/driver/dist/release/driver.wasm | grep -q 'Usable: yes'
-sentry-cli debug-files check packages/driver/dist/release/driver.wasm.debug.wasm | grep -q 'Usable: yes'
-"""
+run = "deno task repo driver-debug-info"
 depends = ["driver:build"]
 
 [tasks."upstream-sync:collect"]
@@ -86,12 +59,7 @@ flag "--version-file <path>" { default "version.json" }
 flag "--output <path>"
 flag "--dry-run"
 """
-run = """
-set -- collect --game "${usage_game?}" --version-file "${usage_version_file?}" --output "${usage_output?}"
-[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
-deno run --allow-env --allow-net=api.github.com --allow-read --allow-write --allow-run=mise \
-  tools/upstream-sync/main.ts "$@"
-"""
+run = 'deno run --allow-env --allow-net=api.github.com --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts collect --game "${usage_game?}" --version-file "${usage_version_file?}" --output "${usage_output?}" ${usage_dry_run:+--dry-run}'
 
 [tasks."upstream-sync:merge"]
 description = "Merge matrix compatibility results into version metadata"
@@ -100,11 +68,7 @@ flag "--version-file <path>" { default "version.json" }
 flag "--results-directory <path>"
 flag "--dry-run"
 """
-run = """
-set -- merge --version-file "${usage_version_file?}" --results-directory "${usage_results_directory?}"
-[ -n "$usage_dry_run" ] && set -- "$@" --dry-run
-deno run --allow-env --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts "$@"
-"""
+run = 'deno run --allow-env --allow-read --allow-write --allow-run=mise tools/upstream-sync/main.ts merge --version-file "${usage_version_file?}" --results-directory "${usage_results_directory?}" ${usage_dry_run:+--dry-run}'
 
 [tasks."test:e2e:driver"]
 description = "Run local driver runtime tests"
@@ -112,108 +76,55 @@ usage = """
 flag "--game <game>" { choices "poe1" "poe2" "le" }
 flag "--version <version>"
 """
-run = """
-if [ -z "$usage_game" ] && [ -n "$usage_version" ]; then
-  echo "--version requires --game" >&2
-  exit 2
-fi
-if [ -n "$usage_game" ]; then
-  export RUN_GAME="$usage_game"
-  if [ -n "$usage_version" ]; then
-    export RUN_VERSION="$usage_version"
-  else
-    unset RUN_VERSION
-  fi
-else
-  unset RUN_GAME RUN_VERSION
-fi
-npm exec -- tsx tools/pack-e2e-assets.ts driver
-npm run test:e2e -w packages/driver
-"""
+run = 'deno task repo test-e2e-driver ${usage_game:+--game "$usage_game"} ${usage_version:+--version "$usage_version"}'
 depends = ["driver:build"]
 
 [tasks."test:e2e:web"]
 description = "Run the local web-to-driver critical-path test"
-run = """
-npm exec -- tsx tools/pack-e2e-assets.ts web
-npm run test:e2e -w packages/web
-"""
+run = "deno task repo test-e2e-web"
 depends = ["driver:build"]
 
 [tasks."test:sentry:live"]
 description = "Verify Chromium and Firefox Wasm symbolication through Sentry"
-run = """
-test -n "${SENTRY_LIVE_AUTH_TOKEN:-}" || { echo 'SENTRY_LIVE_AUTH_TOKEN is required' >&2; exit 1; }
-test -n "${SENTRY_LIVE_DSN:-}" || { echo 'SENTRY_LIVE_DSN is required' >&2; exit 1; }
-SENTRY_AUTH_TOKEN="$SENTRY_LIVE_AUTH_TOKEN" sentry-cli debug-files upload --org "${SENTRY_LIVE_ORG:-atty303}" --project "${SENTRY_LIVE_PROJECT:-pob-web}" --type wasm --include-sources --wait packages/driver/dist/release/driver.wasm.debug.wasm
-npm exec -- tsx tools/pack-e2e-assets.ts web
-SENTRY_LIVE_TEST=1 npm run test:e2e -w packages/web -- sentry-wasm.spec.ts
-"""
+run = "deno task repo sentry-live"
 depends = ["driver:build"]
 
 [tasks."benchmark:setup"]
 description = "Install the Chromium and Firefox browsers used for driver benchmarks"
-run = "npm exec -- playwright install chromium firefox"
+run = "deno task playwright install chromium firefox"
 depends = ["install"]
 
 [tasks."benchmark:driver"]
 description = "Benchmark a release driver build in Chromium and Firefox"
-run = '''
-export RUN_GAME=poe1
-export RUN_VERSION=v2.66.2
-export RUN_BUILD=release
-unset POB_COOL_ASSET
-npm exec -- tsx tools/pack-e2e-assets.ts driver
-npm run -w packages/driver build:release
-npm run -w packages/driver test:performance
-'''
+run = "deno task repo benchmark-driver"
 depends = ["benchmark:setup"]
 
 [tasks.check]
-description = "Run generated-file, static, and driver checks"
+description = "Run generated-file and static checks"
 usage = 'arg "[files]" var=#true'
-run = """
-npm exec -w packages/web -- react-router typegen
-if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
-"""
-depends = ["install", "test:driver", "test:web", "test:driver:debuginfo", "test:sentry-upload", "test:upstream-sync", "driver:build"]
+run = 'if [ -n "$usage_files" ]; then eval "deno task repo check $usage_files"; else deno task repo check; fi'
+depends = ["install"]
 
 [tasks.fix]
 description = "Fix formatting and lint issues"
 usage = 'arg "[files]" var=#true'
-run = 'if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk fix "$@"'
+run = 'if [ -n "$usage_files" ]; then eval "deno task repo fix $usage_files"; else deno task repo fix; fi'
 depends = ["install"]
 
-[tasks."check:full"]
-description = "Run all checks and production builds"
-run = """
-mise run --skip-deps web:build
-if find packages/web/build/client -name '*.debug.wasm' -print -quit | grep -q .; then
-  echo 'web build contains Wasm debug sidecars' >&2
-  exit 1
-fi
-"""
-depends = ["check", "driver:build"]
+[tasks.test]
+description = "Run all reproducible checks, tests, and production builds"
+run = "deno task repo test"
+depends = ["install"]
 
 [tasks."playwright:mcp"]
 description = "Start Playwright MCP with coordinate-based Vision Mode"
 depends = ["install"]
-run = """
-chromium_path="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
-if [ ! -x "$chromium_path" ]; then
-  echo "Chromium is not installed; run 'mise run visual:setup' first" >&2
-  exit 1
-fi
-
-args=(--caps=vision --isolated --viewport-size=1440x900 --executable-path="$chromium_path")
-[ "${PLAYWRIGHT_MCP_HEADED:-}" = "1" ] || args+=(--headless)
-exec playwright-mcp "${args[@]}"
-"""
+run = "deno task repo playwright-mcp"
 
 [tasks."visual:setup"]
 description = "Install the Chromium browser used for visual verification"
 depends = ["install"]
-run = "npm exec -- playwright install chromium"
+run = "deno task playwright install chromium"
 
 [tasks."visual:dev"]
 description = "Start the driver UI for interactive visual verification"
@@ -231,31 +142,7 @@ flag "--build <build>" {
 }
 flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"
 """
-run = """
-export RUN_GAME="${usage_game?}"
-export RUN_VERSION="${usage_version:-}"
-export RUN_BUILD="${usage_build?}"
-if [ -n "$usage_pob_cool_asset" ]; then
-  export POB_COOL_ASSET=true
-else
-  unset POB_COOL_ASSET
-fi
-
-if [ -z "$RUN_VERSION" ]; then
-  RUN_VERSION="$(node -e 'const versions = require("./version.json"); process.stdout.write(versions[process.env.RUN_GAME].head)')"
-  export RUN_VERSION
-fi
-
-if [ -z "${POB_COOL_ASSET:-}" ]; then
-  asset_path="packages/packer/r2/games/$RUN_GAME/versions/$RUN_VERSION/root.zip"
-  if [ ! -f "$asset_path" ]; then
-    echo "Local assets are missing. Run: mise run pack --game $RUN_GAME --tag $RUN_VERSION" >&2
-    exit 1
-  fi
-fi
-
-npm run -w packages/driver dev -- --host 127.0.0.1
-"""
+run = 'deno task repo visual-dev --game "${usage_game?}" ${usage_version:+--version "$usage_version"} --build "${usage_build?}" ${usage_pob_cool_asset:+--pob-cool-asset}'
 depends = ["driver:build"]
 
 [tasks.pack]
@@ -264,14 +151,12 @@ usage = """
 flag "--game <game>" { choices "poe1" "poe2" "le" }
 flag "--tag <tag>"
 """
-run = """
-npm run -w packages/packer pack "${usage_tag?}" "${usage_game?}" clone
-"""
+run = 'deno task repo pack --game "${usage_game?}" --tag "${usage_tag?}"'
 depends = ["install"]
 
 [tasks."driver:build"]
 description = "Build the driver package"
-run = "npm run -w packages/driver build"
+run = "deno task repo driver-build"
 sources = [
   "mise.toml",
   "mise.lock",
@@ -305,19 +190,12 @@ flag "--build <build>" {
 }
 flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
 """
-run = """
-export RUN_GAME="${usage_game?}"
-export RUN_VERSION="${usage_version?}"
-export RUN_BUILD="${usage_build?}"
-[ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
-
-npm run -w packages/driver dev -- --port 5173 --strictPort
-"""
+run = 'deno task repo driver-dev ${usage_game:+--game "$usage_game"} ${usage_version:+--version "$usage_version"} --build "${usage_build?}" ${usage_pob_cool_asset:+--pob-cool-asset}'
 depends = ["driver:build"]
 
 [tasks."web:build"]
 description = "Build the web package"
-run = "npm run -w packages/web build"
+run = "deno task --filter pob-web build"
 depends = ["driver:build"]
 
 [tasks."sentry:upload"]
@@ -326,12 +204,7 @@ run = "deno run --allow-env=SENTRY_AUTH_TOKEN,SENTRY_RELEASE --allow-read --allo
 
 [tasks."web:deploy"]
 description = "Build, upload source maps, and deploy the web package"
-run = """
-export DEPLOYMENT=cloudflare
-npm run -w packages/web build
-mise run sentry:upload
-npm run -w packages/web deploy:pages
-"""
+run = "deno task repo web-deploy"
 depends = ["install", "driver:build"]
 
 [tasks."web:dev"]
@@ -339,8 +212,5 @@ description = "Start dev server for web"
 usage = """
 flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
 """
-run = """
-[ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
-npm run -w packages/web dev
-"""
+run = 'deno task repo web-dev ${usage_pob_cool_asset:+--pob-cool-asset}'
 depends = ["driver:build"]

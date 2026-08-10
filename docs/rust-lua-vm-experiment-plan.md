@@ -84,7 +84,7 @@ ABI. Compilation runs asynchronously while the interpreter continues to
 execute.
 
 Place an experimental crate near the driver, for example under
-`packages/driver/runtime-rs/`. Keep it outside the npm workspace model and build
+`packages/driver/runtime-rs/`. Keep it outside the Deno workspace model and build
 it through dedicated `mise` tasks. Do not replace the current runtime until all
 compatibility and performance gates pass.
 
@@ -376,7 +376,7 @@ Expand compatibility only after the performance gates pass, in this order:
 At each stage run focused static and differential tests before driver E2E and
 visual verification. Before completion run `mise run check`,
 `mise run test:e2e:driver`, `mise run benchmark:driver`, Canvas visual
-verification, and `mise run check:full`. Perform the Chromium benchmark last.
+verification, and `mise run test`. Perform the Chromium benchmark last.
 
 Remove the legacy runtime only in a separate logical change after all supported
 games, critical operations, error reporting, and release checks pass. Do not

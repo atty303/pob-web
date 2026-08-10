@@ -215,42 +215,6 @@ checksum = "sha256:07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78d
 url = "https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip"
 url_api = "https://api.github.com/repos/ninja-build/ninja/releases/assets/318863577"
 
-[[tools.node]]
-version = "24.12.0"
-backend = "core:node"
-
-[tools.node."platforms.linux-arm64"]
-checksum = "sha256:9b2a2eeb98a8eb37361224e2a1d060300ad2dd143af58dfdb16de785df0f1228"
-url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-linux-arm64.tar.gz"
-
-[tools.node."platforms.linux-arm64-musl"]
-checksum = "sha256:ef0dc66e375a19442d54b25c28e2481059319a3ecd7118a530372ed80fbf86ac"
-url = "https://unofficial-builds.nodejs.org/download/release/v24.12.0/node-v24.12.0-linux-arm64-musl.tar.gz"
-
-[tools.node."platforms.linux-x64"]
-checksum = "sha256:6159227e0af7d7c3c6bb2fa900452b04a6cb8841a702a79acc613209d70b04d0"
-url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-linux-x64.tar.gz"
-
-[tools.node."platforms.linux-x64-musl"]
-checksum = "sha256:7ad71a3170aac1c5448f2ef3dca05557e6e89e1201fa23e8600c73eebd4a352f"
-url = "https://unofficial-builds.nodejs.org/download/release/v24.12.0/node-v24.12.0-linux-x64-musl.tar.gz"
-
-[tools.node."platforms.macos-arm64"]
-checksum = "sha256:319f221adc5e44ff0ed57e8a441b2284f02b8dc6fc87b8eb92a6a93643fd8080"
-url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-darwin-arm64.tar.gz"
-
-[tools.node."platforms.macos-x64"]
-checksum = "sha256:b82ea4c62fd08e250cab59d625e75d77cc5b0a3d60c6698ebee4545c88a169c5"
-url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-darwin-x64.tar.gz"
-
-[tools.node."platforms.windows-x64"]
-checksum = "sha256:9c125f61ae947b52e779095830f9cac267846a043ef7192183c84016aaad2812"
-url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-win-x64.zip"
-
-[[tools."npm:@playwright/mcp"]]
-version = "0.0.79"
-backend = "npm:@playwright/mcp"
-
 [[tools.pkl]]
 version = "0.31.0"
 backend = "aqua:apple/pkl"

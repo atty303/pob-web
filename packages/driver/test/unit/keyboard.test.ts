@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import { type DOMKey, DOMKeyboardState, type PoBKey, PoBKeyboardState } from "../../src/js/keyboard";
+import { assertEquals } from "@std/assert";
+import { type DOMKey, DOMKeyboardState, type PoBKey, PoBKeyboardState } from "../../src/js/keyboard.ts";
 
 type Event = { type: "down" | "up" | "char"; value: string };
 
@@ -14,40 +13,40 @@ function makeKeyboard() {
   return { dom: DOMKeyboardState.make(pob), events, keys: pob.pobKeys };
 }
 
-test("DOM keys map to PoB keys and update held state", () => {
+Deno.test("DOM keys map to PoB keys and update held state", () => {
   const { dom, events, keys } = makeKeyboard();
 
   dom.keydown("ArrowLeft" as DOMKey);
-  assert.equal(keys.has("LEFT" as PoBKey), true);
+  assertEquals(keys.has("LEFT" as PoBKey), true);
   dom.keyup("ArrowLeft" as DOMKey);
 
-  assert.equal(keys.size, 0);
-  assert.deepEqual(events, [
+  assertEquals(keys.size, 0);
+  assertEquals(events, [
     { type: "down", value: "LEFT" },
     { type: "up", value: "LEFT" },
   ]);
 });
 
-test("special DOM keys emit their PoB character", () => {
+Deno.test("special DOM keys emit their PoB character", () => {
   const { dom, events } = makeKeyboard();
   dom.keydown("Enter" as DOMKey);
 
-  assert.deepEqual(events, [
+  assertEquals(events, [
     { type: "down", value: "RETURN" },
     { type: "char", value: "\r" },
   ]);
 });
 
-test("virtual Shift remains held and transforms characters", () => {
+Deno.test("virtual Shift remains held and transforms characters", () => {
   const { dom, events } = makeKeyboard();
 
-  assert.deepEqual([...dom.virtualKeyPress("Shift" as DOMKey, true)], ["Shift"]);
+  assertEquals([...dom.virtualKeyPress("Shift" as DOMKey, true)], ["Shift"]);
   dom.virtualKeyPress("a" as DOMKey, false);
   dom.virtualKeyPress("1" as DOMKey, false);
-  assert.deepEqual([...dom.virtualKeyPress("Shift" as DOMKey, true)], []);
+  assertEquals([...dom.virtualKeyPress("Shift" as DOMKey, true)], []);
 
-  assert.deepEqual(
-    events.filter(event => event.type === "char"),
+  assertEquals(
+    events.filter((event) => event.type === "char"),
     [
       { type: "char", value: "A" },
       { type: "char", value: "!" },

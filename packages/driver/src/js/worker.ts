@@ -1,11 +1,9 @@
-/// <reference types="emscripten" />
-
 import * as Comlink from "comlink";
-import { markEnvironmentError } from "./error";
-import { ImageRepository } from "./image";
-import type { PoBKey } from "./keyboard";
-import { log, tag } from "./logger";
-import type { MouseState } from "./mouse-handler";
+import { markEnvironmentError } from "./error.ts";
+import { ImageRepository } from "./image.ts";
+import type { PoBKey } from "./keyboard.ts";
+import { log, tag } from "./logger.ts";
+import type { MouseState } from "./mouse-handler.ts";
 import {
   BinPackingTextRasterizer,
   loadFonts,
@@ -15,9 +13,9 @@ import {
   type TextRasterizer,
   WebGL1Backend,
   WebGPUBackend,
-} from "./renderer";
-import { createRpcClient } from "./rpc";
-import { registerSentryWasm } from "./sentry-wasm";
+} from "./renderer/index.ts";
+import { createRpcClient } from "./rpc.ts";
+import { registerSentryWasm } from "./sentry-wasm.ts";
 
 const setSentryWasmCodeFile = registerSentryWasm(self);
 const debugWasmUrl = new URL("../../dist/debug/driver.wasm", import.meta.url).href;

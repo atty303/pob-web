@@ -30,7 +30,7 @@ export function prepareFetchHeaders(headers: Record<string, string>) {
   if (Object.entries(headers).some(([key, value]) => /poesessid/i.test(key) || /poesessid/i.test(value))) {
     throw new Error("POESESSID is not allowed to be sent to the server");
   }
-  if (Object.keys(headers).some(key => key.toLowerCase() === "content-type")) return headers;
+  if (Object.keys(headers).some((key) => key.toLowerCase() === "content-type")) return headers;
   return { ...headers, "Content-Type": "application/x-www-form-urlencoded" };
 }
 
@@ -74,8 +74,9 @@ export function exposeRpcPort(
       const result = await handle(request.operation, request.args.slice(1), request.data);
       const metadata = encoder.encode(JSON.stringify({ value: result.value }));
       const binary = result.data ?? new Uint8Array();
-      if (metadata.length + binary.length > output.length)
+      if (metadata.length + binary.length > output.length) {
         throw new Error(`RPC ${request.operation} response is too large`);
+      }
       output.set(metadata);
       output.set(binary, metadata.length);
       Atomics.store(control, 1, metadata.length);

@@ -1,12 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
+import * as path from "@std/path";
 import { defineConfig } from "@playwright/test";
-import { releases } from "./test/e2e/releases";
+import { releases } from "./test/e2e/releases.mts";
 
-if (process.env.POB_COOL_ASSET !== "true") {
-  const assetRoot = path.resolve(import.meta.dirname, "../packer/r2");
+if (Deno.env.get("POB_COOL_ASSET") !== "true") {
+  const assetRoot = path.resolve(path.dirname(path.fromFileUrl(import.meta.url)), "../packer/r2");
   const missing = releases.filter(
-    ({ game, version }) => !fs.existsSync(path.join(assetRoot, "games", game, "versions", version, "root.zip")),
+    ({ game, version }) => !exists(path.join(assetRoot, "games", game, "versions", version, "root.zip")),
   );
   if (missing.length) {
     const commands = missing.map(({ game, version }) => `mise run pack --game ${game} --tag ${version}`).join("\n");
@@ -28,9 +27,19 @@ export default defineConfig({
     video: "off",
   },
   webServer: {
-    command: "npm run test:e2e:serve",
+    command: "deno task test:e2e:serve",
     wait: { stdout: /Local:\s+(?<dev_server_url>http:\/\/127\.0\.0\.1:\d+\/)/ },
     reuseExistingServer: false,
     timeout: 30_000,
   },
 });
+
+function exists(file: string): boolean {
+  try {
+    Deno.statSync(file);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return false;
+    throw error;
+  }
+}

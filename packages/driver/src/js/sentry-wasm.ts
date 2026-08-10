@@ -5,7 +5,7 @@ export function registerSentryWasm(worker: WorkerTarget): (codeFile: string) => 
   let codeFile = "";
   const instantiate = WebAssembly.instantiate;
   const wrappedInstantiate = async (source: BufferSource, imports?: WebAssembly.Imports): Promise<WasmResult> => {
-    const result = await instantiate(source, imports);
+    const result = await instantiate(source, imports) as unknown as WasmResult;
     try {
       const image = createDebugImage(result.module, codeFile);
       if (image) {
@@ -17,7 +17,7 @@ export function registerSentryWasm(worker: WorkerTarget): (codeFile: string) => 
     return result;
   };
   WebAssembly.instantiate = wrappedInstantiate as typeof WebAssembly.instantiate;
-  return value => {
+  return (value) => {
     codeFile = value;
   };
 }
@@ -26,7 +26,7 @@ function createDebugImage(module: WebAssembly.Module, codeFile: string) {
   const buildIdSection = WebAssembly.Module.customSections(module, "build_id")[0];
   if (!buildIdSection || !codeFile) return undefined;
 
-  const codeId = Array.from(new Uint8Array(buildIdSection), byte => byte.toString(16).padStart(2, "0")).join("");
+  const codeId = Array.from(new Uint8Array(buildIdSection), (byte) => byte.toString(16).padStart(2, "0")).join("");
   const externalDebugSection = WebAssembly.Module.customSections(module, "external_debug_info")[0];
   const debugFile = externalDebugSection
     ? new URL(new TextDecoder().decode(externalDebugSection), codeFile).href

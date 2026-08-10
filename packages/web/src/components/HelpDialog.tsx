@@ -95,7 +95,7 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
       <div
         className="pw:modal-backdrop"
         onClick={onClose}
-        onKeyDown={e => e.key === "Escape" && onClose()}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
         role="button"
         tabIndex={0}
       />

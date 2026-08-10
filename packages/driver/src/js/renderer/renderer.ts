@@ -1,8 +1,8 @@
-import { Format, Target, Texture } from "dds/src";
-import { DrawCommandInterpreter } from "../draw";
-import { type ImageRepository, TextureFlags, TextureSource } from "../image";
-import type { RenderBackend } from "./backend";
-import type { TextRasterizer, TextRender } from "./text";
+import { Format, Target, Texture } from "dds";
+import { DrawCommandInterpreter } from "../draw.ts";
+import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
+import type { RenderBackend } from "./backend.ts";
+import type { TextRasterizer, TextRender } from "./text.ts";
 
 export type TextureBitmap = {
   id: string;
@@ -23,15 +23,6 @@ const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
   return {
     id: "@white",
     source: TextureSource.newTexture(tex, TextureFlags.TF_NOMIPMAP),
-  };
-})();
-
-const BLACK_TEXTURE_BITMAP: TextureBitmap = (() => {
-  const image = new ImageData(8, 8);
-  image.data.set(Array(8 * 8 * 4).fill(0));
-  return {
-    id: "@black",
-    source: TextureSource.newImage(image, TextureFlags.TF_NOMIPMAP),
   };
 })();
 

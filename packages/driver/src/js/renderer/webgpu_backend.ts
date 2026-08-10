@@ -1,8 +1,7 @@
-import { Format, Target } from "dds/src";
-import { TextureFlags } from "../image";
-import { log, tag } from "../logger";
-import type { RenderBackend } from "./backend";
-import type { TextureBitmap } from "./renderer";
+import { Format, Target } from "dds";
+import { log, tag } from "../logger.ts";
+import type { RenderBackend } from "./backend.ts";
+import type { TextureBitmap } from "./renderer.ts";
 
 const vertexShaderSource = `
 struct Uniforms {
@@ -85,7 +84,12 @@ struct VertexOutput {
 }
 
 @group(0) @binding(1) var linearSampler: sampler;
-${Array.from({ length: maxTextures }, (_, i) => `@group(0) @binding(${i + 2}) var textures${i}: texture_2d_array<f32>;`).join("\n")}
+${
+    Array.from(
+      { length: maxTextures },
+      (_, i) => `@group(0) @binding(${i + 2}) var textures${i}: texture_2d_array<f32>;`,
+    ).join("\n")
+  }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
@@ -663,10 +667,9 @@ export class WebGPUBackend implements RenderBackend {
       }
 
       // For PNG images (Image type), always use rgba8unorm regardless of source.format
-      const formatDesc =
-        source.type === "Image"
-          ? { format: "rgba8unorm" as GPUTextureFormat, bytesPerPixel: 4, compressed: false }
-          : webgpuFormatFor(source.format, this.supportedFeatures);
+      const formatDesc = source.type === "Image"
+        ? { format: "rgba8unorm" as GPUTextureFormat, bytesPerPixel: 4, compressed: false }
+        : webgpuFormatFor(source.format, this.supportedFeatures);
 
       const mipLevels = Math.max(1, source.levels);
       // For array textures in WebGPU, ensure at least 1 layer but create as proper array

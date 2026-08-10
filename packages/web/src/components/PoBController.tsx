@@ -1,12 +1,12 @@
-import type { Driver } from "pob-driver/src/js/driver";
+import type { Driver } from "pob-driver/driver";
 import { useCallback, useRef, useState } from "react";
 import * as use from "react-use";
-import type { Games } from "../routes/_game";
-import { HelpButton } from "./HelpButton";
-import { HelpDialog } from "./HelpDialog";
-import PoBWindow from "./PoBWindow";
-import { SettingsButton } from "./SettingsButton";
-import { SettingsDialog } from "./SettingsDialog";
+import type { Games } from "../routes/_game.tsx";
+import { HelpButton } from "./HelpButton.tsx";
+import { HelpDialog } from "./HelpDialog.tsx";
+import PoBWindow from "./PoBWindow.tsx";
+import { SettingsButton } from "./SettingsButton.tsx";
+import { SettingsDialog } from "./SettingsDialog.tsx";
 
 const { useTitle } = use;
 
@@ -46,7 +46,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         onFrame={() => {}}
         onTitleChange={setTitle}
         onLayerVisibilityCallbackReady={() => {}}
-        onDriverReady={driver => {
+        onDriverReady={(driver) => {
           driverRef.current = driver;
         }}
         toolbarComponent={ToolbarComponents}

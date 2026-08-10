@@ -1,5 +1,5 @@
-import { type EnvironmentErrorCategory, environmentErrorCategory } from "pob-driver/src/js/error";
-import type { Game } from "pob-game/src";
+import { type EnvironmentErrorCategory, environmentErrorCategory } from "pob-driver/error";
+import type { Game } from "pob-game";
 
 export type ErrorPhase = "driver-start" | "build-load" | "renderer-attach" | "driver-runtime";
 
@@ -127,7 +127,7 @@ function escapeTable(value: string): string {
 }
 
 function codeBlock(value: string): string {
-  const longestFence = Math.max(2, ...[...value.matchAll(/`+/g)].map(match => match[0].length));
+  const longestFence = Math.max(2, ...[...value.matchAll(/`+/g)].map((match) => match[0].length));
   const fence = "`".repeat(longestFence + 1);
   return `${fence}text\n${value}\n${fence}`;
 }

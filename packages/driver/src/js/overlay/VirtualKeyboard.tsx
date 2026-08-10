@@ -1,8 +1,8 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
-import type { DOMKey, DOMKeyboardState } from "../keyboard";
-import { KeyButton } from "./KeyButton";
+import type { DOMKey, DOMKeyboardState } from "../keyboard.ts";
+import { KeyButton } from "./KeyButton.tsx";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;
@@ -95,7 +95,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, key
     if (!isInitialized || !keyboardRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
-      setPosition(prevPosition => constrainPositionToViewport(prevPosition));
+      setPosition((prevPosition) => constrainPositionToViewport(prevPosition));
     });
 
     const rootContainer = keyboardRef.current.closest('[style*="position: relative"]') || document.body;
@@ -109,7 +109,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, key
   useEffect(() => {
     const handleResize = () => {
       if (isInitialized) {
-        setPosition(prevPosition => constrainPositionToViewport(prevPosition));
+        setPosition((prevPosition) => constrainPositionToViewport(prevPosition));
       }
     };
 
@@ -345,16 +345,15 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, key
     >
       <div className="pw:bg-base-200/80 pw:rounded pw:relative pw:pointer-events-auto pw:px-0.5 pw:pt-6 pw:pb-2">
         <div className="">
-          {keyLayout.map((row, rowIndex) => (
+          {keyLayout.map((row) => (
             <div
-              key={`row-${row.map(k => k.event).join("-")}`}
+              key={`row-${row.map((k) => k.event).join("-")}`}
               className="pw:flex pw:gap-0.5 pw:justify-center pw:w-full pw:mt-1"
             >
-              {row.map(keyDef => {
+              {row.map((keyDef) => {
                 const { event, display, width = "38px", isModifier = false } = keyDef;
 
-                const isActive =
-                  (isModifier && heldKeys.has(event as DOMKey)) ||
+                const isActive = (isModifier && heldKeys.has(event as DOMKey)) ||
                   (event === "SymbolMode" && symbolMode) ||
                   (event === "LetterMode" && !symbolMode);
 

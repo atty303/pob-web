@@ -1,7 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const sentryDsn =
-  process.env.SENTRY_LIVE_TEST === "1" ? process.env.SENTRY_LIVE_DSN : "https://public@o0.ingest.sentry.io/0";
+const sentryDsn = Deno.env.get("SENTRY_LIVE_TEST") === "1"
+  ? Deno.env.get("SENTRY_LIVE_DSN")
+  : "https://public@o0.ingest.sentry.io/0";
 
 if (!sentryDsn) throw new Error("SENTRY_LIVE_DSN is required when SENTRY_LIVE_TEST=1");
 
@@ -20,10 +21,10 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
-    { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.ts", use: { browserName: "firefox" } },
+    { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.mts", use: { browserName: "firefox" } },
   ],
   webServer: {
-    command: "npm run test:e2e:serve",
+    command: "deno task test:e2e:serve",
     wait: { stdout: /Local:\s+(?<dev_server_url>http:\/\/127\.0\.0\.1:\d+\/)/ },
     env: { VITE_SENTRY_DSN: sentryDsn },
     reuseExistingServer: false,

@@ -1,6 +1,6 @@
-import { gameData } from "pob-game/src";
+import { gameData } from "pob-game";
 import { useState } from "react";
-import { type DiagnosticReport, describeError, formatDiagnosticReport } from "../lib/error-report";
+import { describeError, type DiagnosticReport, formatDiagnosticReport } from "../lib/error-report.ts";
 
 interface ErrorDialogProps {
   report: DiagnosticReport;
@@ -15,7 +15,8 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
   const { name, message, stack } = describeError(report.error);
   const environmentError = report.environmentCategory !== undefined;
   const upstream = gameData[report.context.game].repository;
-  const upstreamReleaseUrl = `https://github.com/${upstream.owner}/${upstream.name}/releases/tag/${report.context.pobVersion}`;
+  const upstreamReleaseUrl =
+    `https://github.com/${upstream.owner}/${upstream.name}/releases/tag/${report.context.pobVersion}`;
 
   const handleCopy = async () => {
     try {
@@ -59,25 +60,27 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
                   type="checkbox"
                   className="checkbox checkbox-sm mt-0.5"
                   checked={confirmedWebOnly}
-                  onChange={event => setConfirmedWebOnly(event.target.checked)}
+                  onChange={(event) => setConfirmedWebOnly(event.target.checked)}
                 />
                 <span>I confirmed this issue does not occur in the original application.</span>
               </label>
               <div className="mt-3">
-                {confirmedWebOnly ? (
-                  <a
-                    className="btn btn-sm btn-outline"
-                    href="https://github.com/atty303/pob-web/issues/new"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Report a pob.cool issue
-                  </a>
-                ) : (
-                  <button type="button" className="btn btn-sm btn-outline" disabled>
-                    Report a pob.cool issue
-                  </button>
-                )}
+                {confirmedWebOnly
+                  ? (
+                    <a
+                      className="btn btn-sm btn-outline"
+                      href="https://github.com/atty303/pob-web/issues/new"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Report a pob.cool issue
+                    </a>
+                  )
+                  : (
+                    <button type="button" className="btn btn-sm btn-outline" disabled>
+                      Report a pob.cool issue
+                    </button>
+                  )}
               </div>
             </section>
           )}
@@ -128,8 +131,8 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
                   {copyStatus === "copied"
                     ? "Copied"
                     : copyStatus === "failed"
-                      ? "Copy failed — try again"
-                      : "Copy Diagnostics"}
+                    ? "Copy failed — try again"
+                    : "Copy Diagnostics"}
                 </button>
               </div>
             </div>
@@ -146,7 +149,6 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
         </div>
       </div>
 
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop is for mouse only */}
       <div className="modal-backdrop bg-black/50" onClick={onClose} />
     </dialog>
   );

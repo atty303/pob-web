@@ -1,4 +1,4 @@
-import type { TextureBitmap } from "./renderer";
+import type { TextureBitmap } from "./renderer.ts";
 
 export interface RenderBackend {
   readonly canvas: OffscreenCanvas;

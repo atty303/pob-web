@@ -8,7 +8,7 @@ interface FetchRequest {
   headers: Record<string, string>;
 }
 
-export const onRequest: PagesFunction<Env> = async context => {
+export const onRequest: PagesFunction<Env> = async (context) => {
   const req: FetchRequest = await context.request.json();
   try {
     let r: Request;
@@ -30,7 +30,7 @@ export const onRequest: PagesFunction<Env> = async context => {
     }
     const rep = await fetch(r);
 
-    const headers = {};
+    const headers: Record<string, string> = {};
     for (const [key, value] of rep.headers.entries()) {
       headers[key] = value;
     }
@@ -42,12 +42,12 @@ export const onRequest: PagesFunction<Env> = async context => {
         status: rep.status,
       }),
     );
-  } catch (e) {
+  } catch (error) {
     return new Response(
       JSON.stringify({
         body: undefined,
         headers: {},
-        error: e.message,
+        error: error instanceof Error ? error.message : String(error),
       }),
     );
   }

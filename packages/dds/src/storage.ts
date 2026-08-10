@@ -1,4 +1,4 @@
-import { Format } from "./format";
+import { Format } from "./format.ts";
 
 export class StorageLinear {
   readonly blockSize: number;

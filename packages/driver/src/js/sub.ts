@@ -1,8 +1,6 @@
-/// <reference types="emscripten" />
-
 import * as Comlink from "comlink";
-import { log, tag } from "./logger";
-import { createRpcClient } from "./rpc";
+import { log, tag } from "./logger.ts";
+import { createRpcClient } from "./rpc.ts";
 
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;

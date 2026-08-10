@@ -1,17 +1,23 @@
 amends "package://github.com/jdx/hk/releases/download/v1.54.1/hk@1.54.1#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v1.54.1/hk@1.54.1#/Builtins.pkl"
-
 local linters = new Mapping<String, Step> {
 
-    ["biome"] {
-        glob = List("*.js", "*.jsx", "*.ts", "*.tsx")
+    ["deno-fmt"] {
+        glob = List("*.js", "*.jsx", "*.json", "*.jsonc", "*.md", "*.mts", "*.ts", "*.tsx")
         stage = glob
-        check = "biome check {{ files }}"
-        fix = "biome check --write {{ files }}"
-        prefix = "npx"
+        check = "deno fmt --check {{files}}"
+        fix = "deno fmt {{files}}"
     }
-    ["tsc"] = (Builtins.tsc) {
-        prefix = "npx"
+
+    ["deno-lint"] {
+        glob = List("*.js", "*.jsx", "*.mts", "*.ts", "*.tsx")
+        check = "deno lint {{files}}"
+        fix = "deno lint --fix {{files}}"
+    }
+
+    ["deno-check"] {
+        glob = List("*.js", "*.jsx", "*.mts", "*.ts", "*.tsx")
+        check = "deno run --allow-all tools/tasks/check-files.ts {{files}}"
     }
 
     ["pkl"] {

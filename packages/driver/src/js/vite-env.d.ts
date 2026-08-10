@@ -8,7 +8,7 @@ declare const __RUN_BUILD__: "release" | "debug";
 type PoBTestState = {
   started: boolean;
   frameCount: number;
-  renderStats: import("./overlay").RenderStats | null;
+  renderStats: import("./overlay/index.ts").RenderStats | null;
   title: string;
   errors: string[];
   frameSamples: { totalTime: number; rendererTime: number }[];
