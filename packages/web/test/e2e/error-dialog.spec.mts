@@ -11,9 +11,10 @@ test("expected asset failures show recovery details without offering a pob.cool 
       value: { writeText: async () => {} },
     });
   });
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
-  await page.route("**/games/poe2/versions/*/root.zip", route =>
-    route.fulfill({ status: 503, contentType: "text/plain", body: "temporarily unavailable" }),
+  await page.route("https://*.ingest.sentry.io/**", (route) => route.fulfill({ status: 200, json: {} }));
+  await page.route(
+    "**/games/poe2/versions/*/root.zip",
+    (route) => route.fulfill({ status: 503, contentType: "text/plain", body: "temporarily unavailable" }),
   );
 
   await page.goto("/poe2");
@@ -29,9 +30,10 @@ test("expected asset failures show recovery details without offering a pob.cool 
 });
 
 test("pob.cool reporting is gated by an upstream reproduction check", async ({ page }) => {
-  await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
-  await page.route("**/games/poe2/versions/*/root.zip", route =>
-    route.fulfill({ status: 200, contentType: "application/zip", body: "not a zip archive" }),
+  await page.route("https://*.ingest.sentry.io/**", (route) => route.fulfill({ status: 200, json: {} }));
+  await page.route(
+    "**/games/poe2/versions/*/root.zip",
+    (route) => route.fulfill({ status: 200, contentType: "application/zip", body: "not a zip archive" }),
   );
 
   await page.goto("/poe2");

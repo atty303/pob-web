@@ -115,7 +115,7 @@ export namespace DrawCommandInterpreter {
     }
 
     const sortedKeys = Array.from(layers.keys()).sort((a, b) => a - b);
-    return sortedKeys.map(key => layers.get(key)!);
+    return sortedKeys.map((key) => layers.get(key)!);
   }
 
   export function runRange(

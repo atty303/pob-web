@@ -12,8 +12,7 @@ import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
-import { gameData } from "pob-game/src";
-import React from "react";
+import { gameData } from "pob-game";
 import { Link, redirect } from "react-router";
 import type { Route } from "../routes/+types/_index";
 import type { Games } from "./_game.tsx";
@@ -22,7 +21,7 @@ dayjs.extend(utc);
 dayjs.extend(localeData);
 dayjs.extend(localizedFormat);
 
-export async function clientLoader(args: Route.ClientLoaderArgs) {
+export async function clientLoader(_args: Route.ClientLoaderArgs) {
   // Redirect if the landing from the pobb.in
   if (location.hash.startsWith("#build=")) {
     return redirect(`/poe1#${location.hash.slice("#build".length)}`);
@@ -59,7 +58,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               </tr>
             </thead>
             <tbody>
-              {loaderData[game].versions.map(_ => (
+              {loaderData[game].versions.map((_) => (
                 <tr key={_.value}>
                   <td>{_.value}</td>
                   <td>{dayjs.utc(_.date).local().format("ll")}</td>

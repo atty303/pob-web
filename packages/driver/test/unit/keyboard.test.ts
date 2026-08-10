@@ -46,7 +46,7 @@ Deno.test("virtual Shift remains held and transforms characters", () => {
   assertEquals([...dom.virtualKeyPress("Shift" as DOMKey, true)], []);
 
   assertEquals(
-    events.filter(event => event.type === "char"),
+    events.filter((event) => event.type === "char"),
     [
       { type: "char", value: "A" },
       { type: "char", value: "!" },

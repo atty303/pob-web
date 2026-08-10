@@ -18,7 +18,7 @@ test("steady-state PoE 1 frame time", async ({ page }, testInfo) => {
     await page.evaluate(() => window.__POB_TEST__?.resetFrameSamples());
     for (let index = 0; index < count; index += 1) {
       await page.mouse.move(20 + (index % 2), 20);
-      await page.waitForFunction(expected => (window.__POB_TEST__?.frameSamples.length ?? 0) >= expected, index + 1);
+      await page.waitForFunction((expected) => (window.__POB_TEST__?.frameSamples.length ?? 0) >= expected, index + 1);
     }
     return page.evaluate(() => window.__POB_TEST__?.frameSamples ?? []);
   };
@@ -27,9 +27,9 @@ test("steady-state PoE 1 frame time", async ({ page }, testInfo) => {
   const samples = await sampleFrames(MEASURED_FRAMES);
   expect(samples).toHaveLength(MEASURED_FRAMES);
 
-  const frame = median(samples.map(sample => sample.totalTime));
-  const renderer = median(samples.map(sample => sample.rendererTime));
-  const luaWasm = median(samples.map(sample => sample.totalTime - sample.rendererTime));
+  const frame = median(samples.map((sample) => sample.totalTime));
+  const renderer = median(samples.map((sample) => sample.rendererTime));
+  const luaWasm = median(samples.map((sample) => sample.totalTime - sample.rendererTime));
   console.log(
     JSON.stringify({ browser: testInfo.project.name, repetition: testInfo.repeatEachIndex, frame, renderer, luaWasm }),
   );

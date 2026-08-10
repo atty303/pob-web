@@ -60,15 +60,15 @@ function LineChart({ data }: { data: FrameData[] }) {
       };
     }
 
-    const ats = data.map(_ => _.at);
-    const renderTimes = data.map(_ => _.renderTime);
+    const ats = data.map((_) => _.at);
+    const renderTimes = data.map((_) => _.renderTime);
     const minX = Math.min(...ats);
     const maxX = Math.max(...ats);
     const minY = 0;
     const maxY = Math.max(...renderTimes);
 
     const series = data.reduce(
-      (acc, value, index) => {
+      (acc, _value, index) => {
         if (index > 0) {
           acc.push({
             x1: data[index - 1].at,
@@ -152,7 +152,7 @@ function RenderStatsView({
       const currentVisibility = layerVisibility.get(layerKey) ?? true;
       const newVisibility = !currentVisibility;
 
-      setLayerVisibility(prev => {
+      setLayerVisibility((prev) => {
         const newMap = new Map(prev);
         newMap.set(layerKey, newVisibility);
         return newMap;

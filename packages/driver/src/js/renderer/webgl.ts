@@ -1,4 +1,4 @@
-import { Format } from "dds/src";
+import { Format } from "dds";
 
 export type FormatDesc = {
   internal: GLenum;
@@ -20,7 +20,7 @@ export function glFormatFor(
   return desc;
 }
 
-// biome-ignore format: compact
+// deno-fmt-ignore
 function formatDescTable(gl: WebGL2RenderingContext, ext: Parameters<typeof glFormatFor>[2]): Record<number, FormatDesc> {
   return {
     [Format.RGBA8_UNORM_PACK8]: {internal: gl.RGBA8, external: gl.RGBA, type: gl.UNSIGNED_BYTE, properties: 0},

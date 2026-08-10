@@ -53,7 +53,7 @@ Deno.test("sort orders layers and replays the current viewport on a new layer", 
   const layers = DrawCommandInterpreter.sort(view);
 
   assertEquals(
-    layers.map(layer => [layer.layer, layer.sublayer]),
+    layers.map((layer) => [layer.layer, layer.sublayer]),
     [
       [0, 0],
       [1, 0],
@@ -62,7 +62,7 @@ Deno.test("sort orders layers and replays the current viewport on a new layer", 
   );
   assertEquals(layers[1].ranges[0].length, 17);
   assertEquals(
-    layers[2].ranges.map(range => range.length),
+    layers[2].ranges.map((range) => range.length),
     [17, 5],
   );
 
@@ -85,7 +85,7 @@ Deno.test("runRange decodes variable-length color escape and string commands", (
   DrawCommandInterpreter.runRange({ offset: 0, length: view.byteLength }, view, {
     onSetViewport: () => {},
     onSetColor: () => {},
-    onSetColorEscape: text => events.push(`escape:${text}`),
+    onSetColorEscape: (text) => events.push(`escape:${text}`),
     onDrawImage: () => {},
     onDrawImageQuad: () => {},
     onDrawString: (_x, _y, _align, _height, _font, text) => events.push(`string:${text}`),

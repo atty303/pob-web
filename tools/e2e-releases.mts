@@ -14,7 +14,10 @@ export const headRelease = (game: Game): E2ERelease => ({ game, version: version
 export const headReleases = games.map(headRelease);
 
 export function resolveDriverReleases(
-  environment: Readonly<Record<string, string | undefined>> = Deno.env.toObject(),
+  environment: Readonly<Record<string, string | undefined>> = {
+    RUN_GAME: Deno.env.get("RUN_GAME"),
+    RUN_VERSION: Deno.env.get("RUN_VERSION"),
+  },
 ): {
   releases: E2ERelease[];
   targeted: boolean;
@@ -29,10 +32,8 @@ export function resolveDriverReleases(
     throw new Error(`Unsupported game: ${configuredGame}`);
   }
 
-  return configuredGame === undefined
-    ? { releases: headReleases, targeted: false }
-    : {
-        releases: [{ game: configuredGame, version: configuredVersion || versions[configuredGame].head }],
-        targeted: true,
-      };
+  return configuredGame === undefined ? { releases: headReleases, targeted: false } : {
+    releases: [{ game: configuredGame, version: configuredVersion || versions[configuredGame].head }],
+    targeted: true,
+  };
 }

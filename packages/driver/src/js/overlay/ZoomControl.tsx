@@ -86,10 +86,9 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
 
   if (!isVisible) return null;
 
-  const positionClasses =
-    position === "bottom"
-      ? "pw:bottom-16 pw:left-1/2 pw:transform pw:-translate-x-1/2"
-      : "pw:right-16 pw:top-1/2 pw:transform pw:-translate-y-1/2";
+  const positionClasses = position === "bottom"
+    ? "pw:bottom-16 pw:left-1/2 pw:transform pw:-translate-x-1/2"
+    : "pw:right-16 pw:top-1/2 pw:transform pw:-translate-y-1/2";
 
   return (
     <div
@@ -154,7 +153,7 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
               <input
                 type="checkbox"
                 checked={!isFixedSize}
-                onChange={e => onFixedSizeToggle?.(!e.target.checked)}
+                onChange={(e) => onFixedSizeToggle?.(!e.target.checked)}
                 className="pw:toggle pw:toggle-xs"
               />
             </label>

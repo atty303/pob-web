@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
@@ -28,7 +28,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isLandscape,
   panModeEnabled,
   keyboardVisible,
-  performanceVisible = false,
   currentZoom = 1.0,
   currentCanvasSize = { width: 1520, height: 800 },
   isFixedSize = false,
@@ -42,7 +41,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   }, [callbacks, panModeEnabled]);
 
   const handleZoomToggle = useCallback(() => {
-    setZoomControlVisible(prev => !prev);
+    setZoomControlVisible((prev) => !prev);
   }, []);
 
   const handleFullscreenToggle = useCallback(() => {

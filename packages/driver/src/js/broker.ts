@@ -7,6 +7,7 @@ import { isLocalUserStorageOperation, markEnvironmentError } from "./error.ts";
 import { CloudflareKV } from "./fs.ts";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
 import type { SubScriptWorker } from "./sub.ts";
+// @ts-types="./vite-worker.d.ts"
 import SubWorkerObject from "./sub.ts?worker";
 
 type BrokerCallbacks = {
@@ -94,7 +95,7 @@ class AsyncBroker {
     switch (operation) {
       case "readdir": {
         const entries = await fs.promises.readdir(args[0] as string, { withFileTypes: true });
-        return { value: entries.map(entry => [entry.name, entry.isFile() ? 1 : entry.isDirectory() ? 2 : 3]) };
+        return { value: entries.map((entry) => [entry.name, entry.isFile() ? 1 : entry.isDirectory() ? 2 : 3]) };
       }
       case "lstat":
         return { value: this.serializeStat(await fs.promises.lstat(args[0] as string)) };
@@ -104,7 +105,7 @@ class AsyncBroker {
         return {
           value: this.serializeStat(
             await new Promise<zenfs.Stats>((resolve, reject) =>
-              fs.fstat(args[0] as number, (e, value) => (e ? reject(e) : resolve(value!))),
+              fs.fstat(args[0] as number, (e, value) => (e ? reject(e) : resolve(value!)))
             ),
           ),
         };
@@ -118,23 +119,33 @@ class AsyncBroker {
         };
       }
       case "close":
-        await new Promise<void>((resolve, reject) => fs.close(args[0] as number, e => (e ? reject(e) : resolve())));
+        await new Promise<void>((resolve, reject) => fs.close(args[0] as number, (e) => (e ? reject(e) : resolve())));
         this.localUserFds.delete(args[0] as number);
         return { value: 0 };
       case "read": {
         const buffer = new Uint8Array(args[1] as number);
         const bytesRead = await new Promise<number>((resolve, reject) =>
-          fs.read(args[0] as number, buffer, 0, buffer.length, args[2] as number, (e, n) =>
-            e ? reject(e) : resolve(n ?? 0),
-          ),
+          fs.read(
+            args[0] as number,
+            buffer,
+            0,
+            buffer.length,
+            args[2] as number,
+            (e, n) => e ? reject(e) : resolve(n ?? 0),
+          )
         );
         return { value: bytesRead, data: buffer.subarray(0, bytesRead) };
       }
       case "write": {
         const written = await new Promise<number>((resolve, reject) =>
-          fs.write(args[0] as number, data!, 0, data!.length, args[1] as number, (e, n) =>
-            e ? reject(e) : resolve(n ?? 0),
-          ),
+          fs.write(
+            args[0] as number,
+            data!,
+            0,
+            data!.length,
+            args[1] as number,
+            (e, n) => e ? reject(e) : resolve(n ?? 0),
+          )
         );
         return { value: written };
       }
@@ -155,7 +166,7 @@ class AsyncBroker {
         return { value: 0 };
       case "ftruncate":
         await new Promise<void>((resolve, reject) =>
-          fs.ftruncate(args[0] as number, args[1] as number, e => (e ? reject(e) : resolve())),
+          fs.ftruncate(args[0] as number, args[1] as number, (e) => (e ? reject(e) : resolve()))
         );
         return { value: 0 };
       case "fetch": {
@@ -172,8 +183,9 @@ class AsyncBroker {
         const remote = Comlink.wrap<SubScriptWorker>(worker);
         const channel = new MessageChannel();
         this.subscripts.set(id, { worker, port: channel.port1 });
-        exposeRpcPort(channel.port1, (nestedOperation, nestedArgs, nestedData) =>
-          this.handle(nestedOperation, nestedArgs, nestedData),
+        exposeRpcPort(
+          channel.port1,
+          (nestedOperation, nestedArgs, nestedData) => this.handle(nestedOperation, nestedArgs, nestedData),
         );
         const finish = (result: Uint8Array) => {
           if (!this.subscripts.has(id)) return;
@@ -193,7 +205,7 @@ class AsyncBroker {
             Comlink.proxy(finish),
             Comlink.proxy(fail),
           )
-          .catch(error => fail(error instanceof Error ? error.message : String(error)));
+          .catch((error) => fail(error instanceof Error ? error.message : String(error)));
         return { value: id };
       }
       case "subscript_abort":

@@ -1,4 +1,4 @@
-import { type Game, gameData } from "pob-game/src";
+import { type Game, gameData } from "pob-game";
 import { Driver } from "./driver.ts";
 
 (async () => {
@@ -8,16 +8,16 @@ import { Driver } from "./driver.ts";
   const version = (testMode ? params.get("version") : null) ?? __RUN_VERSION__;
   const testState: PoBTestState | undefined = testMode
     ? {
-        started: false,
-        frameCount: 0,
-        renderStats: null,
-        title: "",
-        errors: [] as string[],
-        frameSamples: [],
-        resetFrameSamples() {
-          this.frameSamples = [];
-        },
-      }
+      started: false,
+      frameCount: 0,
+      renderStats: null,
+      title: "",
+      errors: [] as string[],
+      frameSamples: [],
+      resetFrameSamples() {
+        this.frameSamples = [];
+      },
+    }
     : undefined;
 
   if (testState) window.__POB_TEST__ = testState;
@@ -26,7 +26,7 @@ import { Driver } from "./driver.ts";
   console.log("Loading driver with assets:", versionPrefix);
 
   const driver = new Driver(__RUN_BUILD__, versionPrefix, {
-    onError: error => {
+    onError: (error) => {
       testState?.errors.push(String(error));
       console.error(error);
     },
@@ -40,7 +40,7 @@ import { Driver } from "./driver.ts";
     onFetch: async (_url, _headers, _body) => {
       throw new Error("Fetch not implemented in shell");
     },
-    onTitleChange: title => {
+    onTitleChange: (title) => {
       if (testState) testState.title = title;
     },
   });
@@ -56,7 +56,7 @@ import { Driver } from "./driver.ts";
   }
   if (testState) {
     testState.started = true;
-    testState.loadBuildFromCode = code => driver.loadBuildFromCode(code);
+    testState.loadBuildFromCode = (code) => driver.loadBuildFromCode(code);
     testState.getBuildCode = () => driver.getBuildCode();
   }
 })();

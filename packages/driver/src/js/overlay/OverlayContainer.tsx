@@ -61,11 +61,11 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
   );
 
   const handleKeyboardToggle = useCallback(() => {
-    setKeyboardVisible(prev => !prev);
+    setKeyboardVisible((prev) => !prev);
   }, []);
 
   const handlePerformanceToggle = useCallback(() => {
-    setPerformanceOverlayVisible(prev => !prev);
+    setPerformanceOverlayVisible((prev) => !prev);
     callbacks.onPerformanceToggle();
   }, [callbacks]);
 
@@ -116,8 +116,8 @@ export const OverlayContainer: React.FC<OverlayContainerProps> = ({
           ...(position === "bottom"
             ? { bottom: 0, left: 0, right: 0 }
             : position === "right"
-              ? { top: 0, right: 0, bottom: 0 }
-              : { top: 0, left: 0, right: 0 }),
+            ? { top: 0, right: 0, bottom: 0 }
+            : { top: 0, left: 0, right: 0 }),
         }}
         onMouseDown={stopPropagation}
         onMouseUp={stopPropagation}

@@ -1,5 +1,5 @@
 import { assertEquals, assertMatch } from "@std/assert";
-import { markEnvironmentError } from "pob-driver/src/js/error";
+import { markEnvironmentError } from "pob-driver/error";
 import {
   collectDiagnosticReport,
   type DiagnosticContext,
@@ -29,8 +29,8 @@ function record(report: DiagnosticReport) {
   const errors: DiagnosticReport[] = [];
   const captures: { error: unknown; context: DiagnosticContext }[] = [];
   collectDiagnosticReport(report, {
-    warn: value => warnings.push(value),
-    error: value => errors.push(value),
+    warn: (value) => warnings.push(value),
+    error: (value) => errors.push(value),
     captureException: (error, diagnosticContext) => captures.push({ error, context: diagnosticContext }),
   });
   return { warnings, errors, captures };

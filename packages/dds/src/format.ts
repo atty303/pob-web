@@ -246,8 +246,6 @@ export enum Format {
   LAST = RG3B2_UNORM_PACK8,
 }
 
-const FORMAT_COUNT = Format.LAST - Format.FIRST + 1;
-
 /// Represent the source of a channel
 export enum Swizzle {
   RED = 0,
@@ -261,8 +259,6 @@ export enum Swizzle {
   ONE = 5,
   LAST = ONE,
 }
-
-const SWIZZLE_COUNT = Swizzle.LAST - Swizzle.FIRST + 1;
 
 enum Cap {
   COMPRESSED_BIT = 1 << 0,
@@ -713,7 +709,7 @@ type FormatInfo = {
   mask: [number, number, number, number];
 };
 
-// biome-ignore format: compact
+// deno-fmt-ignore
 const formatInfos: Record<Format, FormatInfo> = {
     [Format.UNDEFINED]: { blockSize: 0, blockExtent: [0, 0, 0], component: 0, swizzles: [Swizzle.ZERO, Swizzle.ZERO, Swizzle.ZERO, Swizzle.ZERO], flags: 0, ddPixelFormat: Ddpf.RGBA, d3dFormat: D3dFmt.DX10, dxgiFormat: DxgiFormatGli.R64_UINT_GLI, mask: [0, 0, 0, 0] },
 

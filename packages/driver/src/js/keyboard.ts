@@ -211,7 +211,7 @@ export const KeyboardHandler = {
 
     el.addEventListener(
       "keydown",
-      e => {
+      (e) => {
         ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
         keyboardState.keydown(e.key as DOMKey);
       },
@@ -220,7 +220,7 @@ export const KeyboardHandler = {
 
     el.addEventListener(
       "keyup",
-      e => {
+      (e) => {
         e.preventDefault();
         keyboardState.keyup(e.key as DOMKey);
       },
@@ -229,7 +229,7 @@ export const KeyboardHandler = {
 
     el.addEventListener(
       "keypress",
-      e => {
+      (e) => {
         e.preventDefault();
         keyboardState.keypress(e.key);
       },

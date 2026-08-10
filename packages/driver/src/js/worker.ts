@@ -1,5 +1,3 @@
-/// <reference types="emscripten" />
-
 import * as Comlink from "comlink";
 import { markEnvironmentError } from "./error.ts";
 import { ImageRepository } from "./image.ts";

@@ -8,6 +8,7 @@ node_modules/
 build/
 r2/
 .wrangler
+.vite/
 .react-router/
 .playwright-mcp/
 playwright-report/

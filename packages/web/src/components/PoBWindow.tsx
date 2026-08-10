@@ -1,8 +1,8 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import * as Sentry from "@sentry/react";
-import { Driver } from "pob-driver/src/js/driver";
-import type { RenderStats } from "pob-driver/src/js/renderer";
-import { type Game, gameData } from "pob-game/src";
+import { Driver } from "pob-driver/driver";
+import type { RenderStats } from "pob-driver/renderer";
+import { type Game, gameData } from "pob-game";
 import { useEffect, useRef, useState } from "react";
 import * as use from "react-use";
 import {
@@ -74,7 +74,6 @@ export default function PoBWindow(props: {
     }
   }, [props.toolbarComponent]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: toolbarComponent is handled separately
   useEffect(() => {
     onDriverReadyRef.current?.(null);
     setErrorReport(undefined);
@@ -84,10 +83,10 @@ export default function PoBWindow(props: {
     const showError = (error: unknown, phase: ErrorPhase) => {
       const report = createDiagnosticReport({ error, phase, game: props.game, pobVersion: props.version });
       collectDiagnosticReport(report, {
-        warn: value => log.warn(tag.pob, "Expected environment error", value),
-        error: value => log.error(tag.pob, "Path of Building error", value),
+        warn: (value) => log.warn(tag.pob, "Expected environment error", value),
+        error: (value) => log.error(tag.pob, "Path of Building error", value),
         captureException: (exception, context) => {
-          Sentry.withScope(scope => {
+          Sentry.withScope((scope) => {
             scope.setTag("pob.game", context.game);
             scope.setTag("pob.version", context.pobVersion);
             scope.setTag("pob.error_phase", context.phase);
@@ -104,7 +103,7 @@ export default function PoBWindow(props: {
       "release",
       assetPrefix,
       {
-        onError: error => {
+        onError: (error) => {
           showError(error, "driver-runtime");
         },
         onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
@@ -142,7 +141,7 @@ export default function PoBWindow(props: {
 
           return rep;
         },
-        onTitleChange: title => onTitleChangeRef.current(title),
+        onTitleChange: (title) => onTitleChangeRef.current(title),
       },
       { onWorkerCreated: registerSentryWorker },
     );

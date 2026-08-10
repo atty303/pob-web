@@ -1,8 +1,4 @@
-import {
-  ArrowRightEndOnRectangleIcon,
-  ArrowRightStartOnRectangleIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowRightEndOnRectangleIcon, UserCircleIcon } from "@heroicons/react/24/solid";
 import type React from "react";
 
 interface AuthButtonProps {

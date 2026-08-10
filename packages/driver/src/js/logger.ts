@@ -128,7 +128,7 @@ export class Log {
 
   private log<T extends string>(level: Level, tag: T, message: unknown, optionalParams: unknown[]): void {
     if (this._callback && level >= (this._tagToLevel[tag] ?? Level.DEBUG)) {
-      this._callback(<LogLevelStr>Level[level], tag, message, optionalParams);
+      this._callback(<LogLevelStr> Level[level], tag, message, optionalParams);
     }
   }
 }

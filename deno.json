@@ -13,9 +13,21 @@
     "npm:esbuild",
     "npm:workerd"
   ],
+  "exclude": [
+    ".playwright-mcp",
+    "node_modules",
+    "vendor",
+    "packages/driver/build",
+    "packages/driver/dist",
+    "packages/driver/.vite",
+    "packages/packer/build",
+    "packages/packer/r2",
+    "packages/web/.wrangler",
+    "packages/web/.vite",
+    "packages/web/build"
+  ],
   "imports": {
     "@auth0/auth0-react": "npm:@auth0/auth0-react@^2.23.0",
-    "@biomejs/biome": "npm:@biomejs/biome@^2.5.7",
     "@bokuweb/zstd-wasm": "npm:@bokuweb/zstd-wasm@^0.0.22",
     "@cloudflare/workers-types": "npm:@cloudflare/workers-types@^5.20260809.1",
     "@cliffy/command": "jsr:@cliffy/command@1.2.1",
@@ -26,19 +38,17 @@
     "@playwright/test": "npm:@playwright/test@1.63.0-alpha-2026-08-05",
     "@react-router/dev": "npm:@react-router/dev@^7.18.2",
     "@react-router/fs-routes": "npm:@react-router/fs-routes@^7.18.2",
-    "@react-router/node": "npm:@react-router/node@^7.18.2",
     "@sentry/react": "npm:@sentry/react@^10.69.0",
     "@sentry/wasm": "npm:@sentry/wasm@^10.69.0",
     "@std/assert": "jsr:@std/assert@1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
     "@std/path": "jsr:@std/path@1.1.6",
     "@tailwindcss/typography": "npm:@tailwindcss/typography@^0.5.20",
     "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.3.3",
     "@types/adm-zip": "npm:@types/adm-zip@^0.5.8",
     "@types/emscripten": "npm:@types/emscripten@^1.41.5",
-    "@types/node": "npm:@types/node@^24.13.3",
     "@types/react": "npm:@types/react@^18.3.31",
     "@types/react-dom": "npm:@types/react-dom@^18.3.7",
-    "@types/shelljs": "npm:@types/shelljs@^0.8.17",
     "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.2.0",
     "@webgpu/types": "npm:@webgpu/types@^0.1.71",
     "@zenfs/archives": "npm:@zenfs/archives@1.0.5",
@@ -57,30 +67,36 @@
     "react-icons": "npm:react-icons@^5.7.0",
     "react-router": "npm:react-router@^7.18.2",
     "react-use": "npm:react-use@^17.6.1",
-    "shelljs": "npm:shelljs@^0.8.5",
     "tailwindcss": "npm:tailwindcss@^4.3.3",
-    "typescript": "npm:typescript@^5.9.3",
     "vite": "npm:vite@^6.4.3",
     "vite-plugin-inspect": "npm:vite-plugin-inspect@^10.3.0",
     "vite-plugin-static-copy": "npm:vite-plugin-static-copy@^2.3.2",
     "wrangler": "npm:wrangler@^4.120.0"
   },
   "fmt": {
+    "exclude": [
+      ".agents",
+      ".env.pob-cool.yaml",
+      ".github/.release-please-manifest.json",
+      ".github/workflows",
+      "CHANGELOG.md",
+      "docs"
+    ],
     "lineWidth": 120,
     "semiColons": true,
     "singleQuote": false
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"]
+      "tags": ["recommended"],
+      "exclude": ["no-namespace", "no-sloppy-imports", "no-window", "no-window-prefix", "require-await"]
     }
   },
   "tasks": {
-    "biome": "biome",
     "playwright": "playwright",
     "playwright-mcp": "playwright-mcp",
     "react-router": "react-router",
-    "tsc": "tsc",
+    "repo": "deno run --allow-all tools/tasks/main.ts",
     "vite": "vite",
     "wrangler": "wrangler"
   }

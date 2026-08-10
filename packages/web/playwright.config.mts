@@ -1,7 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const sentryDsn =
-  process.env.SENTRY_LIVE_TEST === "1" ? process.env.SENTRY_LIVE_DSN : "https://public@o0.ingest.sentry.io/0";
+const sentryDsn = Deno.env.get("SENTRY_LIVE_TEST") === "1"
+  ? Deno.env.get("SENTRY_LIVE_DSN")
+  : "https://public@o0.ingest.sentry.io/0";
 
 if (!sentryDsn) throw new Error("SENTRY_LIVE_DSN is required when SENTRY_LIVE_TEST=1");
 

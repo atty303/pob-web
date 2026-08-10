@@ -6,19 +6,19 @@ interface Metadata {
   dir: boolean;
 }
 
-export const onRequest: PagesFunction<Env> = async context => {
+export const onRequest: PagesFunction<Env> = async (context) => {
   const ns = context.request.headers.get("x-user-namespace");
   const sub = context.data.sub;
   const path = Array.isArray(context.params.name)
     ? context.params.name.map(decodeURIComponent).join("/")
     : context.params.name
-      ? decodeURIComponent(context.params.name)
-      : undefined;
+    ? decodeURIComponent(context.params.name)
+    : undefined;
 
   if (!path) {
     const prefix = ns ? `user:${sub}:ns-vfs:${ns}:` : `user:${sub}:vfs:`;
     const l = await context.env.KV.list({ prefix });
-    const r = l.keys.map(k => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
+    const r = l.keys.map((k) => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
     return new Response(JSON.stringify(r));
   }
 
@@ -49,5 +49,7 @@ export const onRequest: PagesFunction<Env> = async context => {
       await context.env.KV.delete(key);
       return new Response(null, { status: 204 });
     }
+    default:
+      return new Response(null, { status: 405 });
   }
 };

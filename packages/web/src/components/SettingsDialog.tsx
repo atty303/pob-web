@@ -34,54 +34,58 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
             <div className="pw:space-y-3">
               <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Account</h3>
 
-              {isLoading ? (
-                <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-lg pw:bg-base-100">
-                  <div className="pw:loading pw:loading-spinner pw:loading-sm" />
-                  <span className="pw:text-sm pw:text-base-content/70">Loading account...</span>
-                </div>
-              ) : isAuthenticated ? (
-                <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-xl pw:bg-base-100 pw:border-2 pw:border-success">
-                  <div className="pw:w-8 pw:h-8 pw:rounded-full pw:bg-success pw:flex pw:items-center pw:justify-center">
-                    <UserIcon className="pw:size-4 pw:text-success-content" />
+              {isLoading
+                ? (
+                  <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-lg pw:bg-base-100">
+                    <div className="pw:loading pw:loading-spinner pw:loading-sm" />
+                    <span className="pw:text-sm pw:text-base-content/70">Loading account...</span>
                   </div>
-                  <div className="pw:flex-1 pw:min-w-0">
-                    <div className="pw:text-sm pw:font-semibold pw:text-base-content">Signed in</div>
-                    {user?.name && <div className="pw:text-xs pw:text-base-content/70 pw:truncate">{user.name}</div>}
+                )
+                : isAuthenticated
+                ? (
+                  <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-xl pw:bg-base-100 pw:border-2 pw:border-success">
+                    <div className="pw:w-8 pw:h-8 pw:rounded-full pw:bg-success pw:flex pw:items-center pw:justify-center">
+                      <UserIcon className="pw:size-4 pw:text-success-content" />
+                    </div>
+                    <div className="pw:flex-1 pw:min-w-0">
+                      <div className="pw:text-sm pw:font-semibold pw:text-base-content">Signed in</div>
+                      {user?.name && <div className="pw:text-xs pw:text-base-content/70 pw:truncate">{user.name}</div>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        closeDialog();
+                      }}
+                      className="pw:btn pw:btn-ghost pw:btn-xs pw:text-xs"
+                      title="Sign out"
+                    >
+                      Sign out
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logout();
-                      closeDialog();
-                    }}
-                    className="pw:btn pw:btn-ghost pw:btn-xs pw:text-xs"
-                    title="Sign out"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              ) : (
-                <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-xl pw:bg-base-200/50 pw:border-2 pw:border-base-300/50 pw:border-dashed">
-                  <div className="pw:w-8 pw:h-8 pw:rounded-full pw:bg-base-300 pw:flex pw:items-center pw:justify-center">
-                    <UserIcon className="pw:size-4 pw:text-base-content/60" />
+                )
+                : (
+                  <div className="pw:flex pw:items-center pw:gap-3 pw:p-3 pw:rounded-xl pw:bg-base-200/50 pw:border-2 pw:border-base-300/50 pw:border-dashed">
+                    <div className="pw:w-8 pw:h-8 pw:rounded-full pw:bg-base-300 pw:flex pw:items-center pw:justify-center">
+                      <UserIcon className="pw:size-4 pw:text-base-content/60" />
+                    </div>
+                    <div className="pw:flex-1 pw:min-w-0">
+                      <div className="pw:text-sm pw:font-semibold pw:text-base-content">Not signed in</div>
+                      <div className="pw:text-xs pw:text-base-content/70">Sync builds across devices</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        loginWithRedirect();
+                        closeDialog();
+                      }}
+                      className="pw:btn pw:btn-primary pw:btn-xs pw:text-xs"
+                      title="Sign in to sync your builds"
+                    >
+                      Sign in
+                    </button>
                   </div>
-                  <div className="pw:flex-1 pw:min-w-0">
-                    <div className="pw:text-sm pw:font-semibold pw:text-base-content">Not signed in</div>
-                    <div className="pw:text-xs pw:text-base-content/70">Sync builds across devices</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loginWithRedirect();
-                      closeDialog();
-                    }}
-                    className="pw:btn pw:btn-primary pw:btn-xs pw:text-xs"
-                    title="Sign in to sync your builds"
-                  >
-                    Sign in
-                  </button>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="pw:space-y-3">

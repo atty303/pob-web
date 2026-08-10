@@ -261,12 +261,9 @@ class BinaryBinPack implements BinPack {
 
 export class BinPackingTextRasterizer {
   private size: { width: number; height: number };
-  // @ts-expect-error
-  private canvas: OffscreenCanvas;
-  // @ts-expect-error
-  private context: OffscreenCanvasRenderingContext2D;
-  // @ts-expect-error
-  private packer: BinPack;
+  private canvas!: OffscreenCanvas;
+  private context!: OffscreenCanvasRenderingContext2D;
+  private packer!: BinPack;
   private cache: Map<string, TextRender[]> = new Map();
   private generation = 0;
 
@@ -305,10 +302,10 @@ export class BinPackingTextRasterizer {
             parts = this.textMetrics.fittingText(height, fontNum, parts.tail, this.size.width);
             renders.push(this.drawText(parts.head, parts.width, height, fontNum));
           }
-          render = renders.map(r => r.forOnce);
+          render = renders.map((r) => r.forOnce);
           this.cache.set(
             key,
-            renders.map(r => r.forCache),
+            renders.map((r) => r.forCache),
           );
         } else {
           const r = this.drawText(text, width, height, fontNum);

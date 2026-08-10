@@ -446,7 +446,6 @@ export class MouseHandler {
             }, 50);
           }
         }
-      } else {
       }
 
       this._isZooming = false;

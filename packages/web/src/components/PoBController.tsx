@@ -1,4 +1,4 @@
-import type { Driver } from "pob-driver/src/js/driver";
+import type { Driver } from "pob-driver/driver";
 import { useCallback, useRef, useState } from "react";
 import * as use from "react-use";
 import type { Games } from "../routes/_game.tsx";
@@ -46,7 +46,7 @@ export default function PoBController(p: { game: keyof Games; version: string; i
         onFrame={() => {}}
         onTitleChange={setTitle}
         onLayerVisibilityCallbackReady={() => {}}
-        onDriverReady={driver => {
+        onDriverReady={(driver) => {
           driverRef.current = driver;
         }}
         toolbarComponent={ToolbarComponents}

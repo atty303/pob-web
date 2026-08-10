@@ -1,22 +1,15 @@
-import { spawnSync } from "node:child_process";
+import { Command, EnumType } from "@cliffy/command";
+import $ from "@david/dax";
 import { headRelease, resolveDriverReleases } from "./e2e-releases.mts";
 
-const suite = process.argv[2];
-const releases = (() => {
-  switch (suite) {
-    case "driver":
-      return resolveDriverReleases().releases;
-    case "web":
-      return [headRelease("poe2")];
-    default:
-      throw new Error(`Unsupported E2E suite: ${suite ?? "<missing>"}`);
-  }
-})();
+const { options } = await new Command()
+  .name("pack-e2e-assets")
+  .description("Pack the local assets required by an E2E suite")
+  .type("suite", new EnumType(["driver", "web"] as const))
+  .option("--suite <suite:suite>", "E2E suite", { required: true })
+  .parse(Deno.args);
 
+const releases = options.suite === "driver" ? resolveDriverReleases().releases : [headRelease("poe2")];
 for (const release of releases) {
-  const result = spawnSync("mise", ["run", "pack", "--game", release.game, "--tag", release.version], {
-    stdio: "inherit",
-  });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  await $`mise run pack --game ${release.game} --tag ${release.version}`;
 }
