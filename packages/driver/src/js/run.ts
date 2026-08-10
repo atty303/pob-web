@@ -68,5 +68,6 @@ import { Driver } from "./driver.ts";
     testState.started = true;
     testState.loadBuildFromCode = (code) => driver.loadBuildFromCode(code);
     testState.getBuildCode = () => driver.getBuildCode();
+    testState.flushInput = () => driver.flushInput();
   }
 })();

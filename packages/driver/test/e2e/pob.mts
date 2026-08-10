@@ -33,8 +33,8 @@ export async function typePoB(page: Page, text: string): Promise<void> {
 
 async function waitForPoBInput(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    const getBuildCode = window.__POB_TEST__?.getBuildCode;
-    if (!getBuildCode) throw new Error("getBuildCode test hook is unavailable");
-    await getBuildCode();
+    const flushInput = window.__POB_TEST__?.flushInput;
+    if (!flushInput) throw new Error("flushInput test hook is unavailable");
+    await flushInput();
   });
 }

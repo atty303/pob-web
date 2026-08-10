@@ -16,6 +16,7 @@ type PoBTestState = {
   resetFrameSamples: () => void;
   loadBuildFromCode?: (code: string) => Promise<void>;
   getBuildCode?: () => Promise<string>;
+  flushInput?: () => Promise<void>;
 };
 
 interface Window {

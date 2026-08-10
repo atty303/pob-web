@@ -375,6 +375,10 @@ export class Driver {
     return code;
   }
 
+  async flushInput(): Promise<void> {
+    await this.driverWorker?.flushInput();
+  }
+
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
     return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
   }

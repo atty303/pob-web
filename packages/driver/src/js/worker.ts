@@ -242,6 +242,8 @@ export class DriverWorker {
     this.invalidate();
   }
 
+  flushInput() {}
+
   handleVisibilityChange(visible: boolean) {
     this.visible = visible;
     if (visible) {
