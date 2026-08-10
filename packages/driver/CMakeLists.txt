@@ -72,6 +72,7 @@ set(DRIVER_LINK_FLAGS
         "-sMALLOC=mimalloc"
         "-sWASMFS"
         "-sSTRICT"
+        "-sEXPORTED_FUNCTIONS=_malloc,_free"
         "-sINCOMING_MODULE_JS_API=[print,printErr,wasmBinary]"
         "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8"
 )

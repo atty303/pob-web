@@ -20,7 +20,7 @@ export default defineConfig({
     { name: "firefox", use: { browserName: "firefox" } },
   ],
   fullyParallel: false,
-  workers: 1,
+  workers: 2,
   retries: 0,
   timeout: 60_000,
   expect: { timeout: 15_000 },

@@ -9,7 +9,7 @@ if (!sentryDsn) throw new Error("SENTRY_LIVE_DSN is required when SENTRY_LIVE_TE
 export default defineConfig({
   testDir: "test/e2e",
   fullyParallel: false,
-  workers: 1,
+  workers: 2,
   retries: 0,
   timeout: 60_000,
   expect: { timeout: 15_000 },
