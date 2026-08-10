@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.29.2](https://github.com/atty303/pob-web/compare/v0.29.1...v0.29.2) (2026-08-10)
+
+
+### Bug Fixes
+
+* classify and report Path of Building errors ([b435e12](https://github.com/atty303/pob-web/commit/b435e129a37dd8d3dbf834dde6957a28ecc6004a))
+* improve PoB error reporting and browser workflows ([#167](https://github.com/atty303/pob-web/issues/167)) ([8c42df1](https://github.com/atty303/pob-web/commit/8c42df1cf6ab5aa60b1a61f685547ec10df0a556))
+* stack version cards vertically ([fd45253](https://github.com/atty303/pob-web/commit/fd452531d94464b2861ca1b086a3aee079c28a8f))
+* symbolize Firefox WebAssembly errors ([ac99814](https://github.com/atty303/pob-web/commit/ac9981466a81f49fb86f0e9027e7b8734e268060))
+
 ## [0.29.1](https://github.com/atty303/pob-web/compare/v0.29.0...v0.29.1) (2026-08-09)
 
 
