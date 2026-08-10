@@ -3,6 +3,7 @@ import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver";
+import { isLocalUserStorageOperation, markEnvironmentError } from "./error";
 import { CloudflareKV } from "./fs";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc";
 import type { SubScriptWorker } from "./sub";
@@ -18,6 +19,8 @@ class AsyncBroker {
   private eventPort: MessagePort | undefined;
   private nextSubscriptId = 1;
   private subscripts = new Map<number, { worker: Worker; port: MessagePort }>();
+  private localUserFds = new Set<number>();
+  private cloudDirectory: string | undefined;
 
   async start(
     port: MessagePort,
@@ -29,15 +32,35 @@ class AsyncBroker {
   ) {
     this.callbacks = { fetch: fetchCallback, paste: pasteCallback };
     this.eventPort = eventPort;
-    const rootZip = await fetch(`${assetPrefix}/root.zip`);
+    this.localUserFds.clear();
+    this.cloudDirectory = config.cloudflareKvAccessToken ? `/user/${config.userDirectory}/Builds/Cloud` : undefined;
+    let rootZipData: ArrayBuffer;
+    try {
+      const rootZip = await fetch(`${assetPrefix}/root.zip`);
+      if (!rootZip.ok) throw new Error(`Failed to load root.zip (${rootZip.status} ${rootZip.statusText})`);
+      rootZipData = await rootZip.arrayBuffer();
+    } catch (error) {
+      throw markEnvironmentError(error, "assetLoad");
+    }
+
+    const rootFileSystem = await zenfs.resolveMountConfig({ backend: Zip, data: rootZipData, name: "root.zip" });
+
+    let userFileSystem: Awaited<ReturnType<typeof zenfs.resolveMountConfig<typeof WebAccess>>>;
+    try {
+      const userDirectory = await navigator.storage.getDirectory();
+      userFileSystem = await zenfs.resolveMountConfig({
+        backend: WebAccess,
+        handle: userDirectory,
+        disableAsyncCache: true,
+      });
+    } catch (error) {
+      throw markEnvironmentError(error, "storage");
+    }
+
     await zenfs.configure({
       mounts: {
-        "/root": { backend: Zip, data: await rootZip.arrayBuffer(), name: "root.zip" },
-        "/user": {
-          backend: WebAccess,
-          handle: await navigator.storage.getDirectory(),
-          disableAsyncCache: true,
-        },
+        "/root": rootFileSystem,
+        "/user": userFileSystem,
       },
     });
     if (config.cloudflareKvAccessToken) {
@@ -47,7 +70,7 @@ class AsyncBroker {
         token: config.cloudflareKvAccessToken,
         namespace: config.cloudflareKvUserNamespace,
       });
-      const directory = `/user/${config.userDirectory}/Builds/Cloud`;
+      const directory = this.cloudDirectory!;
       if (!(await zenfs.promises.exists(directory))) await zenfs.promises.mkdir(directory, { recursive: true });
       zenfs.mount(directory, cloud);
       if (!(await zenfs.promises.exists(`${directory}/Public`))) await zenfs.promises.mkdir(`${directory}/Public`);
@@ -56,6 +79,17 @@ class AsyncBroker {
   }
 
   private async handle(operation: string, args: unknown[], data?: Uint8Array): Promise<RpcResult> {
+    try {
+      return await this.handleOperation(operation, args, data);
+    } catch (error) {
+      if (isLocalUserStorageOperation(operation, args, this.localUserFds, this.cloudDirectory)) {
+        throw markEnvironmentError(error, "storage");
+      }
+      throw error;
+    }
+  }
+
+  private async handleOperation(operation: string, args: unknown[], data?: Uint8Array): Promise<RpcResult> {
     const fs = zenfs.fs;
     switch (operation) {
       case "readdir": {
@@ -74,12 +108,18 @@ class AsyncBroker {
             ),
           ),
         };
-      case "open":
+      case "open": {
+        const fd = (await fs.promises.open(args[0] as string, args[1] as string, args[2] as number | undefined)).fd;
+        if (isLocalUserStorageOperation(operation, args, this.localUserFds, this.cloudDirectory)) {
+          this.localUserFds.add(fd);
+        }
         return {
-          value: (await fs.promises.open(args[0] as string, args[1] as string, args[2] as number | undefined)).fd,
+          value: fd,
         };
+      }
       case "close":
         await new Promise<void>((resolve, reject) => fs.close(args[0] as number, e => (e ? reject(e) : resolve())));
+        this.localUserFds.delete(args[0] as number);
         return { value: 0 };
       case "read": {
         const buffer = new Uint8Array(args[1] as number);

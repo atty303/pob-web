@@ -139,7 +139,6 @@
         "npm:@types/shelljs@~0.8.17",
         "npm:@vitejs/plugin-react@^5.2.0",
         "npm:@webgpu/types@~0.1.71",
-        "npm:concurrently@^8.2.2",
         "npm:daisyui@^5.7.16",
         "npm:tailwindcss@^4.3.3",
         "npm:tsx@^4.23.11",

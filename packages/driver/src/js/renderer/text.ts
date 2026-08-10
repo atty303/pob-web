@@ -1,3 +1,4 @@
+import { markEnvironmentError } from "../error";
 import { TextureFlags, TextureSource } from "../image";
 import type { TextureBitmap } from "./renderer";
 
@@ -12,13 +13,17 @@ export async function loadFonts() {
   await loadFont("/Fontin-SmallCaps.woff", "Fontin SmallCaps");
 }
 
-async function loadFont(url: string, family: string) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Failed to load font: ${url}`);
-  const blob = await r.blob();
-  const fontFace = new FontFace(family, await blob.arrayBuffer());
-  await fontFace.load();
-  (self as unknown as { fonts: FontFaceSet }).fonts.add(fontFace);
+export async function loadFont(url: string, family: string) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Failed to load font: ${url} (${r.status} ${r.statusText})`);
+    const data = await r.arrayBuffer();
+    const fontFace = new FontFace(family, data);
+    await fontFace.load();
+    (self as unknown as { fonts: FontFaceSet }).fonts.add(fontFace);
+  } catch (error) {
+    throw markEnvironmentError(error, "assetLoad");
+  }
 }
 
 function font(size: number, fontNum: number) {

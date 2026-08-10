@@ -35,3 +35,12 @@ test("resetTransform restores the identity transform", () => {
   assert.deepEqual(canvas.transform, { scale: 1, translateX: 0, translateY: 0 });
   assert.equal(canvas.generateTransformCSS(), "translate(0px, 0px) scale(1)");
 });
+
+test("zoomTo applies an absolute scale when the canvas initially scales to fit", () => {
+  const canvas = makeCanvas();
+  Object.assign(canvas, { _initialScale: 0.8 });
+
+  canvas.zoomTo(1.2, 400, 300);
+
+  assert.equal(canvas.transform.scale, 1.2);
+});

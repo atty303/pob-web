@@ -1,4 +1,5 @@
 import { Format, Target } from "dds/src";
+import { markEnvironmentError } from "../error";
 import { TextureFlags } from "../image";
 import { log, tag } from "../logger";
 import type { RenderBackend } from "./backend";
@@ -308,7 +309,7 @@ export class WebGL1Backend implements RenderBackend {
     this._canvas = canvas;
 
     const gl = canvas.getContext("webgl2", { alpha: false });
-    if (!gl) throw new Error("Failed to get WebGL context");
+    if (!gl) throw markEnvironmentError(new Error("Failed to get WebGL2 context"), "renderingContext");
     this.gl = gl;
 
     // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc

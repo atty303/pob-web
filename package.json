@@ -25,7 +25,6 @@
     "@types/shelljs": "^0.8.17",
     "@vitejs/plugin-react": "^5.2.0",
     "@webgpu/types": "^0.1.71",
-    "concurrently": "^8.2.2",
     "daisyui": "^5.7.16",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.11",
