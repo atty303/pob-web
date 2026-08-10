@@ -1,4 +1,5 @@
 declare const DOMKeySymbol: unique symbol;
+import { resolveClipboardShortcut } from "./clipboard.ts";
 /// A string that represents a key from the DOM KeyboardEvent.key property
 export type DOMKey = string & { [DOMKeySymbol]: never };
 
@@ -111,9 +112,13 @@ export const DOMKeyboardState = {
           }
         } else {
           pobKeyboardState.keydown(pobKey, 0);
-          if (domKey.length === 1) {
+          if (
+            domKey.length === 1 &&
+            !virtualHeldKeys.has("Control" as DOMKey) &&
+            !virtualHeldKeys.has("Alt" as DOMKey)
+          ) {
             const char = virtualHeldKeys.has("Shift" as DOMKey) ? applyShiftTransformation(domKey) : domKey;
-            this.keypress(char);
+            pobKeyboardState.keypress(char);
           }
           if (!physicalKeys.has(pobKey) && !isVirtuallyHeld(pobKey)) {
             pobKeyboardState.keyup(pobKey);
@@ -230,15 +235,28 @@ function applyShiftTransformation(domKey: DOMKey): string {
 export type KeyboardHandler = {
   destroy(): void;
 };
+
 export const KeyboardHandler = {
-  make(el: HTMLElement, keyboardState: DOMKeyboardState): KeyboardHandler {
+  make(
+    el: HTMLElement,
+    keyboardState: DOMKeyboardState,
+    onClipboardShortcut: (shortcut: "copy") => void,
+  ): KeyboardHandler {
     const ac = new AbortController();
     const signal = ac.signal;
 
     el.addEventListener(
       "keydown",
       (e) => {
-        ["Tab", "Escape", "Enter"].includes(e.key) && e.preventDefault();
+        const clipboardShortcut = resolveClipboardShortcut(e.key, e.ctrlKey || e.metaKey);
+        if (clipboardShortcut) {
+          if (clipboardShortcut === "copy") {
+            e.preventDefault();
+            onClipboardShortcut(clipboardShortcut);
+          }
+          return;
+        }
+        if (["Tab", "Escape", "Enter"].includes(e.key)) e.preventDefault();
         keyboardState.keydown(e.key as DOMKey);
       },
       { signal },
@@ -257,6 +275,7 @@ export const KeyboardHandler = {
       "keypress",
       (e) => {
         e.preventDefault();
+        if (resolveClipboardShortcut(e.key, e.ctrlKey || e.metaKey)) return;
         keyboardState.keypress(e.key);
       },
       { signal },

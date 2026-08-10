@@ -1,4 +1,5 @@
 import * as Comlink from "comlink";
+import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
 import { markEnvironmentError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
@@ -24,6 +25,7 @@ const releaseWasmUrl = new URL("../../dist/release/driver.wasm", import.meta.url
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;
   rpcCall: ReturnType<typeof createRpcClient>;
+  takePasteText: () => string | undefined;
 }
 
 type OnFetchFunction = (
@@ -76,6 +78,8 @@ export class DriverWorker {
   };
   private mouseState: MouseState = { x: 0, y: 0 };
   private pressedKeys: Set<PoBKey> = new Set();
+  private pasteBuffer = new PasteBuffer();
+  private clipboardControlPending = false;
   private hostCallbacks: Omit<HostCallbacks, "onFetch"> | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
@@ -276,12 +280,16 @@ export class DriverWorker {
         const start = performance.now();
 
         this.imports?.onFrame();
+        this.pasteBuffer.clear();
+        this.clipboardControlPending = false;
 
         const time = performance.now() - start;
         const stats = this.renderer?.getStats();
         this.hostCallbacks?.onFrame(start, time, stats);
         this.dirtyCount -= 1;
       } catch (error) {
+        this.pasteBuffer.clear();
+        this.clipboardControlPending = false;
         this.hostCallbacks?.onError(error);
         this.dirtyCount = 0;
         return;
@@ -318,7 +326,9 @@ export class DriverWorker {
       getScreenHeight: () => this.screenSize.height,
       getCursorPosX: () => this.mouseState.x,
       getCursorPosY: () => this.mouseState.y,
-      isKeyDown: (name: string) => this.pressedKeys.has(name as PoBKey),
+      isKeyDown: (name: string) =>
+        this.pressedKeys.has(name as PoBKey) || (name === "CTRL" && this.clipboardControlPending),
+      takePasteText: () => this.pasteBuffer.take(),
       imageLoad: (handle: number, filename: string, flags: number) => {
         this.imageRepo?.load(handle, filename, flags).then(() => {
           this.invalidate();
@@ -333,6 +343,16 @@ export class DriverWorker {
       copy: (text: string) => this.mainCallbacks?.copy(text),
       openUrl: (url: string) => this.mainCallbacks?.openUrl(url),
     };
+  }
+
+  handleClipboardAction(action: ClipboardAction) {
+    const key = action.type === "copy" ? "c" : "v";
+    if (action.type === "paste") this.pasteBuffer.push(action.text);
+
+    this.clipboardControlPending = true;
+    this.imports?.onKeyDown(key, 0);
+    this.imports?.onKeyUp(key, 0);
+    this.invalidate();
   }
 }
 

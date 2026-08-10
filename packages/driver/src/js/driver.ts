@@ -3,6 +3,7 @@ import * as Comlink from "comlink";
 // @ts-types="./vite-worker.d.ts"
 import BrokerWorkerObject from "./broker.ts?worker";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager.ts";
+import { type ClipboardAction, ClipboardController, type ClipboardShortcut } from "./clipboard.ts";
 import { markEnvironmentError } from "./error.ts";
 import { EventHandler } from "./event.ts";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard.ts";
@@ -22,6 +23,10 @@ type AsyncBroker = {
     fetchCallback: HostCallbacks["onFetch"],
     pasteCallback: () => Promise<string>,
   ): Promise<void>;
+};
+
+type AsyncDriverWorker = Comlink.Remote<DriverWorker> & {
+  handleClipboardAction(action: ClipboardAction): Promise<void>;
 };
 
 export type FilesystemConfig = {
@@ -47,7 +52,7 @@ export class Driver {
   private worker: Worker | undefined;
   private brokerWorker: Worker | undefined;
   private broker: Comlink.Remote<AsyncBroker> | undefined;
-  private driverWorker: Comlink.Remote<DriverWorker> | undefined;
+  private driverWorker: AsyncDriverWorker | undefined;
   private overlayManager: ReactOverlayManager | undefined;
   private canvasManager: CanvasManager | undefined;
   private panModeEnabled = false;
@@ -58,6 +63,7 @@ export class Driver {
   private frames: FrameData[] = [];
   private renderStats: RenderStats | null = null;
   private externalComponent: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined;
+  private clipboard = new ClipboardController(navigator.clipboard);
 
   private readonly MIN_CANVAS_WIDTH = 1550;
   private readonly MIN_CANVAS_HEIGHT = 800;
@@ -104,7 +110,7 @@ export class Driver {
       const worker = new WorkerObject();
       this.worker = worker;
       this.lifecycleCallbacks.onWorkerCreated?.(worker);
-      this.driverWorker = Comlink.wrap<DriverWorker>(worker);
+      this.driverWorker = Comlink.wrap<DriverWorker>(worker) as AsyncDriverWorker;
 
       return await this.driverWorker.start(
         this.build,
@@ -190,8 +196,12 @@ export class Driver {
     root.appendChild(overlayContainer);
 
     container.tabIndex = 0;
+    container.contentEditable = "true";
+    container.inputMode = "none";
+    container.spellcheck = false;
     container.focus();
     container.style.outline = "none";
+    container.style.caretColor = "transparent";
 
     document.addEventListener("fullscreenchange", () => this.handleFullscreenChange());
 
@@ -217,7 +227,11 @@ export class Driver {
       },
     });
     this.domKeyboardState = DOMKeyboardState.make(this.pobKeyboardState);
-    this.keyboardHandler = KeyboardHandler.make(container, this.domKeyboardState);
+    this.keyboardHandler = KeyboardHandler.make(
+      container,
+      this.domKeyboardState,
+      () => this.dispatchClipboardAction({ type: "copy" }),
+    );
 
     this.mouseHandler = new MouseHandler(
       container,
@@ -249,6 +263,8 @@ export class Driver {
         }
         this.driverWorker?.handleVisibilityChange(visible);
       },
+      onCopy: () => this.dispatchClipboardAction({ type: "copy" }),
+      onPaste: (text) => this.dispatchClipboardAction({ type: "paste", text }),
     });
 
     this.mouseHandler!.setPanMode(this.panModeEnabled);
@@ -289,6 +305,7 @@ export class Driver {
         this.performanceVisible = !this.performanceVisible;
         this.updateOverlayWithTransform();
       },
+      onClipboardShortcut: (shortcut) => this.handleVirtualClipboardShortcut(shortcut),
     };
 
     this.overlayManager = new ReactOverlayManager(overlayContainer);
@@ -326,18 +343,24 @@ export class Driver {
   }
 
   copy(text: string) {
-    return navigator.clipboard.writeText(text);
+    void this.clipboard.writeText(text);
   }
 
   async paste() {
-    const data = await navigator.clipboard.read();
-    for (const item of data) {
-      if (item.types.includes("text/plain")) {
-        const data = await item.getType("text/plain");
-        return await data.text();
-      }
+    return (await this.clipboard.readText()) ?? "";
+  }
+
+  private dispatchClipboardAction(action: ClipboardAction) {
+    void this.driverWorker?.handleClipboardAction(action);
+  }
+
+  private async handleVirtualClipboardShortcut(shortcut: ClipboardShortcut) {
+    if (shortcut === "copy") {
+      this.dispatchClipboardAction({ type: "copy" });
+      return;
     }
-    return "";
+    const text = await this.clipboard.readText();
+    if (text !== undefined) this.dispatchClipboardAction({ type: "paste", text });
   }
 
   async loadBuildFromCode(code: string) {

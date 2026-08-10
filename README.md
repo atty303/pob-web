@@ -119,12 +119,12 @@ mise run test:e2e:web
 ```
 
 The E2E tasks pack their required upstream releases locally and reuse those assets until the version or packer inputs
-change. The driver runtime suite starts each head in Chromium and checks item database loading, WebAssembly startup,
-WebGL2 rendering, frame statistics, and the DOM zoom control. The web runtime suite checks the critical path from the
-landing page through version loading and routing to a rendered driver session and web toolbar control. Browser tests and
-MCP visual verification select an available development-server port and use the URL reported by Vite, so they can run
-alongside the human-facing port 5173 server. To run only one game's current head, pass `--game`; add `--version` only
-for a release-specific compatibility check:
+change. The driver runtime suite starts each head in Chromium and Firefox and checks item database loading, WebAssembly
+startup, WebGL2 rendering, frame statistics, clipboard round trips, and the DOM zoom control. The web runtime suite
+checks the critical path from the landing page through version loading and routing to a rendered driver session and web
+toolbar control. Browser tests and MCP visual verification select an available development-server port and use the URL
+reported by Vite, so they can run alongside the human-facing port 5173 server. To run only one game's current head, pass
+`--game`; add `--version` only for a release-specific compatibility check:
 
 ```bash
 mise run test:e2e:driver --game poe2
