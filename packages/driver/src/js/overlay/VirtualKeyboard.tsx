@@ -1,15 +1,21 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
+import { type ClipboardShortcut, resolveClipboardShortcut } from "../clipboard.ts";
 import type { DOMKey, DOMKeyboardState } from "../keyboard.ts";
 import { KeyButton } from "./KeyButton.tsx";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;
   keyboardState: DOMKeyboardState;
+  onClipboardShortcut: (shortcut: ClipboardShortcut) => void;
 }
 
-export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, keyboardState }) => {
+export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
+  isVisible,
+  keyboardState,
+  onClipboardShortcut,
+}) => {
   const [heldKeys, setHeldKeys] = useState(new Set<DOMKey>());
   const [symbolMode, setSymbolMode] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -268,10 +274,19 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ isVisible, key
         return;
       }
 
+      const clipboardShortcut = resolveClipboardShortcut(
+        eventKey,
+        !isModifier && heldKeys.has("Control" as DOMKey),
+      );
+      if (clipboardShortcut) {
+        onClipboardShortcut(clipboardShortcut);
+        return;
+      }
+
       const newHeldKeys = keyboardState.virtualKeyPress(eventKey as DOMKey, isModifier);
       setHeldKeys(new Set(newHeldKeys));
     },
-    [keyboardState],
+    [heldKeys, keyboardState, onClipboardShortcut],
   );
 
   const handleDragStart = useCallback(

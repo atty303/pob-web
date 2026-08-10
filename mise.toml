@@ -122,9 +122,9 @@ depends = ["install"]
 run = "deno task repo playwright-mcp"
 
 [tasks."visual:setup"]
-description = "Install the Chromium browser used for visual verification"
+description = "Install the Chromium and Firefox browsers used for E2E and visual verification"
 depends = ["install"]
-run = "deno task playwright install chromium"
+run = "deno task playwright install chromium firefox"
 
 [tasks."visual:dev"]
 description = "Start the driver UI for interactive visual verification"

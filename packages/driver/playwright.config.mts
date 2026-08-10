@@ -15,6 +15,10 @@ if (Deno.env.get("POB_COOL_ASSET") !== "true") {
 
 export default defineConfig({
   testDir: "test/e2e",
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "firefox", use: { browserName: "firefox" } },
+  ],
   fullyParallel: false,
   workers: 1,
   retries: 0,

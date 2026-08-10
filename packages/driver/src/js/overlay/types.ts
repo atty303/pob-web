@@ -14,6 +14,7 @@ export interface ToolbarCallbacks {
   onPanModeToggle: (enabled: boolean) => void;
   onKeyboardToggle: () => void;
   onPerformanceToggle: () => void;
+  onClipboardShortcut: (shortcut: import("../clipboard.ts").ClipboardShortcut) => void;
 }
 
 export type ToolbarPosition = "top" | "bottom" | "left" | "right";

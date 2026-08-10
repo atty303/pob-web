@@ -151,9 +151,12 @@ static int Copy(lua_State *L) {
 }
 
 EM_JS(int, paste, (), {
-    var text = Module.rpcCall("paste").value;
+    var text = Module.takePasteText();
+    if (text === undefined) {
+        text = Module.rpcCall("paste").value;
+    }
     var lengthBytes = lengthBytesUTF8(text) + 1;
-    var stringOnWasmHeap = Module._malloc(lengthBytes);
+    var stringOnWasmHeap = _malloc(lengthBytes);
     stringToUTF8(text, stringOnWasmHeap, lengthBytes);
     return stringOnWasmHeap;
 });
