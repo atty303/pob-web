@@ -13,6 +13,11 @@ export const headRelease = (game: Game): E2ERelease => ({ game, version: version
 
 export const headReleases = games.map(headRelease);
 
+export const webE2EReleases: E2ERelease[] = [
+  headRelease("poe2"),
+  { game: "poe1", version: "v2.67.2" },
+];
+
 export function resolveDriverReleases(
   environment: Readonly<Record<string, string | undefined>> = {
     RUN_GAME: Deno.env.get("RUN_GAME"),

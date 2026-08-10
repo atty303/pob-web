@@ -1,6 +1,6 @@
 import { Command, EnumType } from "@cliffy/command";
 import $ from "@david/dax";
-import { headRelease, resolveDriverReleases } from "./e2e-releases.mts";
+import { resolveDriverReleases, webE2EReleases } from "./e2e-releases.mts";
 
 const { options } = await new Command()
   .name("pack-e2e-assets")
@@ -9,7 +9,7 @@ const { options } = await new Command()
   .option("--suite <suite:suite>", "E2E suite", { required: true })
   .parse(Deno.args);
 
-const releases = options.suite === "driver" ? resolveDriverReleases().releases : [headRelease("poe2")];
+const releases = options.suite === "driver" ? resolveDriverReleases().releases : webE2EReleases;
 for (const release of releases) {
   await $`mise run pack --game ${release.game} --tag ${release.version}`;
 }

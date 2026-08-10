@@ -156,7 +156,9 @@ export class DriverWorker {
         this.imports?.onSubScriptFinished(data.id, wasmData);
         module._free(wasmData);
       } else {
-        this.imports?.onSubScriptError(data.id, data.message ?? "Subscript failed");
+        const message = data.message ?? "Subscript failed";
+        this.imports?.onSubScriptError(data.id, message);
+        this.hostCallbacks?.onError(new Error(`Subscript failed: ${message}`));
       }
       this.invalidate();
     };
