@@ -256,8 +256,11 @@ export const KeyboardHandler = {
           }
           return;
         }
-        if (["Tab", "Escape", "Enter"].includes(e.key)) e.preventDefault();
+        e.preventDefault();
         keyboardState.keydown(e.key as DOMKey);
+        if (e.key.length === 1 && !e.metaKey && (!e.ctrlKey || e.getModifierState("AltGraph"))) {
+          keyboardState.keypress(e.key);
+        }
       },
       { signal },
     );
@@ -267,16 +270,6 @@ export const KeyboardHandler = {
       (e) => {
         e.preventDefault();
         keyboardState.keyup(e.key as DOMKey);
-      },
-      { signal },
-    );
-
-    el.addEventListener(
-      "keypress",
-      (e) => {
-        e.preventDefault();
-        if (resolveClipboardShortcut(e.key, e.ctrlKey || e.metaKey)) return;
-        keyboardState.keypress(e.key);
       },
       { signal },
     );
