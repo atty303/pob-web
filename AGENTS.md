@@ -9,8 +9,8 @@
 
 ## Project boundaries
 
-- This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed upstream
-  assets unmodified; implement browser-specific behavior in this repository's packages.
+- This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed
+  upstream assets unmodified; implement browser-specific behavior in this repository's packages.
 - The Deno workspaces are `packages/dds`, `packages/driver`, `packages/game`, `packages/packer`, and `packages/web`. See
   `README.md` for the user-facing architecture and development overview.
 - Do not add dependencies without prior approval. Use the versions and lockfiles managed by `mise` and Deno.
@@ -24,9 +24,9 @@
 - Run `mise run test:e2e:driver` when changing driver startup, rendering, input, overlays, or game-version integration.
   This local-only suite packs and uses each game's current `version.json` head; install its Chromium with
   `mise run visual:setup`.
-- Run `mise run test:e2e:web` when changing the landing page, routing, version loading, web-to-driver integration, or web
-  toolbar controls. This local-only suite uses the repository version metadata and locally packed game assets.
-- Run `mise run check:full` before completing changes that affect builds, package boundaries, WebAssembly, CI, or release
+- Run `mise run test:e2e:web` when changing the landing page, routing, version loading, web-to-driver integration, or
+  web toolbar controls. This local-only suite uses the repository version metadata and locally packed game assets.
+- Run `mise run test` before completing changes that affect builds, package boundaries, WebAssembly, CI, or release
   behavior. This is also the required pull-request validation.
 - Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual
   development.
@@ -39,9 +39,9 @@
 
 - Match verification effort to the changed behavior. Prefer static checks and focused tests before builds or interactive
   verification.
-- For Canvas/WebGL behavior, use the repository's `canvas-visual-verification` skill when it is available. It defines the
-  required browser setup, observations, and evidence. Run the automated driver E2E suite first, then use the skill for
-  visual behavior that the stable DOM assertions do not cover.
+- For Canvas/WebGL behavior, use the repository's `canvas-visual-verification` skill when it is available. It defines
+  the required browser setup, observations, and evidence. Run the automated driver E2E suite first, then use the skill
+  for visual behavior that the stable DOM assertions do not cover.
 - The DDS file under `packages/dds/src/dds.test.ts` is a manual asset-processing script, not a self-contained automated
   test; do not treat it as coverage or run it without the referenced packed assets.
 

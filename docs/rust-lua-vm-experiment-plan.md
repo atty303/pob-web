@@ -376,7 +376,7 @@ Expand compatibility only after the performance gates pass, in this order:
 At each stage run focused static and differential tests before driver E2E and
 visual verification. Before completion run `mise run check`,
 `mise run test:e2e:driver`, `mise run benchmark:driver`, Canvas visual
-verification, and `mise run check:full`. Perform the Chromium benchmark last.
+verification, and `mise run test`. Perform the Chromium benchmark last.
 
 Remove the legacy runtime only in a separate logical change after all supported
 games, critical operations, error reporting, and release checks pass. Do not
