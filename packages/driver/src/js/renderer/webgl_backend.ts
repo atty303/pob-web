@@ -1,10 +1,10 @@
 import { Format, Target } from "dds/src";
-import { markEnvironmentError } from "../error";
-import { TextureFlags } from "../image";
-import { log, tag } from "../logger";
-import type { RenderBackend } from "./backend";
-import type { TextureBitmap } from "./renderer";
-import { type FormatDesc, glFormatFor } from "./webgl";
+import { markEnvironmentError } from "../error.ts";
+import { TextureFlags } from "../image.ts";
+import { log, tag } from "../logger.ts";
+import type { RenderBackend } from "./backend.ts";
+import type { TextureBitmap } from "./renderer.ts";
+import { type FormatDesc, glFormatFor } from "./webgl.ts";
 
 const vertexShaderSource = `#version 300 es
 uniform mat4 u_MvpMatrix;

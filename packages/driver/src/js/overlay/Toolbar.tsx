@@ -4,10 +4,10 @@ import { CiKeyboard } from "react-icons/ci";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
 import { PiCursorThin } from "react-icons/pi";
-import { ToolbarButton } from "./ToolbarButton";
-import type { ToolbarCallbacks, ToolbarPosition } from "./types";
-import { useFullscreen } from "./useFullscreen";
-import { ZoomControl } from "./ZoomControl";
+import { ToolbarButton } from "./ToolbarButton.tsx";
+import type { ToolbarCallbacks, ToolbarPosition } from "./types.ts";
+import { useFullscreen } from "./useFullscreen.ts";
+import { ZoomControl } from "./ZoomControl.tsx";
 
 interface ToolbarProps {
   callbacks: ToolbarCallbacks;

@@ -2,12 +2,12 @@ import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
-import type { FilesystemConfig } from "./driver";
-import { isLocalUserStorageOperation, markEnvironmentError } from "./error";
-import { CloudflareKV } from "./fs";
-import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc";
-import type { SubScriptWorker } from "./sub";
-import SubWorkerObject from "./sub?worker";
+import type { FilesystemConfig } from "./driver.ts";
+import { isLocalUserStorageOperation, markEnvironmentError } from "./error.ts";
+import { CloudflareKV } from "./fs.ts";
+import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
+import type { SubScriptWorker } from "./sub.ts";
+import SubWorkerObject from "./sub.ts?worker";
 
 type BrokerCallbacks = {
   fetch: (url: string, headers: Record<string, string>, body?: string) => Promise<unknown>;

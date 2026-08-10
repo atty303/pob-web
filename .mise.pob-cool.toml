@@ -25,4 +25,4 @@ aws s3 cp --checksum-algorithm CRC32 --region auto --endpoint-url ${R2_ENDPOINT_
 
 [tasks.deploy]
 description = "Deploy the web package to Cloudflare Pages"
-run = "npm run deploy -w packages/web"
+run = "deno task --filter pob-web deploy"

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "composite": true,
+    "allowImportingTsExtensions": true,
     "module": "esnext",
     "moduleResolution": "nodenext"
   },

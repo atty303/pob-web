@@ -10,10 +10,10 @@ import {
   createDiagnosticReport,
   type DiagnosticReport,
   type ErrorPhase,
-} from "../lib/error-report";
-import { log, tag } from "../lib/logger";
-import { registerSentryWorker } from "../lib/sentry";
-import ErrorDialog from "./ErrorDialog";
+} from "../lib/error-report.ts";
+import { log, tag } from "../lib/logger.ts";
+import { registerSentryWorker } from "../lib/sentry.ts";
+import ErrorDialog from "./ErrorDialog.tsx";
 
 const { useHash } = use;
 type FetchResult = Awaited<ReturnType<ConstructorParameters<typeof Driver>[2]["onFetch"]>>;

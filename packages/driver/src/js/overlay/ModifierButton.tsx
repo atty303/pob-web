@@ -1,6 +1,6 @@
 import type React from "react";
 import { useCallback } from "react";
-import type { ModifierKeys } from "./types";
+import type { ModifierKeys } from "./types.ts";
 
 interface ModifierButtonProps {
   modifierKey: keyof ModifierKeys;

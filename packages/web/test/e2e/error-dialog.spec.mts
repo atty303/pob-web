@@ -1,7 +1,8 @@
-import { createRequire } from "node:module";
-import { expect, test } from "../../../../tools/playwright";
+import { expect, test } from "../../../../tools/playwright.mts";
 
-const versions = createRequire(import.meta.url)("../../../../version.json") as { poe2: { head: string } };
+const versions = JSON.parse(Deno.readTextFileSync(new URL("../../../../version.json", import.meta.url))) as {
+  poe2: { head: string };
+};
 const poe2Head = versions.poe2.head;
 
 test("expected asset failures show recovery details without offering a pob.cool report", async ({ page }) => {

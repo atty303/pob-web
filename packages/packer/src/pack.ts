@@ -148,11 +148,11 @@ fs.writeFileSync(cacheMarker, inputHash);
 function packInputHash() {
   const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
   const inputs = [
-    "package.json",
-    "package-lock.json",
+    "deno.json",
+    "deno.lock",
     "packages/dds/src",
     "packages/game/src",
-    "packages/packer/package.json",
+    "packages/packer/deno.json",
     "packages/packer/src",
   ];
   const files = inputs.flatMap(input => filesUnder(path.join(workspaceRoot, input))).sort();

@@ -1,4 +1,4 @@
-import { resolveDriverReleases } from "../../../../tools/e2e-releases.ts";
+import { resolveDriverReleases } from "../../../../tools/e2e-releases.mts";
 
 const resolved = resolveDriverReleases();
 

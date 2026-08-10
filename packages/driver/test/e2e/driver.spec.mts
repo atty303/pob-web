@@ -1,5 +1,5 @@
-import { expect, test } from "../../../../tools/playwright";
-import { releases, targeted } from "./releases";
+import { expect, test } from "../../../../tools/playwright.mts";
+import { releases, targeted } from "./releases.mts";
 
 for (const release of releases) {
   test(`${release.game} ${release.version} loads items, renders, and zooms`, async ({ page }) => {

@@ -1,0 +1,14 @@
+{
+  "name": "pob-packer",
+  "version": "0.0.0",
+  "exports": {
+    "./src/pack": "./src/pack.ts",
+    "./src/sync": "./src/sync.ts"
+  },
+  "publish": false,
+  "tasks": {
+    "build": "true",
+    "pack": "deno run -A src/pack.ts",
+    "sync": "deno run -A src/sync.ts"
+  }
+}

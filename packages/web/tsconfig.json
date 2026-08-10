@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ES2022",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "paths": {
+      "dds/src": ["../dds/src/index.ts"],
+      "pob-driver/src/js/*": ["../driver/src/js/*"],
+      "pob-game/src": ["../game/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "rootDirs": [".", "./.react-router/types"],
     "skipLibCheck": true,

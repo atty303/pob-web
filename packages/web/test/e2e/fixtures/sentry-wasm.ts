@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/react";
 import { Driver, type FilesystemConfig } from "pob-driver/src/js/driver";
-import versions from "../../../../../version.json";
-import { registerSentryWorker, wasmIntegrations } from "../../../src/lib/sentry";
+import versions from "../../../../../version.json" with { type: "json" };
+import { registerSentryWorker, wasmIntegrations } from "../../../src/lib/sentry.ts";
 
 declare const __ASSET_PREFIX__: string;
 

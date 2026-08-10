@@ -1,4 +1,4 @@
-import PoBController from "../components/PoBController";
+import PoBController from "../components/PoBController.tsx";
 import type { Route } from "../routes/+types/_game.le._index";
 
 export default function (p: Route.ComponentProps) {

@@ -1,4 +1,4 @@
-import type { PoBKey, PoBKeyboardState } from "./keyboard";
+import type { PoBKey, PoBKeyboardState } from "./keyboard.ts";
 
 export type MouseState = {
   x: number;

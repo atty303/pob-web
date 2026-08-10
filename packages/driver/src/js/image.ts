@@ -1,6 +1,6 @@
 import * as zstd from "@bokuweb/zstd-wasm";
 import { Format, parseDDSDX10, Target, Texture } from "dds/src";
-import { log, tag } from "./logger";
+import { log, tag } from "./logger.ts";
 
 export type TextureSource = {
   flags: number;

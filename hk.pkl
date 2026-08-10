@@ -4,14 +4,14 @@ import "package://github.com/jdx/hk/releases/download/v1.54.1/hk@1.54.1#/Builtin
 local linters = new Mapping<String, Step> {
 
     ["biome"] {
-        glob = List("*.js", "*.jsx", "*.ts", "*.tsx")
+        glob = List("*.js", "*.jsx", "*.mts", "*.ts", "*.tsx")
         stage = glob
         check = "biome check {{ files }}"
         fix = "biome check --write {{ files }}"
-        prefix = "npx"
+        prefix = "deno task"
     }
     ["tsc"] = (Builtins.tsc) {
-        prefix = "npx"
+        prefix = "deno task"
     }
 
     ["pkl"] {

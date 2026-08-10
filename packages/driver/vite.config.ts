@@ -1,10 +1,11 @@
 import * as path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, searchForWorkspaceRoot } from "vite";
+import { defineConfig } from "vite";
 import Inspect from "vite-plugin-inspect";
 
 const packerR2Dir = path.resolve(__dirname, "../packer/r2");
+const rootDir = path.resolve(__dirname, "../..");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,6 +13,12 @@ export default defineConfig(({ mode }) => {
   const usePobCoolAsset = mode === "development" && process.env.POB_COOL_ASSET === "true";
 
   return {
+    resolve: {
+      alias: {
+        "dds/src": path.join(rootDir, "packages/dds/src/index.ts"),
+        "pob-game/src": path.join(rootDir, "packages/game/src/index.ts"),
+      },
+    },
     logLevel: "info",
     server: {
       headers: {
@@ -19,7 +26,7 @@ export default defineConfig(({ mode }) => {
         "Cross-Origin-Embedder-Policy": "require-corp",
       },
       fs: {
-        allow: [searchForWorkspaceRoot(process.cwd()), packerR2Dir],
+        allow: [rootDir, packerR2Dir],
       },
       // Owner's Cloudflare Tunnel domain for mobile testing
       allowedHosts: ["local.pob.cool"],

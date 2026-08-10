@@ -1,0 +1,11 @@
+{
+  "name": "dds",
+  "version": "0.0.0",
+  "exports": {
+    "./src": "./src/index.ts"
+  },
+  "publish": false,
+  "tasks": {
+    "build": "deno check src/index.ts"
+  }
+}

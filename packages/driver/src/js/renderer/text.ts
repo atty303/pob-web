@@ -1,6 +1,6 @@
-import { markEnvironmentError } from "../error";
-import { TextureFlags, TextureSource } from "../image";
-import type { TextureBitmap } from "./renderer";
+import { markEnvironmentError } from "../error.ts";
+import { TextureFlags, TextureSource } from "../image.ts";
+import type { TextureBitmap } from "./renderer.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 

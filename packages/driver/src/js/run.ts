@@ -1,5 +1,5 @@
 import { type Game, gameData } from "pob-game/src";
-import { Driver } from "./driver";
+import { Driver } from "./driver.ts";
 
 (async () => {
   const testMode = import.meta.env.MODE === "test";

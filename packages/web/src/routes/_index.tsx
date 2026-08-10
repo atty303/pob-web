@@ -16,7 +16,7 @@ import { gameData } from "pob-game/src";
 import React from "react";
 import { Link, redirect } from "react-router";
 import type { Route } from "../routes/+types/_index";
-import type { Games } from "./_game";
+import type { Games } from "./_game.tsx";
 
 dayjs.extend(utc);
 dayjs.extend(localeData);

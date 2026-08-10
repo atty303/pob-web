@@ -1,15 +1,26 @@
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-import { wranglerDev } from "./wrangler-dev";
+import { wranglerDev } from "./wrangler-dev.ts";
 
 const rootDir = path.resolve(__dirname, "../..");
 const packerR2Dir = path.resolve(__dirname, "../packer/r2");
+const appVersion = fs.readFileSync(path.join(rootDir, "version.txt"), "utf8").trim();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, isSsrBuild }) => ({
+  resolve: {
+    dedupe: ["react", "react-dom"],
+    alias: {
+      "dds/src": path.join(rootDir, "packages/dds/src/index.ts"),
+      "pob-driver/src/js": path.join(rootDir, "packages/driver/src/js"),
+      "pob-game/src": path.join(rootDir, "packages/game/src/index.ts"),
+      "react-dom/server": "react-dom/server.node",
+    },
+  },
   server: {
     host: true,
     proxy: {
@@ -37,7 +48,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     ssr: false,
   },
   define: {
-    APP_VERSION: JSON.stringify(process.env.npm_package_version),
+    APP_VERSION: JSON.stringify(appVersion),
     __SENTRY_RELEASE__:
       process.env.VITE_SENTRY_RELEASE === undefined ? "undefined" : JSON.stringify(process.env.VITE_SENTRY_RELEASE),
     __VERSION_URL__: JSON.stringify(
@@ -55,6 +66,12 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
   },
   worker: {
     format: "es",
+  },
+  ssr: {
+    optimizeDeps: {
+      exclude: ["react"],
+      include: ["react-dom/server.node"],
+    },
   },
   optimizeDeps: {
     exclude: ["@bokuweb/zstd-wasm"],

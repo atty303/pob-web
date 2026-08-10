@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { headRelease, resolveDriverReleases } from "./e2e-releases.ts";
+import { headRelease, resolveDriverReleases } from "./e2e-releases.mts";
 
 const suite = process.argv[2];
 const releases = (() => {

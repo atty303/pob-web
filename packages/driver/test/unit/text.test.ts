@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import { environmentErrorCategory } from "../../src/js/error";
-import { loadFont } from "../../src/js/renderer/text";
+import { assertEquals, assertRejects } from "@std/assert";
+import { environmentErrorCategory } from "../../src/js/error.ts";
+import { loadFont } from "../../src/js/renderer/text.ts";
 
-test("font parsing failures are classified as initial asset errors", async t => {
+Deno.test("font parsing failures are classified as initial asset errors", async () => {
   const parsingError = new Error("invalid font data");
   const originalFetch = globalThis.fetch;
   const originalFontFace = globalThis.FontFace;
@@ -16,15 +15,13 @@ test("font parsing failures are classified as initial asset errors", async t => 
     }
   } as unknown as typeof FontFace;
   globalThis.self = { fonts: { add: () => {} } } as unknown as typeof self;
-  t.after(() => {
+  try {
+    const error = await assertRejects(() => loadFont("/broken.woff", "Broken"));
+    assertEquals(error, parsingError);
+    assertEquals(environmentErrorCategory(error), "assetLoad");
+  } finally {
     globalThis.fetch = originalFetch;
     globalThis.FontFace = originalFontFace;
     globalThis.self = originalSelf;
-  });
-
-  await assert.rejects(loadFont("/broken.woff", "Broken"), error => {
-    assert.equal(error, parsingError);
-    assert.equal(environmentErrorCategory(error), "assetLoad");
-    return true;
-  });
+  }
 });

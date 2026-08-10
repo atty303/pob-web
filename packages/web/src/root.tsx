@@ -5,10 +5,10 @@ import * as Sentry from "@sentry/react";
 import type React from "react";
 import { useState } from "react";
 
-import "./lib/logger";
+import "./lib/logger.ts";
 import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
-import { wasmIntegrations } from "./lib/sentry";
+import { wasmIntegrations } from "./lib/sentry.ts";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({

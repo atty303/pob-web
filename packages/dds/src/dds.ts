@@ -1,5 +1,5 @@
-import { D3dFmt, Ddpf, Format, Swizzle } from "./format";
-import { StorageLinear } from "./storage";
+import { D3dFmt, Ddpf, Format, Swizzle } from "./format.ts";
+import { StorageLinear } from "./storage.ts";
 
 export class Texture {
   private baseLayer: number;

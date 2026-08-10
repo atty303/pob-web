@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "@playwright/test";
-import { releases } from "./test/e2e/releases";
+import { releases } from "./test/e2e/releases.mts";
 
 if (process.env.POB_COOL_ASSET !== "true") {
   const assetRoot = path.resolve(import.meta.dirname, "../packer/r2");
@@ -28,7 +28,7 @@ export default defineConfig({
     video: "off",
   },
   webServer: {
-    command: "npm run test:e2e:serve",
+    command: "deno task test:e2e:serve",
     wait: { stdout: /Local:\s+(?<dev_server_url>http:\/\/127\.0\.0\.1:\d+\/)/ },
     reuseExistingServer: false,
     timeout: 30_000,

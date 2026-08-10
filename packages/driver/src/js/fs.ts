@@ -1,7 +1,7 @@
 import type { Backend } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
 import { Errno, ErrnoError, Stats } from "@zenfs/core";
-import { log, tag } from "./logger";
+import { log, tag } from "./logger.ts";
 
 class FetchError extends Error {
   constructor(

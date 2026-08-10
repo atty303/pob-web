@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import baseConfig from "./playwright.config";
+import baseConfig from "./playwright.config.mts";
 
 export default defineConfig({
   ...baseConfig,

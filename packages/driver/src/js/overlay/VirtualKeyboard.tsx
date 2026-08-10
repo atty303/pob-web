@@ -1,8 +1,8 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDragIndicator } from "react-icons/md";
-import type { DOMKey, DOMKeyboardState } from "../keyboard";
-import { KeyButton } from "./KeyButton";
+import type { DOMKey, DOMKeyboardState } from "../keyboard.ts";
+import { KeyButton } from "./KeyButton.tsx";
 
 interface VirtualKeyboardProps {
   isVisible: boolean;

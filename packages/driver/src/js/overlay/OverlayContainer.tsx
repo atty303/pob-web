@@ -1,13 +1,13 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { DOMKeyboardState } from "../keyboard";
+import type { DOMKeyboardState } from "../keyboard.ts";
 import "./overlay.css";
-import type { FrameData, RenderStats } from "./PerformanceOverlay";
-import { PerformanceOverlay } from "./PerformanceOverlay";
-import { Toolbar } from "./Toolbar";
-import type { ToolbarCallbacks, ToolbarPosition } from "./types";
-import { VirtualKeyboard } from "./VirtualKeyboard";
+import type { FrameData, RenderStats } from "./PerformanceOverlay.tsx";
+import { PerformanceOverlay } from "./PerformanceOverlay.tsx";
+import { Toolbar } from "./Toolbar.tsx";
+import type { ToolbarCallbacks, ToolbarPosition } from "./types.ts";
+import { VirtualKeyboard } from "./VirtualKeyboard.tsx";
 
 interface OverlayContainerProps {
   callbacks: ToolbarCallbacks;

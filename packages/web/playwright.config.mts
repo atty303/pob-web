@@ -20,10 +20,10 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
-    { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.ts", use: { browserName: "firefox" } },
+    { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.mts", use: { browserName: "firefox" } },
   ],
   webServer: {
-    command: "npm run test:e2e:serve",
+    command: "deno task test:e2e:serve",
     wait: { stdout: /Local:\s+(?<dev_server_url>http:\/\/127\.0\.0\.1:\d+\/)/ },
     env: { VITE_SENTRY_DSN: sentryDsn },
     reuseExistingServer: false,

@@ -84,7 +84,7 @@ ABI. Compilation runs asynchronously while the interpreter continues to
 execute.
 
 Place an experimental crate near the driver, for example under
-`packages/driver/runtime-rs/`. Keep it outside the npm workspace model and build
+`packages/driver/runtime-rs/`. Keep it outside the Deno workspace model and build
 it through dedicated `mise` tasks. Do not replace the current runtime until all
 compatibility and performance gates pass.
 

@@ -5,6 +5,10 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "paths": {
+      "dds/src": ["../dds/src/index.ts"],
+      "pob-game/src": ["../game/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,5 +16,5 @@
     "types": ["@webgpu/types"],
     "jsx": "react-jsx"
   },
-  "include": ["src/js", "test"]
+  "include": ["src/js"]
 }

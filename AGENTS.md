@@ -11,9 +11,9 @@
 
 - This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed upstream
   assets unmodified; implement browser-specific behavior in this repository's packages.
-- The npm workspaces are `packages/dds`, `packages/driver`, `packages/game`, `packages/packer`, and `packages/web`. See
+- The Deno workspaces are `packages/dds`, `packages/driver`, `packages/game`, `packages/packer`, and `packages/web`. See
   `README.md` for the user-facing architecture and development overview.
-- Do not add dependencies without prior approval. Use the versions and lockfiles managed by `mise` and npm.
+- Do not add dependencies without prior approval. Use the versions and lockfiles managed by `mise` and Deno.
 
 ## Development workflow
 
@@ -31,7 +31,7 @@
 - Use `mise run driver:dev`, `mise run web:dev`, and the other task-specific commands shown by `mise tasks` for manual
   development.
 - Before running separate `mise run` processes in parallel, check whether they share a dependency that mutates the same
-  workspace or cache. If they do, such as a shared `npm ci`, complete that dependency once before parallelizing the
+  workspace or cache. If they do, such as a shared `deno ci`, complete that dependency once before parallelizing the
   downstream tasks.
 - Keep generated build output out of version control. Regenerate it through the relevant `mise` task.
 

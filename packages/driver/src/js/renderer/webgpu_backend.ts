@@ -1,8 +1,8 @@
 import { Format, Target } from "dds/src";
-import { TextureFlags } from "../image";
-import { log, tag } from "../logger";
-import type { RenderBackend } from "./backend";
-import type { TextureBitmap } from "./renderer";
+import { TextureFlags } from "../image.ts";
+import { log, tag } from "../logger.ts";
+import type { RenderBackend } from "./backend.ts";
+import type { TextureBitmap } from "./renderer.ts";
 
 const vertexShaderSource = `
 struct Uniforms {

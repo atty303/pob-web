@@ -1,5 +1,4 @@
 [tools]
-node = "24.12.0"
 deno = "2.9.3"
 emsdk = "6.0.6"
 cmake = "4.3.3"
@@ -9,17 +8,17 @@ hk = "1.54.1"
 pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
-"npm:@playwright/mcp" = "0.0.79"
 sentry-cli = "3.6.2"
 
 [settings]
 lockfile = true
 
 [tasks.install]
-run = "npm ci"
+run = "deno ci"
 sources = [
-  "package.json",
-  "package-lock.json"
+  "deno.json",
+  "deno.lock",
+  "packages/*/deno.json"
 ]
 outputs = { auto = true }
 
@@ -33,12 +32,12 @@ depends = ["install"]
 
 [tasks."test:driver"]
 description = "Run focused driver behavior tests"
-run = "npm test -w packages/driver"
+run = "deno task --filter pob-driver test"
 depends = ["driver:build"]
 
 [tasks."test:web"]
 description = "Run focused web behavior tests"
-run = "npm test -w packages/web"
+run = "deno task --filter pob-web test"
 depends = ["install"]
 
 [tasks."test:upstream-sync"]
@@ -127,16 +126,16 @@ if [ -n "$usage_game" ]; then
 else
   unset RUN_GAME RUN_VERSION
 fi
-npm exec -- tsx tools/pack-e2e-assets.ts driver
-npm run test:e2e -w packages/driver
+deno run -A tools/pack-e2e-assets.ts driver
+deno task --filter pob-driver test:e2e
 """
 depends = ["driver:build"]
 
 [tasks."test:e2e:web"]
 description = "Run the local web-to-driver critical-path test"
 run = """
-npm exec -- tsx tools/pack-e2e-assets.ts web
-npm run test:e2e -w packages/web
+deno run -A tools/pack-e2e-assets.ts web
+deno task --filter pob-web test:e2e
 """
 depends = ["driver:build"]
 
@@ -146,14 +145,14 @@ run = """
 test -n "${SENTRY_LIVE_AUTH_TOKEN:-}" || { echo 'SENTRY_LIVE_AUTH_TOKEN is required' >&2; exit 1; }
 test -n "${SENTRY_LIVE_DSN:-}" || { echo 'SENTRY_LIVE_DSN is required' >&2; exit 1; }
 SENTRY_AUTH_TOKEN="$SENTRY_LIVE_AUTH_TOKEN" sentry-cli debug-files upload --org "${SENTRY_LIVE_ORG:-atty303}" --project "${SENTRY_LIVE_PROJECT:-pob-web}" --type wasm --include-sources --wait packages/driver/dist/release/driver.wasm.debug.wasm
-npm exec -- tsx tools/pack-e2e-assets.ts web
-SENTRY_LIVE_TEST=1 npm run test:e2e -w packages/web -- sentry-wasm.spec.ts
+deno run -A tools/pack-e2e-assets.ts web
+SENTRY_LIVE_TEST=1 deno task --filter pob-web test:e2e sentry-wasm.spec.mts
 """
 depends = ["driver:build"]
 
 [tasks."benchmark:setup"]
 description = "Install the Chromium and Firefox browsers used for driver benchmarks"
-run = "npm exec -- playwright install chromium firefox"
+run = "deno task playwright install chromium firefox"
 depends = ["install"]
 
 [tasks."benchmark:driver"]
@@ -163,9 +162,9 @@ export RUN_GAME=poe1
 export RUN_VERSION=v2.66.2
 export RUN_BUILD=release
 unset POB_COOL_ASSET
-npm exec -- tsx tools/pack-e2e-assets.ts driver
-npm run -w packages/driver build:release
-npm run -w packages/driver test:performance
+deno run -A tools/pack-e2e-assets.ts driver
+deno task --filter pob-driver build:release
+deno task --filter pob-driver test:performance
 '''
 depends = ["benchmark:setup"]
 
@@ -173,7 +172,7 @@ depends = ["benchmark:setup"]
 description = "Run generated-file, static, and driver checks"
 usage = 'arg "[files]" var=#true'
 run = """
-npm exec -w packages/web -- react-router typegen
+deno task --filter pob-web typegen
 if [ -n "$usage_files" ]; then eval "set -- $usage_files"; else set -- --all; fi; hk check "$@"
 """
 depends = ["install", "test:driver", "test:web", "test:driver:debuginfo", "test:sentry-upload", "test:upstream-sync", "driver:build"]
@@ -199,7 +198,7 @@ depends = ["check", "driver:build"]
 description = "Start Playwright MCP with coordinate-based Vision Mode"
 depends = ["install"]
 run = """
-chromium_path="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
+chromium_path="$(deno eval 'import { chromium } from "@playwright/test"; Deno.stdout.write(new TextEncoder().encode(chromium.executablePath()))')"
 if [ ! -x "$chromium_path" ]; then
   echo "Chromium is not installed; run 'mise run visual:setup' first" >&2
   exit 1
@@ -207,13 +206,13 @@ fi
 
 args=(--caps=vision --isolated --viewport-size=1440x900 --executable-path="$chromium_path")
 [ "${PLAYWRIGHT_MCP_HEADED:-}" = "1" ] || args+=(--headless)
-exec playwright-mcp "${args[@]}"
+exec deno task playwright-mcp "${args[@]}"
 """
 
 [tasks."visual:setup"]
 description = "Install the Chromium browser used for visual verification"
 depends = ["install"]
-run = "npm exec -- playwright install chromium"
+run = "deno task playwright install chromium"
 
 [tasks."visual:dev"]
 description = "Start the driver UI for interactive visual verification"
@@ -242,7 +241,7 @@ else
 fi
 
 if [ -z "$RUN_VERSION" ]; then
-  RUN_VERSION="$(node -e 'const versions = require("./version.json"); process.stdout.write(versions[process.env.RUN_GAME].head)')"
+  RUN_VERSION="$(deno eval --allow-env=RUN_GAME 'import versions from "./version.json" with { type: "json" }; Deno.stdout.write(new TextEncoder().encode(versions[Deno.env.get("RUN_GAME")].head))')"
   export RUN_VERSION
 fi
 
@@ -254,7 +253,7 @@ if [ -z "${POB_COOL_ASSET:-}" ]; then
   fi
 fi
 
-npm run -w packages/driver dev -- --host 127.0.0.1
+deno task --filter pob-driver dev --host 127.0.0.1
 """
 depends = ["driver:build"]
 
@@ -265,13 +264,13 @@ flag "--game <game>" { choices "poe1" "poe2" "le" }
 flag "--tag <tag>"
 """
 run = """
-npm run -w packages/packer pack "${usage_tag?}" "${usage_game?}" clone
+deno task --filter pob-packer pack "${usage_tag?}" "${usage_game?}" clone
 """
 depends = ["install"]
 
 [tasks."driver:build"]
 description = "Build the driver package"
-run = "npm run -w packages/driver build"
+run = "deno task --filter pob-driver build"
 sources = [
   "mise.toml",
   "mise.lock",
@@ -311,13 +310,13 @@ export RUN_VERSION="${usage_version?}"
 export RUN_BUILD="${usage_build?}"
 [ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
 
-npm run -w packages/driver dev -- --port 5173 --strictPort
+deno task --filter pob-driver dev --port 5173 --strictPort
 """
 depends = ["driver:build"]
 
 [tasks."web:build"]
 description = "Build the web package"
-run = "npm run -w packages/web build"
+run = "deno task --filter pob-web build"
 depends = ["driver:build"]
 
 [tasks."sentry:upload"]
@@ -328,9 +327,9 @@ run = "deno run --allow-env=SENTRY_AUTH_TOKEN,SENTRY_RELEASE --allow-read --allo
 description = "Build, upload source maps, and deploy the web package"
 run = """
 export DEPLOYMENT=cloudflare
-npm run -w packages/web build
+deno task --filter pob-web build
 mise run sentry:upload
-npm run -w packages/web deploy:pages
+deno task --filter pob-web deploy:pages
 """
 depends = ["install", "driver:build"]
 
@@ -341,6 +340,6 @@ flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local 
 """
 run = """
 [ -n "$usage_pob_cool_asset" ] && export POB_COOL_ASSET=true
-npm run -w packages/web dev
+deno task --filter pob-web dev
 """
 depends = ["driver:build"]

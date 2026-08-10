@@ -11,6 +11,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "paths": {
+      "dds/src": ["../dds/src/index.ts"],
+      "pob-game/src": ["../game/src/index.ts"]
+    },
 
     "strict": true,
     "noUnusedParameters": true,

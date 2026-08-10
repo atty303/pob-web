@@ -1,6 +1,6 @@
 import { gameData } from "pob-game/src";
 import { useState } from "react";
-import { type DiagnosticReport, describeError, formatDiagnosticReport } from "../lib/error-report";
+import { type DiagnosticReport, describeError, formatDiagnosticReport } from "../lib/error-report.ts";
 
 interface ErrorDialogProps {
   report: DiagnosticReport;

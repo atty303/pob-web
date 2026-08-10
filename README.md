@@ -51,7 +51,8 @@ git submodule update
 mise run setup
 ```
 
-This installs the pinned tools and npm dependencies, initializes the submodules, and installs the repository hooks.
+This installs the pinned tools and Deno-managed dependencies, initializes the submodules, and installs the repository
+hooks.
 
 ### Pack upstream PoB
 

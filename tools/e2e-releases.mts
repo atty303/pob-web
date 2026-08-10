@@ -1,5 +1,11 @@
-import { type Game, games, isGame } from "../packages/game/src/index.ts";
-import versions from "../version.json";
+import type { Game } from "../packages/game/src/index.ts";
+
+const versions = JSON.parse(Deno.readTextFileSync(new URL("../version.json", import.meta.url))) as Record<
+  Game,
+  { head: string }
+>;
+const games = Object.keys(versions) as Game[];
+const isGame = (game: string): game is Game => Object.hasOwn(versions, game);
 
 export type E2ERelease = { game: Game; version: string };
 
@@ -7,7 +13,9 @@ export const headRelease = (game: Game): E2ERelease => ({ game, version: version
 
 export const headReleases = games.map(headRelease);
 
-export function resolveDriverReleases(environment: Readonly<Record<string, string | undefined>> = process.env): {
+export function resolveDriverReleases(
+  environment: Readonly<Record<string, string | undefined>> = Deno.env.toObject(),
+): {
   releases: E2ERelease[];
   targeted: boolean;
 } {
