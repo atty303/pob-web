@@ -11,6 +11,7 @@ type PoBTestState = {
   renderStats: import("./overlay/index.ts").RenderStats | null;
   title: string;
   errors: string[];
+  pressedKeys: string[];
   frameSamples: { totalTime: number; rendererTime: number }[];
   resetFrameSamples: () => void;
   loadBuildFromCode?: (code: string) => Promise<void>;

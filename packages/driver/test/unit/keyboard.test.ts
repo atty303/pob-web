@@ -53,3 +53,38 @@ Deno.test("virtual Shift remains held and transforms characters", () => {
     ],
   );
 });
+
+Deno.test("releasing physical keys clears keys that missed keyup", () => {
+  const { dom, events, keys } = makeKeyboard();
+
+  dom.keydown("Control" as DOMKey);
+  dom.keydown("a" as DOMKey);
+  dom.releasePhysicalKeys();
+
+  assertEquals(keys, new Set());
+  assertEquals(events, [
+    { type: "down", value: "CTRL" },
+    { type: "down", value: "a" },
+    { type: "up", value: "CTRL" },
+    { type: "up", value: "a" },
+  ]);
+});
+
+Deno.test("virtual modifiers survive physical key release", () => {
+  const { dom, events, keys } = makeKeyboard();
+
+  dom.keydown("Control" as DOMKey);
+  dom.virtualKeyPress("Control" as DOMKey, true);
+  dom.releasePhysicalKeys();
+
+  assertEquals(keys, new Set(["CTRL" as PoBKey]));
+  dom.keyup("Control" as DOMKey);
+  assertEquals(keys, new Set(["CTRL" as PoBKey]));
+  assertEquals(events, [{ type: "down", value: "CTRL" }]);
+  assertEquals([...dom.virtualKeyPress("Control" as DOMKey, true)], []);
+  assertEquals(keys, new Set());
+  assertEquals(events, [
+    { type: "down", value: "CTRL" },
+    { type: "up", value: "CTRL" },
+  ]);
+});

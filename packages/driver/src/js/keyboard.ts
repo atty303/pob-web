@@ -51,16 +51,22 @@ export type DOMKeyboardState = {
   keydown: (domKey: DOMKey) => void;
   keyup: (domKey: DOMKey) => void;
   keypress: (char: string) => void;
+  releasePhysicalKeys: () => void;
 
   virtualKeyPress: (domKey: DOMKey, isModifier: boolean) => Set<DOMKey>;
 };
 export const DOMKeyboardState = {
   make(pobKeyboardState: PoBKeyboardState): DOMKeyboardState {
-    const heldKeys = new Set<DOMKey>();
+    const physicalKeys = new Set<PoBKey>();
+    const virtualHeldKeys = new Set<DOMKey>();
+    const isVirtuallyHeld = (pobKey: PoBKey) =>
+      [...virtualHeldKeys].some((domKey) => domKeyToPobKey(domKey) === pobKey);
 
     return {
       keydown(domKey: DOMKey) {
-        pobKeyboardState.keydown(domKeyToPobKey(domKey), 0);
+        const pobKey = domKeyToPobKey(domKey);
+        physicalKeys.add(pobKey);
+        pobKeyboardState.keydown(pobKey, 0);
 
         const char = EXTRA_CHAR_MAP.get(domKey);
         if (char) {
@@ -69,31 +75,51 @@ export const DOMKeyboardState = {
       },
 
       keyup(domKey: DOMKey): void {
-        pobKeyboardState.keyup(domKeyToPobKey(domKey));
+        const pobKey = domKeyToPobKey(domKey);
+        const wasPhysical = physicalKeys.delete(pobKey);
+        if (wasPhysical && !isVirtuallyHeld(pobKey)) {
+          pobKeyboardState.keyup(pobKey);
+        }
       },
 
       keypress(char: string): void {
         pobKeyboardState.keypress(char);
       },
 
+      releasePhysicalKeys(): void {
+        for (const pobKey of physicalKeys) {
+          if (!isVirtuallyHeld(pobKey)) {
+            pobKeyboardState.keyup(pobKey);
+          }
+        }
+        physicalKeys.clear();
+      },
+
       virtualKeyPress(domKey: DOMKey, isModifier: boolean): Set<DOMKey> {
+        const pobKey = domKeyToPobKey(domKey);
         if (isModifier) {
-          if (heldKeys.has(domKey)) {
-            heldKeys.delete(domKey);
-            this.keyup(domKey);
+          if (virtualHeldKeys.has(domKey)) {
+            virtualHeldKeys.delete(domKey);
+            if (!physicalKeys.has(pobKey)) {
+              pobKeyboardState.keyup(pobKey);
+            }
           } else {
-            heldKeys.add(domKey);
-            this.keydown(domKey);
+            virtualHeldKeys.add(domKey);
+            if (!physicalKeys.has(pobKey)) {
+              pobKeyboardState.keydown(pobKey, 0);
+            }
           }
         } else {
-          this.keydown(domKey);
+          pobKeyboardState.keydown(pobKey, 0);
           if (domKey.length === 1) {
-            const char = heldKeys.has("Shift" as DOMKey) ? applyShiftTransformation(domKey) : domKey;
+            const char = virtualHeldKeys.has("Shift" as DOMKey) ? applyShiftTransformation(domKey) : domKey;
             this.keypress(char);
           }
-          this.keyup(domKey);
+          if (!physicalKeys.has(pobKey) && !isVirtuallyHeld(pobKey)) {
+            pobKeyboardState.keyup(pobKey);
+          }
         }
-        return heldKeys;
+        return virtualHeldKeys;
       },
     };
   },
