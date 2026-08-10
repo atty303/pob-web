@@ -98,3 +98,48 @@ test("the current build exports and reloads through the Lua runtime", async ({ p
   expect(roundTrippedCode).not.toBe(initialCode);
   expect((await page.evaluate(() => window.__POB_TEST__?.errors)) ?? []).toEqual([]);
 });
+
+test("hidden pages release physical keys but preserve virtual modifiers", async ({ page }) => {
+  const release = releases[0];
+  if (!release) throw new Error("No E2E release is configured");
+  await page.goto(`/?game=${release.game}&version=${release.version}`);
+  await page.waitForFunction(() => window.__POB_TEST__?.started === true);
+
+  const canvas = page.locator("canvas");
+  await canvas.evaluate((element) => (element.parentElement as HTMLElement).focus());
+  await page.keyboard.down("Control");
+  await expect.poll(() => page.evaluate(() => window.__POB_TEST__?.pressedKeys)).toContain("CTRL");
+
+  await setVisibilityState(page, "hidden");
+  await expect.poll(() => page.evaluate(() => window.__POB_TEST__?.pressedKeys)).not.toContain("CTRL");
+  await setVisibilityState(page, "visible");
+  await page.keyboard.up("Control");
+
+  await page.getByRole("button", { name: "Toggle Virtual Keyboard" }).click();
+  const virtualControl = page.getByRole("button", { name: "Ctrl", exact: true });
+  await virtualControl.click();
+  await expect(virtualControl).toHaveClass(/pw:btn-primary/);
+  await expect.poll(() => page.evaluate(() => window.__POB_TEST__?.pressedKeys)).toContain("CTRL");
+
+  await setVisibilityState(page, "hidden");
+  await expect.poll(() => page.evaluate(() => window.__POB_TEST__?.pressedKeys)).toContain("CTRL");
+  await expect(virtualControl).toHaveClass(/pw:btn-primary/);
+
+  await setVisibilityState(page, "visible");
+  await virtualControl.click();
+  await expect.poll(() => page.evaluate(() => window.__POB_TEST__?.pressedKeys)).not.toContain("CTRL");
+  expect((await page.evaluate(() => window.__POB_TEST__?.errors)) ?? []).toEqual([]);
+});
+
+async function setVisibilityState(
+  page: import("@playwright/test").Page,
+  state: DocumentVisibilityState,
+): Promise<void> {
+  await page.evaluate((visibilityState) => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: visibilityState });
+    document.dispatchEvent(new Event("visibilitychange"));
+    if (visibilityState === "visible") {
+      Reflect.deleteProperty(document, "visibilityState");
+    }
+  }, state);
+}

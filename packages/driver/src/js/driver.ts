@@ -33,6 +33,7 @@ export type FilesystemConfig = {
 
 export type DriverLifecycleCallbacks = {
   onWorkerCreated?: (worker: Worker) => void;
+  onKeyboardStateChange?: (keys: readonly PoBKey[]) => void;
 };
 
 export class Driver {
@@ -200,11 +201,13 @@ export class Driver {
 
     this.pobKeyboardState = PoBKeyboardState.make({
       onKeyDown: (state: PoBKeyboardState, key: PoBKey, doubleClick: number) => {
+        this.lifecycleCallbacks.onKeyboardStateChange?.([...state.pobKeys]);
         this.driverWorker?.updateKeyboardState(state.pobKeys);
         this.driverWorker?.handleKeyDown(key, doubleClick);
         if (doubleClick > 0) this.driverWorker?.handleKeyUp(key, 0);
       },
       onKeyUp: (state: PoBKeyboardState, key: PoBKey) => {
+        this.lifecycleCallbacks.onKeyboardStateChange?.([...state.pobKeys]);
         this.driverWorker?.updateKeyboardState(state.pobKeys);
         this.driverWorker?.handleKeyUp(key, 0);
       },
@@ -240,7 +243,12 @@ export class Driver {
     );
 
     this.eventHandler = new EventHandler(container, {
-      onVisibilityChange: (visible) => this.driverWorker?.handleVisibilityChange(visible),
+      onVisibilityChange: (visible) => {
+        if (!visible) {
+          this.domKeyboardState?.releasePhysicalKeys();
+        }
+        this.driverWorker?.handleVisibilityChange(visible);
+      },
     });
 
     this.mouseHandler!.setPanMode(this.panModeEnabled);
