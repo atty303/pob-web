@@ -89,8 +89,10 @@ test.describe("clipboard", () => {
     await installClipboardWriteDouble(page);
     await openTreeSearch(page);
 
-    const token = `physicaltyping${Date.now()}`;
-    await typePoB(page, token);
+    const token = `physicaltyping${Date.now()}@€`;
+    await typePoB(page, token.slice(0, -2));
+    await dispatchModifiedCharacter(page, "@", { altKey: true });
+    await dispatchModifiedCharacter(page, "€", { altKey: true, ctrlKey: true, altGraph: true });
     await page.getByRole("button", { name: "Toggle Virtual Keyboard" }).click();
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
     await page.getByRole("button", { name: "A", exact: true }).click();
@@ -171,6 +173,37 @@ async function waitForDriverFrames(
   await page.waitForFunction(
     ({ initial, count }) => (window.__POB_TEST__?.frameCount ?? 0) >= initial + count,
     { initial, count },
+  );
+}
+
+async function dispatchModifiedCharacter(
+  page: import("@playwright/test").Page,
+  key: string,
+  modifiers: { altKey?: boolean; ctrlKey?: boolean; altGraph?: boolean },
+): Promise<void> {
+  await page.evaluate(
+    async ({ key, altKey, ctrlKey, altGraph }) => {
+      const inputSink = document.querySelector("canvas")?.parentElement;
+      if (!inputSink) throw new Error("The input sink is unavailable");
+      const event = new KeyboardEvent("keydown", {
+        key,
+        altKey,
+        ctrlKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      if (altGraph) {
+        Object.defineProperty(event, "getModifierState", {
+          value: (modifier: string) => modifier === "AltGraph",
+        });
+      }
+      inputSink.dispatchEvent(event);
+      inputSink.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true, cancelable: true }));
+      const flushInput = window.__POB_TEST__?.flushInput;
+      if (!flushInput) throw new Error("flushInput test hook is unavailable");
+      await flushInput();
+    },
+    { key, ...modifiers },
   );
 }
 

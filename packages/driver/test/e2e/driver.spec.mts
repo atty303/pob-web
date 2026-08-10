@@ -55,6 +55,30 @@ for (const release of releases) {
     expect(dimensions.width).toBeGreaterThan(0);
     expect(dimensions.height).toBeGreaterThan(0);
 
+    const inputSink = canvas.locator("..");
+    await inputSink.focus();
+    const initialInputLayout = await captureInputLayout(inputSink);
+    const navigationEvents = page.evaluate(() =>
+      new Promise<Array<{ key: string; defaultPrevented: boolean }>>((resolve) => {
+        const events: Array<{ key: string; defaultPrevented: boolean }> = [];
+        const onKeyDown = (event: KeyboardEvent) => {
+          events.push({ key: event.key, defaultPrevented: event.defaultPrevented });
+          if (events.length === 2) {
+            document.removeEventListener("keydown", onKeyDown);
+            resolve(events);
+          }
+        };
+        document.addEventListener("keydown", onKeyDown);
+      })
+    );
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowRight");
+    expect(await navigationEvents).toEqual([
+      { key: "ArrowLeft", defaultPrevented: true },
+      { key: "ArrowRight", defaultPrevented: true },
+    ]);
+    expect(await captureInputLayout(inputSink)).toEqual(initialInputLayout);
+
     await page.getByRole("button", { name: "Zoom Controls" }).click();
     const slider = page.getByRole("slider");
     await slider.fill("1.2");
@@ -135,4 +159,18 @@ async function setVisibilityState(
       Reflect.deleteProperty(document, "visibilityState");
     }
   }, state);
+}
+
+async function captureInputLayout(locator: import("@playwright/test").Locator) {
+  return await locator.evaluate((inputSink) => {
+    const canvas = inputSink.querySelector("canvas");
+    if (!canvas) throw new Error("The input sink does not contain a canvas");
+    const rect = canvas.getBoundingClientRect();
+    return {
+      focused: inputSink.ownerDocument.activeElement === inputSink,
+      scrollLeft: inputSink.scrollLeft,
+      scrollTop: inputSink.scrollTop,
+      canvasRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+    };
+  });
 }
