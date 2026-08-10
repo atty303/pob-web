@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.29.3](https://github.com/atty303/pob-web/compare/v0.29.2...v0.29.3) (2026-08-10)
+
+
+### Bug Fixes
+
+* **driver:** normalize clipboard interactions ([3e45da2](https://github.com/atty303/pob-web/commit/3e45da25529a42d3614dde10a127806c669b6c45))
+* **driver:** normalize clipboard interactions ([#173](https://github.com/atty303/pob-web/issues/173)) ([132bd3c](https://github.com/atty303/pob-web/commit/132bd3c128bf1496b080fdd8e16084ada3e21ed3))
+* **driver:** prevent input capture navigation ([fa20190](https://github.com/atty303/pob-web/commit/fa201903097b5fa8519313cbd6249117bfce8d8c))
+* **driver:** prevent input capture navigation ([#175](https://github.com/atty303/pob-web/issues/175)) ([e8cf03b](https://github.com/atty303/pob-web/commit/e8cf03b1d61686398c2dd893ffc986575a70bee3))
+* **driver:** release physical keys when hidden ([b36cf9a](https://github.com/atty303/pob-web/commit/b36cf9a6fbdc7ad4f320c1e930a53ba6a38a36b9))
+* **driver:** release physical keys when hidden ([#170](https://github.com/atty303/pob-web/issues/170)) ([a007f8a](https://github.com/atty303/pob-web/commit/a007f8a121788a4ddc03582ac6456437523d2e9e))
+* **driver:** restore URL build imports ([ee9e09c](https://github.com/atty303/pob-web/commit/ee9e09c3b6953cc7b72973f3ace469520678d095))
+* **driver:** restore URL build imports ([#174](https://github.com/atty303/pob-web/issues/174))f ([461bb13](https://github.com/atty303/pob-web/commit/461bb135180309521b5fc8dab477c851eb817364)), closes [#172](https://github.com/atty303/pob-web/issues/172)
+
 ## [0.29.2](https://github.com/atty303/pob-web/compare/v0.29.1...v0.29.2) (2026-08-10)
 
 
