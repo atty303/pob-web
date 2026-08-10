@@ -46,9 +46,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 
   function versionTable(game: keyof Games) {
     return (
-      <div className="card bg-base-100 shadow-md p-4 w-full">
+      <div className="card bg-base-100 shadow-md p-4 w-full min-w-0">
         <h3 className="text-2xl font-semibold mb-4">{gameData[game].name}</h3>
-        <div className="overflow-auto max-h-96">
+        <div className="overflow-x-auto overflow-y-auto max-h-96">
           <table className="table w-full">
             <thead>
               <tr>
@@ -198,7 +198,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           Available Versions
         </h2>
 
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8">
+        <div className="max-w-4xl mx-auto flex flex-col gap-8">
           {/* PoE2 Versions Table */}
           {versionTable("poe2")}
 

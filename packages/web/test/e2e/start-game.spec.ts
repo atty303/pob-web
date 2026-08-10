@@ -1,6 +1,7 @@
 import { expect, test } from "../../../../tools/playwright";
 
 test("the landing page shows compatibility results and starts a rendered Path of Exile 2 session", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
   await page.route("https://*.ingest.sentry.io/**", route => route.fulfill({ status: 200, json: {} }));
 
   await page.route("**/version.json", route =>
@@ -37,7 +38,9 @@ test("the landing page shows compatibility results and starts a rendered Path of
   await expect(page.getByText("Tested", { exact: true })).toBeVisible();
   await expect(page.getByText("Failed", { exact: true })).toBeVisible();
   await expect(page.getByText("Untested", { exact: true }).first()).toBeVisible();
-
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
+    true,
+  );
   await page.getByRole("link", { name: "Start for Path of Exile 2" }).click();
   await expect(page).toHaveURL(/\/poe2$/);
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible({ timeout: 45_000 });
