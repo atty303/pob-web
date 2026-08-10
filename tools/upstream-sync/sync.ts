@@ -37,9 +37,10 @@ export async function collectGameResult(options: {
     await options.runner(["pack", "--game", options.game, "--tag", tag.name]);
     if (!options.dryRun) await options.runner(["sync", "--game", options.game, "--tag", tag.name]);
 
-    const e2eArgs = ["test:e2e:driver", "--game", options.game, "--version", tag.name];
-    if (!options.dryRun) e2eArgs.push("--pob-cool-asset");
-    const exitCode = await options.runner(e2eArgs, true);
+    const exitCode = await options.runner(
+      ["test:e2e:driver", "--game", options.game, "--version", tag.name],
+      true,
+    );
     releases.push(
       {
         value: tag.name,

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zstd from "@bokuweb/zstd-wasm";
@@ -7,9 +8,8 @@ import { imageDimensionsFromData } from "image-dimensions";
 import { gameData, isGame } from "pob-game/src";
 import { default as shelljs } from "shelljs";
 
-await zstd.init();
-
-shelljs.config.verbose = true;
+shelljs.config.verbose = false;
+shelljs.config.fatal = true;
 
 const clone = process.argv[4] === "clone";
 
@@ -32,6 +32,25 @@ shelljs.mkdir("-p", buildDir);
 // Mirror of the R2 directory structure
 const r2Dir = `r2/games/${game}/versions/${tag}`;
 shelljs.mkdir("-p", r2Dir);
+
+const cacheMarker = `${r2Dir}/.pack-input.sha256`;
+const inputHash = packInputHash();
+if (
+  clone &&
+  fs.existsSync(`${r2Dir}/root.zip`) &&
+  fs.existsSync(`${r2Dir}/root`) &&
+  fs.existsSync(cacheMarker) &&
+  fs.readFileSync(cacheMarker, "utf8") === inputHash
+) {
+  console.log(`Reusing packed ${game} ${tag}`);
+  process.exit(0);
+}
+
+console.log(`Packing ${game} ${tag}`);
+shelljs.rm("-rf", r2Dir);
+shelljs.mkdir("-p", r2Dir);
+
+await zstd.init();
 
 const remote = `https://github.com/${def.repository.owner}/${def.repository.name}.git`;
 const repoDir = `${buildDir}/repo`;
@@ -124,6 +143,34 @@ const rootDir = `${buildDir}/root-zipfs`;
 shelljs.rm("-rf", rootDir);
 shelljs.mkdir("-p", rootDir);
 zip.extractAllTo(rootDir, true);
+fs.writeFileSync(cacheMarker, inputHash);
+
+function packInputHash() {
+  const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
+  const inputs = [
+    "package.json",
+    "package-lock.json",
+    "packages/dds/src",
+    "packages/game/src",
+    "packages/packer/package.json",
+    "packages/packer/src",
+  ];
+  const files = inputs.flatMap(input => filesUnder(path.join(workspaceRoot, input))).sort();
+  const hash = createHash("sha256");
+  for (const file of files) {
+    hash.update(path.relative(workspaceRoot, file));
+    hash.update("\0");
+    hash.update(fs.readFileSync(file));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
+}
+
+function filesUnder(target: string): string[] {
+  const stat = fs.statSync(target);
+  if (stat.isFile()) return [target];
+  return fs.readdirSync(target, { withFileTypes: true }).flatMap(entry => filesUnder(path.join(target, entry.name)));
+}
 
 function ddsSize(file: string) {
   const data = zstd.decompress(fs.readFileSync(file));

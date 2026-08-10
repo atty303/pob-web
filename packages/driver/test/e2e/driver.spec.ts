@@ -1,5 +1,5 @@
 import { expect, test } from "../../../../tools/playwright";
-import { releases, targetRelease } from "./releases";
+import { releases, targeted } from "./releases";
 
 for (const release of releases) {
   test(`${release.game} ${release.version} loads items, renders, and zooms`, async ({ page }) => {
@@ -76,8 +76,10 @@ for (const release of releases) {
 }
 
 test("the current build exports and reloads through the Lua runtime", async ({ page }) => {
-  test.skip(targetRelease !== undefined, "Targeted compatibility checks only run the startup scenario");
-  await page.goto("/?game=poe1&version=v2.66.2");
+  test.skip(targeted, "Targeted compatibility checks only run the startup scenario");
+  const release = releases.find(candidate => candidate.game === "poe1");
+  if (!release) throw new Error("The default E2E releases do not include Path of Exile 1");
+  await page.goto(`/?game=${release.game}&version=${release.version}`);
   await page.waitForFunction(() => window.__POB_TEST__?.started === true);
 
   const initialCode = await page.evaluate(() => {

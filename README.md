@@ -106,27 +106,25 @@ For the adopted async runtime design, see
 [ADR 0001: Use Atomics RPC without native Wasm SJLJ](docs/adr/0001-async-runtime-and-sjlj.md).
 
 `mise run check` includes focused tests for driver keyboard state, Canvas transforms, and draw-command interpretation.
-For a local runtime check against the fixed PoE 1, PoE 2, and Last Epoch releases, pack their assets and run:
+For a local runtime check against the current PoE 1, PoE 2, and Last Epoch heads from `version.json`, run:
 
 ```bash
 mise run visual:setup
-mise run pack --game poe1 --tag v2.66.2
-mise run pack --game poe2 --tag v0.23.1
-mise run pack --game le --tag v0.12.0
 mise run test:e2e:driver
 mise run test:e2e:web
 ```
 
-The driver runtime suite uses locally packed assets by default, starts each release in Chromium, and checks item database
-loading, WebAssembly startup, WebGL2 rendering, frame statistics, and the DOM zoom control. Pass `--pob-cool-asset` to
-`mise run test:e2e:driver` or `mise run visual:dev` to use `asset.pob.cool` instead. The web runtime suite checks the
-critical path from the landing page through version loading and routing to a rendered driver session and web toolbar
-control. Browser tests and MCP visual verification select an available development-server port and use the URL reported
-by Vite, so they can run alongside the human-facing port 5173 server. To run only the startup compatibility scenario for
-one packed release, pass `--game` and `--version` together:
+The E2E tasks pack their required upstream releases locally and reuse those assets until the version or packer inputs
+change. The driver runtime suite starts each head in Chromium and checks item database loading, WebAssembly startup,
+WebGL2 rendering, frame statistics, and the DOM zoom control. The web runtime suite checks the critical path from the
+landing page through version loading and routing to a rendered driver session and web toolbar control. Browser tests and
+MCP visual verification select an available development-server port and use the URL reported by Vite, so they can run
+alongside the human-facing port 5173 server. To run only one game's current head, pass `--game`; add `--version` only for
+a release-specific compatibility check:
 
 ```bash
-mise run test:e2e:driver --game poe2 --version v0.23.1
+mise run test:e2e:driver --game poe2
+mise run test:e2e:driver --game poe2 --version <version>
 ```
 
 The full browser suites are intentionally kept out of the fast/full checks and pull-request CI. Run
