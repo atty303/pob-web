@@ -1,6 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowTopRightOnSquareIcon, ChartBarIcon, HomeIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { forwardRef } from "react";
+import { authenticateWithPoe } from "../lib/poe-oauth.ts";
 
 interface SettingsDialogProps {
   game: string;
@@ -10,7 +11,8 @@ interface SettingsDialogProps {
 
 export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>(
   ({ performanceVisible, onPerformanceToggle }, ref) => {
-    const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
+    const auth0 = useAuth0();
+    const { logout, user, isAuthenticated, isLoading } = auth0;
     const closeDialog = () => {
       if (ref && typeof ref !== "function" && ref.current) {
         ref.current.close();
@@ -54,7 +56,7 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
                     <button
                       type="button"
                       onClick={() => {
-                        logout();
+                        logout({ logoutParams: { returnTo: window.location.origin } });
                         closeDialog();
                       }}
                       className="pw:btn pw:btn-ghost pw:btn-xs pw:text-xs"
@@ -76,7 +78,9 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
                     <button
                       type="button"
                       onClick={() => {
-                        loginWithRedirect();
+                        void authenticateWithPoe(auth0).catch((error) => {
+                          console.error("Path of Exile authentication failed", error);
+                        });
                         closeDialog();
                       }}
                       className="pw:btn pw:btn-primary pw:btn-xs pw:text-xs"

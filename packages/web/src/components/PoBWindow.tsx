@@ -12,7 +12,12 @@ import {
   type ErrorPhase,
 } from "../lib/error-report.ts";
 import { log, tag } from "../lib/logger.ts";
-import { authorizePoeWithRedirect, corsFetchPolicy, createPoeOAuthBridge } from "../lib/poe-oauth.ts";
+import {
+  authenticateWithPoe,
+  authorizePoeWithRedirect,
+  corsFetchPolicy,
+  createPoeOAuthBridge,
+} from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -83,7 +88,12 @@ export default function PoBWindow(props: {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     const poeOAuthBridge = createPoeOAuthBridge(
       () => auth0Ref.current,
-      (forceAuthorization, timeoutMs) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
+      (forceAuthorization, timeoutMs) =>
+        authenticateWithPoe(
+          auth0Ref.current,
+          forceAuthorization,
+          (force) => authorizePoeWithRedirect(force, timeoutMs),
+        ),
     );
     log.debug(tag.pob, "loading assets from", assetPrefix);
 

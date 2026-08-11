@@ -13,7 +13,7 @@ export type PoeOAuthGrant = "authorization_code" | "refresh_token";
 
 type PoeAuth0Client = {
   isAuthenticated: boolean;
-  getAccessTokenSilently: () => Promise<string>;
+  getAccessTokenSilently: (options?: { cacheMode?: "on" | "off" | "cache-only" }) => Promise<string>;
 };
 
 export function poeAccessToken(auth0AccessToken: string): string | undefined {
@@ -53,6 +53,19 @@ export function broadcastPoeOAuthResult(channelName: string, message: PoeOAuthWi
   const channel = new BroadcastChannel(channelName);
   channel.postMessage(message);
   channel.close();
+}
+
+export async function authenticateWithPoe(
+  auth0: PoeAuth0Client,
+  forceAuthorization = false,
+  authorize: (forceAuthorization: boolean) => Promise<string> = authorizePoeWithRedirect,
+): Promise<string> {
+  const popupAccessToken = await authorize(forceAuthorization);
+  const cachedAccessToken = await auth0.getAccessTokenSilently({ cacheMode: "cache-only" });
+  if (!cachedAccessToken || cachedAccessToken !== popupAccessToken) {
+    throw new Error("Path of Exile authorization did not update the application session");
+  }
+  return cachedAccessToken;
 }
 
 export function authorizePoeWithRedirect(

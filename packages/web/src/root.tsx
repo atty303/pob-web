@@ -81,7 +81,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export function HydrateFallback() {}
 
 export default function Root() {
-  const poeOAuthPopup = window.location.pathname === "/auth/poe-popup";
   return (
     <Auth0Provider
       domain="pob-web.us.auth0.com"
@@ -89,7 +88,7 @@ export default function Root() {
       legacySameSiteCookie={false}
       useRefreshTokens
       useRefreshTokensFallback
-      cacheLocation={poeOAuthPopup ? "memory" : "localstorage"}
+      cacheLocation="localstorage"
       authorizationParams={{
         redirect_uri: window.location.origin,
         audience: "https://pob.cool/api",
