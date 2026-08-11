@@ -1,6 +1,6 @@
 {
   "name": "pob-driver",
-  "version": "0.29.3",
+  "version": "0.30.0",
   "exports": {
     "./driver": "./src/js/driver.ts",
     "./error": "./src/js/error.ts",

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.30.0](https://github.com/atty303/pob-web/compare/v0.29.3...v0.30.0) (2026-08-11)
+
+
+### Features
+
+* support Path of Exile OAuth imports ([4f4f122](https://github.com/atty303/pob-web/commit/4f4f122ef50244fc028340273d88a4d640f200e6))
+* support Path of Exile OAuth imports ([#176](https://github.com/atty303/pob-web/issues/176)) ([eec8e63](https://github.com/atty303/pob-web/commit/eec8e63e102736fba8f34ae5bc20f3712b7b7029))
+
+
+### Bug Fixes
+
+* **driver:** handle current PoB OAuth and async flows ([77695e7](https://github.com/atty303/pob-web/commit/77695e79a4ee07394cca4fafbefa3063bafae5b7))
+* **lua:** update LuaJIT compatibility runtime ([5a42f7c](https://github.com/atty303/pob-web/commit/5a42f7c098711a8f2846cfa0ea9a22a8a5541fcf))
+* **web:** classify known upstream PoB errors ([237c7c4](https://github.com/atty303/pob-web/commit/237c7c4db90898fbb0d0fd3f8be1f26a89ec6aac))
+* **web:** require copied diagnostics before reporting ([8ee84dc](https://github.com/atty303/pob-web/commit/8ee84dc70d4b9c2962e29b49a98ec6e31b0ae7c2))
+
 ## [0.29.3](https://github.com/atty303/pob-web/compare/v0.29.2...v0.29.3) (2026-08-10)
 
 
