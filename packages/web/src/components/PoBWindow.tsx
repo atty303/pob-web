@@ -11,6 +11,7 @@ import {
   type DiagnosticReport,
   type ErrorPhase,
 } from "../lib/error-report.ts";
+import { confirmAndLogout } from "../lib/auth.ts";
 import { log, tag } from "../lib/logger.ts";
 import {
   authenticateWithPoe,
@@ -195,7 +196,7 @@ export default function PoBWindow(props: {
         },
         onOAuthAuthorize: (authorizationUrl, timeoutMs) => poeOAuthBridge.authorize(authorizationUrl, timeoutMs),
         onOAuthLogout: () => {
-          void auth0Ref.current.logout({ logoutParams: { returnTo: window.location.origin } });
+          confirmAndLogout(auth0Ref.current);
         },
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },
