@@ -6,6 +6,12 @@ import { Driver } from "./driver.ts";
   const params = new URLSearchParams(window.location.search);
   const game = (testMode ? params.get("game") : null) ?? __RUN_GAME__;
   const version = (testMode ? params.get("version") : null) ?? __RUN_VERSION__;
+  const poeOAuthExpiresIn = Number(params.get("poe-oauth-expires-in") ?? "2419200");
+  const poeOAuthApiStatuses = (params.get("poe-oauth-api") ?? "200").split(",").map(Number);
+  let poeOAuthRefreshCount = Number(params.get("poe-oauth-refresh-start") ?? "0");
+  const poeOAuth: PoBTestState["poeOAuth"] = testMode && params.get("poe-oauth") === "mock"
+    ? { authorizationRequests: [], fetchRequests: [] }
+    : undefined;
   const testState: PoBTestState | undefined = testMode
     ? {
       started: false,
@@ -15,6 +21,7 @@ import { Driver } from "./driver.ts";
       errors: [] as string[],
       pressedKeys: [],
       frameSamples: [],
+      poeOAuth,
       resetFrameSamples() {
         this.frameSamples = [];
       },
@@ -41,8 +48,54 @@ import { Driver } from "./driver.ts";
           if (stats) testState.renderStats = stats;
         }
       },
-      onFetch: async (_url, _headers, _body) => {
-        throw new Error("Fetch not implemented in shell");
+      onFetch: async (url, headers, body) => {
+        if (!poeOAuth) throw new Error("Fetch not implemented in shell");
+        poeOAuth.fetchRequests.push({ url, headers, body });
+
+        const endpoint = new URL(url);
+        if (endpoint.origin === "https://www.pathofexile.com" && endpoint.pathname === "/oauth/token") {
+          const grant = new URLSearchParams(body).get("grant_type");
+          const accessToken = grant === "refresh_token"
+            ? `mock-refreshed-token-${++poeOAuthRefreshCount}`
+            : "mock-initial-token";
+          return {
+            body: JSON.stringify({
+              access_token: accessToken,
+              expires_in: poeOAuthExpiresIn,
+              refresh_token: "mock-refresh-token",
+              token_type: "bearer",
+            }),
+            error: undefined,
+            headers: {},
+            status: 200,
+          };
+        }
+        if (endpoint.origin === "https://api.pathofexile.com" && endpoint.pathname.startsWith("/character")) {
+          const characterRequests = poeOAuth.fetchRequests.filter((request) =>
+            new URL(request.url).origin === "https://api.pathofexile.com"
+          );
+          const status = poeOAuthApiStatuses[characterRequests.length - 1] ?? 200;
+          return {
+            body: status === 200 ? JSON.stringify(game === "poe2" ? { characters: [] } : []) : "",
+            error: undefined,
+            headers: {},
+            status,
+          };
+        }
+        throw new Error(`Unexpected OAuth mock request: ${url}`);
+      },
+      onOAuthAuthorize: async (url, timeoutMs) => {
+        if (!poeOAuth) throw new Error("OAuth authorization not implemented in shell");
+        poeOAuth.authorizationRequests.push({ url, timeoutMs });
+        const state = new URL(url).searchParams.get("state");
+        if (!state) throw new Error("PoE OAuth test request did not contain state");
+        if (poeOAuth.authorizationRequests.length === 1) {
+          return { error: "The user denied access to your application", state, port: 0 };
+        }
+        if (poeOAuth.authorizationRequests.length === 2) {
+          return { code: "mock-authorization-code", state: "mismatched-state", port: 0 };
+        }
+        return { code: "mock-authorization-code", state, port: 0 };
       },
       onTitleChange: (title) => {
         if (testState) testState.title = title;

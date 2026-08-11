@@ -39,8 +39,6 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
       "Cache-Control": "no-cache, no-store, must-revalidate",
       Pragma: "no-cache",
       Expires: "0",
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
     },
   },
   build: {
@@ -82,6 +80,19 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     },
   },
   plugins: [
+    {
+      name: "cross-origin-isolation",
+      configureServer(server) {
+        server.middlewares.use((request, response, next) => {
+          const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+          if (pathname !== "/auth/poe-popup") {
+            response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+            response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+          }
+          next();
+        });
+      },
+    },
     ...(mode === "development" ? [wranglerDev()] : []),
     reactRouter(),
     tailwindcss(),

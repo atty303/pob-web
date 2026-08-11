@@ -1,10 +1,11 @@
 import * as Comlink from "comlink";
 import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
-import { markEnvironmentError } from "./error.ts";
+import { markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
 import type { MouseState } from "./mouse-handler.ts";
+import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import {
   BinPackingTextRasterizer,
   loadFonts,
@@ -43,6 +44,7 @@ export type HostCallbacks = {
   onError: (error: unknown) => void;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
+  onOAuthAuthorize: (url: string, timeoutMs: number) => Promise<PoeOAuthAuthorization>;
   onTitleChange: (title: string) => void;
 };
 
@@ -80,7 +82,7 @@ export class DriverWorker {
   private pressedKeys: Set<PoBKey> = new Set();
   private pasteBuffer = new PasteBuffer();
   private clipboardControlPending = false;
-  private hostCallbacks: Omit<HostCallbacks, "onFetch"> | undefined;
+  private hostCallbacks: Omit<HostCallbacks, "onFetch" | "onOAuthAuthorize"> | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
   private dirtyCount = 0;
@@ -203,7 +205,12 @@ export class DriverWorker {
   }
 
   invalidate() {
-    this.dirtyCount = 2;
+    this.dirtyCount = 3;
+    this.scheduleFrame();
+  }
+
+  private requestFrames(count: number) {
+    this.dirtyCount = Math.max(this.dirtyCount, count + 1);
     this.scheduleFrame();
   }
 
@@ -324,7 +331,9 @@ export class DriverWorker {
 
   private exports(module: DriverModule) {
     return {
-      onError: (message: string) => this.hostCallbacks?.onError(new Error(`Error in lua: ${message}`)),
+      onError: (message: string) =>
+        this.hostCallbacks?.onError(markKnownUpstreamError(new Error(`Error in lua: ${message}`))),
+      requestFrames: (count: number) => this.requestFrames(count),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,

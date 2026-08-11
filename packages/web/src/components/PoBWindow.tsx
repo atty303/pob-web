@@ -12,6 +12,7 @@ import {
   type ErrorPhase,
 } from "../lib/error-report.ts";
 import { log, tag } from "../lib/logger.ts";
+import { authorizePoeWithRedirect, corsFetchPolicy, createPoeOAuthBridge } from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -28,6 +29,8 @@ export default function PoBWindow(props: {
   onDriverReady?: (driver: Driver | null) => void;
 }) {
   const auth0 = useAuth0();
+  const auth0Ref = useRef(auth0);
+  auth0Ref.current = auth0;
 
   const container = useRef<HTMLDivElement>(null);
   const driverRef = useRef<Driver | null>(null);
@@ -78,6 +81,10 @@ export default function PoBWindow(props: {
     onDriverReadyRef.current?.(null);
     setErrorReport(undefined);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
+    const poeOAuthBridge = createPoeOAuthBridge(
+      () => auth0Ref.current,
+      (forceAuthorization, timeoutMs) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
+    );
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
     const showError = (error: unknown, phase: ErrorPhase) => {
@@ -108,26 +115,48 @@ export default function PoBWindow(props: {
         },
         onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
         onFetch: async (url, headers, body) => {
+          const oauthResponse = await poeOAuthBridge.exchange(url, body);
+          if (oauthResponse) {
+            return {
+              body: oauthResponse,
+              error: undefined,
+              headers: { "content-type": "application/json" },
+              status: 200,
+            };
+          }
+
           let rep: FetchResult | undefined;
 
-          if (url.startsWith("https://pobb.in/")) {
+          const corsPolicy = corsFetchPolicy(url, window.location.origin);
+          if (corsPolicy) {
             try {
               const r = await fetch(url, {
                 method: body ? "POST" : "GET",
                 body,
                 headers,
               });
-              if (r.ok) {
-                rep = {
-                  body: await r.text(),
-                  error: undefined,
-                  headers: Object.fromEntries(r.headers.entries()),
-                  status: r.status,
-                };
-                log.debug(tag.pob, "CORS fetch success", url, rep);
+              const directResult = {
+                body: await r.text(),
+                error: undefined,
+                headers: Object.fromEntries(r.headers.entries()),
+                status: r.status,
+              };
+              if (corsPolicy === "direct" || r.ok) {
+                rep = directResult;
+                log.debug(tag.pob, "CORS fetch complete", url, { status: rep.status });
+              } else {
+                log.warn(tag.pob, "CORS fetch failed, falling back to proxy", url, { status: r.status });
               }
             } catch (e) {
               log.warn(tag.pob, "CORS fetch error", e);
+              if (corsPolicy === "direct") {
+                rep = {
+                  body: "",
+                  error: e instanceof Error ? e.message : String(e),
+                  headers: {},
+                  status: undefined,
+                };
+              }
             }
           }
 
@@ -141,6 +170,7 @@ export default function PoBWindow(props: {
 
           return rep;
         },
+        onOAuthAuthorize: (authorizationUrl, timeoutMs) => poeOAuthBridge.authorize(authorizationUrl, timeoutMs),
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },
       { onWorkerCreated: registerSentryWorker },

@@ -13,6 +13,10 @@ type PoBTestState = {
   errors: string[];
   pressedKeys: string[];
   frameSamples: { totalTime: number; rendererTime: number }[];
+  poeOAuth?: {
+    authorizationRequests: { url: string; timeoutMs: number }[];
+    fetchRequests: { url: string; headers: Record<string, string>; body?: string }[];
+  };
   resetFrameSamples: () => void;
   loadBuildFromCode?: (code: string) => Promise<void>;
   getBuildCode?: () => Promise<string>;

@@ -5,6 +5,7 @@ import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import { isLocalUserStorageOperation, markEnvironmentError } from "./error.ts";
 import { CloudflareKV } from "./fs.ts";
+import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
 import type { SubScriptWorker } from "./sub.ts";
 // @ts-types="./vite-worker.d.ts"
@@ -12,6 +13,7 @@ import SubWorkerObject from "./sub.ts?worker";
 
 type BrokerCallbacks = {
   fetch: (url: string, headers: Record<string, string>, body?: string) => Promise<unknown>;
+  oauthAuthorize: (url: string, timeoutMs: number) => Promise<PoeOAuthAuthorization>;
   paste: () => Promise<string>;
 };
 
@@ -29,9 +31,10 @@ class AsyncBroker {
     assetPrefix: string,
     config: FilesystemConfig,
     fetchCallback: BrokerCallbacks["fetch"],
+    oauthAuthorizeCallback: BrokerCallbacks["oauthAuthorize"],
     pasteCallback: BrokerCallbacks["paste"],
   ) {
-    this.callbacks = { fetch: fetchCallback, paste: pasteCallback };
+    this.callbacks = { fetch: fetchCallback, oauthAuthorize: oauthAuthorizeCallback, paste: pasteCallback };
     this.eventPort = eventPort;
     this.localUserFds.clear();
     this.cloudDirectory = config.cloudflareKvAccessToken ? `/user/${config.userDirectory}/Builds/Cloud` : undefined;
@@ -177,6 +180,8 @@ class AsyncBroker {
       }
       case "paste":
         return { value: await this.callbacks!.paste() };
+      case "oauth_authorize":
+        return { value: await this.callbacks!.oauthAuthorize(args[0] as string, args[1] as number) };
       case "subscript_start": {
         const id = this.nextSubscriptId++;
         const worker = new SubWorkerObject();
