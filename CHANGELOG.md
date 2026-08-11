@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.30.1](https://github.com/atty303/pob-web/compare/v0.30.0...v0.30.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* Unify Path of Exile and cloud storage authentication ([#178](https://github.com/atty303/pob-web/issues/178)) ([59bc7cc](https://github.com/atty303/pob-web/commit/59bc7ccf61f94d47cee81eda6ca5c9cfd792d928))
+* **web:** confirm before authentication logout ([7afd856](https://github.com/atty303/pob-web/commit/7afd85610ba83ff149daa96fc1d6c1ccefbd2a46))
+* **web:** synchronize PoB authentication lifecycle ([fdae48e](https://github.com/atty303/pob-web/commit/fdae48eea0d5408bb6c517f3dc94326639f1f1db))
+* **web:** unify cloud storage authentication ([f8c72b4](https://github.com/atty303/pob-web/commit/f8c72b438402a2b5e4adb816135a905dfdcf3224))
+
 ## [0.30.0](https://github.com/atty303/pob-web/compare/v0.29.3...v0.30.0) (2026-08-11)
 
 
