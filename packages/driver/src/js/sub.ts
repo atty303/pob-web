@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 import { log, tag } from "./logger.ts";
+import { type PoeOAuthAuthorization, poeOAuthAuthorizationUrl, serializeSubScriptValues } from "./poe-oauth.ts";
 import { createRpcClient } from "./rpc.ts";
 
 interface DriverModule extends EmscriptenModule {
@@ -27,10 +28,17 @@ export class SubScriptWorker {
     this.onError = onError;
     log.debug(tag.subscript, "start", { script });
 
+    const rpcCall = createRpcClient(rpcPort);
+    const authorizationUrl = poeOAuthAuthorizationUrl(script, data);
+    if (authorizationUrl) {
+      const { value } = rpcCall<PoeOAuthAuthorization>("oauth_authorize", [authorizationUrl]);
+      this.onFinished(serializeSubScriptValues([value.code, undefined, value.state, value.port]));
+      return;
+    }
+
     const driver = (await import(`../../dist/${build}/driver.mjs`)) as {
       default: EmscriptenModuleFactory<DriverModule>;
     };
-    const rpcCall = createRpcClient(rpcPort);
     const module = await driver.default({
       print: console.log, // TODO: log.info
       printErr: console.warn, // TODO: log.info

@@ -12,6 +12,13 @@ import {
   type ErrorPhase,
 } from "../lib/error-report.ts";
 import { log, tag } from "../lib/logger.ts";
+import {
+  corsFetchPolicy,
+  getPoeAccessToken,
+  poeOAuthGrant,
+  poeOAuthState,
+  poeOAuthTokenResponse,
+} from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -28,6 +35,9 @@ export default function PoBWindow(props: {
   onDriverReady?: (driver: Driver | null) => void;
 }) {
   const auth0 = useAuth0();
+  const auth0Ref = useRef(auth0);
+  const poeOAuthAccessTokenRef = useRef<string>();
+  auth0Ref.current = auth0;
 
   const container = useRef<HTMLDivElement>(null);
   const driverRef = useRef<Driver | null>(null);
@@ -76,6 +86,7 @@ export default function PoBWindow(props: {
 
   useEffect(() => {
     onDriverReadyRef.current?.(null);
+    poeOAuthAccessTokenRef.current = undefined;
     setErrorReport(undefined);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     log.debug(tag.pob, "loading assets from", assetPrefix);
@@ -108,26 +119,52 @@ export default function PoBWindow(props: {
         },
         onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
         onFetch: async (url, headers, body) => {
+          const oauthGrant = poeOAuthGrant(url, body);
+          if (oauthGrant) {
+            const accessToken = oauthGrant === "authorization_code" && poeOAuthAccessTokenRef.current
+              ? poeOAuthAccessTokenRef.current
+              : await getPoeAccessToken(auth0Ref.current, oauthGrant === "refresh_token");
+            poeOAuthAccessTokenRef.current = undefined;
+            return {
+              body: poeOAuthTokenResponse(accessToken),
+              error: undefined,
+              headers: { "content-type": "application/json" },
+              status: 200,
+            };
+          }
+
           let rep: FetchResult | undefined;
 
-          if (url.startsWith("https://pobb.in/")) {
+          const corsPolicy = corsFetchPolicy(url, window.location.origin);
+          if (corsPolicy) {
             try {
               const r = await fetch(url, {
                 method: body ? "POST" : "GET",
                 body,
                 headers,
               });
-              if (r.ok) {
-                rep = {
-                  body: await r.text(),
-                  error: undefined,
-                  headers: Object.fromEntries(r.headers.entries()),
-                  status: r.status,
-                };
-                log.debug(tag.pob, "CORS fetch success", url, rep);
+              const directResult = {
+                body: await r.text(),
+                error: undefined,
+                headers: Object.fromEntries(r.headers.entries()),
+                status: r.status,
+              };
+              if (corsPolicy === "direct" || r.ok) {
+                rep = directResult;
+                log.debug(tag.pob, "CORS fetch complete", url, { status: rep.status });
+              } else {
+                log.warn(tag.pob, "CORS fetch failed, falling back to proxy", url, { status: r.status });
               }
             } catch (e) {
               log.warn(tag.pob, "CORS fetch error", e);
+              if (corsPolicy === "direct") {
+                rep = {
+                  body: "",
+                  error: e instanceof Error ? e.message : String(e),
+                  headers: {},
+                  status: undefined,
+                };
+              }
             }
           }
 
@@ -140,6 +177,14 @@ export default function PoBWindow(props: {
           }
 
           return rep;
+        },
+        onOAuthAuthorize: async (authorizationUrl) => {
+          poeOAuthAccessTokenRef.current = await getPoeAccessToken(auth0Ref.current, false);
+          return {
+            code: crypto.randomUUID(),
+            state: poeOAuthState(authorizationUrl),
+            port: 0,
+          };
         },
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },

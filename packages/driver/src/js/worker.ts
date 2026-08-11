@@ -5,6 +5,7 @@ import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
 import type { MouseState } from "./mouse-handler.ts";
+import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import {
   BinPackingTextRasterizer,
   loadFonts,
@@ -43,6 +44,7 @@ export type HostCallbacks = {
   onError: (error: unknown) => void;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
+  onOAuthAuthorize: (url: string) => Promise<PoeOAuthAuthorization>;
   onTitleChange: (title: string) => void;
 };
 
@@ -80,7 +82,7 @@ export class DriverWorker {
   private pressedKeys: Set<PoBKey> = new Set();
   private pasteBuffer = new PasteBuffer();
   private clipboardControlPending = false;
-  private hostCallbacks: Omit<HostCallbacks, "onFetch"> | undefined;
+  private hostCallbacks: Omit<HostCallbacks, "onFetch" | "onOAuthAuthorize"> | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
   private dirtyCount = 0;

@@ -44,6 +44,9 @@ import { Driver } from "./driver.ts";
       onFetch: async (_url, _headers, _body) => {
         throw new Error("Fetch not implemented in shell");
       },
+      onOAuthAuthorize: async () => {
+        throw new Error("OAuth authorization not implemented in shell");
+      },
       onTitleChange: (title) => {
         if (testState) testState.title = title;
       },

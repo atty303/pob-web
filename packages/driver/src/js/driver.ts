@@ -21,6 +21,7 @@ type AsyncBroker = {
     assetPrefix: string,
     config: FilesystemConfig,
     fetchCallback: HostCallbacks["onFetch"],
+    oauthAuthorizeCallback: HostCallbacks["onOAuthAuthorize"],
     pasteCallback: () => Promise<string>,
   ): Promise<void>;
 };
@@ -104,6 +105,7 @@ export class Driver {
         this.assetPrefix,
         fileSystemConfig,
         Comlink.proxy(this.hostCallbacks.onFetch),
+        Comlink.proxy(this.hostCallbacks.onOAuthAuthorize),
         Comlink.proxy(() => this.paste()),
       );
 

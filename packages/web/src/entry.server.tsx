@@ -35,8 +35,10 @@ export default async function handleRequest(
   }
   shellRendered = true;
   responseHeaders.set("Content-Type", "text/html");
-  responseHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
-  responseHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
+  if (new URL(request.url).pathname !== "/auth/poe-popup") {
+    responseHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+    responseHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
+  }
   void stream.allReady.then(
     () => clearTimeout(timeout),
     () => clearTimeout(timeout),

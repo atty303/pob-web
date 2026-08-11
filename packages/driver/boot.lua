@@ -125,6 +125,8 @@ function Restart()
 end
 function Exit()
 end
+function SetForeground()
+end
 
 dofile("Launch.lua")
 

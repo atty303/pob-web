@@ -31,6 +31,7 @@ const driver = new Driver(
       });
       return await response.json();
     },
+    onOAuthAuthorize: () => Promise.reject(new Error("OAuth authorization is unavailable in this test fixture")),
     onTitleChange: () => {},
   },
   { onWorkerCreated: registerSentryWorker },
