@@ -9,8 +9,11 @@
 
 ## Project boundaries
 
-- This repository runs upstream Path of Building code in the browser. Keep upstream code in `vendor/` and packed
+- This repository runs upstream Path of Building code in the browser. Keep upstream Path of Building code and packed
   upstream assets unmodified; implement browser-specific behavior in this repository's packages.
+- `vendor/lua` is a maintained runtime fork that uses Lua 5.2 as its implementation baseline and targets LuaJIT
+  compatibility. When their behavior conflicts, LuaJIT compatibility takes precedence over preserving Lua 5.2 semantics.
+  Compatibility fixes may be made directly in that submodule and committed using the submodule workflow above.
 - The Deno workspaces are `packages/dds`, `packages/driver`, `packages/game`, `packages/packer`, and `packages/web`. See
   `README.md` for the user-facing architecture and development overview.
 - Do not add dependencies without prior approval. Use the versions and lockfiles managed by `mise` and Deno.
