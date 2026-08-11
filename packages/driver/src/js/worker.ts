@@ -45,6 +45,7 @@ export type HostCallbacks = {
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onFetch: OnFetchFunction;
   onOAuthAuthorize: (url: string, timeoutMs: number) => Promise<PoeOAuthAuthorization>;
+  onOAuthLogout: () => void;
   onTitleChange: (title: string) => void;
 };
 
@@ -96,6 +97,7 @@ export class DriverWorker {
     eventPort: MessagePort,
     onError: HostCallbacks["onError"],
     onFrame: HostCallbacks["onFrame"],
+    onOAuthLogout: HostCallbacks["onOAuthLogout"],
     onTitleChange: HostCallbacks["onTitleChange"],
     copy: MainCallbacks["copy"],
     openUrl: MainCallbacks["openUrl"],
@@ -110,6 +112,7 @@ export class DriverWorker {
     this.hostCallbacks = {
       onError,
       onFrame,
+      onOAuthLogout,
       onTitleChange,
     };
     this.mainCallbacks = {
@@ -333,6 +336,7 @@ export class DriverWorker {
     return {
       onError: (message: string) =>
         this.hostCallbacks?.onError(markKnownUpstreamError(new Error(`Error in lua: ${message}`))),
+      onOAuthLogout: () => this.hostCallbacks?.onOAuthLogout(),
       requestFrames: (count: number) => this.requestFrames(count),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,

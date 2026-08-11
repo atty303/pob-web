@@ -16,6 +16,7 @@ type PoBTestState = {
   poeOAuth?: {
     authorizationRequests: { url: string; timeoutMs: number }[];
     fetchRequests: { url: string; headers: Record<string, string>; body?: string }[];
+    logoutCalls: number;
   };
   resetFrameSamples: () => void;
   loadBuildFromCode?: (code: string) => Promise<void>;

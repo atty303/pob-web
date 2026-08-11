@@ -1,5 +1,32 @@
 import { expect, test } from "../../../../tools/playwright.mts";
 
+test("logout requires confirmation before navigating through Auth0", async ({ page }) => {
+  await page.goto("/auth/poe-popup");
+
+  const result = await page.evaluate(async () => {
+    const modulePath = "/src/lib/auth.ts";
+    const { confirmAndLogout } = await import(/* @vite-ignore */ modulePath) as typeof import("../../src/lib/auth.ts");
+    const calls: unknown[] = [];
+    const auth0 = {
+      logout: (options?: unknown) => {
+        calls.push(options);
+        return Promise.resolve();
+      },
+    };
+
+    Object.defineProperty(window, "confirm", { configurable: true, value: () => false });
+    const cancelled = confirmAndLogout(auth0);
+    Object.defineProperty(window, "confirm", { configurable: true, value: () => true });
+    const confirmed = confirmAndLogout(auth0);
+
+    return { cancelled, confirmed, calls, origin: window.location.origin };
+  });
+
+  expect(result.cancelled).toBe(false);
+  expect(result.confirmed).toBe(true);
+  expect(result.calls).toEqual([{ logoutParams: { returnTo: result.origin } }]);
+});
+
 test("the PoE OAuth redirect helper is separated from the isolated PoB window", async ({ page }) => {
   await page.goto("/auth/poe-popup");
 

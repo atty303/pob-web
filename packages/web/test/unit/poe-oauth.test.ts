@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { SignJWT } from "jose";
 import {
+  authenticateWithPoe,
   corsFetchPolicy,
   createPoeOAuthBridge,
   getPoeAccessToken,
@@ -32,6 +33,39 @@ Deno.test("PoE OAuth helpers bridge Auth0 claims and upstream requests", async (
     refresh_token: "auth0-reauthorize",
     token_type: "bearer",
   });
+});
+
+Deno.test("PoE authentication synchronizes the popup session into the application client", async () => {
+  const token = await jwt({ [claim]: "shared-poe-token" });
+  const cacheModes: Array<string | undefined> = [];
+
+  const result = await authenticateWithPoe(
+    {
+      isAuthenticated: false,
+      getAccessTokenSilently: ({ cacheMode } = {}) => {
+        cacheModes.push(cacheMode);
+        return Promise.resolve(token);
+      },
+    },
+    false,
+    () => Promise.resolve(token),
+  );
+
+  assertEquals(result, token);
+  assertEquals(cacheModes, ["cache-only"]);
+  await assertRejects(
+    () =>
+      authenticateWithPoe(
+        {
+          isAuthenticated: false,
+          getAccessTokenSilently: () => Promise.resolve(token),
+        },
+        false,
+        () => jwt({ [claim]: "different-poe-token" }),
+      ),
+    Error,
+    "did not update the application session",
+  );
 });
 
 Deno.test("PoE OAuth bridge preserves the upstream authorization, exchange, and refresh contract", async () => {

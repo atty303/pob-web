@@ -121,6 +121,7 @@ export class Driver {
         Comlink.transfer(eventChannel.port2, [eventChannel.port2]),
         Comlink.proxy(this.hostCallbacks.onError),
         Comlink.proxy(this.hostCallbacks.onFrame),
+        Comlink.proxy(this.hostCallbacks.onOAuthLogout),
         Comlink.proxy(this.hostCallbacks.onTitleChange),
         Comlink.proxy((text: string) => this.copy(text)),
         Comlink.proxy((url) => {

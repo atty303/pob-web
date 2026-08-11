@@ -11,8 +11,14 @@ import {
   type DiagnosticReport,
   type ErrorPhase,
 } from "../lib/error-report.ts";
+import { confirmAndLogout } from "../lib/auth.ts";
 import { log, tag } from "../lib/logger.ts";
-import { authorizePoeWithRedirect, corsFetchPolicy, createPoeOAuthBridge } from "../lib/poe-oauth.ts";
+import {
+  authenticateWithPoe,
+  authorizePoeWithRedirect,
+  corsFetchPolicy,
+  createPoeOAuthBridge,
+} from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -30,6 +36,7 @@ export default function PoBWindow(props: {
 }) {
   const auth0 = useAuth0();
   const auth0Ref = useRef(auth0);
+  const skipCloudTokenUpdateRef = useRef(false);
   auth0Ref.current = auth0;
 
   const container = useRef<HTMLDivElement>(null);
@@ -48,12 +55,16 @@ export default function PoBWindow(props: {
   useEffect(() => {
     async function getToken() {
       if (auth0.isAuthenticated) {
+        if (skipCloudTokenUpdateRef.current) {
+          skipCloudTokenUpdateRef.current = false;
+          return;
+        }
         const t = await auth0.getAccessTokenSilently();
         setToken(t);
       }
     }
     getToken();
-  }, [auth0, auth0.isAuthenticated]);
+  }, [auth0.getAccessTokenSilently, auth0.isAuthenticated]);
 
   const [hash, _setHash] = useHash();
   const [buildCode, setBuildCode] = useState("");
@@ -83,7 +94,20 @@ export default function PoBWindow(props: {
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
     const poeOAuthBridge = createPoeOAuthBridge(
       () => auth0Ref.current,
-      (forceAuthorization, timeoutMs) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
+      async (forceAuthorization, timeoutMs) => {
+        const skipCloudTokenUpdate = !auth0Ref.current.isAuthenticated;
+        skipCloudTokenUpdateRef.current = skipCloudTokenUpdate;
+        try {
+          return await authenticateWithPoe(
+            auth0Ref.current,
+            forceAuthorization,
+            (force) => authorizePoeWithRedirect(force, timeoutMs),
+          );
+        } catch (error) {
+          if (skipCloudTokenUpdate) skipCloudTokenUpdateRef.current = false;
+          throw error;
+        }
+      },
     );
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
@@ -171,6 +195,9 @@ export default function PoBWindow(props: {
           return rep;
         },
         onOAuthAuthorize: (authorizationUrl, timeoutMs) => poeOAuthBridge.authorize(authorizationUrl, timeoutMs),
+        onOAuthLogout: () => {
+          confirmAndLogout(auth0Ref.current);
+        },
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },
       { onWorkerCreated: registerSentryWorker },
