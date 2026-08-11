@@ -46,6 +46,45 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924919"
 provenance = "github-attestations"
 
+[[tools."aqua:auth0/auth0-cli"]]
+version = "1.32.0"
+backend = "aqua:auth0/auth0-cli"
+
+[tools."aqua:auth0/auth0-cli"."platforms.linux-arm64"]
+checksum = "sha256:3bf36051842c0989aef2bc41bb94037c920aa96dbf9b270864f5322344a7cd16"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576049"
+
+[tools."aqua:auth0/auth0-cli"."platforms.linux-arm64-musl"]
+checksum = "sha256:3bf36051842c0989aef2bc41bb94037c920aa96dbf9b270864f5322344a7cd16"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576049"
+
+[tools."aqua:auth0/auth0-cli"."platforms.linux-x64"]
+checksum = "sha256:94413d37f2f42eda97784677ff3d137b06b9f216a1adf9d8981e200264e9c450"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576048"
+
+[tools."aqua:auth0/auth0-cli"."platforms.linux-x64-musl"]
+checksum = "sha256:94413d37f2f42eda97784677ff3d137b06b9f216a1adf9d8981e200264e9c450"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576048"
+
+[tools."aqua:auth0/auth0-cli"."platforms.macos-arm64"]
+checksum = "sha256:4fedaa18728ad463761db330bfda2310c08adcbfe76f943cf4edf85f0eab7fc9"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576050"
+
+[tools."aqua:auth0/auth0-cli"."platforms.macos-x64"]
+checksum = "sha256:2a24f992149a30f37b6a85f87ad53845491311f9e661fc34931e0b93ac305da0"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Darwin_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576047"
+
+[tools."aqua:auth0/auth0-cli"."platforms.windows-x64"]
+checksum = "sha256:375750cae75aa7ce0039733779b4f9cd15aa5c9b8894c2d599c81016dd7ec1b5"
+url = "https://github.com/auth0/auth0-cli/releases/download/v1.32.0/auth0-cli_1.32.0_Windows_x86_64.zip"
+url_api = "https://api.github.com/repos/auth0/auth0-cli/releases/assets/455576063"
+
 [[tools.cmake]]
 version = "4.3.3"
 backend = "aqua:Kitware/CMake"

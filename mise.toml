@@ -9,6 +9,7 @@ pkl = "0.31.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 sentry-cli = "3.6.2"
+"aqua:auth0/auth0-cli" = "1.32.0"
 
 [settings]
 lockfile = true
