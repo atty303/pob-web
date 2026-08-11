@@ -4,6 +4,10 @@ import { releases } from "./releases.mts";
 
 const IMPORT_TAB = { x: 70, y: 70 };
 const AUTHORIZE = { x: 425, y: 98 };
+const LOGOUT = {
+  poe1: { x: 616, y: 72 },
+  poe2: { x: 840, y: 72 },
+};
 const FETCH_CHARACTERS = {
   poe1: { x: 460, y: 122 },
   poe2: { x: 746, y: 98 },
@@ -66,6 +70,9 @@ for (const release of releases.filter(({ game }) => game === "poe1" || game === 
     assertCharacterRequest(retriedCharacter, "mock-refreshed-token-2");
     expect(retriedCharacter.url).toBe(unauthorizedCharacter.url);
     expect(await driverErrors(page)).toEqual([]);
+
+    await clickPoBAndWaitForInput(page, LOGOUT[release.game as "poe1" | "poe2"]);
+    await expect.poll(() => oauthTrace(page).then((trace) => trace.logoutCalls)).toBe(1);
   });
 }
 

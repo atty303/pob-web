@@ -157,11 +157,29 @@ mainObject["ShowErrMsg"] = function(self, msg, ...)
 end
 
 -- Hide the check for updates button
+local function installOAuthLogoutHook(buildMode)
+    local importTab = buildMode.importTab
+    local logoutButton = importTab and importTab.controls and importTab.controls.logoutApiButton
+    if logoutButton and type(logoutButton.onClick) == "function" then
+        local logout = logoutButton.onClick
+        logoutButton.onClick = function(...)
+            logout(...)
+            OnOAuthLogout()
+        end
+    end
+end
+
 local onInit = mainObject["OnInit"]
 mainObject["OnInit"] = function(self)
     onInit(self)
     self.main.controls.checkUpdate.shown = function()
         return false
+    end
+    local buildMode = self.main.modes["BUILD"]
+    local initBuild = buildMode.Init
+    buildMode.Init = function(build, ...)
+        initBuild(build, ...)
+        installOAuthLogoutHook(build)
     end
 end
 

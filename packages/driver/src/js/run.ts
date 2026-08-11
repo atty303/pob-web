@@ -10,7 +10,7 @@ import { Driver } from "./driver.ts";
   const poeOAuthApiStatuses = (params.get("poe-oauth-api") ?? "200").split(",").map(Number);
   let poeOAuthRefreshCount = Number(params.get("poe-oauth-refresh-start") ?? "0");
   const poeOAuth: PoBTestState["poeOAuth"] = testMode && params.get("poe-oauth") === "mock"
-    ? { authorizationRequests: [], fetchRequests: [] }
+    ? { authorizationRequests: [], fetchRequests: [], logoutCalls: 0 }
     : undefined;
   const testState: PoBTestState | undefined = testMode
     ? {
@@ -96,6 +96,9 @@ import { Driver } from "./driver.ts";
           return { code: "mock-authorization-code", state: "mismatched-state", port: 0 };
         }
         return { code: "mock-authorization-code", state, port: 0 };
+      },
+      onOAuthLogout: () => {
+        if (poeOAuth) poeOAuth.logoutCalls += 1;
       },
       onTitleChange: (title) => {
         if (testState) testState.title = title;

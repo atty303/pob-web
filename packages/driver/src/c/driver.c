@@ -42,6 +42,11 @@ static int OnError(lua_State *L) {
     return 0;
 }
 
+static int OnOAuthLogout(lua_State *L) {
+    EM_ASM({ Module.onOAuthLogout(); });
+    return 0;
+}
+
 static int push_callback(lua_State *L, const char *name) {
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
     lua_getfield(L, -1, name);
@@ -342,6 +347,9 @@ int init() {
 
     lua_pushcclosure(L, OnError, 0);
     lua_setglobal(L, "OnError");
+
+    lua_pushcclosure(L, OnOAuthLogout, 0);
+    lua_setglobal(L, "OnOAuthLogout");
 
     // Callbacks
     lua_newtable(L);
