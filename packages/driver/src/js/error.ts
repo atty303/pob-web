@@ -7,6 +7,11 @@ export const environmentErrorNames = {
 
 export type EnvironmentErrorCategory = keyof typeof environmentErrorNames;
 
+const upstreamErrorName = "PobUpstreamError";
+const upstreamErrorPatterns = [
+  /In download callback: Classes\/PoEAPI\.lua:\d+: attempt to index local 'response' \(a nil value\)/,
+];
+
 const storagePathOperations = new Set(["readdir", "lstat", "stat", "open", "mkdir", "unlink", "rmdir", "truncate"]);
 const storageDescriptorOperations = new Set(["fstat", "close", "read", "write", "ftruncate"]);
 
@@ -44,4 +49,17 @@ export function environmentErrorCategory(error: unknown): EnvironmentErrorCatego
 
 export function isEnvironmentError(error: unknown): boolean {
   return environmentErrorCategory(error) !== undefined;
+}
+
+export function markKnownUpstreamError(error: Error): Error {
+  if (!upstreamErrorPatterns.some((pattern) => pattern.test(error.message))) return error;
+  const stack = error.stack;
+  error.name = upstreamErrorName;
+  if (stack !== undefined) error.stack = stack;
+  return error;
+}
+
+export function isKnownUpstreamError(error: unknown): boolean {
+  return error instanceof Error &&
+    (error.name === upstreamErrorName || upstreamErrorPatterns.some((pattern) => pattern.test(error.message)));
 }

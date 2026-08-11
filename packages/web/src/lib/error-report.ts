@@ -1,7 +1,8 @@
-import { type EnvironmentErrorCategory, environmentErrorCategory } from "pob-driver/error";
+import { type EnvironmentErrorCategory, environmentErrorCategory, isKnownUpstreamError } from "pob-driver/error";
 import type { Game } from "pob-game";
 
 export type ErrorPhase = "driver-start" | "build-load" | "renderer-attach" | "driver-runtime";
+export type ErrorClassification = "reportable" | "upstream" | `environment/${EnvironmentErrorCategory}`;
 
 export type DiagnosticContext = {
   appVersion: string;
@@ -22,7 +23,7 @@ export type DiagnosticContext = {
 
 export type DiagnosticReport = {
   error: unknown;
-  environmentCategory: EnvironmentErrorCategory | undefined;
+  classification: ErrorClassification;
   context: DiagnosticContext;
 };
 
@@ -38,9 +39,14 @@ export function createDiagnosticReport(input: {
   game: Game;
   pobVersion: string;
 }): DiagnosticReport {
+  const environmentCategory = environmentErrorCategory(input.error);
   return {
     error: input.error,
-    environmentCategory: environmentErrorCategory(input.error),
+    classification: environmentCategory
+      ? `environment/${environmentCategory}`
+      : isKnownUpstreamError(input.error)
+      ? "upstream"
+      : "reportable",
     context: {
       appVersion: APP_VERSION,
       game: input.game,
@@ -61,7 +67,7 @@ export function createDiagnosticReport(input: {
 }
 
 export function collectDiagnosticReport(report: DiagnosticReport, sink: DiagnosticSink): void {
-  if (report.environmentCategory) {
+  if (report.classification !== "reportable") {
     sink.warn(report);
     return;
   }
@@ -72,9 +78,8 @@ export function collectDiagnosticReport(report: DiagnosticReport, sink: Diagnost
 
 export function formatDiagnosticReport(report: DiagnosticReport): string {
   const { name, message, stack } = describeError(report.error);
-  const classification = report.environmentCategory ? `environment/${report.environmentCategory}` : "reportable";
   const rows: [string, string | number | boolean][] = [
-    ["Classification", classification],
+    ["Classification", report.classification],
     ["Phase", report.context.phase],
     ["App version", report.context.appVersion],
     ["Game", report.context.game],

@@ -1,5 +1,5 @@
 import { assertEquals, assertMatch } from "@std/assert";
-import { markEnvironmentError } from "pob-driver/error";
+import { markEnvironmentError, markKnownUpstreamError } from "pob-driver/error";
 import {
   collectDiagnosticReport,
   type DiagnosticContext,
@@ -38,7 +38,7 @@ function record(report: DiagnosticReport) {
 
 Deno.test("expected environment failures are logged without creating a Sentry issue", () => {
   const error = markEnvironmentError(new Error("asset unavailable"), "assetLoad");
-  const report: DiagnosticReport = { error, environmentCategory: "assetLoad", context };
+  const report: DiagnosticReport = { error, classification: "environment/assetLoad", context };
 
   const result = record(report);
 
@@ -47,10 +47,27 @@ Deno.test("expected environment failures are logged without creating a Sentry is
   assertEquals(result.captures, []);
 });
 
+Deno.test("known upstream failures are logged without creating a pob-web Sentry issue", () => {
+  const error = markKnownUpstreamError(
+    new Error(
+      "Error in lua: In download callback: Classes/PoEAPI.lua:188: " +
+        "attempt to index local 'response' (a nil value)",
+    ),
+  );
+  const report: DiagnosticReport = { error, classification: "upstream", context };
+
+  const result = record(report);
+
+  assertEquals(result.warnings, [report]);
+  assertEquals(result.errors, []);
+  assertEquals(result.captures, []);
+  assertMatch(formatDiagnosticReport(report), /\| Classification \| upstream \|/);
+});
+
 Deno.test("unclassified errors are logged and captured without losing their identity or stack", () => {
   const error = new Error("Lua failed");
   const stack = error.stack;
-  const report: DiagnosticReport = { error, environmentCategory: undefined, context };
+  const report: DiagnosticReport = { error, classification: "reportable", context };
 
   const result = record(report);
 
@@ -65,7 +82,7 @@ Deno.test("unclassified errors are logged and captured without losing their iden
 Deno.test("diagnostic Markdown includes the full URL and safely fences arbitrary errors", () => {
   const error = new Error("bad | value");
   error.stack = "Error: bad | value\n```nested```";
-  const report: DiagnosticReport = { error, environmentCategory: undefined, context };
+  const report: DiagnosticReport = { error, classification: "reportable", context };
 
   const markdown = formatDiagnosticReport(report);
 

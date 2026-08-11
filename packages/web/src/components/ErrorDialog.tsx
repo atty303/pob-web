@@ -14,7 +14,8 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
   const [confirmedWebOnly, setConfirmedWebOnly] = useState(false);
 
   const { name, message, stack } = describeError(report.error);
-  const environmentError = report.environmentCategory !== undefined;
+  const environmentError = report.classification.startsWith("environment/");
+  const upstreamError = report.classification === "upstream";
   const upstream = gameData[report.context.game].repository;
   const upstreamReleaseUrl =
     `https://github.com/${upstream.owner}/${upstream.name}/releases/tag/${report.context.pobVersion}`;
@@ -40,15 +41,21 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
         </button>
 
         <h3 className="font-bold text-lg text-error mb-2">
-          {environmentError ? "Path of Building couldn't start" : "Path of Building encountered an error"}
+          {environmentError
+            ? "Path of Building couldn't start"
+            : upstreamError
+            ? "Path of Building encountered an upstream error"
+            : "Path of Building encountered an error"}
         </h3>
 
         <p className="text-sm mb-4">
-          Diagnostic information about this error was collected automatically. Reload the page to try again.
+          {upstreamError
+            ? "This error also originates in the original Path of Building application. Reload the page to recover."
+            : "Diagnostic information about this error was collected automatically. Reload the page to try again."}
         </p>
 
         <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-auto">
-          {!environmentError && (
+          {report.classification === "reportable" && (
             <section className="rounded-lg border border-base-300 p-4">
               <h4 className="font-semibold text-sm mb-2">Before reporting this to pob.cool</h4>
               <p className="text-sm mb-3">

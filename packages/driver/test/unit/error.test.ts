@@ -3,8 +3,10 @@ import {
   environmentErrorCategory,
   environmentErrorNames,
   isEnvironmentError,
+  isKnownUpstreamError,
   isLocalUserStorageOperation,
   markEnvironmentError,
+  markKnownUpstreamError,
 } from "../../src/js/error.ts";
 
 Deno.test("environment errors retain their original details while carrying a Comlink-safe category", () => {
@@ -26,6 +28,28 @@ Deno.test("ordinary errors are not classified as expected environment failures",
 
   assertEquals(environmentErrorCategory(error), undefined);
   assertEquals(isEnvironmentError(error), false);
+});
+
+Deno.test("known upstream Lua failures are classified without matching other Lua errors", () => {
+  const upstream = markKnownUpstreamError(
+    new Error(
+      "Error in lua: In download callback: Classes/PoEAPI.lua:188: " +
+        "attempt to index local 'response' (a nil value)",
+    ),
+  );
+  const other = markKnownUpstreamError(new Error("Error in lua: Classes/PoEAPI.lua:188: another failure"));
+
+  assertEquals(isKnownUpstreamError(upstream), true);
+  assertEquals(
+    isKnownUpstreamError(
+      new Error(
+        "Error in lua: In download callback: Classes/PoEAPI.lua:188: " +
+          "attempt to index local 'response' (a nil value)",
+      ),
+    ),
+    true,
+  );
+  assertEquals(isKnownUpstreamError(other), false);
 });
 
 Deno.test("storage operation classification excludes root assets and cloud mounts", () => {

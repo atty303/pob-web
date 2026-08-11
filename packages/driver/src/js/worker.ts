@@ -1,6 +1,6 @@
 import * as Comlink from "comlink";
 import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
-import { markEnvironmentError } from "./error.ts";
+import { markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
@@ -331,7 +331,8 @@ export class DriverWorker {
 
   private exports(module: DriverModule) {
     return {
-      onError: (message: string) => this.hostCallbacks?.onError(new Error(`Error in lua: ${message}`)),
+      onError: (message: string) =>
+        this.hostCallbacks?.onError(markKnownUpstreamError(new Error(`Error in lua: ${message}`))),
       requestFrames: (count: number) => this.requestFrames(count),
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
