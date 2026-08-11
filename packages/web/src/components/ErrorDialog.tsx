@@ -10,6 +10,7 @@ interface ErrorDialogProps {
 
 export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogProps) {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [copiedReport, setCopiedReport] = useState<DiagnosticReport>();
   const [confirmedWebOnly, setConfirmedWebOnly] = useState(false);
 
   const { name, message, stack } = describeError(report.error);
@@ -19,8 +20,10 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
     `https://github.com/${upstream.owner}/${upstream.name}/releases/tag/${report.context.pobVersion}`;
 
   const handleCopy = async () => {
+    setCopiedReport(undefined);
     try {
       await navigator.clipboard.writeText(formatDiagnosticReport(report));
+      setCopiedReport(report);
       setCopyStatus("copied");
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err) {
@@ -65,22 +68,42 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
                 <span>I confirmed this issue does not occur in the original application.</span>
               </label>
               <div className="mt-3">
-                {confirmedWebOnly
-                  ? (
-                    <a
-                      className="btn btn-sm btn-outline"
-                      href="https://github.com/atty303/pob-web/issues/new"
-                      target="_blank"
-                      rel="noreferrer"
+                {confirmedWebOnly && (
+                  <p className="text-sm mb-3">
+                    Copy the diagnostics, then paste them into the GitHub issue.
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {confirmedWebOnly && (
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${copyStatus === "copied" ? "btn-success" : "btn-neutral"}`}
+                      onClick={handleCopy}
                     >
-                      Report a pob.cool issue
-                    </a>
-                  )
-                  : (
-                    <button type="button" className="btn btn-sm btn-outline" disabled>
-                      Report a pob.cool issue
+                      {copyStatus === "copied"
+                        ? "Copied"
+                        : copyStatus === "failed"
+                        ? "Copy failed — try again"
+                        : "Copy Diagnostics"}
                     </button>
                   )}
+                  {confirmedWebOnly && copiedReport === report
+                    ? (
+                      <a
+                        className="btn btn-sm btn-outline"
+                        href="https://github.com/atty303/pob-web/issues/new"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Report a pob.cool issue
+                      </a>
+                    )
+                    : (
+                      <button type="button" className="btn btn-sm btn-outline" disabled>
+                        Report a pob.cool issue
+                      </button>
+                    )}
+                </div>
               </div>
             </section>
           )}
