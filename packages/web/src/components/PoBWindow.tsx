@@ -13,6 +13,7 @@ import {
 } from "../lib/error-report.ts";
 import { log, tag } from "../lib/logger.ts";
 import {
+  authorizePoeWithRedirect,
   corsFetchPolicy,
   getPoeAccessToken,
   poeOAuthGrant,
@@ -178,13 +179,23 @@ export default function PoBWindow(props: {
 
           return rep;
         },
-        onOAuthAuthorize: async (authorizationUrl) => {
-          poeOAuthAccessTokenRef.current = await getPoeAccessToken(auth0Ref.current, false);
-          return {
-            code: crypto.randomUUID(),
-            state: poeOAuthState(authorizationUrl),
-            port: 0,
-          };
+        onOAuthAuthorize: async (authorizationUrl, timeoutMs) => {
+          const state = poeOAuthState(authorizationUrl);
+          try {
+            poeOAuthAccessTokenRef.current = await getPoeAccessToken(
+              auth0Ref.current,
+              false,
+              (forceAuthorization) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
+            );
+            return { code: crypto.randomUUID(), state, port: 0 };
+          } catch (error) {
+            poeOAuthAccessTokenRef.current = undefined;
+            return {
+              error: error instanceof Error ? error.message : "Path of Exile authorization failed",
+              state,
+              port: 0,
+            };
+          }
         },
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },

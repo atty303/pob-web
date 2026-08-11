@@ -54,7 +54,7 @@ export function broadcastPoeOAuthResult(channelName: string, message: PoeOAuthWi
   channel.close();
 }
 
-export function authorizePoeWithRedirect(forceAuthorization: boolean): Promise<string> {
+export function authorizePoeWithRedirect(forceAuthorization: boolean, timeoutMs = 110_000): Promise<string> {
   const id = crypto.randomUUID();
   const channelName = `${POE_OAUTH_CHANNEL_PREFIX}${id}`;
   const channel = new BroadcastChannel(channelName);
@@ -66,7 +66,7 @@ export function authorizePoeWithRedirect(forceAuthorization: boolean): Promise<s
     const timeout = window.setTimeout(() => {
       channel.close();
       reject(new Error("PoE authorization window timed out"));
-    }, 110_000);
+    }, timeoutMs);
     channel.onmessage = ({ data }: MessageEvent<unknown>) => {
       if (!isPoeOAuthWindowMessage(data)) return;
       window.clearTimeout(timeout);

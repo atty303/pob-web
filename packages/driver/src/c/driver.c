@@ -116,6 +116,11 @@ static int GetTime(lua_State *L) {
     return 1;
 }
 
+static int RequestFrames(lua_State *L) {
+    EM_ASM({ Module.requestFrames($0); }, luaL_checkinteger(L, 1));
+    return 0;
+}
+
 static int GetCursorPos(lua_State *L) {
     int x = EM_ASM_INT({ return Module.getCursorPosX(); });
     int y = EM_ASM_INT({ return Module.getCursorPosY(); });
@@ -369,6 +374,9 @@ int init() {
     //
     lua_pushcclosure(L, GetTime, 0);
     lua_setglobal(L, "GetTime");
+
+    lua_pushcclosure(L, RequestFrames, 0);
+    lua_setglobal(L, "RequestFrames");
 
     lua_pushcclosure(L, GetCursorPos, 0);
     lua_setglobal(L, "GetCursorPos");

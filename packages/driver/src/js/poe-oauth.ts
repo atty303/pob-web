@@ -8,10 +8,20 @@ const TYPE_STRING = 2;
 export type SubScriptValue = number | boolean | string | undefined;
 
 export type PoeOAuthAuthorization = {
-  code: string;
+  code?: string;
+  error?: string;
   state: string;
   port: number;
 };
+
+export type PoeOAuthAuthorizationRequest = {
+  url: string;
+  timeoutMs: number;
+};
+
+export function serializePoeOAuthAuthorization(result: PoeOAuthAuthorization): Uint8Array {
+  return serializeSubScriptValues([result.code, result.error, result.state, result.port]);
+}
 
 export function deserializeSubScriptValues(data: Uint8Array): SubScriptValue[] {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -82,8 +92,13 @@ export function serializeSubScriptValues(values: readonly SubScriptValue[]): Uin
   return data;
 }
 
-export function poeOAuthAuthorizationUrl(script: string, data: Uint8Array): string | undefined {
+export function poeOAuthAuthorizationRequest(
+  script: string,
+  data: Uint8Array,
+): PoeOAuthAuthorizationRequest | undefined {
   if (!script.includes('require("socket")') || !script.includes("OAuth authorization code")) return undefined;
+  const timeoutSeconds = Number(script.match(/local stopAt = os\.time\(\) \+ (\d+)/)?.[1]);
+  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 300) return undefined;
   const [url] = deserializeSubScriptValues(data);
   if (typeof url !== "string") return undefined;
   const authorizationUrl = new URL(url);
@@ -99,5 +114,5 @@ export function poeOAuthAuthorizationUrl(script: string, data: Uint8Array): stri
   ) {
     return undefined;
   }
-  return url;
+  return { url, timeoutMs: timeoutSeconds * 1_000 };
 }

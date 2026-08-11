@@ -12,6 +12,10 @@ bit = {
     bor = bit32.bor,
     bxor = bit32.bxor,
     bnot = bit32.bnot,
+    tobit = function(value)
+        local normalized = value % 0x100000000
+        return normalized >= 0x80000000 and normalized - 0x100000000 or normalized
+    end,
 }
 
 if not setfenv then -- Lua 5.2
@@ -21,7 +25,7 @@ if not setfenv then -- Lua 5.2
         local level = 1
         repeat
             local name, value = debug.getupvalue(f, level)
-            if name == '_ENV' then return level, value end
+            if name == '(luajit-env)' then return level, value end
             level = level + 1
         until name == nil
         return nil end
@@ -40,6 +44,12 @@ jit = {
     stop = function() end,
   }
 }
+
+local coroutineYield = coroutine.yield
+coroutine.yield = function(...)
+    RequestFrames(2)
+    return coroutineYield(...)
+end
 
 -- Rendering
 function RenderInit()
