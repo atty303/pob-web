@@ -1,7 +1,8 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { SignJWT } from "jose";
 import {
   corsFetchPolicy,
+  createPoeOAuthBridge,
   getPoeAccessToken,
   poeAccessToken,
   poeOAuthGrant,
@@ -31,6 +32,50 @@ Deno.test("PoE OAuth helpers bridge Auth0 claims and upstream requests", async (
     refresh_token: "auth0-reauthorize",
     token_type: "bearer",
   });
+});
+
+Deno.test("PoE OAuth bridge preserves the upstream authorization, exchange, and refresh contract", async () => {
+  const sessionToken = await jwt({ [claim]: "session-poe-token" });
+  const refreshedToken = await jwt({ [claim]: "refreshed-poe-token" });
+  const forceAuthorizations: boolean[] = [];
+  const timeouts: number[] = [];
+  const bridge = createPoeOAuthBridge(
+    () => ({ isAuthenticated: true, getAccessTokenSilently: () => Promise.resolve(sessionToken) }),
+    (forceAuthorization, timeoutMs) => {
+      forceAuthorizations.push(forceAuthorization);
+      timeouts.push(timeoutMs);
+      return Promise.resolve(refreshedToken);
+    },
+  );
+
+  const authorization = await bridge.authorize(
+    "https://www.pathofexile.com/oauth/authorize?state=upstream-state",
+    60_000,
+  );
+  assertEquals(authorization.state, "upstream-state");
+  assertEquals("code" in authorization, true);
+  assertEquals(
+    JSON.parse(
+      (await bridge.exchange(
+        "https://www.pathofexile.com/oauth/token",
+        "grant_type=authorization_code&code=upstream-code",
+      ))!,
+    ).access_token,
+    "session-poe-token",
+  );
+  assertEquals(forceAuthorizations, []);
+
+  assertEquals(
+    JSON.parse(
+      (await bridge.exchange(
+        "https://www.pathofexile.com/oauth/token",
+        "grant_type=refresh_token&refresh_token=auth0-reauthorize",
+      ))!,
+    ).access_token,
+    "refreshed-poe-token",
+  );
+  assertEquals(forceAuthorizations, [true]);
+  assertEquals(timeouts, [110_000]);
 });
 
 Deno.test("only CORS-capable PoE APIs bypass the proxy", () => {
@@ -73,4 +118,43 @@ Deno.test("PoE reauthorization uses the popup token without silent refresh", asy
 
   assertEquals(token, "new-poe-token");
   assertEquals({ popupCalls, silentCalls }, { popupCalls: 1, silentCalls: 0 });
+});
+
+Deno.test("PoE initial authorization reuses Auth0 and falls back when its token lacks the provider claim", async () => {
+  const existing = await jwt({ [claim]: "existing-poe-token" });
+  let popupCalls = 0;
+  const fromSession = await getPoeAccessToken(
+    { isAuthenticated: true, getAccessTokenSilently: () => Promise.resolve(existing) },
+    false,
+    () => {
+      popupCalls += 1;
+      return Promise.reject(new Error("popup must not open"));
+    },
+  );
+  assertEquals(fromSession, "existing-poe-token");
+  assertEquals(popupCalls, 0);
+
+  const withoutClaim = await jwt({});
+  const fromPopup = await getPoeAccessToken(
+    { isAuthenticated: true, getAccessTokenSilently: () => Promise.resolve(withoutClaim) },
+    false,
+    async (forceAuthorization) => {
+      popupCalls += 1;
+      assertEquals(forceAuthorization, false);
+      return await jwt({ [claim]: "popup-poe-token" });
+    },
+  );
+  assertEquals(fromPopup, "popup-poe-token");
+  assertEquals(popupCalls, 1);
+
+  await assertRejects(
+    () =>
+      getPoeAccessToken(
+        { isAuthenticated: false, getAccessTokenSilently: () => Promise.reject(new Error("must not run")) },
+        false,
+        () => Promise.resolve(withoutClaim),
+      ),
+    Error,
+    "Auth0 token did not contain a PoE access token",
+  );
 });

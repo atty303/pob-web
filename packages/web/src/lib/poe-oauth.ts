@@ -3,6 +3,7 @@ import { decodeJwt } from "jose";
 const POE_ACCESS_TOKEN_CLAIM = "https://pob.cool/poe/access_token";
 const POE_TOKEN_ENDPOINT = "https://www.pathofexile.com/oauth/token";
 const POE_OAUTH_CHANNEL_PREFIX = "pob-poe-oauth:";
+const POE_OAUTH_TIMEOUT_MS = 110_000;
 
 export const POE_OAUTH_PENDING_CHANNEL = "pob-poe-oauth-channel";
 
@@ -54,7 +55,10 @@ export function broadcastPoeOAuthResult(channelName: string, message: PoeOAuthWi
   channel.close();
 }
 
-export function authorizePoeWithRedirect(forceAuthorization: boolean, timeoutMs = 110_000): Promise<string> {
+export function authorizePoeWithRedirect(
+  forceAuthorization: boolean,
+  timeoutMs = POE_OAUTH_TIMEOUT_MS,
+): Promise<string> {
   const id = crypto.randomUUID();
   const channelName = `${POE_OAUTH_CHANNEL_PREFIX}${id}`;
   const channel = new BroadcastChannel(channelName);
@@ -63,7 +67,9 @@ export function authorizePoeWithRedirect(forceAuthorization: boolean, timeoutMs 
   if (forceAuthorization) url.searchParams.set("force", "1");
 
   return new Promise((resolve, reject) => {
+    let popup: Window | null = null;
     const timeout = window.setTimeout(() => {
+      popup?.close();
       channel.close();
       reject(new Error("PoE authorization window timed out"));
     }, timeoutMs);
@@ -75,7 +81,7 @@ export function authorizePoeWithRedirect(forceAuthorization: boolean, timeoutMs 
       else reject(new Error(data.error));
     };
 
-    const popup = window.open(
+    popup = window.open(
       url,
       `pob-poe-oauth-${id}`,
       "width=500,height=720,resizable,scrollbars=yes,status=1",
@@ -86,6 +92,47 @@ export function authorizePoeWithRedirect(forceAuthorization: boolean, timeoutMs 
       reject(new Error("Unable to open the PoE authorization window"));
     }
   });
+}
+
+export function createPoeOAuthBridge(
+  getAuth0: () => PoeAuth0Client,
+  authorize: (forceAuthorization: boolean, timeoutMs: number) => Promise<string> = authorizePoeWithRedirect,
+) {
+  let authorizationAccessToken: string | undefined;
+
+  return {
+    async authorize(authorizationUrl: string, timeoutMs: number) {
+      const state = poeOAuthState(authorizationUrl);
+      try {
+        authorizationAccessToken = await getPoeAccessToken(
+          getAuth0(),
+          false,
+          (forceAuthorization) => authorize(forceAuthorization, timeoutMs),
+        );
+        return { code: crypto.randomUUID(), state, port: 0 };
+      } catch (error) {
+        authorizationAccessToken = undefined;
+        return {
+          error: error instanceof Error ? error.message : "Path of Exile authorization failed",
+          state,
+          port: 0,
+        };
+      }
+    },
+    async exchange(url: string, body: string | undefined) {
+      const grant = poeOAuthGrant(url, body);
+      if (!grant) return undefined;
+      const accessToken = grant === "authorization_code" && authorizationAccessToken
+        ? authorizationAccessToken
+        : await getPoeAccessToken(
+          getAuth0(),
+          grant === "refresh_token",
+          (forceAuthorization) => authorize(forceAuthorization, POE_OAUTH_TIMEOUT_MS),
+        );
+      authorizationAccessToken = undefined;
+      return poeOAuthTokenResponse(accessToken);
+    },
+  };
 }
 
 export function poeOAuthState(authorizationUrl: string): string {

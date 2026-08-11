@@ -12,14 +12,7 @@ import {
   type ErrorPhase,
 } from "../lib/error-report.ts";
 import { log, tag } from "../lib/logger.ts";
-import {
-  authorizePoeWithRedirect,
-  corsFetchPolicy,
-  getPoeAccessToken,
-  poeOAuthGrant,
-  poeOAuthState,
-  poeOAuthTokenResponse,
-} from "../lib/poe-oauth.ts";
+import { authorizePoeWithRedirect, corsFetchPolicy, createPoeOAuthBridge } from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -37,7 +30,6 @@ export default function PoBWindow(props: {
 }) {
   const auth0 = useAuth0();
   const auth0Ref = useRef(auth0);
-  const poeOAuthAccessTokenRef = useRef<string>();
   auth0Ref.current = auth0;
 
   const container = useRef<HTMLDivElement>(null);
@@ -87,9 +79,12 @@ export default function PoBWindow(props: {
 
   useEffect(() => {
     onDriverReadyRef.current?.(null);
-    poeOAuthAccessTokenRef.current = undefined;
     setErrorReport(undefined);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
+    const poeOAuthBridge = createPoeOAuthBridge(
+      () => auth0Ref.current,
+      (forceAuthorization, timeoutMs) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
+    );
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
     const showError = (error: unknown, phase: ErrorPhase) => {
@@ -120,14 +115,10 @@ export default function PoBWindow(props: {
         },
         onFrame: (at, time, stats) => onFrameRef.current(at, time, stats),
         onFetch: async (url, headers, body) => {
-          const oauthGrant = poeOAuthGrant(url, body);
-          if (oauthGrant) {
-            const accessToken = oauthGrant === "authorization_code" && poeOAuthAccessTokenRef.current
-              ? poeOAuthAccessTokenRef.current
-              : await getPoeAccessToken(auth0Ref.current, oauthGrant === "refresh_token");
-            poeOAuthAccessTokenRef.current = undefined;
+          const oauthResponse = await poeOAuthBridge.exchange(url, body);
+          if (oauthResponse) {
             return {
-              body: poeOAuthTokenResponse(accessToken),
+              body: oauthResponse,
               error: undefined,
               headers: { "content-type": "application/json" },
               status: 200,
@@ -179,24 +170,7 @@ export default function PoBWindow(props: {
 
           return rep;
         },
-        onOAuthAuthorize: async (authorizationUrl, timeoutMs) => {
-          const state = poeOAuthState(authorizationUrl);
-          try {
-            poeOAuthAccessTokenRef.current = await getPoeAccessToken(
-              auth0Ref.current,
-              false,
-              (forceAuthorization) => authorizePoeWithRedirect(forceAuthorization, timeoutMs),
-            );
-            return { code: crypto.randomUUID(), state, port: 0 };
-          } catch (error) {
-            poeOAuthAccessTokenRef.current = undefined;
-            return {
-              error: error instanceof Error ? error.message : "Path of Exile authorization failed",
-              state,
-              port: 0,
-            };
-          }
-        },
+        onOAuthAuthorize: (authorizationUrl, timeoutMs) => poeOAuthBridge.authorize(authorizationUrl, timeoutMs),
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },
       { onWorkerCreated: registerSentryWorker },
