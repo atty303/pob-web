@@ -44,7 +44,11 @@ Deno.test("glyph page eviction flushes already resolved glyphs before destroying
         fillStyle: "",
         textBaseline: "",
         fillText: () => {},
-        getImageData: () => ({ data: new Uint8ClampedArray(this.width * this.height * 4) }),
+        getImageData: () => {
+          const data = new Uint8ClampedArray(this.width * this.height * 4);
+          data[3] = 255;
+          return { data };
+        },
       };
     }
   } as unknown as typeof OffscreenCanvas;
@@ -84,6 +88,78 @@ Deno.test("glyph page eviction flushes already resolved glyphs before destroying
     atlas.draw(12, 0, "ab", 0, 0, [1, 1, 1, 1]);
     assertEquals(events, ["create", "upload", "draw", "flush", "destroy", "create", "upload", "draw"]);
     assertEquals(atlas.getStats().evictions, 1);
+  } finally {
+    globalThis.OffscreenCanvas = originalOffscreenCanvas;
+  }
+});
+
+Deno.test("glyph rasterization preserves the line box bottom baseline", () => {
+  const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+  let baseline = "";
+  let fillPosition: [number, number] | undefined;
+  globalThis.OffscreenCanvas = class {
+    width: number;
+    height: number;
+
+    constructor(width: number, height: number) {
+      this.width = width;
+      this.height = height;
+    }
+
+    getContext() {
+      return {
+        font: "",
+        fillStyle: "",
+        get textBaseline() {
+          return baseline;
+        },
+        set textBaseline(value: string) {
+          baseline = value;
+        },
+        fillText: (_text: string, x: number, y: number) => {
+          fillPosition = [x, y];
+        },
+        getImageData: () => {
+          const data = new Uint8ClampedArray(this.width * this.height * 4);
+          data[(6 * this.width + 2) * 4 + 3] = 255;
+          return { data };
+        },
+      };
+    }
+  } as unknown as typeof OffscreenCanvas;
+
+  let coords: number[] | undefined;
+  let uploaded: Uint8Array | undefined;
+  const backend = {
+    createGlyphAtlasTexture: (id: string, width: number, height: number) => ({ id, width, height }),
+    uploadGlyph: (
+      _texture: unknown,
+      _x: number,
+      _y: number,
+      _width: number,
+      _height: number,
+      pixels: Uint8Array,
+    ) => uploaded = pixels,
+    drawGlyph: (glyphCoords: number[]) => coords = glyphCoords,
+  } as unknown as RenderBackend;
+  const textMetrics = {
+    measureGlyph: () => ({
+      width: 3,
+      actualBoundingBoxLeft: 1,
+      actualBoundingBoxRight: 2,
+      actualBoundingBoxAscent: 4,
+      actualBoundingBoxDescent: 2,
+    }),
+  } as unknown as TextMetrics;
+
+  try {
+    const atlas = new GlyphAtlas(textMetrics);
+    atlas.setBackend(backend);
+    atlas.draw(10, 0, "g", 4, 8, [1, 1, 1, 1]);
+    assertEquals(baseline, "bottom");
+    assertEquals(fillPosition, [1, 10]);
+    assertEquals(coords, [4, 13, 7, 13, 7, 16, 4, 16]);
+    assertEquals(uploaded, new Uint8Array([0, 0, 0, 0, 255, 0, 0, 0, 0]));
   } finally {
     globalThis.OffscreenCanvas = originalOffscreenCanvas;
   }

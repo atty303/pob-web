@@ -328,27 +328,41 @@ export class GlyphAtlas {
     const advance = measured.width;
     const left = Math.ceil(measured.actualBoundingBoxLeft);
     const right = Math.ceil(measured.actualBoundingBoxRight);
-    const ascent = Math.ceil(measured.actualBoundingBoxAscent);
-    const descent = Math.ceil(measured.actualBoundingBoxDescent);
-    const width = left + right + GLYPH_PADDING * 2;
-    const bitmapHeight = ascent + descent + GLYPH_PADDING * 2;
+    const rasterWidth = left + right;
 
-    if (width <= GLYPH_PADDING * 2 || bitmapHeight <= GLYPH_PADDING * 2) {
+    if (rasterWidth <= 0 || height <= 0) {
       const empty: EmptyGlyph = { advance, width: 0, height: 0 };
       this.glyphs.set(key, empty);
       this.stats.rasterizeTime += performance.now() - started;
       return empty;
     }
 
-    this.canvas.width = width;
-    this.canvas.height = bitmapHeight;
+    this.canvas.width = rasterWidth;
+    this.canvas.height = height;
     this.context.font = font(height, fontNum);
     this.context.fillStyle = "white";
-    this.context.textBaseline = "alphabetic";
-    this.context.fillText(scalar, GLYPH_PADDING + left, GLYPH_PADDING + ascent);
-    const rgba = this.context.getImageData(0, 0, width, bitmapHeight).data;
+    this.context.textBaseline = "bottom";
+    this.context.fillText(scalar, left, height);
+    const rgba = this.context.getImageData(0, 0, rasterWidth, height).data;
+    const bounds = alphaBounds(rgba, rasterWidth, height);
+    if (!bounds) {
+      const empty: EmptyGlyph = { advance, width: 0, height: 0 };
+      this.glyphs.set(key, empty);
+      this.stats.rasterizeTime += performance.now() - started;
+      return empty;
+    }
+
+    const contentWidth = bounds.right - bounds.left;
+    const contentHeight = bounds.bottom - bounds.top;
+    const width = contentWidth + GLYPH_PADDING * 2;
+    const bitmapHeight = contentHeight + GLYPH_PADDING * 2;
     const alpha = new Uint8Array(width * bitmapHeight);
-    for (let source = 3, target = 0; source < rgba.length; source += 4) alpha[target++] = rgba[source];
+    for (let y = 0; y < contentHeight; y++) {
+      for (let x = 0; x < contentWidth; x++) {
+        const source = ((bounds.top + y) * rasterWidth + bounds.left + x) * 4 + 3;
+        alpha[(y + GLYPH_PADDING) * width + x + GLYPH_PADDING] = rgba[source];
+      }
+    }
 
     const { page, rect } = this.allocate(key, width, bitmapHeight);
     this.backend!.uploadGlyph(page.texture, rect.x, rect.y, width, bitmapHeight, alpha);
@@ -361,8 +375,8 @@ export class GlyphAtlas {
     const v2 = (rect.y + bitmapHeight) / this.atlasSize;
     const glyph: Glyph = {
       advance,
-      offsetX: -left - GLYPH_PADDING,
-      offsetY: height - ascent - GLYPH_PADDING,
+      offsetX: bounds.left - left - GLYPH_PADDING,
+      offsetY: bounds.top - GLYPH_PADDING,
       width,
       height: bitmapHeight,
       texture: page.texture,
@@ -441,4 +455,21 @@ export class GlyphAtlas {
       evictions: 0,
     };
   }
+}
+
+function alphaBounds(rgba: Uint8ClampedArray, width: number, height: number) {
+  let left = width;
+  let top = height;
+  let right = 0;
+  let bottom = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (rgba[(y * width + x) * 4 + 3] === 0) continue;
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x + 1);
+      bottom = Math.max(bottom, y + 1);
+    }
+  }
+  return right === 0 ? undefined : { left, top, right, bottom };
 }
