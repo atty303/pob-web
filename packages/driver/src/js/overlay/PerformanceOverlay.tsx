@@ -1,5 +1,7 @@
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import type { GlyphAtlasStats } from "../renderer/text.ts";
+import type { BackendStats } from "../renderer/backend.ts";
 
 export interface FrameData {
   at: number;
@@ -19,7 +21,11 @@ export interface RenderStats {
   totalLayers: number;
   layerStats: LayerStats[];
   lastFrameTime: number;
+  layerIndexTime: number;
+  compileSubmitTime: number;
   frameCount: number;
+  glyphAtlas: GlyphAtlasStats;
+  backend: BackendStats;
 }
 
 interface PerformanceOverlayProps {
@@ -167,12 +173,20 @@ function RenderStatsView({
     <div className="pw:text-xs pw:space-y-2">
       <div className="pw:font-semibold">Render Stats (Frame #{summary.frameCount})</div>
       <div className="pw:grid pw:grid-cols-2 pw:gap-1 pw:text-xs">
+        <div>Backend: {stats.backend.name}</div>
         <div>Layers: {summary.totalLayers}</div>
         <div>Frame: {summary.frameTime}ms</div>
         <div>Total draws: {totalDrawCalls}</div>
         <div>Images: {summary.totalDrawImage}</div>
         <div>Quads: {summary.totalDrawImageQuad}</div>
         <div>Text: {summary.totalDrawString}</div>
+        <div>Glyphs: {stats.glyphAtlas.glyphQuads}</div>
+        <div>Glyph hit/miss: {stats.glyphAtlas.hits}/{stats.glyphAtlas.misses}</div>
+        <div>Glyph upload: {stats.glyphAtlas.uploadedBytes}B</div>
+        <div>Atlas pages: {stats.glyphAtlas.pages}</div>
+        <div>Instances: {stats.backend.instances}</div>
+        <div>Instance upload: {stats.backend.instanceBytes}B</div>
+        <div>Dispatches: {stats.backend.dispatches}</div>
       </div>
 
       {layerDetails.length > 0 && (

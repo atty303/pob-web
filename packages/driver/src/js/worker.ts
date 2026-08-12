@@ -6,16 +6,7 @@ import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
 import type { MouseState } from "./mouse-handler.ts";
 import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
-import {
-  BinPackingTextRasterizer,
-  loadFonts,
-  Renderer,
-  type RenderStats,
-  TextMetrics,
-  type TextRasterizer,
-  WebGL1Backend,
-  WebGPUBackend,
-} from "./renderer/index.ts";
+import { loadFonts, Renderer, type RenderStats, TextMetrics, WebGL1Backend, WebGPUBackend } from "./renderer/index.ts";
 import { createRpcClient } from "./rpc.ts";
 import { registerSentryWasm } from "./sentry-wasm.ts";
 
@@ -72,7 +63,6 @@ type Imports = {
 export class DriverWorker {
   private imageRepo: ImageRepository | undefined;
   private textMetrics: TextMetrics | undefined;
-  private textRasterizer: TextRasterizer | undefined;
   private renderer: Renderer | undefined;
   private screenSize: { width: number; height: number; pixelRatio: number } = {
     width: 800,
@@ -106,9 +96,7 @@ export class DriverWorker {
 
     await loadFonts();
     this.textMetrics = new TextMetrics();
-    this.textRasterizer = new BinPackingTextRasterizer(this.textMetrics);
-
-    this.renderer = new Renderer(this.imageRepo, this.textRasterizer, this.screenSize);
+    this.renderer = new Renderer(this.imageRepo, this.textMetrics, this.screenSize);
     this.hostCallbacks = {
       onError,
       onFrame,

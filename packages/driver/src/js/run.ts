@@ -6,6 +6,7 @@ import { Driver } from "./driver.ts";
   const params = new URLSearchParams(window.location.search);
   const game = (testMode ? params.get("game") : null) ?? __RUN_GAME__;
   const version = (testMode ? params.get("version") : null) ?? __RUN_VERSION__;
+  const useWebGPU = params.get("webgpu") === "true";
   const poeOAuthExpiresIn = Number(params.get("poe-oauth-expires-in") ?? "2419200");
   const poeOAuthApiStatuses = (params.get("poe-oauth-api") ?? "200").split(",").map(Number);
   let poeOAuthRefreshCount = Number(params.get("poe-oauth-refresh-start") ?? "0");
@@ -44,7 +45,15 @@ import { Driver } from "./driver.ts";
       onFrame: (_at, time, stats) => {
         if (testState) {
           testState.frameCount += 1;
-          testState.frameSamples.push({ totalTime: time, rendererTime: stats?.lastFrameTime ?? 0 });
+          testState.frameSamples.push({
+            totalTime: time,
+            rendererTime: stats?.lastFrameTime ?? 0,
+            glyphMisses: stats?.glyphAtlas.misses ?? 0,
+            glyphUploadBytes: stats?.glyphAtlas.uploadedBytes ?? 0,
+            instanceBytes: stats?.backend.instanceBytes ?? 0,
+            instances: stats?.backend.instances ?? 0,
+            dispatches: stats?.backend.dispatches ?? 0,
+          });
           if (stats) testState.renderStats = stats;
         }
       },
@@ -118,7 +127,7 @@ import { Driver } from "./driver.ts";
   });
   const root = document.querySelector("#window") as HTMLElement;
   if (root) {
-    await driver.attachToDOM(root);
+    await driver.attachToDOM(root, useWebGPU);
   }
   if (testState) {
     testState.started = true;

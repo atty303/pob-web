@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { DrawCommandInterpreter } from "../../src/js/draw.ts";
+import { DrawCommandCompiler, type DrawCommandSink } from "../../src/js/draw.ts";
 
 const setLayer = (layer: number, sublayer: number) => {
   const bytes = new Uint8Array(5);
@@ -50,7 +50,8 @@ Deno.test("sort orders layers and replays the current viewport on a new layer", 
     setLayer(1, 0),
   );
 
-  const layers = DrawCommandInterpreter.sort(view);
+  const compiler = new DrawCommandCompiler();
+  const layers = compiler.index(view);
 
   assertEquals(
     layers.map((layer) => [layer.layer, layer.sublayer]),
@@ -67,36 +68,41 @@ Deno.test("sort orders layers and replays the current viewport on a new layer", 
   );
 
   const replayedViewports: number[][] = [];
-  DrawCommandInterpreter.runRange(layers[1].ranges[0], view, {
-    onSetViewport: (x, y, width, height) => replayedViewports.push([x, y, width, height]),
-    onSetColor: () => {},
-    onSetColorEscape: () => {},
-    onDrawImage: () => {},
-    onDrawImageQuad: () => {},
-    onDrawString: () => {},
+  compiler.compileLayer(layers[1], view, {
+    setViewport: (x, y, width, height) => replayedViewports.push([x, y, width, height]),
+    setColor: () => {},
+    setColorEscape: () => {},
+    drawImage: () => {},
+    drawImageQuad: () => {},
+    drawString: () => {},
   });
   assertEquals(replayedViewports, [[9, 10, 1024, 768]]);
 });
 
-Deno.test("runRange decodes variable-length color escape and string commands", () => {
+Deno.test("compiler decodes variable-length color escape and string commands", () => {
   const view = join(variableCommand(5, "^x"), variableCommand(8, "hello"));
   const events: string[] = [];
 
-  DrawCommandInterpreter.runRange({ offset: 0, length: view.byteLength }, view, {
-    onSetViewport: () => {},
-    onSetColor: () => {},
-    onSetColorEscape: (text) => events.push(`escape:${text}`),
-    onDrawImage: () => {},
-    onDrawImageQuad: () => {},
-    onDrawString: (_x, _y, _align, _height, _font, text) => events.push(`string:${text}`),
-  });
+  const compiler = new DrawCommandCompiler();
+  compiler.compileLayer(
+    compiler.index(view)[0],
+    view,
+    {
+      setViewport: () => {},
+      setColor: () => {},
+      setColorEscape: (text) => events.push(`escape:${text}`),
+      drawImage: () => {},
+      drawImageQuad: () => {},
+      drawString: (_x, _y, _align, _height, _font, text) => events.push(`string:${text}`),
+    } satisfies DrawCommandSink,
+  );
 
   assertEquals(events, ["escape:^x", "string:hello"]);
 });
 
 Deno.test("sort rejects unknown commands", () => {
   assertThrows(
-    () => DrawCommandInterpreter.sort(new DataView(new Uint8Array([255]).buffer)),
+    () => new DrawCommandCompiler().index(new DataView(new Uint8Array([255]).buffer)),
     Error,
     "Unknown command type: 255",
   );

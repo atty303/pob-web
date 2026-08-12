@@ -35,6 +35,12 @@ approval_mode = "approve"
 [mcp_servers.playwright.tools.browser_mouse_move_xy]
 approval_mode = "approve"
 
+[mcp_servers.playwright.tools.browser_mouse_down]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_mouse_up]
+approval_mode = "approve"
+
 [mcp_servers.sentry]
 url = "https://mcp.sentry.dev/mcp"
 auth = "oauth"
