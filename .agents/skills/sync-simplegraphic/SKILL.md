@@ -78,7 +78,7 @@ contract can be preserved with an appropriate browser implementation.
    involved.
 3. Run `mise run check` and `mise run test:e2e:driver`. Run `mise run test` for
    Wasm, builds, package boundaries, CI, or release behavior. For visible
-   Canvas/WebGL or input changes, also use `$canvas-visual-verification` after
+   Canvas/WebGL or input changes, also use `$investigate-canvas-ui` after
    the automated driver E2E suite.
 4. Complete the repository's independent review workflow against a frozen diff
    and resolve all accepted findings.
