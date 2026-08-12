@@ -149,7 +149,7 @@ export class DrawCommandCompiler {
           offset += 77;
           break;
         case DrawCommandType.DrawString: {
-          const length = 14 + view.getUint16(offset + 12, true);
+          const length = 17 + view.getUint16(offset + 15, true);
           addCommand(currentLayer, commandStart, length);
           currentLayer.drawStringCount++;
           offset += length;
@@ -234,16 +234,16 @@ export class DrawCommandCompiler {
             offset += 77;
             break;
           case DrawCommandType.DrawString: {
-            const length = view.getUint16(offset + 12, true);
+            const length = view.getUint16(offset + 15, true);
             sink.drawString(
               view.getFloat32(offset + 1, true),
               view.getFloat32(offset + 5, true),
               view.getUint8(offset + 9),
-              view.getUint8(offset + 10),
-              view.getUint8(offset + 11),
-              this.decode(view, offset + 14, length),
+              view.getUint32(offset + 10, true),
+              view.getUint8(offset + 14),
+              this.decode(view, offset + 17, length),
             );
-            offset += 14 + length;
+            offset += 17 + length;
             break;
           }
           default:

@@ -52,8 +52,6 @@ coroutine.yield = function(...)
 end
 
 -- Rendering
-function RenderInit()
-end
 function SetClearColor(r, g, b, a)
 end
 function StripEscapes(text)

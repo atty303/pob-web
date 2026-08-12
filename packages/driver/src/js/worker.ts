@@ -315,6 +315,7 @@ export class DriverWorker {
       setWindowTitle: (title: string) => this.hostCallbacks?.onTitleChange(title),
       getScreenWidth: () => this.screenSize.width,
       getScreenHeight: () => this.screenSize.height,
+      getScreenScale: () => this.screenSize.pixelRatio,
       getCursorPosX: () => this.mouseState.x,
       getCursorPosY: () => this.mouseState.y,
       isKeyDown: (name: string) =>

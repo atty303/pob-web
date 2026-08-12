@@ -24,17 +24,6 @@ incompatibility remains unresolved.
 
 ## Reviewed differences
 
-### Screen and DPI scaling
-
-- Difference: `GetScreenScale`, `SetDPIScaleOverridePercent`, and
-  `GetDPIScaleOverridePercent` are absent; `RenderInit("DPI_AWARE")` is a no-op.
-- Current rationale: browser Canvas/CSS/device scaling owns this behavior.
-  Current PoB Lua guards the APIs or falls back to scale `1`, so no reachable
-  failure was found during the baseline audit.
-- Re-evaluate when browser pixel-ratio or zoom ownership changes, or PoB
-  requires these APIs without a fallback. Do not add constant stubs until their
-  return contract matches the browser scaling model.
-
 ### Draw layer and blend mode queries
 
 - Difference: `GetDrawLayer` and `SetBlendMode` are absent.
@@ -92,6 +81,21 @@ incompatibility remains unresolved.
   effect, or timing becomes required, or browser lifecycle, filesystem,
   screenshot, cursor, or process capabilities change. Preserve the intended
   Lua-visible effect without porting Windows-specific implementation.
+
+## Browser replacements preserving upstream behavior
+
+### Screen and DPI scaling
+
+- `RenderInit("DPI_AWARE")`, `GetScreenScale`, and the DPI scale override APIs
+  follow the upstream logical-coordinate contract. The Canvas backing store and
+  `GetScreenSize` use physical device pixels; PoB derives its virtual screen by
+  dividing by the effective scale.
+- System scale is the uncapped browser `devicePixelRatio`. A positive override
+  replaces that scale rather than multiplying it. CSS zoom and pan do not
+  participate in either value or increase the backing-store resolution.
+- Browser pointer events are converted through the inverse CSS transform before
+  reaching `GetCursorPos`, so they are already in Lua logical coordinates and
+  must not receive upstream's additional physical-to-logical division.
 
 ## Known unresolved reachability risks
 
