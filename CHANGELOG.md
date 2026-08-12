@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.31.0](https://github.com/atty303/pob-web/compare/v0.30.1...v0.31.0) (2026-08-12)
+
+
+### Features
+
+* **driver:** allow WebGPU selection by URL ([0d020c3](https://github.com/atty303/pob-web/commit/0d020c33417f9f68e9bbfb701cec0bf3dd141346))
+* **driver:** show backend in performance overlay ([dfb875a](https://github.com/atty303/pob-web/commit/dfb875a131ba303f158a0e46854ce29f272689fc))
+* **web:** persist renderer preferences ([c32c9a7](https://github.com/atty303/pob-web/commit/c32c9a775d0793c3100c3f805737428f8ed0aa59))
+
+
+### Bug Fixes
+
+* **driver:** restore text vertical alignment ([d314a76](https://github.com/atty303/pob-web/commit/d314a76cd13689ae65881069194b04e4d2116030))
+* **driver:** return UTF-8 cursor offsets ([176917b](https://github.com/atty303/pob-web/commit/176917ba6045b891e81fab71e41eec77132df647)), closes [#97](https://github.com/atty303/pob-web/issues/97)
+* **driver:** serialize virtual clipboard actions ([d0889b2](https://github.com/atty303/pob-web/commit/d0889b21826d95d6a80b90f9534a7b328f48d4a6))
+* **upstream-sync:** retry compatibility E2E ([b9e9e39](https://github.com/atty303/pob-web/commit/b9e9e392b744340363a576b5c78ea697e854ee34))
+
+
+### Performance Improvements
+
+* **driver:** compile draw commands directly ([ba08710](https://github.com/atty303/pob-web/commit/ba08710b44248d286cc9d93b88d9b7e9526236af))
+* **driver:** compile draw commands directly ([#180](https://github.com/atty303/pob-web/issues/180)) ([f9a558e](https://github.com/atty303/pob-web/commit/f9a558e46d3b90636489f31be01a579a4bf23f3d))
+* **driver:** instance quad rendering ([4d416ac](https://github.com/atty303/pob-web/commit/4d416acf0e72e6b01806abf34ce06c2d5d3a7481))
+* **driver:** render text from a GPU glyph atlas ([935e7de](https://github.com/atty303/pob-web/commit/935e7de92d610b77765d5e17b54707bab4f15085))
+
 ## [0.30.1](https://github.com/atty303/pob-web/compare/v0.30.0...v0.30.1) (2026-08-11)
 
 
