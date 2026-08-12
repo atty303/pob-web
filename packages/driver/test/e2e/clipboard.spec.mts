@@ -69,8 +69,9 @@ test.describe("clipboard", () => {
     }, token);
     await page.getByRole("button", { name: "Toggle Virtual Keyboard" }).click();
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
-    const pasteFrame = await currentDriverFrame(page);
     await page.getByRole("button", { name: "V", exact: true }).click();
+    await flushPoBInput(page);
+    const pasteFrame = await currentDriverFrame(page);
     await waitForDriverFrames(page, pasteFrame, 1);
 
     await page.evaluate(() => {
@@ -78,6 +79,7 @@ test.describe("clipboard", () => {
     });
     await page.getByRole("button", { name: "A", exact: true }).click();
     await page.getByRole("button", { name: "C", exact: true }).click();
+    await flushPoBInput(page);
 
     await expect.poll(() =>
       page.evaluate(() => (globalThis as typeof globalThis & { __CLIPBOARD_TEXT__: string }).__CLIPBOARD_TEXT__)
@@ -163,6 +165,14 @@ async function writeSystemClipboard(page: import("@playwright/test").Page, text:
 
 async function currentDriverFrame(page: import("@playwright/test").Page): Promise<number> {
   return (await page.evaluate(() => window.__POB_TEST__?.frameCount)) ?? 0;
+}
+
+async function flushPoBInput(page: import("@playwright/test").Page): Promise<void> {
+  await page.evaluate(async () => {
+    const flushInput = window.__POB_TEST__?.flushInput;
+    if (!flushInput) throw new Error("flushInput test hook is unavailable");
+    await flushInput();
+  });
 }
 
 async function waitForDriverFrames(

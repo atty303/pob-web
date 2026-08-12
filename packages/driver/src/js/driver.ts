@@ -65,6 +65,7 @@ export class Driver {
   private renderStats: RenderStats | null = null;
   private externalComponent: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined;
   private clipboard = new ClipboardController(navigator.clipboard);
+  private pendingClipboardAction: Promise<void> = Promise.resolve();
 
   private readonly MIN_CANVAS_WIDTH = 1550;
   private readonly MIN_CANVAS_HEIGHT = 800;
@@ -354,16 +355,24 @@ export class Driver {
   }
 
   private dispatchClipboardAction(action: ClipboardAction) {
-    void this.driverWorker?.handleClipboardAction(action);
+    this.enqueueClipboardAction(async () => {
+      await this.driverWorker?.handleClipboardAction(action);
+    });
   }
 
-  private async handleVirtualClipboardShortcut(shortcut: ClipboardShortcut) {
-    if (shortcut === "copy") {
-      this.dispatchClipboardAction({ type: "copy" });
-      return;
-    }
-    const text = await this.clipboard.readText();
-    if (text !== undefined) this.dispatchClipboardAction({ type: "paste", text });
+  private handleVirtualClipboardShortcut(shortcut: ClipboardShortcut) {
+    this.enqueueClipboardAction(async () => {
+      if (shortcut === "copy") {
+        await this.driverWorker?.handleClipboardAction({ type: "copy" });
+        return;
+      }
+      const text = await this.clipboard.readText();
+      if (text !== undefined) await this.driverWorker?.handleClipboardAction({ type: "paste", text });
+    });
+  }
+
+  private enqueueClipboardAction(action: () => Promise<void>) {
+    this.pendingClipboardAction = this.pendingClipboardAction.then(action);
   }
 
   async loadBuildFromCode(code: string) {
@@ -379,6 +388,7 @@ export class Driver {
   }
 
   async flushInput(): Promise<void> {
+    await this.pendingClipboardAction;
     await this.driverWorker?.flushInput();
   }
 
