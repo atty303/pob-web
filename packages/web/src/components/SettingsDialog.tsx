@@ -1,17 +1,25 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { ArrowTopRightOnSquareIcon, ChartBarIcon, HomeIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowTopRightOnSquareIcon,
+  ChartBarIcon,
+  CpuChipIcon,
+  HomeIcon,
+  UserIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/solid";
 import { forwardRef } from "react";
 import { confirmAndLogout } from "../lib/auth.ts";
 import { authenticateWithPoe } from "../lib/poe-oauth.ts";
 
 interface SettingsDialogProps {
-  game: string;
   performanceVisible: boolean;
+  webGPUEnabled: boolean;
   onPerformanceToggle: () => void;
+  onWebGPUToggle: () => void;
 }
 
 export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>(
-  ({ performanceVisible, onPerformanceToggle }, ref) => {
+  ({ performanceVisible, webGPUEnabled, onPerformanceToggle, onWebGPUToggle }, ref) => {
     const auth0 = useAuth0();
     const { user, isAuthenticated, isLoading } = auth0;
     const closeDialog = () => {
@@ -126,6 +134,27 @@ export const SettingsDialog = forwardRef<HTMLDialogElement, SettingsDialogProps>
                   </div>
                 </label>
               </div>
+            </div>
+
+            <div className="pw:space-y-3">
+              <h3 className="pw:text-sm pw:font-semibold pw:text-base-content/80 pw:mb-3">Experimental</h3>
+              <label className="pw:flex pw:items-center pw:gap-3 pw:cursor-pointer pw:p-3 pw:rounded-lg pw:bg-base-100 pw:border pw:border-base-300 hover:pw:bg-base-200 pw:transition-colors">
+                <input
+                  type="checkbox"
+                  className="pw:toggle pw:toggle-sm pw:toggle-primary"
+                  checked={webGPUEnabled}
+                  onChange={onWebGPUToggle}
+                />
+                <div className="pw:flex pw:items-center pw:gap-2 pw:flex-1">
+                  <CpuChipIcon className="pw:size-4 pw:text-primary" />
+                  <div>
+                    <div className="pw:text-sm pw:font-medium">WebGPU renderer</div>
+                    <div className="pw:text-xs pw:text-base-content/60">
+                      Reload the page to apply. Falls back to WebGL2 when unavailable.
+                    </div>
+                  </div>
+                </div>
+              </label>
             </div>
 
             <div className="pw:pt-3 pw:border-t pw:border-base-300">

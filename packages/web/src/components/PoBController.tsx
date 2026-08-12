@@ -1,6 +1,7 @@
 import type { Driver } from "pob-driver/driver";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as use from "react-use";
+import { loadWebSettings, saveWebSettings, type WebSettings } from "../lib/settings.ts";
 import type { Games } from "../routes/_game.tsx";
 import { HelpButton } from "./HelpButton.tsx";
 import { HelpDialog } from "./HelpDialog.tsx";
@@ -18,8 +19,29 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const driverRef = useRef<Driver | null>(null);
   const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
-  const [performanceVisible, setPerformanceVisible] = useState(false);
+  const [settings, setSettings] = useState<WebSettings>();
+  const webGPUAtStartup = useRef(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let storedSettings: WebSettings;
+    try {
+      storedSettings = loadWebSettings(window.localStorage);
+    } catch {
+      storedSettings = loadWebSettings({ getItem: () => null });
+    }
+    webGPUAtStartup.current = storedSettings.webGPU;
+    setSettings(storedSettings);
+  }, []);
+
+  const updateSettings = (next: WebSettings) => {
+    try {
+      saveWebSettings(window.localStorage, next);
+    } catch {
+      // The in-memory preference still applies when browser storage is unavailable.
+    }
+    setSettings(next);
+  };
 
   const ToolbarComponents = useCallback(
     ({ position, isLandscape }: { position: "top" | "bottom" | "left" | "right"; isLandscape: boolean }) => (
@@ -40,28 +62,35 @@ export default function PoBController(p: { game: keyof Games; version: string; i
       ref={container}
       className="relative w-full h-full overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
-      <PoBWindow
-        game={p.game}
-        version={p.version}
-        onFrame={() => {}}
-        onTitleChange={setTitle}
-        onLayerVisibilityCallbackReady={() => {}}
-        onDriverReady={(driver) => {
-          driverRef.current = driver;
-        }}
-        toolbarComponent={ToolbarComponents}
-      />
+      {settings && (
+        <>
+          <PoBWindow
+            game={p.game}
+            version={p.version}
+            useWebGPU={webGPUAtStartup.current}
+            onFrame={() => {}}
+            onTitleChange={setTitle}
+            onLayerVisibilityCallbackReady={() => {}}
+            onDriverReady={(driver) => {
+              driverRef.current = driver;
+              driver?.setPerformanceVisible(settings.performanceOverlay);
+            }}
+            toolbarComponent={ToolbarComponents}
+          />
 
-      <SettingsDialog
-        ref={settingsDialogRef}
-        game={p.game}
-        performanceVisible={performanceVisible}
-        onPerformanceToggle={() => {
-          const newValue = !performanceVisible;
-          setPerformanceVisible(newValue);
-          driverRef.current?.setPerformanceVisible(newValue);
-        }}
-      />
+          <SettingsDialog
+            ref={settingsDialogRef}
+            performanceVisible={settings.performanceOverlay}
+            webGPUEnabled={settings.webGPU}
+            onPerformanceToggle={() => {
+              const performanceOverlay = !settings.performanceOverlay;
+              updateSettings({ ...settings, performanceOverlay });
+              driverRef.current?.setPerformanceVisible(performanceOverlay);
+            }}
+            onWebGPUToggle={() => updateSettings({ ...settings, webGPU: !settings.webGPU })}
+          />
+        </>
+      )}
 
       <HelpDialog isOpen={helpDialogOpen} onClose={() => setHelpDialogOpen(false)} />
     </div>
