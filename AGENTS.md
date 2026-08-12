@@ -20,6 +20,12 @@
 
 ## Development workflow
 
+- When an independent driver investigation or change can affect SimpleGraphic Lua-facing APIs or rendering, image,
+  input, asynchronous, scaling, or frame semantics, consult
+  `.agents/skills/sync-simplegraphic/references/browser-compatibility.md` and re-evaluate any matching entry and
+  trigger. Update the reference when the browser implementation, reachability, replacement behavior, or rationale
+  changes. This consultation does not invoke `$sync-simplegraphic` or advance its tracked upstream state;
+  synchronization remains explicit-only.
 - Use `mise` tasks as the canonical entry points instead of invoking their underlying tools directly.
 - Run `mise run setup` once after cloning to install dependencies, initialize submodules, and install repository hooks.
 - Run `mise run check` for the fast local validation loop.

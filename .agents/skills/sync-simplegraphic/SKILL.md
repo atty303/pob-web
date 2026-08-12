@@ -6,8 +6,9 @@ description: Synchronize pob-web with PathOfBuilding-SimpleGraphic only when the
 # Synchronize SimpleGraphic
 
 Use this skill only for an explicit `$sync-simplegraphic` request. Read
-`references/upstream-state.json`, the repository `AGENTS.md`,
-`$investigate-problem`, and `$develop-repository` before changing files.
+`references/upstream-state.json`, `references/browser-compatibility.md`, the
+repository `AGENTS.md`, `$investigate-problem`, and `$develop-repository` before
+changing files.
 
 ## Establish the comparison
 
@@ -41,6 +42,12 @@ plus rendering, images and fonts, input, callbacks, async work, files,
 compression, networking, subprocesses, and Lua/LuaJIT interactions. Compare
 applicable changes with the C bridge, JavaScript driver and renderer, Lua
 bootstrap, and tests in this repository.
+
+Use `references/browser-compatibility.md` as prior evidence, not a permanent
+exemption. Re-evaluate an existing difference when upstream Lua usage or the
+browser architecture reaches one of its recorded triggers. Update that reference
+when implementation, reachability, replacement behavior, or the rationale
+changes.
 
 Evaluate Windows-only code and dependency/build updates, but do not port them
 when they cannot affect the browser runtime. Report why each material group was
