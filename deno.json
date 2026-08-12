@@ -50,7 +50,6 @@
     "@types/react": "npm:@types/react@^18.3.31",
     "@types/react-dom": "npm:@types/react-dom@^18.3.7",
     "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.2.0",
-    "@webgpu/types": "npm:@webgpu/types@^0.1.71",
     "@zenfs/archives": "npm:@zenfs/archives@1.0.5",
     "@zenfs/core": "npm:@zenfs/core@1.11.4",
     "@zenfs/dom": "npm:@zenfs/dom@1.1.5",

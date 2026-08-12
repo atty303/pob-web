@@ -28,7 +28,6 @@ type FetchResult = Awaited<ReturnType<ConstructorParameters<typeof Driver>[2]["o
 export default function PoBWindow(props: {
   game: Game;
   version: string;
-  useWebGPU: boolean;
   onFrame: (at: number, time: number, stats?: RenderStats) => void;
   onTitleChange: (title: string) => void;
   onLayerVisibilityCallbackReady?: (callback: (layer: number, sublayer: number, visible: boolean) => void) => void;
@@ -222,7 +221,7 @@ export default function PoBWindow(props: {
           await _driver.loadBuildFromCode(buildCode);
         }
         phase = "renderer-attach";
-        if (container.current) await _driver.attachToDOM(container.current, props.useWebGPU);
+        if (container.current) await _driver.attachToDOM(container.current);
 
         if (props.toolbarComponent) {
           _driver.setExternalToolbarComponent(props.toolbarComponent);
@@ -248,7 +247,7 @@ export default function PoBWindow(props: {
       onDriverReadyRef.current?.(null);
       setLoading(true);
     };
-  }, [props.game, props.version, props.useWebGPU, token, buildCode]);
+  }, [props.game, props.version, token, buildCode]);
 
   if (errorReport) {
     return (

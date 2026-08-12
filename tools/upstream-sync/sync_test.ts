@@ -28,33 +28,97 @@ function graphql(): GraphqlClient {
     });
 }
 
-Deno.test("collectGameResult syncs each release and records E2E failures without stopping", async () => {
+Deno.test("collectGameResult runs a successful E2E command once", async () => {
   const commands: string[][] = [];
+  const result = await collectGameResult({
+    game: "poe1",
+    versions: versions(),
+    dryRun: true,
+    runner: (args) => {
+      commands.push([...args]);
+      return Promise.resolve(0);
+    },
+    graphql: graphql(),
+  });
+
+  assertEquals(result.releases.map((release) => release.testResult), ["tested", "tested"]);
+  assertEquals(commands.filter((command) => command[0] === "test:e2e:driver"), [
+    ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+    ["test:e2e:driver", "--game", "poe1", "--version", "v2"],
+  ]);
+});
+
+Deno.test("collectGameResult retries E2E until the third attempt succeeds", async () => {
+  const commands: string[][] = [];
+  let attempts = 0;
+  const warnings: unknown[][] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  try {
+    const result = await collectGameResult({
+      game: "poe1",
+      versions: versions(),
+      dryRun: true,
+      runner: (args) => {
+        commands.push([...args]);
+        if (args[0] === "test:e2e:driver" && args.includes("v3")) return Promise.resolve(++attempts < 3 ? 1 : 0);
+        return Promise.resolve(0);
+      },
+      graphql: graphql(),
+    });
+
+    assertEquals(result.releases.map((release) => release.testResult), ["tested", "tested"]);
+    assertEquals(commands.filter((command) => command[0] === "test:e2e:driver" && command.includes("v3")), [
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+    ]);
+    assertEquals(warnings, [
+      ["Driver E2E failed for poe1 v3 (attempt 1/3); retrying"],
+      ["Driver E2E failed for poe1 v3 (attempt 2/3); retrying"],
+    ]);
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+Deno.test("collectGameResult records failure after three E2E attempts and continues", async () => {
+  const commands: string[][] = [];
+  const warnings: unknown[][] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
   const runner: MiseRunner = (args) => {
     commands.push([...args]);
     const failed = args.includes("v3") && args[0] === "test:e2e:driver";
     return Promise.resolve(failed ? 1 : 0);
   };
 
-  const result = await collectGameResult({
-    game: "poe1",
-    versions: versions(),
-    dryRun: false,
-    runner,
-    graphql: graphql(),
-  });
+  try {
+    const result = await collectGameResult({
+      game: "poe1",
+      versions: versions(),
+      dryRun: false,
+      runner,
+      graphql: graphql(),
+    });
 
-  assertEquals(result.releases.map((release) => release.testResult), ["failed", "tested"]);
-  assertEquals(commands, [
-    ["visual:setup"],
-    ["driver:build"],
-    ["pack", "--game", "poe1", "--tag", "v3"],
-    ["sync", "--game", "poe1", "--tag", "v3"],
-    ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
-    ["pack", "--game", "poe1", "--tag", "v2"],
-    ["sync", "--game", "poe1", "--tag", "v2"],
-    ["test:e2e:driver", "--game", "poe1", "--version", "v2"],
-  ]);
+    assertEquals(result.releases.map((release) => release.testResult), ["failed", "tested"]);
+    assertEquals(commands, [
+      ["visual:setup"],
+      ["driver:build"],
+      ["pack", "--game", "poe1", "--tag", "v3"],
+      ["sync", "--game", "poe1", "--tag", "v3"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v3"],
+      ["pack", "--game", "poe1", "--tag", "v2"],
+      ["sync", "--game", "poe1", "--tag", "v2"],
+      ["test:e2e:driver", "--game", "poe1", "--version", "v2"],
+    ]);
+    assertEquals(warnings.length, 2);
+  } finally {
+    console.warn = originalWarn;
+  }
 });
 
 Deno.test("collectGameResult dry run skips R2 asset sync", async () => {

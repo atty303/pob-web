@@ -20,7 +20,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
   const [settings, setSettings] = useState<WebSettings>();
-  const webGPUAtStartup = useRef(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
     } catch {
       storedSettings = loadWebSettings({ getItem: () => null });
     }
-    webGPUAtStartup.current = storedSettings.webGPU;
     setSettings(storedSettings);
   }, []);
 
@@ -67,7 +65,6 @@ export default function PoBController(p: { game: keyof Games; version: string; i
           <PoBWindow
             game={p.game}
             version={p.version}
-            useWebGPU={webGPUAtStartup.current}
             onFrame={() => {}}
             onTitleChange={setTitle}
             onLayerVisibilityCallbackReady={() => {}}
@@ -81,13 +78,11 @@ export default function PoBController(p: { game: keyof Games; version: string; i
           <SettingsDialog
             ref={settingsDialogRef}
             performanceVisible={settings.performanceOverlay}
-            webGPUEnabled={settings.webGPU}
             onPerformanceToggle={() => {
               const performanceOverlay = !settings.performanceOverlay;
               updateSettings({ ...settings, performanceOverlay });
               driverRef.current?.setPerformanceVisible(performanceOverlay);
             }}
-            onWebGPUToggle={() => updateSettings({ ...settings, webGPU: !settings.webGPU })}
           />
         </>
       )}

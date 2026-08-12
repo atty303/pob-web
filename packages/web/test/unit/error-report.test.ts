@@ -21,7 +21,6 @@ const context: DiagnosticContext = {
   storageApi: true,
   offscreenCanvas: true,
   webgl2: true,
-  webgpu: false,
 };
 
 function record(report: DiagnosticReport) {

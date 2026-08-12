@@ -19,8 +19,7 @@
     "moduleResolution": "bundler",
     "types": [
       "./src/js/vite-env.d.ts",
-      "@types/emscripten",
-      "@webgpu/types"
+      "@types/emscripten"
     ]
   },
   "tasks": {

@@ -1,7 +1,61 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { environmentErrorCategory } from "../../src/js/error.ts";
 import type { RenderBackend } from "../../src/js/renderer/backend.ts";
-import { GlyphAtlas, loadFont, type TextMetrics } from "../../src/js/renderer/text.ts";
+import { GlyphAtlas, loadFont, TextMetrics } from "../../src/js/renderer/text.ts";
+
+Deno.test("cursor indices use 1-based UTF-8 offsets at text boundaries", () => {
+  withTextMetrics((metrics) => {
+    assertEquals(metrics.measureCursorIndex(10, 0, "", -1, 0), 1);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aaa", -1, 0), 1);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aaa", 0, 0), 1);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aaa", 0.5, 0), 2);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aaa", 100, 0), 4);
+  });
+});
+
+Deno.test("cursor indices include preceding lines and newlines", () => {
+  withTextMetrics((metrics) => {
+    assertEquals(metrics.measureCursorIndex(10, 0, "ab\ncde", 0, 10), 4);
+    assertEquals(metrics.measureCursorIndex(10, 0, "ab\ncde", 2, 10), 6);
+  });
+});
+
+Deno.test("cursor indices follow Unicode scalar boundaries and UTF-8 byte lengths", () => {
+  withTextMetrics((metrics) => {
+    assertEquals(metrics.measureCursorIndex(10, 0, "aé😀b", 1.5, 0), 4);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aé😀b", 2.5, 0), 8);
+    assertEquals(metrics.measureCursorIndex(10, 0, "aé😀b", 100, 0), 9);
+  });
+});
+
+Deno.test("cursor indices treat color escapes as zero-width atomic tokens", () => {
+  withTextMetrics((metrics) => {
+    assertEquals(metrics.measureCursorIndex(10, 0, "^7a^x12AbCDef", 0, 0), 1);
+    assertEquals(metrics.measureCursorIndex(10, 0, "^7a^x12AbCDef", 0.5, 0), 4);
+    assertEquals(metrics.measureCursorIndex(10, 0, "^7a^x12AbCDef", 1.5, 0), 13);
+    assertEquals(metrics.measureCursorIndex(10, 0, "^7a^x12AbCDef", 100, 0), 14);
+  });
+});
+
+function withTextMetrics(run: (metrics: TextMetrics) => void) {
+  const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+  globalThis.OffscreenCanvas = class {
+    constructor(_width: number, _height: number) {}
+
+    getContext() {
+      return {
+        font: "",
+        measureText: (text: string) => ({ width: [...text].length }),
+      };
+    }
+  } as unknown as typeof OffscreenCanvas;
+
+  try {
+    run(new TextMetrics());
+  } finally {
+    globalThis.OffscreenCanvas = originalOffscreenCanvas;
+  }
+}
 
 Deno.test("font parsing failures are classified as initial asset errors", async () => {
   const parsingError = new Error("invalid font data");

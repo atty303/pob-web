@@ -168,7 +168,7 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
   ];
 }
 
-export class WebGL1Backend implements RenderBackend {
+export class WebGL2Backend implements RenderBackend {
   readonly name = "WebGL2" as const;
   private readonly gl: WebGL2RenderingContext;
   private readonly ext: {

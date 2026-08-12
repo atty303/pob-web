@@ -2,6 +2,8 @@ import { markEnvironmentError } from "../error.ts";
 import type { GlyphAtlasTexture, RenderBackend } from "./backend.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
+const reColorPrefix = /^\^(?:[0-9]|[xX][0-9a-fA-F]{6})/;
+const textEncoder = new TextEncoder();
 
 export async function loadFonts() {
   await loadFont("/LiberationSans-Regular.woff", "Liberation Sans");
@@ -107,6 +109,7 @@ export class TextMetrics {
     return result;
   }
 
+  /** Returns a 1-based UTF-8 byte offset into the original text. */
   measureCursorIndex(size: number, fontNum: number, text: string, cursorX: number, cursorY: number) {
     const fontStr = font(size, fontNum);
     if (this.currentFont !== fontStr) {
@@ -116,17 +119,34 @@ export class TextMetrics {
     const lines = text.split("\n");
     const y = Math.floor(Math.max(0, Math.min(lines.length - 1, cursorY / size)));
     const line = lines[y];
-    let i = 0;
-    for (; i <= line.length; i++) {
-      const w = this.context.measureText(line.substring(0, i).replaceAll(reColorGlobal, "")).width;
-      if (w >= cursorX) {
-        break;
+    let lineIndex = 0;
+    let visibleText = "";
+    let selectedIndex = 0;
+
+    if (cursorX > 0) {
+      while (lineIndex < line.length) {
+        const remaining = line.slice(lineIndex);
+        const color = remaining.match(reColorPrefix)?.[0];
+        if (color) {
+          lineIndex += color.length;
+          continue;
+        }
+
+        const scalar = String.fromCodePoint(remaining.codePointAt(0)!);
+        lineIndex += scalar.length;
+        visibleText += scalar;
+        selectedIndex = lineIndex;
+        if (this.context.measureText(visibleText).width >= cursorX) break;
       }
+
+      if (lineIndex === line.length) selectedIndex = line.length;
     }
+
+    let sourceIndex = selectedIndex;
     for (let j = 0; j < y; j++) {
-      i += lines[j].length + 1;
+      sourceIndex += lines[j].length + 1;
     }
-    return i;
+    return textEncoder.encode(text.slice(0, sourceIndex)).byteLength + 1;
   }
 
   measureGlyph(size: number, fontNum: number, glyph: string) {

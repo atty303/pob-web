@@ -44,7 +44,6 @@
     "npm:@types/react-dom@^18.3.7": "18.3.7_@types+react@18.3.31",
     "npm:@types/react@^18.3.31": "18.3.31",
     "npm:@vitejs/plugin-react@^5.2.0": "5.2.0_vite@6.4.3__@types+node@24.13.3__tsx@4.23.11_@types+node@24.13.3_tsx@4.23.11",
-    "npm:@webgpu/types@~0.1.71": "0.1.71",
     "npm:@zenfs/archives@1.0.5": "1.0.5_@zenfs+core@1.11.4_utilium@1.10.1",
     "npm:@zenfs/core@1.11.4": "1.11.4",
     "npm:@zenfs/dom@1.1.5": "1.1.5_@zenfs+core@1.11.4_utilium@1.10.1",
@@ -1697,9 +1696,6 @@
         "vite"
       ]
     },
-    "@webgpu/types@0.1.71": {
-      "integrity": "sha512-mMy8/ODcKhab808co15eW+yN+HgXoQxRQHTiBV9Mrvl1r0ufnid7YOcI+gi4eUWSWl9ezD6TW2KXccrL8HCh2A=="
-    },
     "@xobotyi/scrollbar-width@1.9.5": {
       "integrity": "sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ=="
     },
@@ -3006,7 +3002,6 @@
       "npm:@types/react-dom@^18.3.7",
       "npm:@types/react@^18.3.31",
       "npm:@vitejs/plugin-react@^5.2.0",
-      "npm:@webgpu/types@~0.1.71",
       "npm:@zenfs/archives@1.0.5",
       "npm:@zenfs/core@1.11.4",
       "npm:@zenfs/dom@1.1.5",

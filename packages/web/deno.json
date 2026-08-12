@@ -16,8 +16,7 @@
     "types": [
       "./src/vite-env.d.ts",
       "@cloudflare/workers-types",
-      "@types/emscripten",
-      "@webgpu/types"
+      "@types/emscripten"
     ],
     "rootDirs": [
       ".",
