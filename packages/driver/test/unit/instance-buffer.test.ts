@@ -5,7 +5,33 @@ Deno.test("quad instances preserve geometry, texture metadata, viewport, and pac
   const instances = new InstanceBuffer();
   const coords = [1, 2, 3, 4, 5, 6, 7, 8];
   const texCoords = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-  instances.push(coords, texCoords, [1, 0.5, 0, 1], [9, 10, 11, 12], 13, 14, 15, true);
+  instances.pushQuad(
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    true,
+    0xff8000ff,
+  );
 
   assertEquals(INSTANCE_STRIDE, 100);
   assertEquals(instances.length, 1);
@@ -19,9 +45,8 @@ Deno.test("quad instances preserve geometry, texture metadata, viewport, and pac
 
 Deno.test("quad instance storage grows and resets without retaining submitted instances", () => {
   const instances = new InstanceBuffer();
-  const values = Array.from({ length: 8 }, () => 0);
   for (let index = 0; index < 2048; index++) {
-    instances.push(values, values, [0, 0, 0, 0], [0, 0, 0, 0], 0, 0, -1, false);
+    instances.pushQuad(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, false, 0);
   }
   assertEquals(instances.data.byteLength, 2048 * INSTANCE_STRIDE);
   instances.reset();

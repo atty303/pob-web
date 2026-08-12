@@ -1,4 +1,4 @@
-import type { TextureBitmap } from "./renderer.ts";
+import type { TextureBitmap } from "../image.ts";
 
 export type GlyphAtlasTexture = {
   readonly id: string;
@@ -34,18 +34,27 @@ export interface RenderBackend {
     pixels: Uint8Array<ArrayBuffer>,
   ): void;
   destroyGlyphAtlasTexture(texture: GlyphAtlasTexture): void;
-  drawGlyph(
-    coords: number[],
-    texCoords: number[],
-    texture: GlyphAtlasTexture,
-    tintColor: number[],
-  ): void;
   drawQuad(
-    coords: number[],
-    texCoords: number[],
-    textureBitmap: TextureBitmap,
-    tintColor: number[],
-    stackLayer: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number,
+    s1: number,
+    t1: number,
+    s2: number,
+    t2: number,
+    s3: number,
+    t3: number,
+    s4: number,
+    t4: number,
+    texture: TextureBitmap | GlyphAtlasTexture,
+    packedColor: number,
+    textureLayer: number,
     maskLayer: number,
+    glyph: boolean,
   ): void;
 }

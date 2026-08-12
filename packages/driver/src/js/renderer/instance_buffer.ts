@@ -19,30 +19,60 @@ export class InstanceBuffer {
     this.count = 0;
   }
 
-  push(
-    coords: number[],
-    texCoords: number[],
-    tintColor: number[],
-    viewport: number[],
+  pushQuad(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number,
+    s1: number,
+    t1: number,
+    s2: number,
+    t2: number,
+    s3: number,
+    t3: number,
+    s4: number,
+    t4: number,
+    viewportX: number,
+    viewportY: number,
+    viewportWidth: number,
+    viewportHeight: number,
     textureSlot: number,
     textureLayer: number,
     maskLayer: number,
     glyph: boolean,
+    packedColor: number,
   ) {
     this.ensureCapacity(this.count + 1);
     const byteOffset = this.count * INSTANCE_STRIDE;
     const floatOffset = byteOffset / 4;
-    this.floats.set(coords, floatOffset);
-    this.floats.set(texCoords, floatOffset + 8);
-    this.floats.set(viewport, floatOffset + 16);
+    this.floats[floatOffset] = x1;
+    this.floats[floatOffset + 1] = y1;
+    this.floats[floatOffset + 2] = x2;
+    this.floats[floatOffset + 3] = y2;
+    this.floats[floatOffset + 4] = x3;
+    this.floats[floatOffset + 5] = y3;
+    this.floats[floatOffset + 6] = x4;
+    this.floats[floatOffset + 7] = y4;
+    this.floats[floatOffset + 8] = s1;
+    this.floats[floatOffset + 9] = t1;
+    this.floats[floatOffset + 10] = s2;
+    this.floats[floatOffset + 11] = t2;
+    this.floats[floatOffset + 12] = s3;
+    this.floats[floatOffset + 13] = t3;
+    this.floats[floatOffset + 14] = s4;
+    this.floats[floatOffset + 15] = t4;
+    this.floats[floatOffset + 16] = viewportX;
+    this.floats[floatOffset + 17] = viewportY;
+    this.floats[floatOffset + 18] = viewportWidth;
+    this.floats[floatOffset + 19] = viewportHeight;
     this.floats[floatOffset + 20] = textureSlot;
     this.floats[floatOffset + 21] = textureLayer;
     this.floats[floatOffset + 22] = maskLayer;
     this.floats[floatOffset + 23] = glyph ? 1 : 0;
-    const packedColor = (Math.round(tintColor[0] * 255) << 24) |
-      (Math.round(tintColor[1] * 255) << 16) |
-      (Math.round(tintColor[2] * 255) << 8) |
-      Math.round(tintColor[3] * 255);
     this.view.setUint32(byteOffset + 96, packedColor, true);
     this.count++;
   }

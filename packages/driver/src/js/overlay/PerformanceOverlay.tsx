@@ -21,6 +21,8 @@ export interface RenderStats {
   totalLayers: number;
   layerStats: LayerStats[];
   lastFrameTime: number;
+  layerIndexTime: number;
+  compileSubmitTime: number;
   frameCount: number;
   glyphAtlas: GlyphAtlasStats;
   backend: BackendStats;

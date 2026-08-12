@@ -23,6 +23,18 @@ export type TextureSource =
     }
   );
 
+export type TextureBitmap = {
+  readonly id: string;
+  readonly source: TextureSource;
+  readonly updateSubImage?: () => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    source: ArrayBufferView<ArrayBuffer>;
+  };
+};
+
 export namespace TextureSource {
   export function newImage(texture: ImageBitmap | OffscreenCanvas | ImageData, flags: number): TextureSource {
     return {
@@ -56,6 +68,7 @@ export namespace TextureSource {
 type TextureHolder = {
   flags: number;
   textureSource: TextureSource | undefined;
+  textureBitmap: TextureBitmap | undefined;
 };
 
 export enum TextureFlags {
@@ -81,6 +94,7 @@ export class ImageRepository {
     const holder: TextureHolder = {
       flags,
       textureSource: undefined,
+      textureBitmap: undefined,
     };
     this.images.set(handle, holder);
 
@@ -133,11 +147,14 @@ export class ImageRepository {
           };
         }
       }
+      if (holder.textureSource) {
+        holder.textureBitmap = { id: handle.toString(), source: holder.textureSource };
+      }
     }
   }
 
-  get(handle: number): TextureSource | undefined {
-    return this.images.get(handle)?.textureSource;
+  get(handle: number): TextureBitmap | undefined {
+    return this.images.get(handle)?.textureBitmap;
   }
 }
 

@@ -218,7 +218,10 @@ type Glyph = {
   width: number;
   height: number;
   texture: GlyphAtlasTexture;
-  texCoords: number[];
+  u1: number;
+  v1: number;
+  u2: number;
+  v2: number;
 };
 
 type EmptyGlyph = {
@@ -279,7 +282,7 @@ export class GlyphAtlas {
     this.stats.pages = 0;
   }
 
-  draw(height: number, fontNum: number, text: string, x: number, y: number, color: number[]) {
+  draw(height: number, fontNum: number, text: string, x: number, y: number, color: number) {
     if (!this.backend) return;
     let penX = 0;
     let previous: string | undefined;
@@ -289,11 +292,28 @@ export class GlyphAtlas {
       if ("texture" in glyph) {
         const x1 = x + penX + glyph.offsetX;
         const y1 = y + glyph.offsetY;
-        this.backend.drawGlyph(
-          [x1, y1, x1 + glyph.width, y1, x1 + glyph.width, y1 + glyph.height, x1, y1 + glyph.height],
-          glyph.texCoords,
+        this.backend.drawQuad(
+          x1,
+          y1,
+          x1 + glyph.width,
+          y1,
+          x1 + glyph.width,
+          y1 + glyph.height,
+          x1,
+          y1 + glyph.height,
+          glyph.u1,
+          glyph.v1,
+          glyph.u2,
+          glyph.v1,
+          glyph.u2,
+          glyph.v2,
+          glyph.u1,
+          glyph.v2,
           glyph.texture,
           color,
+          glyph.texture.layer,
+          -1,
+          true,
         );
         this.stats.glyphQuads++;
       }
@@ -384,7 +404,10 @@ export class GlyphAtlas {
       width,
       height: bitmapHeight,
       texture: page.texture,
-      texCoords: [u1, v1, u2, v1, u2, v2, u1, v2],
+      u1,
+      v1,
+      u2,
+      v2,
     };
     this.glyphs.set(key, glyph);
     return glyph;

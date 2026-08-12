@@ -62,7 +62,8 @@ Deno.test("glyph page eviction flushes resolved glyphs before reusing an atlas l
       return { id, width, height, layers, layer: 0 };
     },
     uploadGlyph: () => events.push("upload"),
-    drawGlyph: (_coords: number[], _texCoords: number[], texture: { id: string }) => {
+    drawQuad: (...args: unknown[]) => {
+      const texture = args[16] as { id: string };
       if (!active.has(texture.id)) throw new Error("draw used a destroyed glyph texture");
       events.push("draw");
     },
@@ -85,7 +86,7 @@ Deno.test("glyph page eviction flushes resolved glyphs before reusing an atlas l
   try {
     const atlas = new GlyphAtlas(textMetrics, { atlasSize: 3, maxPages: 1 });
     atlas.setBackend(backend);
-    atlas.draw(12, 0, "ab", 0, 0, [1, 1, 1, 1]);
+    atlas.draw(12, 0, "ab", 0, 0, 0xffffffff);
     assertEquals(events, ["create", "upload", "draw", "flush", "upload", "draw"]);
     assertEquals(atlas.getStats().evictions, 1);
   } finally {
@@ -129,7 +130,7 @@ Deno.test("glyph cache hits update the LRU age of their atlas layer", () => {
       layer: 0,
     }),
     uploadGlyph: (texture: { layer: number }) => uploadedLayers.push(texture.layer),
-    drawGlyph: () => {},
+    drawQuad: () => {},
     flush: () => {},
   } as unknown as RenderBackend;
   const textMetrics = {
@@ -145,7 +146,7 @@ Deno.test("glyph cache hits update the LRU age of their atlas layer", () => {
   try {
     const atlas = new GlyphAtlas(textMetrics, { atlasSize: 3, maxPages: 2 });
     atlas.setBackend(backend);
-    atlas.draw(12, 0, "abbcb", 0, 0, [1, 1, 1, 1]);
+    atlas.draw(12, 0, "abbcb", 0, 0, 0xffffffff);
     assertEquals(uploadedLayers, [0, 1, 0]);
     assertEquals(atlas.getStats().misses, 3);
     assertEquals(atlas.getStats().evictions, 1);
@@ -207,7 +208,7 @@ Deno.test("glyph rasterization preserves the line box bottom baseline", () => {
       _height: number,
       pixels: Uint8Array,
     ) => uploaded = pixels,
-    drawGlyph: (glyphCoords: number[]) => coords = glyphCoords,
+    drawQuad: (...args: unknown[]) => coords = args.slice(0, 8) as number[],
   } as unknown as RenderBackend;
   const textMetrics = {
     measureGlyph: () => ({
@@ -222,7 +223,7 @@ Deno.test("glyph rasterization preserves the line box bottom baseline", () => {
   try {
     const atlas = new GlyphAtlas(textMetrics);
     atlas.setBackend(backend);
-    atlas.draw(10, 0, "g", 4, 8, [1, 1, 1, 1]);
+    atlas.draw(10, 0, "g", 4, 8, 0xffffffff);
     assertEquals(baseline, "bottom");
     assertEquals(fillPosition, [1, 10]);
     assertEquals(coords, [4, 13, 7, 13, 7, 16, 4, 16]);

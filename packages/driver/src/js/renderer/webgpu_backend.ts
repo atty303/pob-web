@@ -2,7 +2,7 @@ import { Format, Target } from "dds";
 import { log, tag } from "../logger.ts";
 import type { BackendStats, GlyphAtlasTexture, RenderBackend } from "./backend.ts";
 import { INSTANCE_STRIDE, InstanceBuffer } from "./instance_buffer.ts";
-import type { TextureBitmap } from "./renderer.ts";
+import type { TextureBitmap } from "../image.ts";
 
 const vertexShaderSource = `
 struct Uniforms {
@@ -526,28 +526,36 @@ export class WebGPUBackend implements RenderBackend {
     this.glyphTextures.delete(texture.id);
   }
 
-  drawGlyph(coords: number[], texCoords: number[], texture: GlyphAtlasTexture, tintColor: number[]) {
-    const stored = this.glyphTextures.get(texture.id);
-    if (!stored) throw new Error(`Unknown glyph atlas texture: ${texture.id}`);
-    const slot = this.bindBatchTexture(texture.id, stored);
-    this.instances.push(coords, texCoords, tintColor, this.viewport, slot, texture.layer, -1, true);
-  }
-
   drawQuad(
-    coords: number[],
-    texCoords: number[],
-    textureBitmap: TextureBitmap,
-    tintColor: number[],
-    stackLayer: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number,
+    s1: number,
+    t1: number,
+    s2: number,
+    t2: number,
+    s3: number,
+    t3: number,
+    s4: number,
+    t4: number,
+    textureBitmap: TextureBitmap | GlyphAtlasTexture,
+    packedColor: number,
+    textureLayer: number,
     maskLayer: number,
+    glyph: boolean,
   ) {
-    this.drawCount++;
-
-    const texture = this.getTexture(textureBitmap);
+    if (!glyph) this.drawCount++;
+    const texture = glyph ? this.glyphTextures.get(textureBitmap.id) : this.getTexture(textureBitmap as TextureBitmap);
+    if (!texture) throw new Error(`Unknown glyph atlas texture: ${textureBitmap.id}`);
     const slot = this.bindBatchTexture(textureBitmap.id, texture);
 
-    if (textureBitmap.updateSubImage && this.device) {
-      const sub = textureBitmap.updateSubImage();
+    if (!glyph && (textureBitmap as TextureBitmap).updateSubImage && this.device) {
+      const sub = (textureBitmap as TextureBitmap).updateSubImage!();
       const storedTexture = this.textures.get(textureBitmap.id);
       const bytesPerPixel = storedTexture?.formatDesc.bytesPerPixel ?? 4;
       this.device.queue.writeTexture(
@@ -558,7 +566,33 @@ export class WebGPUBackend implements RenderBackend {
       );
     }
 
-    this.instances.push(coords, texCoords, tintColor, this.viewport, slot, stackLayer, maskLayer, false);
+    this.instances.pushQuad(
+      x1,
+      y1,
+      x2,
+      y2,
+      x3,
+      y3,
+      x4,
+      y4,
+      s1,
+      t1,
+      s2,
+      t2,
+      s3,
+      t3,
+      s4,
+      t4,
+      this.viewport[0],
+      this.viewport[1],
+      this.viewport[2],
+      this.viewport[3],
+      slot,
+      textureLayer,
+      maskLayer,
+      glyph,
+      packedColor,
+    );
   }
 
   private bindBatchTexture(id: string, texture: GPUTexture) {
