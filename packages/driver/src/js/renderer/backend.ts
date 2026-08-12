@@ -4,6 +4,14 @@ export type GlyphAtlasTexture = {
   readonly id: string;
   readonly width: number;
   readonly height: number;
+  readonly layers: number;
+  readonly layer: number;
+};
+
+export type BackendStats = {
+  instances: number;
+  instanceBytes: number;
+  dispatches: number;
 };
 
 export interface RenderBackend {
@@ -12,10 +20,11 @@ export interface RenderBackend {
   resize(width: number, height: number, pixelRatio: number): void;
   setViewport(x: number, y: number, width: number, height: number): void;
   beginFrame(): void;
+  getStats(): BackendStats;
   begin(): void;
   end(): void;
   flush(): void;
-  createGlyphAtlasTexture(id: string, width: number, height: number): GlyphAtlasTexture;
+  createGlyphAtlasTexture(id: string, width: number, height: number, layers: number): GlyphAtlasTexture;
   uploadGlyph(
     texture: GlyphAtlasTexture,
     x: number,

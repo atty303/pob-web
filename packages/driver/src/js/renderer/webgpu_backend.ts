@@ -1,6 +1,7 @@
 import { Format, Target } from "dds";
 import { log, tag } from "../logger.ts";
-import type { GlyphAtlasTexture, RenderBackend } from "./backend.ts";
+import type { BackendStats, GlyphAtlasTexture, RenderBackend } from "./backend.ts";
+import { INSTANCE_STRIDE, InstanceBuffer } from "./instance_buffer.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
 const vertexShaderSource = `
@@ -9,11 +10,14 @@ struct Uniforms {
 }
 
 struct VertexInput {
-  @location(0) position: vec2<f32>,
-  @location(1) texCoord: vec2<f32>,
-  @location(2) tintColor: vec4<f32>,
-  @location(3) viewport: vec4<f32>,
-  @location(4) texId: vec4<f32>,
+  @builtin(vertex_index) vertexIndex: u32,
+  @location(0) coords0: vec4<f32>,
+  @location(1) coords1: vec4<f32>,
+  @location(2) texCoords0: vec4<f32>,
+  @location(3) texCoords1: vec4<f32>,
+  @location(4) viewport: vec4<f32>,
+  @location(5) texId: vec4<f32>,
+  @location(6) tintColor: u32,
 }
 
 struct VertexOutput {
@@ -29,9 +33,18 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(input: VertexInput) -> VertexOutput {
+  let corners = array<u32, 6>(0u, 1u, 2u, 0u, 2u, 3u);
+  let corner = corners[input.vertexIndex];
+  let coords = array<vec2<f32>, 4>(input.coords0.xy, input.coords0.zw, input.coords1.xy, input.coords1.zw);
+  let texCoords = array<vec2<f32>, 4>(
+    input.texCoords0.xy, input.texCoords0.zw, input.texCoords1.xy, input.texCoords1.zw);
   var output: VertexOutput;
-  output.texCoord = input.texCoord;
-  output.tintColor = input.tintColor;
+  output.texCoord = texCoords[corner];
+  output.tintColor = vec4<f32>(
+    f32((input.tintColor >> 24u) & 255u),
+    f32((input.tintColor >> 16u) & 255u),
+    f32((input.tintColor >> 8u) & 255u),
+    f32(input.tintColor & 255u)) / 255.0;
   output.texId = input.texId;
 
   let vp0 = input.viewport.xy + vec2<f32>(0.0, input.viewport.w);
@@ -41,7 +54,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     (uniforms.mvpMatrix * vec4<f32>(vp1, 0.0, 1.0)).xy
   );
 
-  let pos = uniforms.mvpMatrix * vec4<f32>(input.position + input.viewport.xy, 0.0, 1.0);
+  let pos = uniforms.mvpMatrix * vec4<f32>(coords[corner] + input.viewport.xy, 0.0, 1.0);
   output.screenPos = pos.xy;
   output.position = pos;
 
@@ -203,68 +216,6 @@ const targetTable: Record<Target, boolean> = {
   [Target.TARGET_CUBE_ARRAY]: false,
 };
 
-class VertexBuffer {
-  private _buffer: Float32Array<ArrayBuffer>;
-  private offset: number;
-
-  constructor() {
-    this._buffer = new Float32Array(1024 * 1024);
-    this.offset = 0;
-  }
-
-  get buffer() {
-    return new Float32Array(this._buffer.buffer, 0, this.offset);
-  }
-
-  get length() {
-    return this.offset / 16;
-  }
-
-  reset() {
-    this.offset = 0;
-  }
-
-  private ensureCapacity(requiredSize: number) {
-    if (requiredSize > this._buffer.length) {
-      const newSize = Math.max(requiredSize, this._buffer.length * 2);
-      const newBuffer = new Float32Array(newSize);
-      newBuffer.set(this._buffer);
-      this._buffer = newBuffer;
-    }
-  }
-
-  push(
-    i: number,
-    coords: number[],
-    texCoords: number[],
-    tintColor: number[],
-    viewport: number[],
-    textureSlot: number,
-    stackLayer: number,
-    maskLayer: number,
-    glyph: boolean,
-  ) {
-    this.ensureCapacity(this.offset + 16);
-    const b = this._buffer;
-    b[this.offset++] = coords[i * 2];
-    b[this.offset++] = coords[i * 2 + 1];
-    b[this.offset++] = texCoords[i * 2];
-    b[this.offset++] = texCoords[i * 2 + 1];
-    b[this.offset++] = tintColor[0];
-    b[this.offset++] = tintColor[1];
-    b[this.offset++] = tintColor[2];
-    b[this.offset++] = tintColor[3];
-    b[this.offset++] = viewport[0];
-    b[this.offset++] = viewport[1];
-    b[this.offset++] = viewport[2];
-    b[this.offset++] = viewport[3];
-    b[this.offset++] = textureSlot;
-    b[this.offset++] = stackLayer;
-    b[this.offset++] = maskLayer;
-    b[this.offset++] = glyph ? 1 : 0;
-  }
-}
-
 export class WebGPUBackend implements RenderBackend {
   private device: GPUDevice | null = null;
   private supportedFeatures: Set<string> = new Set();
@@ -289,7 +240,7 @@ export class WebGPUBackend implements RenderBackend {
 
   private viewport: number[] = [];
   private pixelRatio = 1;
-  private vertices: VertexBuffer = new VertexBuffer();
+  private instances = new InstanceBuffer();
   private drawCount = 0;
   private vertexBufferSize = 0;
   private maxTextures = 16; // WebGPU typically supports at least 16 texture bindings
@@ -302,6 +253,8 @@ export class WebGPUBackend implements RenderBackend {
   > = new Map();
   private batchTextureCount = 0;
   private dispatchCount = 0;
+  private instanceCount = 0;
+  private instanceBytes = 0;
   private isFirstDispatchInFrame = true;
   private defaultWhiteTexture: GPUTexture | null = null;
 
@@ -439,13 +392,16 @@ export class WebGPUBackend implements RenderBackend {
         entryPoint: "vs_main",
         buffers: [
           {
-            arrayStride: 64,
+            arrayStride: INSTANCE_STRIDE,
+            stepMode: "instance",
             attributes: [
-              { shaderLocation: 0, offset: 0, format: "float32x2" }, // position
-              { shaderLocation: 1, offset: 8, format: "float32x2" }, // texCoord
-              { shaderLocation: 2, offset: 16, format: "float32x4" }, // tintColor
-              { shaderLocation: 3, offset: 32, format: "float32x4" }, // viewport
-              { shaderLocation: 4, offset: 48, format: "float32x4" }, // texId
+              { shaderLocation: 0, offset: 0, format: "float32x4" },
+              { shaderLocation: 1, offset: 16, format: "float32x4" },
+              { shaderLocation: 2, offset: 32, format: "float32x4" },
+              { shaderLocation: 3, offset: 48, format: "float32x4" },
+              { shaderLocation: 4, offset: 64, format: "float32x4" },
+              { shaderLocation: 5, offset: 80, format: "float32x4" },
+              { shaderLocation: 6, offset: 96, format: "uint32" },
             ],
           },
         ],
@@ -508,6 +464,13 @@ export class WebGPUBackend implements RenderBackend {
 
   beginFrame() {
     this.isFirstDispatchInFrame = true;
+    this.dispatchCount = 0;
+    this.instanceCount = 0;
+    this.instanceBytes = 0;
+  }
+
+  getStats(): BackendStats {
+    return { instances: this.instanceCount, instanceBytes: this.instanceBytes, dispatches: this.dispatchCount };
   }
 
   begin() {
@@ -525,16 +488,16 @@ export class WebGPUBackend implements RenderBackend {
     this.dispatch();
   }
 
-  createGlyphAtlasTexture(id: string, width: number, height: number): GlyphAtlasTexture {
+  createGlyphAtlasTexture(id: string, width: number, height: number, layers: number): GlyphAtlasTexture {
     if (!this.device) throw new Error("WebGPU backend is not initialized");
     const texture = this.device.createTexture({
-      size: { width, height, depthOrArrayLayers: 1 },
+      size: { width, height, depthOrArrayLayers: layers },
       format: "r8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
       dimension: "2d",
     });
     this.glyphTextures.set(id, texture);
-    return { id, width, height };
+    return { id, width, height, layers, layer: 0 };
   }
 
   uploadGlyph(
@@ -549,7 +512,7 @@ export class WebGPUBackend implements RenderBackend {
     const stored = this.glyphTextures.get(texture.id);
     if (!stored) throw new Error(`Unknown glyph atlas texture: ${texture.id}`);
     this.device.queue.writeTexture(
-      { texture: stored, origin: { x, y } },
+      { texture: stored, origin: { x, y, z: texture.layer } },
       pixels,
       { bytesPerRow: width },
       { width, height, depthOrArrayLayers: 1 },
@@ -567,9 +530,7 @@ export class WebGPUBackend implements RenderBackend {
     const stored = this.glyphTextures.get(texture.id);
     if (!stored) throw new Error(`Unknown glyph atlas texture: ${texture.id}`);
     const slot = this.bindBatchTexture(texture.id, stored);
-    for (const i of [0, 1, 2, 0, 2, 3]) {
-      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, slot, 0, -1, true);
-    }
+    this.instances.push(coords, texCoords, tintColor, this.viewport, slot, texture.layer, -1, true);
   }
 
   drawQuad(
@@ -597,9 +558,7 @@ export class WebGPUBackend implements RenderBackend {
       );
     }
 
-    for (const i of [0, 1, 2, 0, 2, 3]) {
-      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, slot, stackLayer, maskLayer, false);
-    }
+    this.instances.push(coords, texCoords, tintColor, this.viewport, slot, stackLayer, maskLayer, false);
   }
 
   private bindBatchTexture(id: string, texture: GPUTexture) {
@@ -613,14 +572,16 @@ export class WebGPUBackend implements RenderBackend {
   }
 
   private dispatch() {
-    if (!this.device || !this.context || !this.pipeline || this.vertices.length === 0) return;
+    if (!this.device || !this.context || !this.pipeline || this.instances.length === 0) return;
 
     this.dispatchCount++;
 
     const matrix = orthoMatrix(0, this.canvas.width, this.canvas.height, 0, -9999, 9999);
     this.device.queue.writeBuffer(this.uniformBuffer!, 0, matrix);
 
-    const bufferData = this.vertices.buffer;
+    const bufferData = this.instances.data;
+    this.instanceCount += this.instances.length;
+    this.instanceBytes += bufferData.byteLength;
     const requiredSize = bufferData.byteLength;
 
     if (requiredSize > this.vertexBufferSize) {
@@ -680,7 +641,7 @@ export class WebGPUBackend implements RenderBackend {
     renderPass.setBindGroup(0, bindGroup);
     renderPass.setVertexBuffer(0, this.vertexBuffer!);
     renderPass.setViewport(0, 0, this.canvas.width, this.canvas.height, 0, 1);
-    renderPass.draw(this.vertices.length);
+    renderPass.draw(6, this.instances.length);
     renderPass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
@@ -689,7 +650,7 @@ export class WebGPUBackend implements RenderBackend {
   }
 
   private resetBatch() {
-    this.vertices.reset();
+    this.instances.reset();
     this.batchTextures = new Map();
     this.batchTextureCount = 0;
   }

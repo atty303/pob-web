@@ -251,6 +251,7 @@ export class GlyphAtlas {
   private readonly glyphs = new Map<string, Glyph | EmptyGlyph>();
   private readonly kernings = new Map<string, number>();
   private readonly pages: AtlasPage[] = [];
+  private atlasTexture: GlyphAtlasTexture | undefined;
   private backend: RenderBackend | undefined;
   private clock = 0;
   private readonly instance = ++atlasInstance;
@@ -269,10 +270,11 @@ export class GlyphAtlas {
   setBackend(backend: RenderBackend | undefined) {
     if (backend === this.backend) return;
     if (this.backend) {
-      for (const page of this.pages) this.backend.destroyGlyphAtlasTexture(page.texture);
+      if (this.atlasTexture) this.backend.destroyGlyphAtlasTexture(this.atlasTexture);
     }
     this.backend = backend;
     this.pages.length = 0;
+    this.atlasTexture = undefined;
     this.glyphs.clear();
     this.stats.pages = 0;
   }
@@ -316,7 +318,9 @@ export class GlyphAtlas {
     if (cached) {
       this.stats.hits++;
       const page = "texture" in cached
-        ? this.pages.find((candidate) => candidate.texture.id === cached.texture.id)
+        ? this.pages.find((candidate) =>
+          candidate.texture.id === cached.texture.id && candidate.texture.layer === cached.texture.layer
+        )
         : undefined;
       if (page) page.lastUsed = ++this.clock;
       return cached;
@@ -422,7 +426,6 @@ export class GlyphAtlas {
     const page = this.pages.reduce((oldest, candidate) => candidate.lastUsed < oldest.lastUsed ? candidate : oldest);
     this.backend!.flush();
     for (const oldKey of page.keys) this.glyphs.delete(oldKey);
-    this.backend!.destroyGlyphAtlasTexture(page.texture);
     const index = this.pages.indexOf(page);
     const replacement = this.createPage(index, page.generation + 1);
     this.pages[index] = replacement;
@@ -433,9 +436,16 @@ export class GlyphAtlas {
   }
 
   private createPage(index: number, generation: number): AtlasPage {
-    const id = `@glyph:${this.instance}:${index}:${generation}`;
+    if (!this.atlasTexture) {
+      this.atlasTexture = this.backend!.createGlyphAtlasTexture(
+        `@glyph:${this.instance}`,
+        this.atlasSize,
+        this.atlasSize,
+        this.maxPages,
+      );
+    }
     return {
-      texture: this.backend!.createGlyphAtlasTexture(id, this.atlasSize, this.atlasSize),
+      texture: { ...this.atlasTexture, layer: index },
       packer: new BinaryBinPack(this.atlasSize, this.atlasSize),
       keys: new Set(),
       lastUsed: ++this.clock,

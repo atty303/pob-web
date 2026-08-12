@@ -1,7 +1,7 @@
 import { Format, Target, Texture } from "dds";
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
-import type { RenderBackend } from "./backend.ts";
+import type { BackendStats, RenderBackend } from "./backend.ts";
 import { GlyphAtlas, type GlyphAtlasStats, type TextMetrics } from "./text.ts";
 
 export type TextureBitmap = {
@@ -55,6 +55,7 @@ export type RenderStats = {
   layerStats: LayerStats[];
   lastFrameTime: number;
   glyphAtlas: GlyphAtlasStats;
+  backend: BackendStats;
 };
 
 export class Renderer {
@@ -78,6 +79,7 @@ export class Renderer {
       layerStats: [],
       lastFrameTime: 0,
       glyphAtlas: this.glyphAtlas.getStats(),
+      backend: { instances: 0, instanceBytes: 0, dispatches: 0 },
     };
   }
 
@@ -230,6 +232,7 @@ export class Renderer {
 
     this.renderStats.lastFrameTime = performance.now() - frameStartTime;
     this.renderStats.glyphAtlas = this.glyphAtlas.getStats();
+    this.renderStats.backend = backend.getStats();
   }
 
   private setViewport(x: number, y: number, width: number, height: number) {
@@ -410,6 +413,7 @@ export class Renderer {
       layerStats: [...this.renderStats.layerStats],
       lastFrameTime: this.renderStats.lastFrameTime,
       glyphAtlas: { ...this.renderStats.glyphAtlas },
+      backend: { ...this.renderStats.backend },
     };
   }
 
@@ -420,6 +424,7 @@ export class Renderer {
       layerStats: [],
       lastFrameTime: 0,
       glyphAtlas: this.glyphAtlas.getStats(),
+      backend: { instances: 0, instanceBytes: 0, dispatches: 0 },
     };
   }
 

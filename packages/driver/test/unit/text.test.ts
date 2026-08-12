@@ -27,7 +27,7 @@ Deno.test("font parsing failures are classified as initial asset errors", async 
   }
 });
 
-Deno.test("glyph page eviction flushes already resolved glyphs before destroying their texture", () => {
+Deno.test("glyph page eviction flushes resolved glyphs before reusing an atlas layer", () => {
   const originalOffscreenCanvas = globalThis.OffscreenCanvas;
   globalThis.OffscreenCanvas = class {
     width: number;
@@ -56,10 +56,10 @@ Deno.test("glyph page eviction flushes already resolved glyphs before destroying
   const events: string[] = [];
   const active = new Set<string>();
   const backend = {
-    createGlyphAtlasTexture: (id: string, width: number, height: number) => {
+    createGlyphAtlasTexture: (id: string, width: number, height: number, layers: number) => {
       events.push("create");
       active.add(id);
-      return { id, width, height };
+      return { id, width, height, layers, layer: 0 };
     },
     uploadGlyph: () => events.push("upload"),
     drawGlyph: (_coords: number[], _texCoords: number[], texture: { id: string }) => {
@@ -86,7 +86,68 @@ Deno.test("glyph page eviction flushes already resolved glyphs before destroying
     const atlas = new GlyphAtlas(textMetrics, { atlasSize: 3, maxPages: 1 });
     atlas.setBackend(backend);
     atlas.draw(12, 0, "ab", 0, 0, [1, 1, 1, 1]);
-    assertEquals(events, ["create", "upload", "draw", "flush", "destroy", "create", "upload", "draw"]);
+    assertEquals(events, ["create", "upload", "draw", "flush", "upload", "draw"]);
+    assertEquals(atlas.getStats().evictions, 1);
+  } finally {
+    globalThis.OffscreenCanvas = originalOffscreenCanvas;
+  }
+});
+
+Deno.test("glyph cache hits update the LRU age of their atlas layer", () => {
+  const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+  globalThis.OffscreenCanvas = class {
+    width: number;
+    height: number;
+
+    constructor(width: number, height: number) {
+      this.width = width;
+      this.height = height;
+    }
+
+    getContext() {
+      return {
+        font: "",
+        fillStyle: "",
+        textBaseline: "",
+        fillText: () => {},
+        getImageData: () => {
+          const data = new Uint8ClampedArray(this.width * this.height * 4);
+          data[3] = 255;
+          return { data };
+        },
+      };
+    }
+  } as unknown as typeof OffscreenCanvas;
+
+  const uploadedLayers: number[] = [];
+  const backend = {
+    createGlyphAtlasTexture: (id: string, width: number, height: number, layers: number) => ({
+      id,
+      width,
+      height,
+      layers,
+      layer: 0,
+    }),
+    uploadGlyph: (texture: { layer: number }) => uploadedLayers.push(texture.layer),
+    drawGlyph: () => {},
+    flush: () => {},
+  } as unknown as RenderBackend;
+  const textMetrics = {
+    measureGlyph: () => ({
+      width: 1,
+      actualBoundingBoxLeft: 0,
+      actualBoundingBoxRight: 1,
+      actualBoundingBoxAscent: 1,
+      actualBoundingBoxDescent: 0,
+    }),
+  } as unknown as TextMetrics;
+
+  try {
+    const atlas = new GlyphAtlas(textMetrics, { atlasSize: 3, maxPages: 2 });
+    atlas.setBackend(backend);
+    atlas.draw(12, 0, "abbcb", 0, 0, [1, 1, 1, 1]);
+    assertEquals(uploadedLayers, [0, 1, 0]);
+    assertEquals(atlas.getStats().misses, 3);
     assertEquals(atlas.getStats().evictions, 1);
   } finally {
     globalThis.OffscreenCanvas = originalOffscreenCanvas;
@@ -131,7 +192,13 @@ Deno.test("glyph rasterization preserves the line box bottom baseline", () => {
   let coords: number[] | undefined;
   let uploaded: Uint8Array | undefined;
   const backend = {
-    createGlyphAtlasTexture: (id: string, width: number, height: number) => ({ id, width, height }),
+    createGlyphAtlasTexture: (id: string, width: number, height: number, layers: number) => ({
+      id,
+      width,
+      height,
+      layers,
+      layer: 0,
+    }),
     uploadGlyph: (
       _texture: unknown,
       _x: number,

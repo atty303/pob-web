@@ -50,6 +50,9 @@ import { Driver } from "./driver.ts";
             rendererTime: stats?.lastFrameTime ?? 0,
             glyphMisses: stats?.glyphAtlas.misses ?? 0,
             glyphUploadBytes: stats?.glyphAtlas.uploadedBytes ?? 0,
+            instanceBytes: stats?.backend.instanceBytes ?? 0,
+            instances: stats?.backend.instances ?? 0,
+            dispatches: stats?.backend.dispatches ?? 0,
           });
           if (stats) testState.renderStats = stats;
         }
