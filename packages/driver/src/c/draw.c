@@ -5,16 +5,13 @@
 #include <emscripten.h>
 #include "draw.h"
 #include "byte_buffer.h"
+#include "draw_color.h"
 #include "lauxlib.h"
 #include "image.h"
 
 static int st_layer = 0;
 
-// Track current draw color state
-static float st_color_r = 1.0f;
-static float st_color_g = 1.0f;
-static float st_color_b = 1.0f;
-static float st_color_a = 1.0f;
+static DrawColor st_color = {1.0f, 1.0f, 1.0f, 1.0f};
 
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
@@ -93,11 +90,6 @@ void draw_begin() {
     st_buffer.capacity = 0;
     st_layer = 0;
     
-    // Initialize color state to white
-    st_color_r = 1.0f;
-    st_color_g = 1.0f;
-    st_color_b = 1.0f;
-    st_color_a = 1.0f;
 }
 
 void draw_get_buffer(void **data, size_t *size) {
@@ -177,17 +169,16 @@ static int SetViewport(lua_State *L) {
 }
 
 static void draw_set_color(float r, float g, float b, float a) {
-    // Update tracked color state
-    st_color_r = r;
-    st_color_g = g;
-    st_color_b = b;
-    st_color_a = a;
+    st_color = (DrawColor){r, g, b, a};
     
     SetColorCommand cmd = {DRAW_SET_COLOR, (uint8_t )(r * 255), (uint8_t)(g * 255), (uint8_t)(b * 255), (uint8_t)(a * 255)};
     draw_push(&cmd, sizeof(cmd));
 }
 
-static void draw_set_color_escape(const char *text) {
+static int draw_set_color_escape(lua_State *L, const char *text) {
+    if (!draw_color_read_escape(text, &st_color)) {
+        return luaL_error(L, "SetDrawColor() argument 1: invalid color escape sequence");
+    }
     size_t text_size = strlen(text);
     if (text_size > UINT16_MAX) text_size = UINT16_MAX;
     SetColorEscapeCommand *cmd = malloc(sizeof(SetColorEscapeCommand) + text_size);
@@ -197,13 +188,14 @@ static void draw_set_color_escape(const char *text) {
 
     draw_push(cmd, sizeof(SetColorEscapeCommand) + text_size);
     free(cmd);
+    return 0;
 }
 
 static int GetDrawColor(lua_State *L) {
-    lua_pushnumber(L, st_color_r);
-    lua_pushnumber(L, st_color_g);
-    lua_pushnumber(L, st_color_b);
-    lua_pushnumber(L, st_color_a);
+    lua_pushnumber(L, st_color.r);
+    lua_pushnumber(L, st_color.g);
+    lua_pushnumber(L, st_color.b);
+    lua_pushnumber(L, st_color.a);
     return 4;
 }
 
@@ -211,7 +203,7 @@ static int SetDrawColor(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
     if (lua_type(L, 1) == LUA_TSTRING) {
-        draw_set_color_escape(lua_tostring(L, 1));
+        return draw_set_color_escape(L, lua_tostring(L, 1));
     } else {
         assert(n >= 3);
 
@@ -412,6 +404,8 @@ static int DrawString(lua_State *L) {
 
     draw_push(cmd, sizeof(DrawStringCommand) + text_size);
     free(cmd);
+
+    draw_color_read_last_escape(text, text_size, &st_color);
 
     return 0;
 }

@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME}
         src/c/driver.c
         src/c/draw.c
         src/c/draw.h
+        src/c/draw_color.c
+        src/c/draw_color.h
         src/c/byte_buffer.c
         src/c/byte_buffer.h
         src/c/image.c
@@ -55,6 +57,7 @@ enable_testing()
 add_executable(driver_bridge_test
         test/c/bridge_test.c
         src/c/byte_buffer.c
+        src/c/draw_color.c
         src/c/sub_serialization.c
 )
 target_include_directories(driver_bridge_test PRIVATE src/c)

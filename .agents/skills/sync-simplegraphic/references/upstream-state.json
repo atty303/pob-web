@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "repository": "https://github.com/PathOfBuildingCommunity/PathOfBuilding-SimpleGraphic.git",
   "defaultBranch": "master",
-  "reviewedThrough": "96d8e464e522bfebc877f548f8cb893c14ab6882",
+  "reviewedThrough": "3b1a3468223d0ebd4042d6ce76fc6144718ef79b",
   "latestRelease": {
-    "tag": "v2.0.2",
-    "commit": "4f700496d78035743f815333dff8cc4ff0e91237"
+    "tag": "v2.5.4",
+    "commit": "3b1a3468223d0ebd4042d6ce76fc6144718ef79b"
   }
 }

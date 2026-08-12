@@ -1,4 +1,5 @@
 #include "byte_buffer.h"
+#include "draw_color.h"
 #include "sub_serialization.h"
 
 #include <stdio.h>
@@ -55,8 +56,35 @@ static void test_large_buffer_append(void) {
     free(large);
 }
 
+static void check_color(DrawColor color, float r, float g, float b, float a) {
+    CHECK(color.r == r);
+    CHECK(color.g == g);
+    CHECK(color.b == b);
+    CHECK(color.a == a);
+}
+
+static void test_draw_color_escapes(void) {
+    DrawColor color = {0};
+    CHECK(draw_color_read_escape("^1", &color));
+    check_color(color, 1.0f, 0.0f, 0.0f, 1.0f);
+    CHECK(draw_color_read_escape("^xA1b2C3", &color));
+    check_color(color, 161.0f / 255.0f, 178.0f / 255.0f, 195.0f / 255.0f, 1.0f);
+    CHECK(draw_color_read_escape("^XA1B2C3", &color));
+    CHECK(!draw_color_read_escape("^x12zz56", &color));
+    CHECK(!draw_color_read_escape("plain", &color));
+
+    color = (DrawColor){0};
+    const char *text = "^1red ^x102030custom ^8gray";
+    CHECK(draw_color_read_last_escape(text, strlen(text), &color));
+    check_color(color, 0.7f, 0.7f, 0.7f, 1.0f);
+    CHECK(!draw_color_read_last_escape("no escapes", 10, &color));
+    CHECK(draw_color_read_last_escape("^1red^2", 5, &color));
+    check_color(color, 1.0f, 0.0f, 0.0f, 1.0f);
+}
+
 int main(void) {
     test_subscript_values_round_trip();
     test_large_buffer_append();
+    test_draw_color_escapes();
     return 0;
 }
