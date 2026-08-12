@@ -6,7 +6,7 @@ import { Driver } from "./driver.ts";
   const params = new URLSearchParams(window.location.search);
   const game = (testMode ? params.get("game") : null) ?? __RUN_GAME__;
   const version = (testMode ? params.get("version") : null) ?? __RUN_VERSION__;
-  const useWebGPU = testMode && params.get("webgpu") === "true";
+  const useWebGPU = params.get("webgpu") === "true";
   const poeOAuthExpiresIn = Number(params.get("poe-oauth-expires-in") ?? "2419200");
   const poeOAuthApiStatuses = (params.get("poe-oauth-api") ?? "200").split(",").map(Number);
   let poeOAuthRefreshCount = Number(params.get("poe-oauth-refresh-start") ?? "0");
