@@ -1,6 +1,6 @@
 import { Format, Target } from "dds";
 import { log, tag } from "../logger.ts";
-import type { RenderBackend } from "./backend.ts";
+import type { GlyphAtlasTexture, RenderBackend } from "./backend.ts";
 import type { TextureBitmap } from "./renderer.ts";
 
 const vertexShaderSource = `
@@ -13,7 +13,7 @@ struct VertexInput {
   @location(1) texCoord: vec2<f32>,
   @location(2) tintColor: vec4<f32>,
   @location(3) viewport: vec4<f32>,
-  @location(4) texId: vec3<f32>,
+  @location(4) texId: vec4<f32>,
 }
 
 struct VertexOutput {
@@ -22,7 +22,7 @@ struct VertexOutput {
   @location(1) texCoord: vec2<f32>,
   @location(2) tintColor: vec4<f32>,
   @location(3) viewport: vec4<f32>,
-  @location(4) texId: vec3<f32>,
+  @location(4) texId: vec4<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -80,7 +80,7 @@ struct VertexOutput {
   @location(1) texCoord: vec2<f32>,
   @location(2) tintColor: vec4<f32>,
   @location(3) viewport: vec4<f32>,
-  @location(4) texId: vec3<f32>,
+  @location(4) texId: vec4<f32>,
 }
 
 @group(0) @binding(1) var linearSampler: sampler;
@@ -105,6 +105,10 @@ ${sampleCode}
 
   var color: vec4<f32>;
 ${selectCode}
+
+  if (input.texId.w > 0.5) {
+    color = vec4<f32>(1.0, 1.0, 1.0, color.r);
+  }
 
   return color * input.tintColor;
 }
@@ -213,7 +217,7 @@ class VertexBuffer {
   }
 
   get length() {
-    return this.offset / 15;
+    return this.offset / 16;
   }
 
   reset() {
@@ -238,8 +242,9 @@ class VertexBuffer {
     textureSlot: number,
     stackLayer: number,
     maskLayer: number,
+    glyph: boolean,
   ) {
-    this.ensureCapacity(this.offset + 15);
+    this.ensureCapacity(this.offset + 16);
     const b = this._buffer;
     b[this.offset++] = coords[i * 2];
     b[this.offset++] = coords[i * 2 + 1];
@@ -256,6 +261,7 @@ class VertexBuffer {
     b[this.offset++] = textureSlot;
     b[this.offset++] = stackLayer;
     b[this.offset++] = maskLayer;
+    b[this.offset++] = glyph ? 1 : 0;
   }
 }
 
@@ -279,6 +285,7 @@ export class WebGPUBackend implements RenderBackend {
       formatDesc: WebGPUFormatDesc;
     }
   > = new Map();
+  private glyphTextures: Map<string, GPUTexture> = new Map();
 
   private viewport: number[] = [];
   private pixelRatio = 1;
@@ -432,13 +439,13 @@ export class WebGPUBackend implements RenderBackend {
         entryPoint: "vs_main",
         buffers: [
           {
-            arrayStride: 60, // 15 floats * 4 bytes
+            arrayStride: 64,
             attributes: [
               { shaderLocation: 0, offset: 0, format: "float32x2" }, // position
               { shaderLocation: 1, offset: 8, format: "float32x2" }, // texCoord
               { shaderLocation: 2, offset: 16, format: "float32x4" }, // tintColor
               { shaderLocation: 3, offset: 32, format: "float32x4" }, // viewport
-              { shaderLocation: 4, offset: 48, format: "float32x3" }, // texId
+              { shaderLocation: 4, offset: 48, format: "float32x4" }, // texId
             ],
           },
         ],
@@ -514,6 +521,57 @@ export class WebGPUBackend implements RenderBackend {
     this.dispatch();
   }
 
+  flush() {
+    this.dispatch();
+  }
+
+  createGlyphAtlasTexture(id: string, width: number, height: number): GlyphAtlasTexture {
+    if (!this.device) throw new Error("WebGPU backend is not initialized");
+    const texture = this.device.createTexture({
+      size: { width, height, depthOrArrayLayers: 1 },
+      format: "r8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      dimension: "2d",
+    });
+    this.glyphTextures.set(id, texture);
+    return { id, width, height };
+  }
+
+  uploadGlyph(
+    texture: GlyphAtlasTexture,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    pixels: Uint8Array<ArrayBuffer>,
+  ) {
+    if (!this.device) throw new Error("WebGPU backend is not initialized");
+    const stored = this.glyphTextures.get(texture.id);
+    if (!stored) throw new Error(`Unknown glyph atlas texture: ${texture.id}`);
+    this.device.queue.writeTexture(
+      { texture: stored, origin: { x, y } },
+      pixels,
+      { bytesPerRow: width },
+      { width, height, depthOrArrayLayers: 1 },
+    );
+  }
+
+  destroyGlyphAtlasTexture(texture: GlyphAtlasTexture) {
+    const stored = this.glyphTextures.get(texture.id);
+    if (!stored) return;
+    stored.destroy();
+    this.glyphTextures.delete(texture.id);
+  }
+
+  drawGlyph(coords: number[], texCoords: number[], texture: GlyphAtlasTexture, tintColor: number[]) {
+    const stored = this.glyphTextures.get(texture.id);
+    if (!stored) throw new Error(`Unknown glyph atlas texture: ${texture.id}`);
+    const slot = this.bindBatchTexture(texture.id, stored);
+    for (const i of [0, 1, 2, 0, 2, 3]) {
+      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, slot, 0, -1, true);
+    }
+  }
+
   drawQuad(
     coords: number[],
     texCoords: number[],
@@ -524,22 +582,15 @@ export class WebGPUBackend implements RenderBackend {
   ) {
     this.drawCount++;
 
-    let t = this.batchTextures.get(textureBitmap.id);
-    if (!t) {
-      if (this.batchTextures.size >= this.maxTextures) {
-        this.dispatch();
-      }
-      const texture = this.getTexture(textureBitmap);
-      t = { index: this.batchTextureCount++, texture };
-      this.batchTextures.set(textureBitmap.id, t);
-    }
+    const texture = this.getTexture(textureBitmap);
+    const slot = this.bindBatchTexture(textureBitmap.id, texture);
 
     if (textureBitmap.updateSubImage && this.device) {
       const sub = textureBitmap.updateSubImage();
       const storedTexture = this.textures.get(textureBitmap.id);
       const bytesPerPixel = storedTexture?.formatDesc.bytesPerPixel ?? 4;
       this.device.queue.writeTexture(
-        { texture: t.texture, origin: { x: sub.x, y: sub.y } },
+        { texture, origin: { x: sub.x, y: sub.y } },
         sub.source,
         { bytesPerRow: sub.width * bytesPerPixel },
         { width: sub.width, height: sub.height, depthOrArrayLayers: 1 },
@@ -547,8 +598,18 @@ export class WebGPUBackend implements RenderBackend {
     }
 
     for (const i of [0, 1, 2, 0, 2, 3]) {
-      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, t.index, stackLayer, maskLayer);
+      this.vertices.push(i, coords, texCoords, tintColor, this.viewport, slot, stackLayer, maskLayer, false);
     }
+  }
+
+  private bindBatchTexture(id: string, texture: GPUTexture) {
+    let batched = this.batchTextures.get(id);
+    if (!batched) {
+      if (this.batchTextures.size >= this.maxTextures) this.dispatch();
+      batched = { index: this.batchTextureCount++, texture };
+      this.batchTextures.set(id, batched);
+    }
+    return batched.index;
   }
 
   private dispatch() {

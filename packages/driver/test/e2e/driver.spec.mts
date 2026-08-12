@@ -45,6 +45,9 @@ for (const release of releases) {
     expect(consoleErrors).toEqual([]);
     expect(state?.title).not.toBe("");
     expect(webgl2Backend).toBe(true);
+    expect(state?.renderStats?.glyphAtlas.pages).toBeGreaterThan(0);
+    expect(state?.renderStats?.glyphAtlas.lookups).toBeGreaterThan(0);
+    expect(state?.renderStats?.glyphAtlas.hits).toBeGreaterThan(0);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
@@ -86,6 +89,8 @@ for (const release of releases) {
     await expect.poll(() => canvas.evaluate((element) => element.style.transform)).toContain("scale(1.2)");
 
     const finalState = await page.evaluate(() => window.__POB_TEST__);
+    expect(finalState?.renderStats?.glyphAtlas.misses).toBe(0);
+    expect(finalState?.renderStats?.glyphAtlas.uploadedBytes).toBe(0);
     expect(finalState?.errors).toEqual([]);
     expect(pageErrors).toEqual([]);
     expect(consoleErrors).toEqual([]);

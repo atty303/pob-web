@@ -12,7 +12,7 @@ type PoBTestState = {
   title: string;
   errors: string[];
   pressedKeys: string[];
-  frameSamples: { totalTime: number; rendererTime: number }[];
+  frameSamples: { totalTime: number; rendererTime: number; glyphMisses: number; glyphUploadBytes: number }[];
   poeOAuth?: {
     authorizationRequests: { url: string; timeoutMs: number }[];
     fetchRequests: { url: string; headers: Record<string, string>; body?: string }[];

@@ -2,7 +2,7 @@ import { Format, Target, Texture } from "dds";
 import { DrawCommandInterpreter } from "../draw.ts";
 import { type ImageRepository, TextureFlags, TextureSource } from "../image.ts";
 import type { RenderBackend } from "./backend.ts";
-import type { TextRasterizer, TextRender } from "./text.ts";
+import { GlyphAtlas, type GlyphAtlasStats, type TextMetrics } from "./text.ts";
 
 export type TextureBitmap = {
   id: string;
@@ -54,10 +54,11 @@ export type RenderStats = {
   totalLayers: number;
   layerStats: LayerStats[];
   lastFrameTime: number;
+  glyphAtlas: GlyphAtlasStats;
 };
 
 export class Renderer {
-  backend: RenderBackend | undefined;
+  private _backend: RenderBackend | undefined;
 
   private screenSize: { width: number; height: number };
   private currentColor: number[] = [0, 0, 0, 0];
@@ -66,31 +67,46 @@ export class Renderer {
 
   constructor(
     readonly imageRepo: ImageRepository,
-    readonly textRasterizer: TextRasterizer,
+    readonly textMetrics: TextMetrics,
     screenSize: { width: number; height: number },
   ) {
+    this.glyphAtlas = new GlyphAtlas(textMetrics);
     this.screenSize = screenSize;
     this.renderStats = {
       frameCount: 0,
       totalLayers: 0,
       layerStats: [],
       lastFrameTime: 0,
+      glyphAtlas: this.glyphAtlas.getStats(),
     };
+  }
+
+  private readonly glyphAtlas: GlyphAtlas;
+
+  get backend() {
+    return this._backend;
+  }
+
+  set backend(backend: RenderBackend | undefined) {
+    this._backend = backend;
+    this.glyphAtlas.setBackend(backend);
   }
 
   resize(screenSize: { width: number; height: number; pixelRatio: number }) {
     this.screenSize = screenSize;
-    this.backend?.resize(screenSize.width, screenSize.height, screenSize.pixelRatio);
+    this._backend?.resize(screenSize.width, screenSize.height, screenSize.pixelRatio);
   }
 
   render(view: DataView) {
-    if (!this.backend) return;
+    const backend = this._backend;
+    if (!backend) return;
 
     const frameStartTime = performance.now();
     this.renderStats.frameCount++;
     this.renderStats.layerStats = [];
+    this.glyphAtlas.resetFrameStats();
 
-    this.backend.beginFrame();
+    backend.beginFrame();
     const layers = DrawCommandInterpreter.sort(view);
     this.renderStats.totalLayers = layers.length;
 
@@ -108,7 +124,7 @@ export class Renderer {
       };
 
       if (isVisible) {
-        this.backend.begin();
+        backend.begin();
       }
 
       for (const range of layer.ranges) {
@@ -206,13 +222,14 @@ export class Renderer {
       }
 
       if (isVisible) {
-        this.backend.end();
+        backend.end();
       }
 
       this.renderStats.layerStats.push(layerStats);
     }
 
     this.renderStats.lastFrameTime = performance.now() - frameStartTime;
+    this.renderStats.glyphAtlas = this.glyphAtlas.getStats();
   }
 
   private setViewport(x: number, y: number, width: number, height: number) {
@@ -329,7 +346,7 @@ export class Renderer {
   }
 
   private drawStringLine(pos: { x: number; y: number }, align: number, height: number, font: number, text0: string) {
-    const segments: { color: number[]; render: TextRender }[] = [];
+    const segments: { color: number[]; text: string; width: number }[] = [];
 
     let text = text0;
     while (true) {
@@ -340,12 +357,11 @@ export class Renderer {
       text = text.substring(m.index + m[0].length);
 
       if (subtext.length > 0) {
-        for (const render of this.textRasterizer.get(height, font, subtext)) {
-          segments.push({
-            color: this.currentColor,
-            render,
-          });
-        }
+        segments.push({
+          color: this.currentColor,
+          text: subtext,
+          width: this.textMetrics.measure(height, font, subtext),
+        });
       }
 
       if (m[1]) {
@@ -358,15 +374,10 @@ export class Renderer {
       }
     }
     if (text.length > 0) {
-      for (const render of this.textRasterizer.get(height, font, text)) {
-        segments.push({
-          color: this.currentColor,
-          render,
-        });
-      }
+      segments.push({ color: this.currentColor, text, width: this.textMetrics.measure(height, font, text) });
     }
 
-    const width = segments.reduce((width, segment) => width + segment.render.width, 0);
+    const width = segments.reduce((total, segment) => total + segment.width, 0);
 
     let x = pos.x;
     switch (align) {
@@ -385,17 +396,8 @@ export class Renderer {
     }
 
     for (const segment of segments) {
-      if (segment.render.bitmap) {
-        this.backend?.drawQuad(
-          [x, pos.y, x + segment.render.width, pos.y, x + segment.render.width, pos.y + height, x, pos.y + height],
-          segment.render.coords,
-          segment.render.bitmap,
-          segment.color,
-          0,
-          -1,
-        );
-      }
-      x += segment.render.width;
+      this.glyphAtlas.draw(height, font, segment.text, x, pos.y, segment.color);
+      x += segment.width;
     }
 
     pos.y += height;
@@ -407,6 +409,7 @@ export class Renderer {
       totalLayers: this.renderStats.totalLayers,
       layerStats: [...this.renderStats.layerStats],
       lastFrameTime: this.renderStats.lastFrameTime,
+      glyphAtlas: { ...this.renderStats.glyphAtlas },
     };
   }
 
@@ -416,6 +419,7 @@ export class Renderer {
       totalLayers: 0,
       layerStats: [],
       lastFrameTime: 0,
+      glyphAtlas: this.glyphAtlas.getStats(),
     };
   }
 

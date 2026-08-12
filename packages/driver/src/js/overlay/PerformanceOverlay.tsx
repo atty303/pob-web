@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import type { GlyphAtlasStats } from "../renderer/text.ts";
 
 export interface FrameData {
   at: number;
@@ -20,6 +21,7 @@ export interface RenderStats {
   layerStats: LayerStats[];
   lastFrameTime: number;
   frameCount: number;
+  glyphAtlas: GlyphAtlasStats;
 }
 
 interface PerformanceOverlayProps {
@@ -173,6 +175,10 @@ function RenderStatsView({
         <div>Images: {summary.totalDrawImage}</div>
         <div>Quads: {summary.totalDrawImageQuad}</div>
         <div>Text: {summary.totalDrawString}</div>
+        <div>Glyphs: {stats.glyphAtlas.glyphQuads}</div>
+        <div>Glyph hit/miss: {stats.glyphAtlas.hits}/{stats.glyphAtlas.misses}</div>
+        <div>Glyph upload: {stats.glyphAtlas.uploadedBytes}B</div>
+        <div>Atlas pages: {stats.glyphAtlas.pages}</div>
       </div>
 
       {layerDetails.length > 0 && (

@@ -30,7 +30,19 @@ test("steady-state PoE 1 frame time", async ({ page }, testInfo) => {
   const frame = median(samples.map((sample) => sample.totalTime));
   const renderer = median(samples.map((sample) => sample.rendererTime));
   const luaWasm = median(samples.map((sample) => sample.totalTime - sample.rendererTime));
+  const glyphMisses = samples.reduce((total, sample) => total + sample.glyphMisses, 0);
+  const glyphUploadBytes = samples.reduce((total, sample) => total + sample.glyphUploadBytes, 0);
+  expect(glyphMisses).toBe(0);
+  expect(glyphUploadBytes).toBe(0);
   console.log(
-    JSON.stringify({ browser: testInfo.project.name, repetition: testInfo.repeatEachIndex, frame, renderer, luaWasm }),
+    JSON.stringify({
+      browser: testInfo.project.name,
+      repetition: testInfo.repeatEachIndex,
+      frame,
+      renderer,
+      luaWasm,
+      glyphMisses,
+      glyphUploadBytes,
+    }),
   );
 });

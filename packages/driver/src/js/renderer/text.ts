@@ -1,6 +1,5 @@
 import { markEnvironmentError } from "../error.ts";
-import { TextureFlags, TextureSource } from "../image.ts";
-import type { TextureBitmap } from "./renderer.ts";
+import type { GlyphAtlasTexture, RenderBackend } from "./backend.ts";
 
 const reColorGlobal = /\^([0-9])|\^[xX]([0-9a-fA-F]{6})/g;
 
@@ -130,71 +129,13 @@ export class TextMetrics {
     return i;
   }
 
-  fittingText(size: number, fontNum: number, text: string, maxWidth: number) {
+  measureGlyph(size: number, fontNum: number, glyph: string) {
     const fontStr = font(size, fontNum);
     if (this.currentFont !== fontStr) {
       this.context.font = fontStr;
       this.currentFont = fontStr;
     }
-    const line = text.replaceAll(reColorGlobal, "");
-    let width = 0;
-    for (let i = 0; i < line.length; i++) {
-      const w = this.context.measureText(line[i]).width;
-      if (width + w > maxWidth) {
-        return { width, head: line.substring(0, i), tail: line.substring(i) };
-      }
-      width += w;
-    }
-    return { width, head: line, tail: "" };
-  }
-}
-
-export interface TextRender {
-  width: number;
-  bitmap: TextureBitmap | undefined;
-  coords: number[];
-}
-
-export interface TextRasterizer {
-  get(size: number, fontNum: number, text: string): TextRender[];
-}
-
-export class SimpleTextRasterizer implements TextRasterizer {
-  private readonly cache: Map<string, TextRender> = new Map();
-
-  constructor(readonly textMetrics: TextMetrics) {}
-
-  get(size: number, fontNum: number, text: string) {
-    const key = `${size}:${fontNum}:${text}`;
-    let render = this.cache.get(key);
-    if (!render) {
-      const width = this.textMetrics.measure(size, fontNum, text);
-      if (width > 0) {
-        const canvas = new OffscreenCanvas(width, size);
-        const context = canvas.getContext("2d");
-        if (!context) throw new Error("Failed to get 2D context");
-        context.font = font(size, fontNum);
-        context.fillStyle = "white";
-        context.textBaseline = "bottom";
-        context.fillText(text, 0, size);
-        render = {
-          width,
-          bitmap: {
-            id: key,
-            source: TextureSource.newImage(canvas, TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP),
-          },
-          coords: [0, 0, 1, 0, 1, 1, 0, 1],
-        };
-        this.cache.set(key, render);
-      } else {
-        render = {
-          width: 0,
-          bitmap: undefined,
-          coords: [0, 0, 1, 0, 1, 1, 0, 1],
-        };
-      }
-    }
-    return [render];
+    return this.context.measureText(glyph);
   }
 }
 
@@ -259,112 +200,245 @@ class BinaryBinPack implements BinPack {
   }
 }
 
-export class BinPackingTextRasterizer {
-  private size: { width: number; height: number };
-  private canvas!: OffscreenCanvas;
-  private context!: OffscreenCanvasRenderingContext2D;
-  private packer!: BinPack;
-  private cache: Map<string, TextRender[]> = new Map();
-  private generation = 0;
+export type GlyphAtlasStats = {
+  lookups: number;
+  hits: number;
+  misses: number;
+  rasterizeTime: number;
+  uploadedBytes: number;
+  glyphQuads: number;
+  pages: number;
+  evictions: number;
+};
 
-  constructor(readonly textMetrics: TextMetrics) {
-    const canvas = new OffscreenCanvas(1, 1);
-    const gl = canvas.getContext("webgl");
-    if (!gl) throw new Error("Failed to get WebGL context");
-    const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
-    const size = 4096;
-    this.size = { width: Math.min(size, maxTextureSize), height: Math.min(size, maxTextureSize) };
+type Glyph = {
+  advance: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+  texture: GlyphAtlasTexture;
+  texCoords: number[];
+};
 
-    this.reset();
-  }
+type EmptyGlyph = {
+  advance: number;
+  width: 0;
+  height: 0;
+};
 
-  private reset() {
-    this.canvas = new OffscreenCanvas(this.size.width, this.size.height);
+type AtlasPage = {
+  texture: GlyphAtlasTexture;
+  packer: BinPack;
+  keys: Set<string>;
+  lastUsed: number;
+  generation: number;
+};
+
+const ATLAS_SIZE = 2048;
+const MAX_ATLAS_PAGES = 8;
+const GLYPH_PADDING = 1;
+let atlasInstance = 0;
+
+export type GlyphAtlasOptions = {
+  atlasSize?: number;
+  maxPages?: number;
+};
+
+export class GlyphAtlas {
+  private readonly canvas = new OffscreenCanvas(1, 1);
+  private readonly context: OffscreenCanvasRenderingContext2D;
+  private readonly glyphs = new Map<string, Glyph | EmptyGlyph>();
+  private readonly kernings = new Map<string, number>();
+  private readonly pages: AtlasPage[] = [];
+  private backend: RenderBackend | undefined;
+  private clock = 0;
+  private readonly instance = ++atlasInstance;
+  private readonly atlasSize: number;
+  private readonly maxPages: number;
+  private stats: GlyphAtlasStats = GlyphAtlas.emptyStats();
+
+  constructor(readonly textMetrics: TextMetrics, options: GlyphAtlasOptions = {}) {
+    this.atlasSize = options.atlasSize ?? ATLAS_SIZE;
+    this.maxPages = options.maxPages ?? MAX_ATLAS_PAGES;
     const context = this.canvas.getContext("2d", { willReadFrequently: true });
     if (!context) throw new Error("Failed to get 2D context");
     this.context = context;
-    this.context.fillStyle = "white";
-    this.context.textBaseline = "bottom";
-    this.packer = new BinaryBinPack(this.size.width, this.size.height);
-    this.generation += 1;
   }
 
-  get(height: number, fontNum: number, text: string) {
-    const key = `${height}:${fontNum}:${text}`;
-    let render = this.cache.get(key);
-    if (!render) {
-      const width = this.textMetrics.measure(height, fontNum, text);
-      if (width > 0) {
-        if (width > this.size.width) {
-          const renders = [];
-          let parts = { width: 0, head: "", tail: text };
-          while (parts.tail !== "") {
-            parts = this.textMetrics.fittingText(height, fontNum, parts.tail, this.size.width);
-            renders.push(this.drawText(parts.head, parts.width, height, fontNum));
-          }
-          render = renders.map((r) => r.forOnce);
-          this.cache.set(
-            key,
-            renders.map((r) => r.forCache),
-          );
-        } else {
-          const r = this.drawText(text, width, height, fontNum);
-          render = [r.forOnce];
-          this.cache.set(key, [r.forCache]);
-        }
-      } else {
-        render = [
-          {
-            width: 0,
-            bitmap: undefined,
-            coords: [0, 0, 1, 0, 1, 1, 0, 1],
-          },
-        ];
+  setBackend(backend: RenderBackend | undefined) {
+    if (backend === this.backend) return;
+    if (this.backend) {
+      for (const page of this.pages) this.backend.destroyGlyphAtlasTexture(page.texture);
+    }
+    this.backend = backend;
+    this.pages.length = 0;
+    this.glyphs.clear();
+    this.stats.pages = 0;
+  }
+
+  draw(height: number, fontNum: number, text: string, x: number, y: number, color: number[]) {
+    if (!this.backend) return;
+    let penX = 0;
+    let previous: string | undefined;
+    for (const scalar of text) {
+      if (previous !== undefined) penX += this.kerning(height, fontNum, previous, scalar);
+      const glyph = this.getGlyph(height, fontNum, scalar);
+      if ("texture" in glyph) {
+        const x1 = x + penX + glyph.offsetX;
+        const y1 = y + glyph.offsetY;
+        this.backend.drawGlyph(
+          [x1, y1, x1 + glyph.width, y1, x1 + glyph.width, y1 + glyph.height, x1, y1 + glyph.height],
+          glyph.texCoords,
+          glyph.texture,
+          color,
+        );
+        this.stats.glyphQuads++;
+      }
+      penX += glyph.advance;
+      previous = scalar;
+    }
+  }
+
+  getStats(): GlyphAtlasStats {
+    return { ...this.stats, pages: this.pages.length };
+  }
+
+  resetFrameStats() {
+    const pages = this.pages.length;
+    this.stats = { ...GlyphAtlas.emptyStats(), pages };
+  }
+
+  private getGlyph(height: number, fontNum: number, scalar: string): Glyph | EmptyGlyph {
+    const key = `${height}:${fontNum}:${scalar}`;
+    this.stats.lookups++;
+    const cached = this.glyphs.get(key);
+    if (cached) {
+      this.stats.hits++;
+      const page = "texture" in cached
+        ? this.pages.find((candidate) => candidate.texture.id === cached.texture.id)
+        : undefined;
+      if (page) page.lastUsed = ++this.clock;
+      return cached;
+    }
+
+    this.stats.misses++;
+    const started = performance.now();
+    const measured = this.textMetrics.measureGlyph(height, fontNum, scalar);
+    const advance = measured.width;
+    const left = Math.ceil(measured.actualBoundingBoxLeft);
+    const right = Math.ceil(measured.actualBoundingBoxRight);
+    const ascent = Math.ceil(measured.actualBoundingBoxAscent);
+    const descent = Math.ceil(measured.actualBoundingBoxDescent);
+    const width = left + right + GLYPH_PADDING * 2;
+    const bitmapHeight = ascent + descent + GLYPH_PADDING * 2;
+
+    if (width <= GLYPH_PADDING * 2 || bitmapHeight <= GLYPH_PADDING * 2) {
+      const empty: EmptyGlyph = { advance, width: 0, height: 0 };
+      this.glyphs.set(key, empty);
+      this.stats.rasterizeTime += performance.now() - started;
+      return empty;
+    }
+
+    this.canvas.width = width;
+    this.canvas.height = bitmapHeight;
+    this.context.font = font(height, fontNum);
+    this.context.fillStyle = "white";
+    this.context.textBaseline = "alphabetic";
+    this.context.fillText(scalar, GLYPH_PADDING + left, GLYPH_PADDING + ascent);
+    const rgba = this.context.getImageData(0, 0, width, bitmapHeight).data;
+    const alpha = new Uint8Array(width * bitmapHeight);
+    for (let source = 3, target = 0; source < rgba.length; source += 4) alpha[target++] = rgba[source];
+
+    const { page, rect } = this.allocate(key, width, bitmapHeight);
+    this.backend!.uploadGlyph(page.texture, rect.x, rect.y, width, bitmapHeight, alpha);
+    this.stats.uploadedBytes += alpha.byteLength;
+    this.stats.rasterizeTime += performance.now() - started;
+
+    const u1 = rect.x / this.atlasSize;
+    const v1 = rect.y / this.atlasSize;
+    const u2 = (rect.x + width) / this.atlasSize;
+    const v2 = (rect.y + bitmapHeight) / this.atlasSize;
+    const glyph: Glyph = {
+      advance,
+      offsetX: -left - GLYPH_PADDING,
+      offsetY: height - ascent - GLYPH_PADDING,
+      width,
+      height: bitmapHeight,
+      texture: page.texture,
+      texCoords: [u1, v1, u2, v1, u2, v2, u1, v2],
+    };
+    this.glyphs.set(key, glyph);
+    return glyph;
+  }
+
+  private kerning(height: number, fontNum: number, left: string, right: string) {
+    if (fontNum === 0) return 0;
+    const key = `${height}:${fontNum}:${left}:${right}`;
+    const cached = this.kernings.get(key);
+    if (cached !== undefined) return cached;
+    const value = this.textMetrics.measureGlyph(height, fontNum, left + right).width -
+      this.textMetrics.measureGlyph(height, fontNum, left).width -
+      this.textMetrics.measureGlyph(height, fontNum, right).width;
+    this.kernings.set(key, value);
+    return value;
+  }
+
+  private allocate(key: string, width: number, height: number): { page: AtlasPage; rect: Rectangle } {
+    if (width > this.atlasSize || height > this.atlasSize) {
+      throw new Error(`Glyph exceeds atlas page: ${width}x${height}`);
+    }
+    for (const page of this.pages) {
+      const rect = page.packer.add(width, height);
+      if (rect) {
+        page.keys.add(key);
+        page.lastUsed = ++this.clock;
+        return { page, rect };
       }
     }
-    return render;
-  }
 
-  private drawText(text: string, width: number, height: number, fontNum: number) {
-    let rect = this.packer.add(width, height);
-    if (!rect) {
-      this.reset();
-      rect = this.packer.add(width, height);
-      if (!rect) throw new Error("Failed to add text to texture");
+    if (this.pages.length < this.maxPages) {
+      const page = this.createPage(this.pages.length, 0);
+      this.pages.push(page);
+      const rect = page.packer.add(width, height)!;
+      page.keys.add(key);
+      return { page, rect };
     }
 
-    this.context.font = font(height, fontNum);
-    this.context.fillText(text, rect.x, rect.y + rect.height);
+    const page = this.pages.reduce((oldest, candidate) => candidate.lastUsed < oldest.lastUsed ? candidate : oldest);
+    this.backend!.flush();
+    for (const oldKey of page.keys) this.glyphs.delete(oldKey);
+    this.backend!.destroyGlyphAtlasTexture(page.texture);
+    const index = this.pages.indexOf(page);
+    const replacement = this.createPage(index, page.generation + 1);
+    this.pages[index] = replacement;
+    this.stats.evictions++;
+    const rect = replacement.packer.add(width, height)!;
+    replacement.keys.add(key);
+    return { page: replacement, rect };
+  }
 
-    const u1 = rect.x / this.size.width;
-    const v1 = rect.y / this.size.height;
-    const u2 = (rect.x + rect.width) / this.size.width;
-    const v2 = (rect.y + rect.height) / this.size.height;
-    const bitmap = {
-      id: `@text:${this.generation}`,
-      source: TextureSource.newImage(this.canvas, TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP),
-      flags: TextureFlags.TF_NOMIPMAP | TextureFlags.TF_CLAMP,
+  private createPage(index: number, generation: number): AtlasPage {
+    const id = `@glyph:${this.instance}:${index}:${generation}`;
+    return {
+      texture: this.backend!.createGlyphAtlasTexture(id, this.atlasSize, this.atlasSize),
+      packer: new BinaryBinPack(this.atlasSize, this.atlasSize),
+      keys: new Set(),
+      lastUsed: ++this.clock,
+      generation,
     };
-    const forCache = {
-      width,
-      coords: [u1, v1, u2, v1, u2, v2, u1, v2],
-      bitmap: {
-        ...bitmap,
-      },
+  }
+
+  private static emptyStats(): GlyphAtlasStats {
+    return {
+      lookups: 0,
+      hits: 0,
+      misses: 0,
+      rasterizeTime: 0,
+      uploadedBytes: 0,
+      glyphQuads: 0,
+      pages: 0,
+      evictions: 0,
     };
-    const forOnce = {
-      ...forCache,
-      bitmap: {
-        ...forCache.bitmap,
-        updateSubImage: () => {
-          const context = this.context;
-          return {
-            ...rect,
-            source: context.getImageData(rect.x, rect.y, rect.width, rect.height).data,
-          };
-        },
-      },
-    };
-    return { forCache, forOnce };
   }
 }
