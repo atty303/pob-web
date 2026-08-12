@@ -169,6 +169,7 @@ function orthoMatrix(left: number, right: number, bottom: number, top: number, n
 }
 
 export class WebGL1Backend implements RenderBackend {
+  readonly name = "WebGL2" as const;
   private readonly gl: WebGL2RenderingContext;
   private readonly ext: {
     textureBptc: EXT_texture_compression_bptc | null;
@@ -337,7 +338,12 @@ export class WebGL1Backend implements RenderBackend {
   }
 
   getStats(): BackendStats {
-    return { instances: this.instanceCount, instanceBytes: this.instanceBytes, dispatches: this.dispatchCount };
+    return {
+      name: this.name,
+      instances: this.instanceCount,
+      instanceBytes: this.instanceBytes,
+      dispatches: this.dispatchCount,
+    };
   }
 
   begin() {

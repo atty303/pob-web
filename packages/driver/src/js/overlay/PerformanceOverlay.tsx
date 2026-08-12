@@ -173,6 +173,7 @@ function RenderStatsView({
     <div className="pw:text-xs pw:space-y-2">
       <div className="pw:font-semibold">Render Stats (Frame #{summary.frameCount})</div>
       <div className="pw:grid pw:grid-cols-2 pw:gap-1 pw:text-xs">
+        <div>Backend: {stats.backend.name}</div>
         <div>Layers: {summary.totalLayers}</div>
         <div>Frame: {summary.frameTime}ms</div>
         <div>Total draws: {totalDrawCalls}</div>

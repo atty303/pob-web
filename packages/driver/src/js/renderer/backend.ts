@@ -9,12 +9,14 @@ export type GlyphAtlasTexture = {
 };
 
 export type BackendStats = {
+  name: "WebGL2" | "WebGPU" | "None";
   instances: number;
   instanceBytes: number;
   dispatches: number;
 };
 
 export interface RenderBackend {
+  readonly name: "WebGL2" | "WebGPU";
   readonly canvas: OffscreenCanvas;
 
   resize(width: number, height: number, pixelRatio: number): void;

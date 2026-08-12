@@ -217,6 +217,7 @@ const targetTable: Record<Target, boolean> = {
 };
 
 export class WebGPUBackend implements RenderBackend {
+  readonly name = "WebGPU" as const;
   private device: GPUDevice | null = null;
   private supportedFeatures: Set<string> = new Set();
   private context: GPUCanvasContext | null = null;
@@ -470,7 +471,12 @@ export class WebGPUBackend implements RenderBackend {
   }
 
   getStats(): BackendStats {
-    return { instances: this.instanceCount, instanceBytes: this.instanceBytes, dispatches: this.dispatchCount };
+    return {
+      name: this.name,
+      instances: this.instanceCount,
+      instanceBytes: this.instanceBytes,
+      dispatches: this.dispatchCount,
+    };
   }
 
   begin() {

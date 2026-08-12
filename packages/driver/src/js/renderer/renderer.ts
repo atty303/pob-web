@@ -74,7 +74,7 @@ export class Renderer implements DrawCommandSink {
       layerIndexTime: 0,
       compileSubmitTime: 0,
       glyphAtlas: this.glyphAtlas.getStats(),
-      backend: { instances: 0, instanceBytes: 0, dispatches: 0 },
+      backend: { name: "None", instances: 0, instanceBytes: 0, dispatches: 0 },
     };
   }
 
@@ -367,7 +367,7 @@ export class Renderer implements DrawCommandSink {
       layerIndexTime: 0,
       compileSubmitTime: 0,
       glyphAtlas: this.glyphAtlas.getStats(),
-      backend: { instances: 0, instanceBytes: 0, dispatches: 0 },
+      backend: { name: "None", instances: 0, instanceBytes: 0, dispatches: 0 },
     };
   }
 
