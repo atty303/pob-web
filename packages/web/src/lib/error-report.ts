@@ -18,7 +18,6 @@ export type DiagnosticContext = {
   storageApi: boolean;
   offscreenCanvas: boolean;
   webgl2: boolean;
-  webgpu: boolean;
 };
 
 export type DiagnosticReport = {
@@ -61,7 +60,6 @@ export function createDiagnosticReport(input: {
       storageApi: typeof navigator.storage?.getDirectory === "function",
       offscreenCanvas: typeof OffscreenCanvas === "function",
       webgl2: supportsWebGl2(),
-      webgpu: "gpu" in navigator,
     },
   };
 }
@@ -93,7 +91,6 @@ export function formatDiagnosticReport(report: DiagnosticReport): string {
     ["Storage API", report.context.storageApi],
     ["OffscreenCanvas", report.context.offscreenCanvas],
     ["WebGL2", report.context.webgl2],
-    ["WebGPU", report.context.webgpu],
   ];
   const table = rows.map(([key, value]) => `| ${escapeTable(key)} | ${escapeTable(String(value))} |`).join("\n");
   const errorText = `${name}: ${message}`;

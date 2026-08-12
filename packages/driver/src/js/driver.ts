@@ -146,7 +146,7 @@ export class Driver {
     this.brokerWorker?.terminate();
   }
 
-  async attachToDOM(root: HTMLElement, useWebGPU = false): Promise<void> {
+  async attachToDOM(root: HTMLElement): Promise<void> {
     if (this.root) throw new Error("Already attached");
     this.root = root;
 
@@ -183,7 +183,7 @@ export class Driver {
     root.appendChild(container);
 
     const offscreenCanvas = canvas.transferControlToOffscreen();
-    await this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), useWebGPU);
+    await this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]));
 
     const overlayContainer = document.createElement("div");
     overlayContainer.style.cssText = `

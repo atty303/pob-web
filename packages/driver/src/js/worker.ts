@@ -6,7 +6,7 @@ import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
 import type { MouseState } from "./mouse-handler.ts";
 import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
-import { loadFonts, Renderer, type RenderStats, TextMetrics, WebGL1Backend, WebGPUBackend } from "./renderer/index.ts";
+import { loadFonts, Renderer, type RenderStats, TextMetrics, WebGL2Backend } from "./renderer/index.ts";
 import { createRpcClient } from "./rpc.ts";
 import { registerSentryWasm } from "./sentry-wasm.ts";
 
@@ -164,29 +164,12 @@ export class DriverWorker {
 
   destroy() {}
 
-  async setCanvas(canvas: OffscreenCanvas, useWebGPU: boolean) {
-    try {
-      if (useWebGPU && "gpu" in navigator) {
-        const backend = new WebGPUBackend(canvas);
-        await backend.waitForInit();
-        if (this.renderer) {
-          this.renderer.backend = backend;
-        }
-        log.info(tag.backend, "Using WebGPU backend");
-      } else {
-        const backend = new WebGL1Backend(canvas);
-        if (this.renderer) {
-          this.renderer.backend = backend;
-        }
-        log.info(tag.backend, "Using WebGL2 backend");
-      }
-    } catch (error) {
-      log.warn(tag.backend, "Failed to initialize WebGPU, falling back to WebGL2", error);
-      const backend = new WebGL1Backend(canvas);
-      if (this.renderer) {
-        this.renderer.backend = backend;
-      }
+  setCanvas(canvas: OffscreenCanvas) {
+    const backend = new WebGL2Backend(canvas);
+    if (this.renderer) {
+      this.renderer.backend = backend;
     }
+    log.info(tag.backend, "Using WebGL2 backend");
   }
 
   resize(size: { width: number; height: number; pixelRatio: number }) {
