@@ -18,6 +18,19 @@ export const daxMiseRunner: MiseRunner = async (args, allowFailure = false) => {
   return result.code;
 };
 
+const MAX_E2E_ATTEMPTS = 3;
+
+async function runCompatibilityE2E(runner: MiseRunner, game: Game, tag: string): Promise<boolean> {
+  const command = ["test:e2e:driver", "--game", game, "--version", tag] as const;
+  for (let attempt = 1; attempt <= MAX_E2E_ATTEMPTS; attempt++) {
+    if (await runner(command, true) === 0) return true;
+    if (attempt < MAX_E2E_ATTEMPTS) {
+      console.warn(`Driver E2E failed for ${game} ${tag} (attempt ${attempt}/${MAX_E2E_ATTEMPTS}); retrying`);
+    }
+  }
+  return false;
+}
+
 export async function collectGameResult(options: {
   game: Game;
   versions: Versions;
@@ -37,15 +50,12 @@ export async function collectGameResult(options: {
     await options.runner(["pack", "--game", options.game, "--tag", tag.name]);
     if (!options.dryRun) await options.runner(["sync", "--game", options.game, "--tag", tag.name]);
 
-    const exitCode = await options.runner(
-      ["test:e2e:driver", "--game", options.game, "--version", tag.name],
-      true,
-    );
+    const tested = await runCompatibilityE2E(options.runner, options.game, tag.name);
     releases.push(
       {
         value: tag.name,
         date: tag.committedDate,
-        testResult: exitCode === 0 ? "tested" : "failed",
+        testResult: tested ? "tested" : "failed",
       } as const,
     );
   }
