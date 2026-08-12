@@ -213,6 +213,10 @@ export class WebGL2Backend implements RenderBackend {
   }
   private readonly _canvas: OffscreenCanvas;
 
+  get supportsBptc(): boolean {
+    return this.ext.textureBptc !== null;
+  }
+
   constructor(canvas: OffscreenCanvas) {
     this._canvas = canvas;
 

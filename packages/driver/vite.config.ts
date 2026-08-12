@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import Inspect from "vite-plugin-inspect";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const packageDir = path.dirname(path.fromFileUrl(import.meta.url));
 const packerR2Dir = path.resolve(packageDir, "../packer/r2");
@@ -42,6 +43,7 @@ export default defineConfig(({ mode }) => {
         : undefined,
     },
     define: {
+      __BPTC_SUPPORT_OVERRIDE__: Deno.env.get("BPTC_SUPPORT_OVERRIDE") === "false" ? "false" : "undefined",
       __ASSET_PREFIX__: JSON.stringify(
         isDriverShell ? (usePobCoolAsset ? "/__pob_asset" : `/@fs/${packerR2Dir}`) : "https://asset.pob.cool",
       ),
@@ -61,6 +63,16 @@ export default defineConfig(({ mode }) => {
         target: "es2020",
       },
     },
-    plugins: [react(), tailwindcss(), Inspect()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      viteStaticCopy({
+        targets: [{
+          src: path.join(rootDir, "node_modules/texture2ddecoder-wasm/wasm/*"),
+          dest: "texture2ddecoder",
+        }],
+      }),
+      Inspect(),
+    ],
   };
 });

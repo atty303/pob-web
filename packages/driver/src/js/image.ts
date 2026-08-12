@@ -1,5 +1,6 @@
 import * as zstd from "@bokuweb/zstd-wasm";
 import { Format, parseDDSDX10, Target, Texture } from "dds";
+import { decodeBc7Texture } from "./bc7.ts";
 import { log, tag } from "./logger.ts";
 
 export type TextureSource =
@@ -82,9 +83,18 @@ let zstdInitialized = false;
 export class ImageRepository {
   private readonly prefix: string;
   private images: Map<number, TextureHolder> = new Map();
+  private resolveBptcSupport: ((supported: boolean) => void) | undefined;
+  private readonly bptcSupport = new Promise<boolean>((resolve) => {
+    this.resolveBptcSupport = resolve;
+  });
 
   constructor(prefix: string) {
     this.prefix = prefix;
+  }
+
+  setBptcSupport(supported: boolean) {
+    this.resolveBptcSupport?.(supported);
+    this.resolveBptcSupport = undefined;
   }
 
   async load(handle: number, src: string, flags: number): Promise<void> {
@@ -108,7 +118,10 @@ export class ImageRepository {
         }
         const data = zstd.decompress(new Uint8Array(await blob.arrayBuffer()));
         try {
-          const texture0 = parseDDSDX10(data);
+          let texture0 = parseDDSDX10(data);
+          if (texture0.format === Format.RGBA_BP_UNORM_BLOCK16 && !await this.bptcSupport) {
+            texture0 = await decodeBc7Texture(texture0);
+          }
           const texture = new Texture(
             Target.TARGET_2D_ARRAY,
             texture0.format,

@@ -14,6 +14,8 @@ const setSentryWasmCodeFile = registerSentryWasm(self);
 const debugWasmUrl = new URL("../../dist/debug/driver.wasm", import.meta.url).href;
 const releaseWasmUrl = new URL("../../dist/release/driver.wasm", import.meta.url).href;
 
+declare const __BPTC_SUPPORT_OVERRIDE__: boolean | undefined;
+
 interface DriverModule extends EmscriptenModule {
   cwrap: typeof cwrap;
   rpcCall: ReturnType<typeof createRpcClient>;
@@ -166,6 +168,7 @@ export class DriverWorker {
 
   setCanvas(canvas: OffscreenCanvas) {
     const backend = new WebGL2Backend(canvas);
+    this.imageRepo?.setBptcSupport(__BPTC_SUPPORT_OVERRIDE__ ?? backend.supportsBptc);
     if (this.renderer) {
       this.renderer.backend = backend;
     }

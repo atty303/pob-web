@@ -47,6 +47,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     ssr: false,
   },
   define: {
+    __BPTC_SUPPORT_OVERRIDE__: Deno.env.get("BPTC_SUPPORT_OVERRIDE") === "false" ? "false" : "undefined",
     APP_VERSION: JSON.stringify(appVersion),
     __SENTRY_RELEASE__: Deno.env.get("VITE_SENTRY_RELEASE") === undefined
       ? "undefined"
@@ -107,6 +108,10 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
             {
               src: normalizePath(path.join(rootDir, "packages/driver/dist/release/!(*.debug.wasm)")),
               dest: "dist/release/",
+            },
+            {
+              src: normalizePath(path.join(rootDir, "node_modules/texture2ddecoder-wasm/wasm/*")),
+              dest: "texture2ddecoder/",
             },
           ],
         }),

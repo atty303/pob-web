@@ -94,6 +94,13 @@ const e2eDriver = new Command()
     await $`deno task --filter pob-driver test:e2e`;
   });
 
+const e2eDriverBc7 = new Command().description("Run the BC7 CPU fallback browser test").action(async () => {
+  Deno.env.set("RUN_GAME", "poe2");
+  await $`deno run --allow-env --allow-read --allow-run=mise tools/pack-e2e-assets.ts --suite driver`;
+  Deno.env.set("BPTC_SUPPORT_OVERRIDE", "false");
+  await $`deno task --filter pob-driver test:e2e:bc7`;
+});
+
 const e2eWeb = new Command().description("Run the local web-to-driver critical-path test").action(async () => {
   await $`deno run --allow-env --allow-read --allow-run=mise tools/pack-e2e-assets.ts --suite web`;
   await $`deno task --filter pob-web test:e2e`;
@@ -206,6 +213,7 @@ await new Command()
   .command("driver-build", driverBuild)
   .command("driver-debug-info", driverDebugInfo)
   .command("test-e2e-driver", e2eDriver)
+  .command("test-e2e-driver-bc7", e2eDriverBc7)
   .command("test-e2e-web", e2eWeb)
   .command("pack", pack)
   .command("driver-dev", driverDev)
