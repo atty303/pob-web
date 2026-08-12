@@ -85,6 +85,11 @@ description = "Run the local web-to-driver critical-path test"
 run = "deno task repo test-e2e-web"
 depends = ["driver:build"]
 
+[tasks."test:e2e:driver:bc7"]
+description = "Run the BC7 CPU fallback browser test"
+run = "deno task repo test-e2e-driver-bc7"
+depends = ["driver:build"]
+
 [tasks."test:sentry:live"]
 description = "Verify Chromium and Firefox Wasm symbolication through Sentry"
 run = "deno task repo sentry-live"

@@ -61,6 +61,7 @@
     "npm:react-use@^17.6.1": "17.6.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
     "npm:tailwindcss@^4.3.3": "4.3.3",
+    "npm:texture2ddecoder-wasm@1.2.2": "1.2.2",
     "npm:tsx@^4.23.11": "4.23.11",
     "npm:vite-plugin-inspect@^10.3.0": "10.3.0_vite@6.4.3__@types+node@24.13.3__tsx@4.23.11_@types+node@24.13.3_tsx@4.23.11",
     "npm:vite-plugin-static-copy@^2.3.2": "2.3.2_vite@6.4.3__@types+node@24.13.3__tsx@4.23.11_@types+node@24.13.3_tsx@4.23.11",
@@ -2775,6 +2776,10 @@
     "tapable@2.3.3": {
       "integrity": "sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A=="
     },
+    "texture2ddecoder-wasm@1.2.2": {
+      "integrity": "sha512-z8xj94DAHSEF173rPL+UQtYtUpG0Vk3Fd8TGanzDbUwTXN0WXI8KXFwJuwFR6I5iYB5IBgj1rcumAdi5PHVTpw==",
+      "bin": true
+    },
     "throttle-debounce@3.0.1": {
       "integrity": "sha512-dTEWWNu6JmeVXY0ZYoPuH5cRIwc0MeGbJwah9KUNYSJwommQpCzTySTpEe8Gs1J23aeWEuAobe4Ag7EHVt/LOg=="
     },
@@ -3019,6 +3024,7 @@
       "npm:react-use@^17.6.1",
       "npm:react@^18.3.1",
       "npm:tailwindcss@^4.3.3",
+      "npm:texture2ddecoder-wasm@1.2.2",
       "npm:vite-plugin-inspect@^10.3.0",
       "npm:vite-plugin-static-copy@^2.3.2",
       "npm:vite@^6.4.3",

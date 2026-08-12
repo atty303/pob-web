@@ -67,6 +67,7 @@
     "react-router": "npm:react-router@^7.18.2",
     "react-use": "npm:react-use@^17.6.1",
     "tailwindcss": "npm:tailwindcss@^4.3.3",
+    "texture2ddecoder-wasm": "npm:texture2ddecoder-wasm@1.2.2",
     "vite": "npm:vite@^6.4.3",
     "vite-plugin-inspect": "npm:vite-plugin-inspect@^10.3.0",
     "vite-plugin-static-copy": "npm:vite-plugin-static-copy@^2.3.2",
