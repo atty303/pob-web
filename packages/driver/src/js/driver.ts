@@ -185,6 +185,12 @@ export class Driver {
 
     const offscreenCanvas = canvas.transferControlToOffscreen();
     await this.driverWorker?.setCanvas(Comlink.transfer(offscreenCanvas, [offscreenCanvas]));
+    const renderingSize = this.canvasManager.getRenderingSize();
+    await this.driverWorker?.resize({
+      width: renderingSize.renderingWidth,
+      height: renderingSize.renderingHeight,
+      pixelRatio: renderingSize.pixelRatio,
+    });
 
     const overlayContainer = document.createElement("div");
     overlayContainer.style.cssText = `

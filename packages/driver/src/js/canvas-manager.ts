@@ -22,13 +22,27 @@ export interface CanvasRenderingSize {
   pixelRatio: number;
 }
 
-export const calculateRenderingSize = (styleWidth: number, styleHeight: number, pixelRatio: number) => ({
-  styleWidth,
-  styleHeight,
-  renderingWidth: Math.round(styleWidth * pixelRatio),
-  renderingHeight: Math.round(styleHeight * pixelRatio),
-  pixelRatio,
-});
+export const MAX_RENDERING_DIMENSION = 4096;
+
+export const calculateRenderingSize = (
+  styleWidth: number,
+  styleHeight: number,
+  devicePixelRatio: number,
+): CanvasRenderingSize => {
+  const pixelRatio = Math.min(
+    devicePixelRatio,
+    MAX_RENDERING_DIMENSION / styleWidth,
+    MAX_RENDERING_DIMENSION / styleHeight,
+  );
+
+  return {
+    styleWidth,
+    styleHeight,
+    renderingWidth: Math.min(MAX_RENDERING_DIMENSION, Math.round(styleWidth * pixelRatio)),
+    renderingHeight: Math.min(MAX_RENDERING_DIMENSION, Math.round(styleHeight * pixelRatio)),
+    pixelRatio,
+  };
+};
 
 export interface ViewportTransform {
   scale: number;
@@ -69,6 +83,7 @@ export class CanvasManager {
 
   private onStateChange?: (state: CanvasState) => void;
   private onRenderingSizeChange?: (size: CanvasRenderingSize) => void;
+  private lastNotifiedRenderingSize?: CanvasRenderingSize;
 
   constructor(config: CanvasConfig) {
     this.config = config;
@@ -85,6 +100,7 @@ export class CanvasManager {
   }) {
     this.onStateChange = callbacks.onStateChange;
     this.onRenderingSizeChange = callbacks.onRenderingSizeChange;
+    this.lastNotifiedRenderingSize = undefined;
   }
 
   createCanvas(): HTMLCanvasElement {
@@ -142,6 +158,7 @@ export class CanvasManager {
     this.canvas = null;
     this.canvasContainer = null;
     this.root = null;
+    this.lastNotifiedRenderingSize = undefined;
   }
 
   setCanvasStyleSize(width: number, height: number) {
@@ -221,14 +238,11 @@ export class CanvasManager {
   }
 
   getRenderingSize(): CanvasRenderingSize {
-    const pixelRatio = window.devicePixelRatio || 1;
-    return {
-      styleWidth: this.currentStyleWidth,
-      styleHeight: this.currentStyleHeight,
-      renderingWidth: this.currentStyleWidth * pixelRatio,
-      renderingHeight: this.currentStyleHeight * pixelRatio,
-      pixelRatio,
-    };
+    return calculateRenderingSize(
+      this.currentStyleWidth,
+      this.currentStyleHeight,
+      window.devicePixelRatio || 1,
+    );
   }
 
   getCanvas(): HTMLCanvasElement | null {
@@ -407,9 +421,17 @@ export class CanvasManager {
   private notifyRenderingSizeChange() {
     if (!this.onRenderingSizeChange) return;
 
-    const pixelRatio = window.devicePixelRatio || 1;
-    const renderingSize = calculateRenderingSize(this.currentStyleWidth, this.currentStyleHeight, pixelRatio);
+    const renderingSize = this.getRenderingSize();
+    const previous = this.lastNotifiedRenderingSize;
+    if (
+      previous?.renderingWidth === renderingSize.renderingWidth &&
+      previous.renderingHeight === renderingSize.renderingHeight &&
+      previous.pixelRatio === renderingSize.pixelRatio
+    ) {
+      return;
+    }
 
+    this.lastNotifiedRenderingSize = renderingSize;
     this.onRenderingSizeChange(renderingSize);
   }
 
