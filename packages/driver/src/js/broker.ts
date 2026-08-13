@@ -3,7 +3,8 @@ import * as zenfs from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
-import { isLocalUserStorageOperation, markEnvironmentError } from "./error.ts";
+import { markEnvironmentError } from "./error.ts";
+import { FilesystemRpcHandler } from "./filesystem-handler.ts";
 import { CloudflareKV } from "./fs.ts";
 import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
@@ -22,7 +23,7 @@ class AsyncBroker {
   private eventPort: MessagePort | undefined;
   private nextSubscriptId = 1;
   private subscripts = new Map<number, { worker: Worker; port: MessagePort }>();
-  private localUserFds = new Set<number>();
+  private filesystem = new FilesystemRpcHandler();
   private cloudDirectory: string | undefined;
 
   async start(
@@ -36,8 +37,8 @@ class AsyncBroker {
   ) {
     this.callbacks = { fetch: fetchCallback, oauthAuthorize: oauthAuthorizeCallback, paste: pasteCallback };
     this.eventPort = eventPort;
-    this.localUserFds.clear();
     this.cloudDirectory = config.cloudflareKvAccessToken ? `/user/${config.userDirectory}/Builds/Cloud` : undefined;
+    this.filesystem.reset(this.cloudDirectory);
     let rootZipData: ArrayBuffer;
     try {
       const rootZip = await fetch(`${assetPrefix}/root.zip`);
@@ -83,95 +84,12 @@ class AsyncBroker {
   }
 
   private async handle(operation: string, args: unknown[], data?: Uint8Array): Promise<RpcResult> {
-    try {
-      return await this.handleOperation(operation, args, data);
-    } catch (error) {
-      if (isLocalUserStorageOperation(operation, args, this.localUserFds, this.cloudDirectory)) {
-        throw markEnvironmentError(error, "storage");
-      }
-      throw error;
-    }
+    if (this.filesystem.handles(operation)) return await this.filesystem.handle(operation, args, data);
+    return await this.handleOperation(operation, args, data);
   }
 
   private async handleOperation(operation: string, args: unknown[], data?: Uint8Array): Promise<RpcResult> {
-    const fs = zenfs.fs;
     switch (operation) {
-      case "readdir": {
-        const entries = await fs.promises.readdir(args[0] as string, { withFileTypes: true });
-        return { value: entries.map((entry) => [entry.name, entry.isFile() ? 1 : entry.isDirectory() ? 2 : 3]) };
-      }
-      case "lstat":
-        return { value: this.serializeStat(await fs.promises.lstat(args[0] as string)) };
-      case "stat":
-        return { value: this.serializeStat(await fs.promises.stat(args[0] as string)) };
-      case "fstat":
-        return {
-          value: this.serializeStat(
-            await new Promise<zenfs.Stats>((resolve, reject) =>
-              fs.fstat(args[0] as number, (e, value) => (e ? reject(e) : resolve(value!)))
-            ),
-          ),
-        };
-      case "open": {
-        const fd = (await fs.promises.open(args[0] as string, args[1] as string, args[2] as number | undefined)).fd;
-        if (isLocalUserStorageOperation(operation, args, this.localUserFds, this.cloudDirectory)) {
-          this.localUserFds.add(fd);
-        }
-        return {
-          value: fd,
-        };
-      }
-      case "close":
-        await new Promise<void>((resolve, reject) => fs.close(args[0] as number, (e) => (e ? reject(e) : resolve())));
-        this.localUserFds.delete(args[0] as number);
-        return { value: 0 };
-      case "read": {
-        const buffer = new Uint8Array(args[1] as number);
-        const bytesRead = await new Promise<number>((resolve, reject) =>
-          fs.read(
-            args[0] as number,
-            buffer,
-            0,
-            buffer.length,
-            args[2] as number,
-            (e, n) => e ? reject(e) : resolve(n ?? 0),
-          )
-        );
-        return { value: bytesRead, data: buffer.subarray(0, bytesRead) };
-      }
-      case "write": {
-        const written = await new Promise<number>((resolve, reject) =>
-          fs.write(
-            args[0] as number,
-            data!,
-            0,
-            data!.length,
-            args[1] as number,
-            (e, n) => e ? reject(e) : resolve(n ?? 0),
-          )
-        );
-        return { value: written };
-      }
-      case "mkdir":
-        await fs.promises.mkdir(args[0] as string, args[1] as number);
-        return { value: 0 };
-      case "unlink":
-        await fs.promises.unlink(args[0] as string);
-        return { value: 0 };
-      case "rmdir":
-        await fs.promises.rmdir(args[0] as string);
-        return { value: 0 };
-      case "rename":
-        await fs.promises.rename(args[0] as string, args[1] as string);
-        return { value: 0 };
-      case "truncate":
-        await fs.promises.truncate(args[0] as string, args[1] as number);
-        return { value: 0 };
-      case "ftruncate":
-        await new Promise<void>((resolve, reject) =>
-          fs.ftruncate(args[0] as number, args[1] as number, (e) => (e ? reject(e) : resolve()))
-        );
-        return { value: 0 };
       case "fetch": {
         const headers = prepareFetchHeaders(args[1] as Record<string, string>);
         return {
@@ -221,10 +139,6 @@ class AsyncBroker {
       default:
         throw new Error(`Unknown RPC operation: ${operation}`);
     }
-  }
-
-  private serializeStat(stat: zenfs.Stats) {
-    return { mode: stat.mode, size: stat.size };
   }
 
   private finishSubscript(id: number) {
