@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.33.0](https://github.com/atty303/pob-web/compare/v0.32.2...v0.33.0) (2026-08-13)
+
+
+### Features
+
+* **dev:** add remote runtime diagnostics ([5672d62](https://github.com/atty303/pob-web/commit/5672d6282e6799731e8267c3117315e7eed70f51))
+* **dev:** add rendering dimension override ([0095365](https://github.com/atty303/pob-web/commit/00953652bbc3b79820ef421d3a6f1360c2760748))
+
+
+### Bug Fixes
+
+* **driver:** bound Safari WebGL instance batches ([#190](https://github.com/atty303/pob-web/issues/190)) ([1be42e2](https://github.com/atty303/pob-web/commit/1be42e240bb93c39efdd35770acb7348b9a48d04))
+* **driver:** bound WebGL instance batches ([06462d0](https://github.com/atty303/pob-web/commit/06462d01d8482e5f396acc468ee27a78583961aa))
+
+
+### Performance Improvements
+
+* **dev:** prebundle web dependencies ([83ec3d7](https://github.com/atty303/pob-web/commit/83ec3d79d86964efd44f42b29260bb38e5de94ee))
+
 ## [0.32.2](https://github.com/atty303/pob-web/compare/v0.32.1...v0.32.2) (2026-08-13)
 
 
