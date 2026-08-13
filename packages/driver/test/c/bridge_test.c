@@ -1,4 +1,6 @@
 #include "byte_buffer.h"
+#include "draw_color.h"
+#include "dpi.h"
 #include "sub_serialization.h"
 
 #include <stdio.h>
@@ -55,8 +57,73 @@ static void test_large_buffer_append(void) {
     free(large);
 }
 
+static void check_color(DrawColor color, float r, float g, float b, float a) {
+    CHECK(color.r == r);
+    CHECK(color.g == g);
+    CHECK(color.b == b);
+    CHECK(color.a == a);
+}
+
+static void test_draw_color_escapes(void) {
+    DrawColor color = {0};
+    CHECK(draw_color_read_escape("^1", &color));
+    check_color(color, 1.0f, 0.0f, 0.0f, 1.0f);
+    CHECK(draw_color_read_escape("^xA1b2C3", &color));
+    check_color(color, 161.0f / 255.0f, 178.0f / 255.0f, 195.0f / 255.0f, 1.0f);
+    CHECK(draw_color_read_escape("^XA1B2C3", &color));
+    CHECK(!draw_color_read_escape("^x12zz56", &color));
+    CHECK(!draw_color_read_escape("plain", &color));
+
+    color = (DrawColor){0};
+    const char *text = "^1red ^x102030custom ^8gray";
+    CHECK(draw_color_read_last_escape(text, strlen(text), &color));
+    check_color(color, 0.7f, 0.7f, 0.7f, 1.0f);
+    CHECK(!draw_color_read_last_escape("no escapes", 10, &color));
+    CHECK(draw_color_read_last_escape("^1red^2", 5, &color));
+    check_color(color, 1.0f, 0.0f, 0.0f, 1.0f);
+}
+
+static void test_dpi_scaling(void) {
+    dpi_set_override_percent(0);
+    dpi_render_init(NULL);
+    CHECK(!dpi_is_aware());
+    CHECK(dpi_get_scale(2.0) == 1.0);
+
+    dpi_render_init("DPI_AWARE");
+    CHECK(dpi_is_aware());
+    CHECK(dpi_get_scale(2.0) == 2.0);
+    CHECK(dpi_scale_coordinate(12.5, 2.0) == 25.0);
+    CHECK(dpi_scale_font_height(15, 2.0) == 30);
+    CHECK(dpi_scale_font_height(15, 1.5) == 24);
+    CHECK(dpi_scale_font_height(15, 1.0) == 16);
+    CHECK(dpi_scale_font_height(14, 0.5) == 8);
+    CHECK(dpi_scale_font_height(0, 2.0) == 1);
+    CHECK(dpi_scale_font_height(15.5, 1.0) == 16);
+    CHECK(dpi_round_coordinate(1, 1.5) == 2);
+    CHECK(dpi_ceil_extent(1, 1.5) == 2);
+
+    dpi_set_override_percent(250);
+    CHECK(dpi_get_override_percent() == 250);
+    CHECK(dpi_get_scale(3.0) == 2.5);
+    CHECK(dpi_scale_coordinate(10.0, 3.0) == 25.0);
+
+    dpi_set_override_percent(0);
+    CHECK(dpi_get_override_percent() == 0);
+    CHECK(dpi_get_scale(3.0) == 3.0);
+    CHECK(dpi_cursor_coordinate(75.0, 3.0) == 75);
+    dpi_set_override_percent(150);
+    CHECK(dpi_cursor_coordinate(75.0, 2.0) == 100);
+    dpi_set_override_percent(250);
+    CHECK(dpi_cursor_coordinate(125.0, 2.0) == 100);
+    dpi_set_override_percent(-1);
+    CHECK(dpi_get_override_percent() == -1);
+    CHECK(dpi_get_scale(3.0) == 3.0);
+}
+
 int main(void) {
     test_subscript_values_round_trip();
     test_large_buffer_append();
+    test_draw_color_escapes();
+    test_dpi_scaling();
     return 0;
 }

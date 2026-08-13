@@ -5,16 +5,14 @@
 #include <emscripten.h>
 #include "draw.h"
 #include "byte_buffer.h"
+#include "draw_color.h"
+#include "dpi.h"
 #include "lauxlib.h"
 #include "image.h"
 
 static int st_layer = 0;
 
-// Track current draw color state
-static float st_color_r = 1.0f;
-static float st_color_g = 1.0f;
-static float st_color_b = 1.0f;
-static float st_color_a = 1.0f;
+static DrawColor st_color = {1.0f, 1.0f, 1.0f, 1.0f};
 
 typedef enum {
     DRAW_SET_CLEAR_COLOR = 1,
@@ -73,7 +71,7 @@ typedef struct {
     uint8_t type;
     float x, y;
     uint8_t align;
-    uint8_t height;
+    uint32_t height;
     uint8_t font;
     uint16_t text_size;
     char text[];
@@ -82,6 +80,14 @@ typedef struct {
 #pragma pack(pop)
 
 static ByteBuffer st_buffer = {0};
+
+static double get_system_scale(void) {
+    return EM_ASM_DOUBLE({ return Module.getScreenScale(); });
+}
+
+static double get_screen_scale(void) {
+    return dpi_get_scale(get_system_scale());
+}
 
 static void draw_push(const void *data, size_t size) {
     byte_buffer_append(&st_buffer, data, size);
@@ -93,11 +99,6 @@ void draw_begin() {
     st_buffer.capacity = 0;
     st_layer = 0;
     
-    // Initialize color state to white
-    st_color_r = 1.0f;
-    st_color_g = 1.0f;
-    st_color_b = 1.0f;
-    st_color_a = 1.0f;
 }
 
 void draw_get_buffer(void **data, size_t *size) {
@@ -116,9 +117,30 @@ static int GetScreenSize(lua_State *L) {
     int height = EM_ASM_INT({
         return Module.getScreenHeight();
     });
-    lua_pushinteger(L, width);
-    lua_pushinteger(L, height);
+    double scale = dpi_is_aware() ? 1.0 : get_system_scale();
+    lua_pushinteger(L, width / scale);
+    lua_pushinteger(L, height / scale);
     return 2;
+}
+
+static int RenderInit(lua_State *L) {
+    dpi_render_init(luaL_optstring(L, 1, NULL));
+    return 0;
+}
+
+static int GetScreenScale(lua_State *L) {
+    lua_pushnumber(L, get_screen_scale());
+    return 1;
+}
+
+static int SetDPIScaleOverridePercent(lua_State *L) {
+    dpi_set_override_percent(luaL_checkinteger(L, 1));
+    return 0;
+}
+
+static int GetDPIScaleOverridePercent(lua_State *L) {
+    lua_pushinteger(L, dpi_get_override_percent());
+    return 1;
 }
 
 static int SetDrawLayer(lua_State *L) {
@@ -165,8 +187,12 @@ static int SetViewport(lua_State *L) {
         assert(lua_isnumber(L, 3));
         assert(lua_isnumber(L, 4));
 
-        SetViewportCommand cmd = {DRAW_SET_VIEWPORT, lua_tointeger(L, 1), lua_tointeger(L, 2), lua_tointeger(L, 3),
-                                  lua_tointeger(L, 4)};
+        double scale = get_system_scale();
+        SetViewportCommand cmd = {DRAW_SET_VIEWPORT,
+                                  dpi_round_coordinate(lua_tonumber(L, 1), scale),
+                                  dpi_round_coordinate(lua_tonumber(L, 2), scale),
+                                  dpi_ceil_extent(lua_tonumber(L, 3), scale),
+                                  dpi_ceil_extent(lua_tonumber(L, 4), scale)};
         draw_push(&cmd, sizeof(cmd));
     } else {
         SetViewportCommand cmd = {DRAW_SET_VIEWPORT, 0, 0, 0, 0};
@@ -177,17 +203,16 @@ static int SetViewport(lua_State *L) {
 }
 
 static void draw_set_color(float r, float g, float b, float a) {
-    // Update tracked color state
-    st_color_r = r;
-    st_color_g = g;
-    st_color_b = b;
-    st_color_a = a;
+    st_color = (DrawColor){r, g, b, a};
     
     SetColorCommand cmd = {DRAW_SET_COLOR, (uint8_t )(r * 255), (uint8_t)(g * 255), (uint8_t)(b * 255), (uint8_t)(a * 255)};
     draw_push(&cmd, sizeof(cmd));
 }
 
-static void draw_set_color_escape(const char *text) {
+static int draw_set_color_escape(lua_State *L, const char *text) {
+    if (!draw_color_read_escape(text, &st_color)) {
+        return luaL_error(L, "SetDrawColor() argument 1: invalid color escape sequence");
+    }
     size_t text_size = strlen(text);
     if (text_size > UINT16_MAX) text_size = UINT16_MAX;
     SetColorEscapeCommand *cmd = malloc(sizeof(SetColorEscapeCommand) + text_size);
@@ -197,13 +222,14 @@ static void draw_set_color_escape(const char *text) {
 
     draw_push(cmd, sizeof(SetColorEscapeCommand) + text_size);
     free(cmd);
+    return 0;
 }
 
 static int GetDrawColor(lua_State *L) {
-    lua_pushnumber(L, st_color_r);
-    lua_pushnumber(L, st_color_g);
-    lua_pushnumber(L, st_color_b);
-    lua_pushnumber(L, st_color_a);
+    lua_pushnumber(L, st_color.r);
+    lua_pushnumber(L, st_color.g);
+    lua_pushnumber(L, st_color.b);
+    lua_pushnumber(L, st_color.a);
     return 4;
 }
 
@@ -211,7 +237,7 @@ static int SetDrawColor(lua_State *L) {
     int n = lua_gettop(L);
     assert(n >= 1);
     if (lua_type(L, 1) == LUA_TSTRING) {
-        draw_set_color_escape(lua_tostring(L, 1));
+        return draw_set_color_escape(L, lua_tostring(L, 1));
     } else {
         assert(n >= 3);
 
@@ -298,7 +324,11 @@ static int DrawImage(lua_State *L) {
         k += 1;
     }
 
-    draw_image(handle, xys[0][0], xys[0][1], xys[1][0], xys[1][1], uvs[0][0], uvs[0][1], uvs[1][0], uvs[1][1], stackLayer, maskLayer);
+    double scale = get_system_scale();
+    draw_image(handle,
+               dpi_scale_coordinate(xys[0][0], scale), dpi_scale_coordinate(xys[0][1], scale),
+               dpi_scale_coordinate(xys[1][0], scale), dpi_scale_coordinate(xys[1][1], scale),
+               uvs[0][0], uvs[0][1], uvs[1][0], uvs[1][1], stackLayer, maskLayer);
 
     return 0;
 }
@@ -378,7 +408,12 @@ static int DrawImageQuad(lua_State *L) {
         k += 1;
     }
 
-    draw_image_quad(handle, xys[0][0], xys[0][1], xys[1][0], xys[1][1], xys[2][0], xys[2][1], xys[3][0], xys[3][1],
+    double scale = get_system_scale();
+    draw_image_quad(handle,
+                    dpi_scale_coordinate(xys[0][0], scale), dpi_scale_coordinate(xys[0][1], scale),
+                    dpi_scale_coordinate(xys[1][0], scale), dpi_scale_coordinate(xys[1][1], scale),
+                    dpi_scale_coordinate(xys[2][0], scale), dpi_scale_coordinate(xys[2][1], scale),
+                    dpi_scale_coordinate(xys[3][0], scale), dpi_scale_coordinate(xys[3][1], scale),
                     uvs[0][0], uvs[0][1], uvs[1][0], uvs[1][1], uvs[2][0], uvs[2][1], uvs[3][0], uvs[3][1], stackLayer, maskLayer);
 
     return 0;
@@ -402,16 +437,19 @@ static int DrawString(lua_State *L) {
     if (text_size > UINT16_MAX) text_size = UINT16_MAX;
     DrawStringCommand *cmd = malloc(sizeof(DrawStringCommand) + text_size);
     cmd->type = DRAW_STRING;
-    cmd->x = lua_tonumber(L, 1);
-    cmd->y = lua_tonumber(L, 2);
+    double scale = get_system_scale();
+    cmd->x = dpi_scale_coordinate(lua_tonumber(L, 1), scale);
+    cmd->y = dpi_scale_coordinate(lua_tonumber(L, 2), scale);
     cmd->align = luaL_checkoption(L, 3, "LEFT", alignMap);
-    cmd->height = lua_tointeger(L, 4); // TODO: check range
+    cmd->height = dpi_scale_font_height(lua_tonumber(L, 4), scale);
     cmd->font = luaL_checkoption(L, 5, "FIXED", fontMap);
     cmd->text_size = text_size;
     memcpy(cmd->text, text, text_size);
 
     draw_push(cmd, sizeof(DrawStringCommand) + text_size);
     free(cmd);
+
+    draw_color_read_last_escape(text, text_size, &st_color);
 
     return 0;
 }
@@ -423,7 +461,9 @@ static int DrawStringWidth(lua_State *L) {
     assert(lua_isstring(L, 2));
     assert(lua_isstring(L, 3));
 
-    int height = lua_tointeger(L, 1);
+    double system_scale = get_system_scale();
+    double scale = dpi_get_scale(system_scale);
+    int height = dpi_scale_font_height(lua_tonumber(L, 1), system_scale);
     int font = luaL_checkoption(L, 2, "FIXED", fontMap);
     const char *text = lua_tostring(L, 3);
 
@@ -431,7 +471,7 @@ static int DrawStringWidth(lua_State *L) {
         return Module.getStringWidth($0, $1, UTF8ToString($2));
     }, height, font, text);
 
-    lua_pushinteger(L, width);
+    lua_pushnumber(L, width / scale);
     return 1;
 }
 
@@ -444,11 +484,12 @@ static int DrawStringCursorIndex(lua_State *L) {
     assert(lua_isnumber(L, 4));
     assert(lua_isnumber(L, 5));
 
-    int size = lua_tointeger(L, 1);
+    double system_scale = get_system_scale();
+    int size = dpi_scale_font_height(lua_tonumber(L, 1), system_scale);
     int font = luaL_checkoption(L, 2, "FIXED", fontMap);
     const char *text = lua_tostring(L, 3);
-    int x = lua_tointeger(L, 4);
-    int y = lua_tointeger(L, 5);
+    int x = dpi_round_coordinate(lua_tonumber(L, 4), system_scale);
+    int y = dpi_round_coordinate(lua_tonumber(L, 5), system_scale);
 
     int index = EM_ASM_INT({
         return Module.getStringCursorIndex($0, $1, UTF8ToString($2), $3, $4);
@@ -459,8 +500,20 @@ static int DrawStringCursorIndex(lua_State *L) {
 }
 
 void draw_init(lua_State *L) {
+    lua_pushcclosure(L, RenderInit, 0);
+    lua_setglobal(L, "RenderInit");
+
     lua_pushcclosure(L, GetScreenSize, 0);
     lua_setglobal(L, "GetScreenSize");
+
+    lua_pushcclosure(L, GetScreenScale, 0);
+    lua_setglobal(L, "GetScreenScale");
+
+    lua_pushcclosure(L, SetDPIScaleOverridePercent, 0);
+    lua_setglobal(L, "SetDPIScaleOverridePercent");
+
+    lua_pushcclosure(L, GetDPIScaleOverridePercent, 0);
+    lua_setglobal(L, "GetDPIScaleOverridePercent");
 
     lua_pushcclosure(L, SetDrawLayer, 0);
     lua_setglobal(L, "SetDrawLayer");

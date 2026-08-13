@@ -97,6 +97,47 @@ for (const release of releases) {
   });
 }
 
+test.describe("HiDPI rendering", () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test("uses a physical backing store without coupling it to CSS zoom", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Playwright deviceScaleFactor is not applied by Firefox");
+    const release = releases[0];
+    if (!release) throw new Error("No E2E release is configured");
+    await page.goto(`/?game=${release.game}&version=${release.version}`);
+    await waitForPoBReady(page);
+
+    const canvas = page.locator("canvas");
+    await page.getByRole("button", { name: "Zoom Controls" }).click();
+    const initial = await canvas.evaluate((element) => ({
+      backingWidth: (element as HTMLCanvasElement).width,
+      backingHeight: (element as HTMLCanvasElement).height,
+      cssWidth: Number.parseFloat(element.style.width),
+      cssHeight: Number.parseFloat(element.style.height),
+    }));
+    expect(initial.backingWidth).toBe(Math.round(initial.cssWidth * 2));
+    expect(initial.backingHeight).toBe(Math.round(initial.cssHeight * 2));
+
+    const inputSink = canvas.locator("..");
+    await inputSink.focus();
+    await page.keyboard.press("ArrowRight");
+    expect((await page.evaluate(() => window.__POB_TEST__?.pressedKeys)) ?? []).not.toContain("RIGHT");
+
+    await page.getByRole("slider").fill("1.2");
+    await expect.poll(() => canvas.evaluate((element) => element.style.transform)).toContain("scale(1.2)");
+    expect(
+      await canvas.evaluate((element) => ({
+        width: (element as HTMLCanvasElement).width,
+        height: (element as HTMLCanvasElement).height,
+      })),
+    ).toEqual({
+      width: initial.backingWidth,
+      height: initial.backingHeight,
+    });
+    expect((await page.evaluate(() => window.__POB_TEST__?.errors)) ?? []).toEqual([]);
+  });
+});
+
 test("the current build exports and reloads through the Lua runtime", async ({ page }) => {
   test.skip(targeted, "Targeted compatibility checks only run the startup scenario");
   const release = releases.find((candidate) => candidate.game === "poe1");

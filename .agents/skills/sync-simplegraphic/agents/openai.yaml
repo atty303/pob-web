@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync SimpleGraphic"
+  short_description: "Audit and synchronize browser runtime compatibility"
+  default_prompt: "Use $sync-simplegraphic to audit SimpleGraphic changes, implement compatible browser-runtime updates, verify them, and advance the tracked state."

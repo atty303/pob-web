@@ -27,7 +27,7 @@
     "build": "react-router typegen && react-router build",
     "deploy": "mise run web:deploy",
     "deploy:pages": "wrangler pages deploy build/client --project-name pob-web",
-    "dev": "react-router dev --port 5173 --strictPort",
+    "dev": "react-router dev",
     "preview": "react-router preview",
     "test": "deno test --no-check --allow-read=../../auth0/actions/poe-token-bridge.js,public/_headers test/unit/*.test.ts",
     "test:e2e": "playwright test",

@@ -132,25 +132,6 @@ description = "Install the Chromium and Firefox browsers used for E2E and visual
 depends = ["install"]
 run = "deno task playwright install chromium firefox"
 
-[tasks."visual:dev"]
-description = "Start the driver UI for interactive visual verification"
-usage = """
-flag "--game <game>" {
-  help "Game to run"
-  choices "poe1" "poe2" "le"
-  default "poe2"
-}
-flag "--version <version>" help="Game version to run; defaults to the current head"
-flag "--build <build>" {
-  help "Build type to run"
-  choices "release" "debug"
-  default "release"
-}
-flag "--pob-cool-asset" help="Use https://asset.pob.cool assets instead of local packed assets"
-"""
-run = 'deno task repo visual-dev --game "${usage_game?}" ${usage_version:+--version "$usage_version"} --build "${usage_build?}" ${usage_pob_cool_asset:+--pob-cool-asset}'
-depends = ["driver:build"]
-
 [tasks.pack]
 description = "Pack the distribution from upstream repository"
 usage = """

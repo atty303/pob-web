@@ -172,8 +172,8 @@ export class Driver {
       },
       onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
         this.driverWorker?.resize({
-          width: renderingSize.styleWidth,
-          height: renderingSize.styleHeight,
+          width: renderingSize.renderingWidth,
+          height: renderingSize.renderingHeight,
           pixelRatio: renderingSize.pixelRatio,
         });
       },

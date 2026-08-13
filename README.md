@@ -68,8 +68,7 @@ mise run pack --game poe2 --tag v0.8.0
 
 ### Run driver shell
 
-Set up a development server for the PoB web driver alone. The human-facing development task uses port 5173 because
-`asset.pob.cool` allows that development origin.
+Set up a development server for the PoB web driver alone. Vite selects an available port and reports the URL.
 
 ```bash
 mise run driver:dev --game poe2 --version v0.8.0
@@ -77,9 +76,8 @@ mise run driver:dev --game poe2 --version v0.8.0
 
 ### Run web app
 
-Set up a web application development server. You need to build the driver first. This human-facing task also requires
-port 5173 and fails instead of selecting another port when it is occupied. Its local Cloudflare Pages server and
-inspector use operating-system-assigned ports, which are forwarded to the frontend automatically.
+Set up a web application development server. You need to build the driver first. Vite, the local Cloudflare Pages
+server, and its inspector select available ports, with the latter two forwarded to the frontend automatically.
 
 ```bash
 mise run web:dev
@@ -87,16 +85,19 @@ mise run web:dev
 
 ### Visual verification with Codex
 
-Install the workspace Playwright browser before starting Codex in this trusted repository:
+If the workspace Playwright browser is not installed, prepare it in this trusted repository:
 
 ```bash
 mise run setup
 mise run visual:setup
 ```
 
-Invoke `$canvas-visual-verification` from Codex to start the driver UI and inspect its Canvas/WebGL interface with
-Playwright MCP Vision Mode. The browser is stored in Playwright's standard OS cache and is not committed. Headless mode
-is the default; start Codex with `PLAYWRIGHT_MCP_HEADED=1` when a visible browser is needed for investigation.
+Invoke `$investigate-canvas-ui` from Codex to investigate the Canvas/WebGL interface with Playwright MCP Vision Mode.
+The skill reuses a suitable running server when possible; otherwise it chooses `driver:dev` or `web:dev` for the target
+behavior and uses the URL reported by the task. Development servers proxy remote `asset.pob.cool` data, so their ports
+remain dynamic in remote-asset mode. The browser is stored in Playwright's standard OS cache and is not committed.
+Headless mode is the default; start Codex with `PLAYWRIGHT_MCP_HEADED=1` when a visible browser is needed for
+investigation.
 
 Use the fast check during development. Run the full test, including the WebAssembly and web builds, before completing
 build-related or cross-package changes:
@@ -122,8 +123,8 @@ The E2E tasks pack their required upstream releases locally and reuse those asse
 change. The driver runtime suite starts each head in Chromium and Firefox and checks item database loading, WebAssembly
 startup, WebGL2 rendering, frame statistics, clipboard round trips, and the DOM zoom control. The web runtime suite
 checks the critical path from the landing page through version loading and routing to a rendered driver session and web
-toolbar control. Browser tests and MCP visual verification select an available development-server port and use the URL
-reported by Vite, so they can run alongside the human-facing port 5173 server. To run only one game's current head, pass
+toolbar control. Browser tests, development tasks, and MCP visual investigation select an available development-server
+port and use the URL reported by Vite, so they can run alongside one another. To run only one game's current head, pass
 `--game`; add `--version` only for a release-specific compatibility check:
 
 ```bash

@@ -22,6 +22,14 @@ export interface CanvasRenderingSize {
   pixelRatio: number;
 }
 
+export const calculateRenderingSize = (styleWidth: number, styleHeight: number, pixelRatio: number) => ({
+  styleWidth,
+  styleHeight,
+  renderingWidth: Math.round(styleWidth * pixelRatio),
+  renderingHeight: Math.round(styleHeight * pixelRatio),
+  pixelRatio,
+});
+
 export interface ViewportTransform {
   scale: number;
   translateX: number;
@@ -45,6 +53,7 @@ export class CanvasManager {
 
   private config: CanvasConfig;
   private resizeObserver: ResizeObserver | null = null;
+  private readonly handleWindowResize = () => this.notifyRenderingSizeChange();
 
   private _scale = 1;
   private _panTranslateX = 0;
@@ -87,8 +96,9 @@ export class CanvasManager {
     canvas.style.height = `${this.currentStyleHeight}px`;
 
     const pixelRatio = window.devicePixelRatio || 1;
-    canvas.width = this.currentStyleWidth * pixelRatio;
-    canvas.height = this.currentStyleHeight * pixelRatio;
+    const renderingSize = calculateRenderingSize(this.currentStyleWidth, this.currentStyleHeight, pixelRatio);
+    canvas.width = renderingSize.renderingWidth;
+    canvas.height = renderingSize.renderingHeight;
 
     this.canvas = canvas;
     return canvas;
@@ -120,12 +130,14 @@ export class CanvasManager {
     container.appendChild(canvas);
 
     this.setupResizeObserver();
+    window.addEventListener("resize", this.handleWindowResize);
 
     return { canvas, container };
   }
 
   detachFromDOM() {
     this.resizeObserver?.disconnect();
+    window.removeEventListener("resize", this.handleWindowResize);
     this.resizeObserver = null;
     this.canvas = null;
     this.canvasContainer = null;
@@ -396,13 +408,7 @@ export class CanvasManager {
     if (!this.onRenderingSizeChange) return;
 
     const pixelRatio = window.devicePixelRatio || 1;
-    const renderingSize: CanvasRenderingSize = {
-      styleWidth: this.currentStyleWidth,
-      styleHeight: this.currentStyleHeight,
-      renderingWidth: this.currentStyleWidth * pixelRatio,
-      renderingHeight: this.currentStyleHeight * pixelRatio,
-      pixelRatio,
-    };
+    const renderingSize = calculateRenderingSize(this.currentStyleWidth, this.currentStyleHeight, pixelRatio);
 
     this.onRenderingSizeChange(renderingSize);
   }

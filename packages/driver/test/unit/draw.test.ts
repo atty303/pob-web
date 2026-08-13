@@ -22,11 +22,12 @@ const setColor = (r: number, g: number, b: number, a: number) => new Uint8Array(
 
 const variableCommand = (type: 5 | 8, text: string) => {
   const encoded = new TextEncoder().encode(text);
-  const headerLength = type === 5 ? 3 : 14;
+  const headerLength = type === 5 ? 3 : 17;
   const bytes = new Uint8Array(headerLength + encoded.length);
   const view = new DataView(bytes.buffer);
   view.setUint8(0, type);
-  view.setUint16(type === 5 ? 1 : 12, encoded.length, true);
+  view.setUint16(type === 5 ? 1 : 15, encoded.length, true);
+  if (type === 8) view.setUint32(10, 65536, true);
   bytes.set(encoded, headerLength);
   return bytes;
 };
@@ -93,11 +94,11 @@ Deno.test("compiler decodes variable-length color escape and string commands", (
       setColorEscape: (text) => events.push(`escape:${text}`),
       drawImage: () => {},
       drawImageQuad: () => {},
-      drawString: (_x, _y, _align, _height, _font, text) => events.push(`string:${text}`),
+      drawString: (_x, _y, _align, height, _font, text) => events.push(`string:${height}:${text}`),
     } satisfies DrawCommandSink,
   );
 
-  assertEquals(events, ["escape:^x", "string:hello"]);
+  assertEquals(events, ["escape:^x", "string:65536:hello"]);
 });
 
 Deno.test("sort rejects unknown commands", () => {

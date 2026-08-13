@@ -1,7 +1,7 @@
 import { Command, EnumType } from "@cliffy/command";
 import $ from "@david/dax";
 import { walk } from "@std/fs";
-import { type Game, games } from "../../packages/game/src/index.ts";
+import { games } from "../../packages/game/src/index.ts";
 
 const gameType = new EnumType(games);
 
@@ -128,7 +128,7 @@ const driverDev = new Command()
     setOptionalEnv("RUN_VERSION", options.version);
     Deno.env.set("RUN_BUILD", options.build);
     setOptionalEnv("POB_COOL_ASSET", options.pobCoolAsset ? "true" : undefined);
-    await $`deno task --filter pob-driver dev --port 5173 --strictPort`;
+    await $`deno task --filter pob-driver dev`;
   });
 
 const webDev = new Command()
@@ -137,29 +137,6 @@ const webDev = new Command()
   .action(async (options) => {
     setOptionalEnv("POB_COOL_ASSET", options.pobCoolAsset ? "true" : undefined);
     await $`deno task --filter pob-web dev`;
-  });
-
-const visualDev = new Command()
-  .description("Start the driver UI for visual verification")
-  .type("game", gameType)
-  .type("build", new EnumType(["debug", "release"] as const))
-  .option("--game <game:game>", "Game to run", { default: "poe2" })
-  .option("--version <version:string>", "Game version; defaults to the current head")
-  .option("--build <build:build>", "Build variant", { default: "release" })
-  .option("--pob-cool-asset", "Use remote packed assets")
-  .action(async (options) => {
-    const version = options.version ?? await headVersion(options.game as Game);
-    Deno.env.set("RUN_GAME", options.game);
-    Deno.env.set("RUN_VERSION", version);
-    Deno.env.set("RUN_BUILD", options.build);
-    setOptionalEnv("POB_COOL_ASSET", options.pobCoolAsset ? "true" : undefined);
-    if (!options.pobCoolAsset) {
-      const asset = `packages/packer/r2/games/${options.game}/versions/${version}/root.zip`;
-      if (!await pathExists(asset)) {
-        throw new Error(`Local assets are missing. Run: mise run pack --game ${options.game} --tag ${version}`);
-      }
-    }
-    await $`deno task --filter pob-driver dev --host 127.0.0.1`;
   });
 
 const webDeploy = new Command().description("Build, upload source maps, and deploy the web package").action(
@@ -218,7 +195,6 @@ await new Command()
   .command("pack", pack)
   .command("driver-dev", driverDev)
   .command("web-dev", webDev)
-  .command("visual-dev", visualDev)
   .command("web-deploy", webDeploy)
   .command("sentry-live", sentryLive)
   .command("benchmark-driver", benchmarkDriver)
@@ -241,11 +217,6 @@ async function verifyWebBuild(): Promise<void> {
   for await (const entry of walk("packages/web/build/client", { includeDirs: false })) {
     if (entry.name.endsWith(".debug.wasm")) throw new Error(`Web build contains Wasm debug sidecar: ${entry.path}`);
   }
-}
-
-async function headVersion(game: Game): Promise<string> {
-  const versions = JSON.parse(await Deno.readTextFile("version.json")) as Record<Game, { head: string }>;
-  return versions[game].head;
 }
 
 async function pathExists(path: string): Promise<boolean> {

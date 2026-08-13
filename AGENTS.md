@@ -20,6 +20,12 @@
 
 ## Development workflow
 
+- When an independent driver investigation or change can affect SimpleGraphic Lua-facing APIs or rendering, image,
+  input, asynchronous, scaling, or frame semantics, consult
+  `.agents/skills/sync-simplegraphic/references/browser-compatibility.md` and re-evaluate any matching entry and
+  trigger. Update the reference when the browser implementation, reachability, replacement behavior, or rationale
+  changes. This consultation does not invoke `$sync-simplegraphic` or advance its tracked upstream state;
+  synchronization remains explicit-only.
 - Use `mise` tasks as the canonical entry points instead of invoking their underlying tools directly.
 - Run `mise run setup` once after cloning to install dependencies, initialize submodules, and install repository hooks.
 - Run `mise run check` for the fast local validation loop.
@@ -42,9 +48,9 @@
 
 - Match verification effort to the changed behavior. Prefer static checks and focused tests before builds or interactive
   verification.
-- For Canvas/WebGL behavior, use the repository's `canvas-visual-verification` skill when it is available. It defines
-  the required browser setup, observations, and evidence. Run the automated driver E2E suite first, then use the skill
-  for visual behavior that the stable DOM assertions do not cover.
+- For Canvas/WebGL behavior that stable DOM assertions do not cover, use the repository's `investigate-canvas-ui` skill
+  when it is available. Automated E2E validation is a separate workflow and is not a prerequisite for visual
+  investigation.
 - The DDS file under `packages/dds/src/dds.test.ts` is a manual asset-processing script, not a self-contained automated
   test; do not treat it as coverage or run it without the referenced packed assets.
 
