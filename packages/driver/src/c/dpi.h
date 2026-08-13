@@ -11,3 +11,4 @@ double dpi_scale_coordinate(double value, double system_scale);
 int dpi_round_coordinate(double value, double system_scale);
 int dpi_ceil_extent(double value, double system_scale);
 int dpi_scale_font_height(double height, double system_scale);
+int dpi_cursor_coordinate(double css_coordinate, double system_scale);

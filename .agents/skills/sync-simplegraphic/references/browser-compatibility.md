@@ -94,8 +94,9 @@ incompatibility remains unresolved.
   replaces that scale rather than multiplying it. CSS zoom and pan do not
   participate in either value or increase the backing-store resolution.
 - Browser pointer events are converted through the inverse CSS transform before
-  reaching `GetCursorPos`, so they are already in Lua logical coordinates and
-  must not receive upstream's additional physical-to-logical division.
+  reaching `GetCursorPos`. The resulting CSS coordinates are converted to Lua
+  logical coordinates by multiplying by system DPR and dividing by the
+  effective DPI scale; this becomes an identity conversion at system default.
 
 ## Known unresolved reachability risks
 

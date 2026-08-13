@@ -110,6 +110,11 @@ static void test_dpi_scaling(void) {
     dpi_set_override_percent(0);
     CHECK(dpi_get_override_percent() == 0);
     CHECK(dpi_get_scale(3.0) == 3.0);
+    CHECK(dpi_cursor_coordinate(75.0, 3.0) == 75);
+    dpi_set_override_percent(150);
+    CHECK(dpi_cursor_coordinate(75.0, 2.0) == 100);
+    dpi_set_override_percent(250);
+    CHECK(dpi_cursor_coordinate(125.0, 2.0) == 100);
     dpi_set_override_percent(-1);
     CHECK(dpi_get_override_percent() == -1);
     CHECK(dpi_get_scale(3.0) == 3.0);

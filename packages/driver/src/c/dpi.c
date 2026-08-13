@@ -47,3 +47,7 @@ int dpi_scale_font_height(double height, double system_scale) {
     if (scaled % 2 != 0) scaled++;
     return scaled;
 }
+
+int dpi_cursor_coordinate(double css_coordinate, double system_scale) {
+    return (int)lround(css_coordinate * system_scale / dpi_get_scale(system_scale));
+}

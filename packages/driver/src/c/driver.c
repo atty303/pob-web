@@ -8,6 +8,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 #include "draw.h"
+#include "dpi.h"
 #include "image.h"
 #include "fs.h"
 #include "sub.h"
@@ -127,10 +128,11 @@ static int RequestFrames(lua_State *L) {
 }
 
 static int GetCursorPos(lua_State *L) {
-    int x = EM_ASM_INT({ return Module.getCursorPosX(); });
-    int y = EM_ASM_INT({ return Module.getCursorPosY(); });
-    lua_pushinteger(L, x);
-    lua_pushinteger(L, y);
+    double x = EM_ASM_DOUBLE({ return Module.getCursorPosX(); });
+    double y = EM_ASM_DOUBLE({ return Module.getCursorPosY(); });
+    double system_scale = EM_ASM_DOUBLE({ return Module.getScreenScale(); });
+    lua_pushinteger(L, dpi_cursor_coordinate(x, system_scale));
+    lua_pushinteger(L, dpi_cursor_coordinate(y, system_scale));
     return 2;
 }
 
