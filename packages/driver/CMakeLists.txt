@@ -66,6 +66,22 @@ add_executable(driver_bridge_test
 target_include_directories(driver_bridge_test PRIVATE src/c)
 add_test(NAME driver_bridge_test COMMAND driver_bridge_test)
 
+add_executable(driver_fs_integration_test
+        ${LUA_SOURCES}
+        test/c/fs_integration_test.c
+        src/c/fs.c
+        src/c/wasmfs/nodefs.cpp
+        src/c/wasmfs/nodefs_js.cpp
+)
+target_include_directories(driver_fs_integration_test PRIVATE src/c)
+target_link_options(driver_fs_integration_test PRIVATE
+        "-sWASMFS"
+        "-sMODULARIZE"
+        "-sEXPORT_ES6"
+        "-sENVIRONMENT=node"
+        "-sEXPORTED_RUNTIME_METHODS=ERRNO_CODES,setValue,HEAPU8,stringToUTF8OnStack,stackSave,stackRestore"
+)
+
 set(DRIVER_LINK_FLAGS
         "-flto"
         "-Wl,--build-id=sha1"
@@ -80,7 +96,7 @@ set(DRIVER_LINK_FLAGS
         "-sSTRICT"
         "-sEXPORTED_FUNCTIONS=_malloc,_free"
         "-sINCOMING_MODULE_JS_API=[print,printErr,wasmBinary]"
-        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8"
+        "-sEXPORTED_RUNTIME_METHODS=cwrap,ccall,ERRNO_CODES,setValue,HEAPU8,stringToUTF8OnStack,stackSave,stackRestore"
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRIVER_LINK_FLAGS "${DRIVER_LINK_FLAGS}" "-g3" "-sASSERTIONS=1" "-sSAFE_HEAP=1" "-sSTACK_OVERFLOW_CHECK=2")

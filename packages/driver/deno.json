@@ -28,7 +28,7 @@
     "build:release": "cmake -E rm -rf dist/release && emcmake cmake --fresh -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release && EMCC_FORCE_STDLIBS=libc emmake ninja -C build",
     "dev": "vite",
     "preview": "vite preview",
-    "test": "deno test --no-check --allow-env --allow-read=../../version.json,../../node_modules test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
+    "test": "deno test --no-check --allow-env --allow-read=../../version.json,../../node_modules,build,src,test test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
     "test:e2e": "playwright test",
     "test:e2e:bc7": "playwright test bc7-fallback.spec.mts --project chromium",
     "test:e2e:serve": "vite --mode test --host 127.0.0.1",
