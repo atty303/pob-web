@@ -70,6 +70,42 @@ Deno.test("CloudflareKV preserves directories created through the VFS", async ()
   assertEquals(await fs.promises.readFile("/Nested/build.xml", "utf8"), "nested build");
 });
 
+Deno.test("CloudflareKV preserves sibling files when a directory is created", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await configureCloud(prefix);
+
+  await fs.promises.writeFile("/first.xml", "first");
+  await fs.promises.writeFile("/second.xml", "second");
+  await fs.promises.mkdir("/New Folder");
+
+  assertEquals(await directoryEntryTypes("/"), {
+    "first.xml": "file",
+    "New Folder": "directory",
+    "second.xml": "file",
+  });
+
+  await configureCloud(prefix);
+  assertEquals(await directoryEntryTypes("/"), {
+    "first.xml": "file",
+    "New Folder": "directory",
+    "second.xml": "file",
+  });
+});
+
+Deno.test("CloudflareKV recognizes legacy and mode-based directory metadata", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await putKv(prefix, "Legacy Directory", "", { dir: true });
+  await putKv(prefix, "Mode Directory", "", { mode: 0o040755 });
+
+  await configureCloud(prefix);
+  assertEquals(await directoryEntryTypes("/"), {
+    "Legacy Directory": "directory",
+    "Mode Directory": "directory",
+  });
+});
+
 Deno.test("CloudflareKV preserves existing bytes for partial writes and truncation", async () => {
   await using wrangler = await startWrangler();
   const prefix = `${wrangler.url}/api/kv`;
@@ -181,6 +217,14 @@ async function configureCloud(prefix: string, namespace?: string) {
     namespace,
   });
   await configure({ mounts: { "/": cloud } });
+}
+
+async function directoryEntryTypes(path: string): Promise<Record<string, "directory" | "file" | "other">> {
+  const entries = await fs.promises.readdir(path, { withFileTypes: true });
+  return Object.fromEntries(entries.map((entry) => [
+    entry.name,
+    entry.isFile() ? "file" : entry.isDirectory() ? "directory" : "other",
+  ]));
 }
 
 type WranglerServer = AsyncDisposable & { url: string };

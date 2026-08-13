@@ -20,6 +20,7 @@ class FetchError extends Error {
 
 function inodeToMetadata(inode: InodeLike) {
   return {
+    dir: (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFDIR,
     atimeMs: inode.atimeMs,
     mtimeMs: inode.mtimeMs,
     ctimeMs: inode.ctimeMs,
@@ -82,7 +83,15 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
       name: string;
       metadata?: (Partial<InodeLike> & { dir?: boolean }) | null;
     }>;
-    const directoryNames = new Set(entries.filter((entry) => entry.metadata?.dir === true).map((entry) => entry.name));
+    const directoryNames = new Set(
+      entries
+        .filter((entry) =>
+          entry.metadata?.dir === true ||
+          (entry.metadata?.mode !== undefined &&
+            (entry.metadata.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFDIR)
+        )
+        .map((entry) => entry.name),
+    );
     for (const { name } of entries) {
       for (let separator = name.lastIndexOf("/"); separator > 0; separator = name.lastIndexOf("/", separator - 1)) {
         directoryNames.add(name.slice(0, separator));
