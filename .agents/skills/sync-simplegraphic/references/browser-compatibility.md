@@ -90,13 +90,15 @@ incompatibility remains unresolved.
   follow the upstream logical-coordinate contract. The Canvas backing store and
   `GetScreenSize` use physical device pixels; PoB derives its virtual screen by
   dividing by the effective scale.
-- System scale is the uncapped browser `devicePixelRatio`. A positive override
-  replaces that scale rather than multiplying it. CSS zoom and pan do not
-  participate in either value or increase the backing-store resolution.
+- System scale uses the browser `devicePixelRatio` while keeping both backing-store
+  dimensions at or below 4096 pixels. A positive override replaces that effective
+  scale rather than multiplying it. CSS zoom and pan do not participate in either
+  value or increase the backing-store resolution.
 - Browser pointer events are converted through the inverse CSS transform before
   reaching `GetCursorPos`. The resulting CSS coordinates are converted to Lua
-  logical coordinates by multiplying by system DPR and dividing by the
-  effective DPI scale; this becomes an identity conversion at system default.
+  logical coordinates by multiplying by the effective browser scale and dividing
+  by the effective DPI scale; this becomes an identity conversion at system
+  default.
 
 ## Known unresolved reachability risks
 

@@ -98,10 +98,14 @@ for (const release of releases) {
 }
 
 test.describe("HiDPI rendering", () => {
-  test.use({ deviceScaleFactor: 2 });
+  test.use({ deviceScaleFactor: 3, hasTouch: true });
 
   test("uses a physical backing store without coupling it to CSS zoom", async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "Playwright deviceScaleFactor is not applied by Firefox");
+    const resizeMessages: string[] = [];
+    page.on("console", (message) => {
+      if (message.text().includes("resize:")) resizeMessages.push(message.text());
+    });
     const release = releases[0];
     if (!release) throw new Error("No E2E release is configured");
     await page.goto(`/?game=${release.game}&version=${release.version}`);
@@ -115,11 +119,24 @@ test.describe("HiDPI rendering", () => {
       cssWidth: Number.parseFloat(element.style.width),
       cssHeight: Number.parseFloat(element.style.height),
     }));
-    expect(initial.backingWidth).toBe(Math.round(initial.cssWidth * 2));
-    expect(initial.backingHeight).toBe(Math.round(initial.cssHeight * 2));
+    const effectivePixelRatio = Math.min(3, 4096 / initial.cssWidth, 4096 / initial.cssHeight);
+    expect(initial.backingWidth).toBe(Math.min(4096, Math.round(initial.cssWidth * effectivePixelRatio)));
+    expect(initial.backingHeight).toBe(Math.min(4096, Math.round(initial.cssHeight * effectivePixelRatio)));
+    expect(Math.max(initial.backingWidth, initial.backingHeight)).toBe(4096);
 
     const inputSink = canvas.locator("..");
-    await inputSink.focus();
+    await canvas.evaluate((element) => {
+      element.dataset.testIdentity = "initial-canvas";
+    });
+    const box = await inputSink.boundingBox();
+    if (!box) throw new Error("PoB input sink has no bounding box");
+    await page.waitForTimeout(100);
+    const resizeCount = resizeMessages.length;
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+    await page.waitForTimeout(250);
+    await expect(canvas).toHaveAttribute("data-test-identity", "initial-canvas");
+    expect(resizeMessages).toHaveLength(resizeCount);
     await page.keyboard.press("ArrowRight");
     expect((await page.evaluate(() => window.__POB_TEST__?.pressedKeys)) ?? []).not.toContain("RIGHT");
 
