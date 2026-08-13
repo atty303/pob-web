@@ -103,9 +103,13 @@ test.describe("HiDPI rendering", () => {
   test("uses a physical backing store without coupling it to CSS zoom", async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "Playwright deviceScaleFactor is not applied by Firefox");
     const resizeMessages: string[] = [];
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
     page.on("console", (message) => {
       if (message.text().includes("resize:")) resizeMessages.push(message.text());
+      if (message.type() === "error") consoleErrors.push(message.text());
     });
+    page.on("pageerror", (error) => pageErrors.push(error.message));
     const release = releases[0];
     if (!release) throw new Error("No E2E release is configured");
     await page.goto(`/?game=${release.game}&version=${release.version}`);
@@ -130,6 +134,7 @@ test.describe("HiDPI rendering", () => {
     });
     const box = await inputSink.boundingBox();
     if (!box) throw new Error("PoB input sink has no bounding box");
+    await page.getByRole("button", { name: "Toggle Pan Tool" }).click();
     await page.waitForTimeout(100);
     const resizeCount = resizeMessages.length;
     await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
@@ -152,6 +157,8 @@ test.describe("HiDPI rendering", () => {
       height: initial.backingHeight,
     });
     expect((await page.evaluate(() => window.__POB_TEST__?.errors)) ?? []).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    expect(consoleErrors).toEqual([]);
   });
 });
 

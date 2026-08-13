@@ -11,8 +11,7 @@ function mouseString(e: MouseEvent): PoBKey | undefined {
 }
 
 export type MouseCallbacks = {
-  onMouseMove: () => void;
-  onMouseStateUpdate?: (mouseState: MouseState) => void;
+  onMouseStateUpdate: (mouseState: MouseState) => void;
   onPan?: (deltaX: number, deltaY: number) => void;
   onZoom?: (scale: number, centerX: number, centerY: number) => void;
 };
@@ -50,7 +49,7 @@ export class MouseHandler {
   private updateMouseState(pos: { x: number; y: number }) {
     this._cursorPosition = pos;
     if (this._allowMouseUpdates) {
-      this.callbacks.onMouseStateUpdate?.(this.mouseState);
+      this.callbacks.onMouseStateUpdate(this.mouseState);
     }
   }
 
@@ -132,10 +131,6 @@ export class MouseHandler {
     }
 
     this.updateMouseState(newPos);
-
-    if (!this._panModeEnabled || !this._isMousePanning) {
-      this.callbacks.onMouseMove();
-    }
   }
 
   handleMouseDown(e: MouseEvent) {
@@ -261,9 +256,6 @@ export class MouseHandler {
         if (this._touches.size === 1) {
           this._allowMouseUpdates = true;
           this.updateMouseState(pos);
-          if (this._panModeEnabled) {
-            this.callbacks.onMouseMove();
-          }
         }
         this._multiTouchPreventionTimer = null;
       }, 50);
@@ -345,14 +337,6 @@ export class MouseHandler {
               }
             }
           }
-
-          if (this._isPanModeActive) {
-            this.callbacks.onMouseMove();
-          } else {
-            this.callbacks.onMouseMove();
-          }
-        } else {
-          this.callbacks.onMouseMove();
         }
       }
     } else if (e.touches.length === 2) {
