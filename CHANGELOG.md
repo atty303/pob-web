@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.32.0](https://github.com/atty303/pob-web/compare/v0.31.0...v0.32.0) (2026-08-13)
+
+
+### Features
+
+* **agent:** add explicit SimpleGraphic sync skill ([bceb978](https://github.com/atty303/pob-web/commit/bceb9787e4406ac749f0de91cd3bf8c63315feb4))
+* **driver:** add BC7 CPU decode for legacy GPUs ([#183](https://github.com/atty303/pob-web/issues/183)) ([0b9537c](https://github.com/atty303/pob-web/commit/0b9537c217edf63848c35dc14d8e97ab7419f736)), closes [#109](https://github.com/atty303/pob-web/issues/109)
+* **driver:** decode BC7 textures without BPTC ([7f2eac7](https://github.com/atty303/pob-web/commit/7f2eac77f0268d841c1b3b1ba16f52fd7c0480a2))
+* **driver:** support HiDPI rendering ([dbce5f6](https://github.com/atty303/pob-web/commit/dbce5f6bbe09791aee5c5a422ad17e9d78245a01))
+* **driver:** support upstream-compatible HiDPI rendering ([#185](https://github.com/atty303/pob-web/issues/185)) ([4ae8858](https://github.com/atty303/pob-web/commit/4ae8858b1426a5f8ba8983082a4539b90718a963)), closes [#66](https://github.com/atty303/pob-web/issues/66)
+
+
+### Bug Fixes
+
+* **driver:** align cursor with DPI override ([dfe542e](https://github.com/atty303/pob-web/commit/dfe542eb06a656e2195c90d040c82200df691568))
+* **driver:** synchronize SimpleGraphic through 3b1a346 ([82ab157](https://github.com/atty303/pob-web/commit/82ab15763999f8fe63deb358d56a374e0d1be732))
+
 ## [0.31.0](https://github.com/atty303/pob-web/compare/v0.30.1...v0.31.0) (2026-08-12)
 
 
