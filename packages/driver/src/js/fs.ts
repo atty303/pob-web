@@ -2,6 +2,8 @@ import type { Backend, CreationOptions, InodeLike } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
 import { log, tag } from "./logger.ts";
 
+const DIRECT_ACCESS = 0x2000;
+
 class FetchError extends Error {
   constructor(
     public readonly response: Response,
@@ -22,6 +24,7 @@ function inodeToMetadata(inode: InodeLike) {
     size: inode.size,
     mode: inode.mode,
     ino: inode.ino,
+    flags: inode.flags,
   };
 }
 
@@ -92,6 +95,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
         : {
           ...normalizedMetadata,
           mode: zenfs.constants.S_IFREG | 0o777,
+          flags: DIRECT_ACCESS,
         };
       nextIndex.set(`/${name}`, new zenfs.Inode({ ...recovered, ino: id, data: id + 1, nlink: 1 }));
     }
@@ -115,7 +119,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
 
   override async createFile(path: string, options: CreationOptions): Promise<zenfs.Inode> {
     const inode = await super.createFile(path, options);
-    inode.update({ mode: zenfs.constants.S_IFREG | 0o777 });
+    inode.update({ mode: zenfs.constants.S_IFREG | 0o777, flags: DIRECT_ACCESS });
     try {
       await this.persist(path, new Uint8Array(0), inode);
       return inode;
@@ -140,10 +144,11 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     const inode = this.index.get(path);
     if (inode && (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFREG) {
       const data = await this.load(path);
-      inode.update({ size: data.length });
+      inode.update({ size: data.length, flags: DIRECT_ACCESS });
       this.prefetched.set(path, data);
     }
-    return await super.stat(path);
+    if (!inode) return await super.stat(path);
+    return inode;
   }
 
   override async read(path: string, buffer: Uint8Array, offset: number, end: number): Promise<void> {

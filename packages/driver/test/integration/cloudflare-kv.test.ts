@@ -30,6 +30,31 @@ Deno.test("CloudflareKV persists filesystem operations through Wrangler KV", asy
   assertEquals(await fs.promises.readdir("/"), []);
 });
 
+Deno.test("CloudflareKV completes KV persistence before file.write resolves", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await configureCloud(prefix);
+  await fs.promises.writeFile("/build.xml", "old");
+
+  const originalFetch = globalThis.fetch;
+  let putCompleted = false;
+  globalThis.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    const method = args[1]?.method;
+    if (method === "PUT") putCompleted = true;
+    return response;
+  };
+  try {
+    const file = await fs.promises.open("/build.xml", "r+");
+    await file.write(new TextEncoder().encode("new"), 0, 3, 0);
+    const persistedBeforeClose = putCompleted;
+    await file.close();
+    assertEquals(persistedBeforeClose, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 Deno.test("CloudflareKV preserves directories created through the VFS", async () => {
   await using wrangler = await startWrangler();
   const prefix = `${wrangler.url}/api/kv`;

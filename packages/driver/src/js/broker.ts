@@ -74,6 +74,7 @@ class AsyncBroker {
         prefix: config.cloudflareKvPrefix,
         token: config.cloudflareKvAccessToken,
         namespace: config.cloudflareKvUserNamespace,
+        disableAsyncCache: true,
       });
       const directory = this.cloudDirectory!;
       if (!(await zenfs.promises.exists(directory))) await zenfs.promises.mkdir(directory, { recursive: true });

@@ -75,6 +75,9 @@ end
 function GetUserPath()
     return "/app/user"
 end
+function GetCloudProvider(_)
+    return nil, nil, nil
+end
 function SetWorkDir(path)
     print("SetWorkDir: " .. path)
 end
