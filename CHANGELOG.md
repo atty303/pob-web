@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.32.1](https://github.com/atty303/pob-web/compare/v0.32.0...v0.32.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* **driver:** cap HiDPI canvas backing size ([139d71e](https://github.com/atty303/pob-web/commit/139d71ec13dde9acb19a314401146a76c8b2db2c))
+* **driver:** cap HiDPI canvas backing size ([#186](https://github.com/atty303/pob-web/issues/186)) ([f46bbe7](https://github.com/atty303/pob-web/commit/f46bbe7713ac284cafd13c420244d8d09318ee9f))
+
 ## [0.32.0](https://github.com/atty303/pob-web/compare/v0.31.0...v0.32.0) (2026-08-13)
 
 
