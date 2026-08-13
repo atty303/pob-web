@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.32.2](https://github.com/atty303/pob-web/compare/v0.32.1...v0.32.2) (2026-08-13)
+
+
+### Bug Fixes
+
+* **driver:** normalize pointer state updates ([529457d](https://github.com/atty303/pob-web/commit/529457dd5a9e0845f6047563708cf20a8c35fa03))
+* **driver:** normalize pointer state updates ([#188](https://github.com/atty303/pob-web/issues/188)) ([b28cb71](https://github.com/atty303/pob-web/commit/b28cb7110f3621790593e8171b06440fc1837c71))
+
 ## [0.32.1](https://github.com/atty303/pob-web/compare/v0.32.0...v0.32.1) (2026-08-13)
 
 
