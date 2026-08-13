@@ -42,8 +42,6 @@ add_executable(${PROJECT_NAME}
         src/c/image.h
         src/c/fs.c
         src/c/fs.h
-        src/c/fs_entry.c
-        src/c/fs_entry.h
         src/c/util.c
         src/c/util.h
         src/c/wasmfs/nodefs.cpp
@@ -72,7 +70,6 @@ add_executable(driver_fs_integration_test
         ${LUA_SOURCES}
         test/c/fs_integration_test.c
         src/c/fs.c
-        src/c/fs_entry.c
         src/c/wasmfs/nodefs.cpp
         src/c/wasmfs/nodefs_js.cpp
 )

@@ -43,6 +43,7 @@ int main(void) {
             "assert(input:close())\n"
             "local persisted = assert(NewFileSearch('/app/user/Persisted/*.xml', false))\n"
             "assert(persisted:GetFileName() == 'existing.xml')\n"
+            "assert(persisted:GetFileModifiedTime() > 0)\n"
             "local existing = assert(io.open('/app/user/Persisted/existing.xml', 'rb'))\n"
             "assert(existing:seek('end') > 0)\n"
             "assert(existing:seek('set', 0) == 0)\n"

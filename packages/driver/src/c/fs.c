@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include "fs.h"
-#include "fs_entry.h"
 
 static const char *FS_READDIR_HANDLE_TYPE = "FsReaddirHandle";
 
@@ -66,8 +65,7 @@ static int NewFileSearch(lua_State *L) {
             return 0;
         }
 
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 ||
-            !fs_entry_matches_type(_dirname, entry->d_name, dir_only)) {
+        if ((entry->d_type == DT_DIR) != dir_only || strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
 
@@ -109,8 +107,7 @@ static int FsReaddirHandle_NextFile(lua_State *L) {
             return 0;
         }
 
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 ||
-            !fs_entry_matches_type(handle->path, entry->d_name, handle->dir_only)) {
+        if ((entry->d_type == DT_DIR) != handle->dir_only || strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
 
