@@ -94,6 +94,35 @@ Deno.test("CloudflareKV recovers non-empty files with stale zero-sized metadata"
   assertEquals((await fs.promises.stat("/stale.xml")).size, new TextEncoder().encode(contents).length);
 });
 
+Deno.test("CloudflareKV recovers directories misclassified as regular files", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await putKv(prefix, "Public", "", { mode: 0o100644, size: 0 });
+  await putKv(prefix, "Public/att.xml", '<PathOfBuilding name="att"/>', {
+    mode: 0o100644,
+    size: 28,
+  });
+
+  await configureCloud(prefix);
+  const publicStats = await fs.promises.stat("/Public");
+  assertEquals(publicStats.isDirectory(), true);
+  assertEquals(publicStats.size, 4096);
+  assertEquals(await fs.promises.readFile("/Public/att.xml", "utf8"), '<PathOfBuilding name="att"/>');
+});
+
+async function putKv(prefix: string, path: string, body: BodyInit, metadata: Record<string, unknown>) {
+  const response = await fetch(`${prefix}/${path}`, {
+    method: "PUT",
+    body,
+    headers: {
+      Authorization: "Bearer integration-token",
+      "x-metadata": JSON.stringify(metadata),
+    },
+  });
+  await response.body?.cancel();
+  assertEquals(response.status, 204);
+}
+
 async function configureCloud(prefix: string, namespace?: string) {
   const cloud = await resolveMountConfig({
     backend: CloudflareKV,

@@ -26,6 +26,7 @@ function inodeToMetadata(inode: InodeLike) {
 }
 
 export class CloudflareKVFileSystem extends zenfs.IndexFS {
+  private readonly prefetched = new Map<string, Uint8Array<ArrayBuffer>>();
   private readonly fetch: (
     method: string,
     path: string,
@@ -69,12 +70,30 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
       throw new FetchError(response);
     }
 
-    const entries = await response.json() as Array<{ name: string; metadata: Partial<InodeLike> }>;
+    const entries = await response.json() as Array<{
+      name: string;
+      metadata?: (Partial<InodeLike> & { dir?: boolean }) | null;
+    }>;
+    const directoryNames = new Set(entries.filter((entry) => entry.metadata?.dir === true).map((entry) => entry.name));
+    for (const { name } of entries) {
+      for (let separator = name.lastIndexOf("/"); separator > 0; separator = name.lastIndexOf("/", separator - 1)) {
+        directoryNames.add(name.slice(0, separator));
+      }
+    }
     for (const { name, metadata } of entries) {
       const id = nextIndex._alloc();
-      nextIndex.set(`/${name}`, new zenfs.Inode({ ...metadata, ino: id, data: id + 1, nlink: 1 }));
+      const normalizedMetadata = metadata ?? {};
+      const recovered = directoryNames.has(name)
+        ? {
+          ...normalizedMetadata,
+          mode: zenfs.constants.S_IFDIR | ((normalizedMetadata.mode ?? 0o777) & 0o7777),
+          size: 4096,
+        }
+        : normalizedMetadata;
+      nextIndex.set(`/${name}`, new zenfs.Inode({ ...recovered, ino: id, data: id + 1, nlink: 1 }));
     }
     this.index.clear();
+    this.prefetched.clear();
     for (const [path, inode] of nextIndex) this.index.set(path, inode);
     log.debug(tag.kvfs, "reload", { entries: [...this.index.keys()] });
   }
@@ -115,12 +134,10 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
 
   override async stat(path: string): Promise<zenfs.Inode> {
     const inode = this.index.get(path);
-    if (
-      inode?.size === 0 &&
-      (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFREG
-    ) {
+    if (inode && (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFREG) {
       const data = await this.load(path);
-      if (data.length > 0) inode.update({ size: data.length });
+      inode.update({ size: data.length });
+      this.prefetched.set(path, data);
     }
     return await super.stat(path);
   }
@@ -132,7 +149,8 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
       return;
     }
 
-    const data = await this.load(path);
+    const data = this.prefetched.get(path) ?? await this.load(path);
+    this.prefetched.delete(path);
     buffer.set(data.subarray(offset, end));
   }
 
