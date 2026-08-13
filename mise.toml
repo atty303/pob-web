@@ -33,6 +33,14 @@ description = "Run focused driver behavior tests"
 run = "deno task --filter pob-driver test"
 depends = ["driver:build"]
 
+[tasks."test:integration:zenfs"]
+description = "Run browser and Wrangler integration tests for ZenFS backends"
+run = [
+  "deno task --filter pob-driver test:integration:zenfs:kv",
+  "deno task --filter pob-driver test:integration:zenfs:browser",
+]
+depends = ["install"]
+
 [tasks."test:web"]
 description = "Run focused web behavior tests"
 run = "deno task --filter pob-web test"
