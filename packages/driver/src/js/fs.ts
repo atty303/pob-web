@@ -97,19 +97,17 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
 
   async openFile(path: string, flag: string): Promise<zenfs.File> {
     log.debug(tag.kvfs, "openFile", { path, flag });
+    const stats = this.cache.get(path);
+    if (!stats) {
+      throw ErrnoError.With("ENOENT", path, "openFile");
+    }
+    if (!stats.hasAccess(zenfs.flagToMode(flag))) {
+      throw ErrnoError.With("EACCES", path, "openFile");
+    }
     let buffer: ArrayBufferLike;
-    let stats = this.cache.get(path);
-    if (zenfs.isWriteable(flag)) {
-      buffer = new ArrayBuffer(0);
-      stats = new zenfs.Stats({ mode: 0o777 | zenfs.constants.S_IFREG, size: 0 });
-      this.cache.set(path, stats);
+    if (stats.isDirectory()) {
+      buffer = new ArrayBuffer(stats.size);
     } else {
-      if (!stats) {
-        throw ErrnoError.With("ENOENT", path, "openFile");
-      }
-      if (!stats.hasAccess(zenfs.flagToMode(flag))) {
-        throw ErrnoError.With("EACCES", path, "openFile");
-      }
       const r = await this.fetch("GET", path);
       if (!r.ok) {
         throw new FetchError(r);
@@ -199,8 +197,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   async sync(path: string, data: Uint8Array, stats: Readonly<zenfs.Stats>): Promise<void> {
     log.debug(tag.kvfs, "sync", { path, data, stats });
     const metadata = statsToMetadata(stats);
-    const body = new Uint8Array(data.byteLength);
-    body.set(data);
+    const body = stats.isDirectory() ? new Uint8Array(0) : new Uint8Array(data);
     const r = await this.fetch("PUT", path, body, { "x-metadata": JSON.stringify(metadata) });
     if (!r.ok) {
       log.error(tag.kvfs, "sync", path, r.status, r.statusText);

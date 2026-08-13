@@ -30,6 +30,37 @@ Deno.test("CloudflareKV persists filesystem operations through Wrangler KV", asy
   assertEquals(await fs.promises.readdir("/"), []);
 });
 
+Deno.test("CloudflareKV preserves directories created through the VFS", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await configureCloud(prefix);
+
+  await fs.promises.mkdir("/Nested", { recursive: true });
+  assertEquals((await fs.promises.stat("/Nested")).size, 4096);
+  await fs.promises.writeFile("/Nested/build.xml", "nested build");
+
+  await configureCloud(prefix);
+  assertEquals((await fs.promises.stat("/Nested")).size, 4096);
+  assertEquals(await fs.promises.readdir("/Nested"), ["build.xml"]);
+  assertEquals(await fs.promises.readFile("/Nested/build.xml", "utf8"), "nested build");
+});
+
+Deno.test("CloudflareKV preserves existing bytes for partial writes and truncation", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await configureCloud(prefix);
+
+  await fs.promises.writeFile("/build.xml", "0123456789");
+  const file = await fs.promises.open("/build.xml", "r+");
+  await file.write(new TextEncoder().encode("cloud"), 0, 5, 2);
+  await file.truncate(8);
+  await file.close();
+
+  await configureCloud(prefix);
+  assertEquals(await fs.promises.readFile("/build.xml", "utf8"), "01cloud7");
+  assertEquals((await fs.promises.stat("/build.xml")).size, 8);
+});
+
 async function configureCloud(prefix: string, namespace?: string) {
   const cloud = await resolveMountConfig({
     backend: CloudflareKV,
