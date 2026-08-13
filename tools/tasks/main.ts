@@ -139,6 +139,49 @@ const webDev = new Command()
     await $`deno task --filter pob-web dev`;
   });
 
+const PUBLIC_DEV_PORT = 4173;
+const webDevPublic = new Command()
+  .description("Expose the web development server through a temporary Free Pinggy URL")
+  .option("--pob-cool-asset", "Use remote packed assets")
+  .action(async (options) => {
+    const env = {
+      ...Deno.env.toObject(),
+      PUBLIC_DEV_SERVER: "true",
+      PUBLIC_DEV_PORT: String(PUBLIC_DEV_PORT),
+      ...(options.pobCoolAsset ? { POB_COOL_ASSET: "true" } : {}),
+    };
+    console.error("WARNING: this development server is temporarily public without authentication.");
+    console.error("Do not put private build codes or credentials in the shared URL.");
+
+    const server = new Deno.Command("deno", {
+      args: ["task", "--filter", "pob-web", "dev"],
+      env,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }).spawn();
+    let tunnel: Deno.ChildProcess | undefined;
+    try {
+      await waitForHttp(`http://127.0.0.1:${PUBLIC_DEV_PORT}/`, server);
+      console.error("Development server is ready; starting Free Pinggy tunnel and diagnostic stderr stream.");
+      tunnel = new Deno.Command("pinggy", {
+        args: ["-l", `http://127.0.0.1:${PUBLIC_DEV_PORT}`, "free.pinggy.io", "x:https"],
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+      }).spawn();
+      const result = await Promise.race([
+        server.status.then((status) => ({ process: "development server", status })),
+        tunnel.status.then((status) => ({ process: "Pinggy tunnel", status })),
+      ]);
+      if (!result.status.success) throw new Error(`${result.process} exited with code ${result.status.code}`);
+    } finally {
+      stopChild(tunnel);
+      stopChild(server);
+      await Promise.allSettled([server.status, ...(tunnel ? [tunnel.status] : [])]);
+    }
+  });
+
 const webDeploy = new Command().description("Build, upload source maps, and deploy the web package").action(
   async () => {
     Deno.env.set("DEPLOYMENT", "cloudflare");
@@ -195,6 +238,7 @@ await new Command()
   .command("pack", pack)
   .command("driver-dev", driverDev)
   .command("web-dev", webDev)
+  .command("web-dev-public", webDevPublic)
   .command("web-deploy", webDeploy)
   .command("sentry-live", sentryLive)
   .command("benchmark-driver", benchmarkDriver)
@@ -203,6 +247,34 @@ await new Command()
 
 async function runMise(task: string, ...args: string[]): Promise<void> {
   await $`mise run ${task} ${args}`;
+}
+
+async function waitForHttp(url: string, process: Deno.ChildProcess): Promise<void> {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    const exited = await Promise.race([
+      process.status.then((status) => status),
+      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 200)),
+    ]);
+    if (exited) throw new Error(`Development server exited before becoming ready (code ${exited.code})`);
+    try {
+      const remaining = Math.max(1, deadline - Date.now());
+      const response = await fetch(url, { signal: AbortSignal.timeout(Math.min(1_000, remaining)) });
+      await response.body?.cancel();
+      if (response.ok) return;
+    } catch {
+      // The server has not bound its port yet.
+    }
+  }
+  throw new Error(`Development server did not become ready at ${url}`);
+}
+
+function stopChild(process: Deno.ChildProcess | undefined) {
+  try {
+    process?.kill("SIGTERM");
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound) && !(error instanceof TypeError)) throw error;
+  }
 }
 
 async function buildDriver(kind: "debug" | "release"): Promise<void> {

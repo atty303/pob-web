@@ -1,5 +1,6 @@
 [tools]
 deno = "2.9.3"
+"github:Pinggy-io/cli-js" = { version = "0.5.1", exe = "pinggy" }
 emsdk = "6.0.6"
 cmake = "4.3.3"
 ninja = "1.13.2"
@@ -200,4 +201,12 @@ usage = """
 flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
 """
 run = 'deno task repo web-dev ${usage_pob_cool_asset:+--pob-cool-asset}'
+depends = ["driver:build"]
+
+[tasks."web:dev:public"]
+description = "Expose the web development server through a temporary Free Pinggy URL"
+usage = """
+flag "--pob-cool-asset" help="Use https://asset.pob.cool asset instead of local packed assets"
+"""
+run = 'deno task repo web-dev-public ${usage_pob_cool_asset:+--pob-cool-asset}'
 depends = ["driver:build"]

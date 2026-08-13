@@ -5,6 +5,7 @@ export type ErrorPhase = "driver-start" | "build-load" | "renderer-attach" | "dr
 export type ErrorClassification = "reportable" | "upstream" | `environment/${EnvironmentErrorCategory}`;
 
 export type DiagnosticContext = {
+  runId?: string;
   appVersion: string;
   game: Game;
   pobVersion: string;
@@ -18,6 +19,7 @@ export type DiagnosticContext = {
   storageApi: boolean;
   offscreenCanvas: boolean;
   webgl2: boolean;
+  lifecycle?: unknown;
 };
 
 export type DiagnosticReport = {
@@ -37,6 +39,8 @@ export function createDiagnosticReport(input: {
   phase: ErrorPhase;
   game: Game;
   pobVersion: string;
+  runId?: string;
+  lifecycle?: unknown;
 }): DiagnosticReport {
   const environmentCategory = environmentErrorCategory(input.error);
   return {
@@ -47,6 +51,7 @@ export function createDiagnosticReport(input: {
       ? "upstream"
       : "reportable",
     context: {
+      runId: input.runId,
       appVersion: APP_VERSION,
       game: input.game,
       pobVersion: input.pobVersion,
@@ -60,6 +65,7 @@ export function createDiagnosticReport(input: {
       storageApi: typeof navigator.storage?.getDirectory === "function",
       offscreenCanvas: typeof OffscreenCanvas === "function",
       webgl2: supportsWebGl2(),
+      lifecycle: input.lifecycle,
     },
   };
 }
@@ -77,6 +83,7 @@ export function collectDiagnosticReport(report: DiagnosticReport, sink: Diagnost
 export function formatDiagnosticReport(report: DiagnosticReport): string {
   const { name, message, stack } = describeError(report.error);
   const rows: [string, string | number | boolean][] = [
+    ...(report.context.runId ? [["Run ID", report.context.runId] as [string, string]] : []),
     ["Classification", report.classification],
     ["Phase", report.context.phase],
     ["App version", report.context.appVersion],
@@ -100,6 +107,8 @@ export function formatDiagnosticReport(report: DiagnosticReport): string {
 | Field | Value |
 | --- | --- |
 ${table}
+
+${report.context.lifecycle ? `### Lifecycle\n\n${codeBlock(JSON.stringify(report.context.lifecycle, null, 2))}\n` : ""}
 
 <details>
 <summary>Error and stack trace</summary>
