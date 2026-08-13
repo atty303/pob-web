@@ -15,6 +15,12 @@ const appVersion = Deno.readTextFileSync(path.join(rootDir, "version.txt")).trim
 export default defineConfig(({ mode, isSsrBuild }) => {
   const usePobCoolAsset = mode === "development" && Deno.env.get("POB_COOL_ASSET") === "true";
   const publicDev = mode === "development" && Deno.env.get("PUBLIC_DEV_SERVER") === "true";
+  const renderingMax = mode === "development" && Deno.env.has("POB_RENDERING_MAX")
+    ? Number(Deno.env.get("POB_RENDERING_MAX"))
+    : undefined;
+  if (renderingMax !== undefined && (!Number.isInteger(renderingMax) || renderingMax <= 0)) {
+    throw new Error("POB_RENDERING_MAX must be a positive integer");
+  }
 
   return {
     resolve: {
@@ -79,6 +85,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     define: {
       __BPTC_SUPPORT_OVERRIDE__: Deno.env.get("BPTC_SUPPORT_OVERRIDE") === "false" ? "false" : "undefined",
+      __MAX_RENDERING_DIMENSION_OVERRIDE__: renderingMax === undefined ? "undefined" : JSON.stringify(renderingMax),
       APP_VERSION: JSON.stringify(appVersion),
       __SENTRY_RELEASE__: Deno.env.get("VITE_SENTRY_RELEASE") === undefined
         ? "undefined"

@@ -24,22 +24,27 @@ export interface CanvasRenderingSize {
 
 export const MAX_RENDERING_DIMENSION = 4096;
 
+declare const __MAX_RENDERING_DIMENSION_OVERRIDE__: number | undefined;
+
 export const calculateRenderingSize = (
   styleWidth: number,
   styleHeight: number,
   devicePixelRatio: number,
 ): CanvasRenderingSize => {
+  const maximumDimension = typeof __MAX_RENDERING_DIMENSION_OVERRIDE__ === "number"
+    ? __MAX_RENDERING_DIMENSION_OVERRIDE__
+    : MAX_RENDERING_DIMENSION;
   const pixelRatio = Math.min(
     devicePixelRatio,
-    MAX_RENDERING_DIMENSION / styleWidth,
-    MAX_RENDERING_DIMENSION / styleHeight,
+    maximumDimension / styleWidth,
+    maximumDimension / styleHeight,
   );
 
   return {
     styleWidth,
     styleHeight,
-    renderingWidth: Math.min(MAX_RENDERING_DIMENSION, Math.round(styleWidth * pixelRatio)),
-    renderingHeight: Math.min(MAX_RENDERING_DIMENSION, Math.round(styleHeight * pixelRatio)),
+    renderingWidth: Math.min(maximumDimension, Math.round(styleWidth * pixelRatio)),
+    renderingHeight: Math.min(maximumDimension, Math.round(styleHeight * pixelRatio)),
     pixelRatio,
   };
 };
