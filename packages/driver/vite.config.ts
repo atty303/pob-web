@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __BPTC_SUPPORT_OVERRIDE__: Deno.env.get("BPTC_SUPPORT_OVERRIDE") === "false" ? "false" : "undefined",
+      __MAX_RENDERING_DIMENSION_OVERRIDE__: "undefined",
       __ASSET_PREFIX__: JSON.stringify(
         isDriverShell ? (usePobCoolAsset ? "/__pob_asset" : `/@fs/${packerR2Dir}`) : "https://asset.pob.cool",
       ),

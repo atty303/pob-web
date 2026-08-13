@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
+import type { DriverDiagnostic } from "./diagnostic.ts";
 import { markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
@@ -81,6 +82,7 @@ export class DriverWorker {
   private dirtyCount = 0;
   private _frameScheduled = false;
   private visible = false;
+  private onDiagnostic: ((diagnostic: DriverDiagnostic) => void) | undefined;
 
   async start(
     build: "debug" | "release",
@@ -91,9 +93,12 @@ export class DriverWorker {
     onFrame: HostCallbacks["onFrame"],
     onOAuthLogout: HostCallbacks["onOAuthLogout"],
     onTitleChange: HostCallbacks["onTitleChange"],
+    onDiagnostic: (diagnostic: DriverDiagnostic) => void,
     copy: MainCallbacks["copy"],
     openUrl: MainCallbacks["openUrl"],
   ) {
+    this.onDiagnostic = onDiagnostic;
+    this.diagnostic("worker", "start");
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
 
     await loadFonts();
@@ -167,17 +172,20 @@ export class DriverWorker {
   destroy() {}
 
   setCanvas(canvas: OffscreenCanvas) {
-    const backend = new WebGL2Backend(canvas);
+    this.diagnostic("canvas", "transferred", { width: canvas.width, height: canvas.height });
+    const backend = new WebGL2Backend(canvas, (event, data) => this.diagnostic("webgl", event, data));
     this.imageRepo?.setBptcSupport(__BPTC_SUPPORT_OVERRIDE__ ?? backend.supportsBptc);
     if (this.renderer) {
       this.renderer.backend = backend;
     }
     log.info(tag.backend, "Using WebGL2 backend");
+    this.diagnostic("webgl", "context-created", { contextLost: backend.contextLost });
   }
 
   resize(size: { width: number; height: number; pixelRatio: number }) {
     this.screenSize = size;
     this.renderer?.resize(size);
+    this.diagnostic("canvas", "worker-resize", size);
     this.invalidate();
   }
 
@@ -274,8 +282,18 @@ export class DriverWorker {
         const time = performance.now() - start;
         const stats = this.renderer?.getStats();
         this.hostCallbacks?.onFrame(start, time, stats);
+        if ((stats?.frameCount ?? 0) <= 3 || (stats?.frameCount ?? 0) % 60 === 0 || time > 100) {
+          this.diagnostic("frame", "complete", {
+            duration: time,
+            frameCount: stats?.frameCount,
+            instances: stats?.backend.instances,
+            instanceBytes: stats?.backend.instanceBytes,
+            dispatches: stats?.backend.dispatches,
+          });
+        }
         this.dirtyCount -= 1;
       } catch (error) {
+        this.diagnostic("frame", "error", { error: String(error) }, "error");
         this.pasteBuffer.clear();
         this.clipboardControlPending = false;
         this.hostCallbacks?.onError(error);
@@ -287,6 +305,15 @@ export class DriverWorker {
     if (this.visible && this.dirtyCount > 0) {
       this.scheduleFrame();
     }
+  }
+
+  private diagnostic(
+    phase: DriverDiagnostic["phase"],
+    event: string,
+    data?: Record<string, unknown>,
+    level: DriverDiagnostic["level"] = "info",
+  ) {
+    this.onDiagnostic?.({ phase, event, data, level });
   }
 
   private resolveImports(module: DriverModule): Imports {

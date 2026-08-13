@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { wranglerDev } from "./wrangler-dev.ts";
+import { diagnosticsDevPlugin } from "./diagnostics-dev.ts";
 
 const packageDir = path.dirname(path.fromFileUrl(import.meta.url));
 const rootDir = path.resolve(packageDir, "../..");
@@ -13,11 +14,24 @@ const appVersion = Deno.readTextFileSync(path.join(rootDir, "version.txt")).trim
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, isSsrBuild }) => {
   const usePobCoolAsset = mode === "development" && Deno.env.get("POB_COOL_ASSET") === "true";
+  const publicDev = mode === "development" && Deno.env.get("PUBLIC_DEV_SERVER") === "true";
+  const renderingMax = mode === "development" && Deno.env.has("POB_RENDERING_MAX")
+    ? Number(Deno.env.get("POB_RENDERING_MAX"))
+    : undefined;
+  if (renderingMax !== undefined && (!Number.isInteger(renderingMax) || renderingMax <= 0)) {
+    throw new Error("POB_RENDERING_MAX must be a positive integer");
+  }
 
   return {
     resolve: {
       dedupe: ["react", "react-dom"],
       alias: {
+        ...(mode === "development" ? {} : {
+          "../lib/runtime-diagnostics.ts": path.join(
+            packageDir,
+            "src/lib/runtime-diagnostics-disabled.ts",
+          ),
+        }),
         dds: path.join(rootDir, "packages/dds/src/index.ts"),
         "pob-driver/driver": path.join(rootDir, "packages/driver/src/js/driver.ts"),
         "pob-driver/error": path.join(rootDir, "packages/driver/src/js/error.ts"),
@@ -46,7 +60,18 @@ export default defineConfig(({ mode, isSsrBuild }) => {
         allow: [searchForWorkspaceRoot(Deno.cwd()), rootDir],
       },
       // Owner's Cloudflare Tunnel domain for mobile testing
-      allowedHosts: ["local.pob.cool"],
+      allowedHosts: [
+        "local.pob.cool",
+        ...(publicDev ? [".pinggy.link", ".pinggy-free.link", ".free.pinggy.net"] : []),
+      ],
+      ...(publicDev
+        ? {
+          host: "127.0.0.1",
+          port: Number(Deno.env.get("PUBLIC_DEV_PORT") ?? "4173"),
+          strictPort: true,
+          hmr: { protocol: "wss", clientPort: 443 },
+        }
+        : {}),
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
@@ -60,6 +85,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     define: {
       __BPTC_SUPPORT_OVERRIDE__: Deno.env.get("BPTC_SUPPORT_OVERRIDE") === "false" ? "false" : "undefined",
+      __MAX_RENDERING_DIMENSION_OVERRIDE__: renderingMax === undefined ? "undefined" : JSON.stringify(renderingMax),
       APP_VERSION: JSON.stringify(appVersion),
       __SENTRY_RELEASE__: Deno.env.get("VITE_SENTRY_RELEASE") === undefined
         ? "undefined"
@@ -91,12 +117,37 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     optimizeDeps: {
       exclude: ["@bokuweb/zstd-wasm"],
-      include: ["@sentry/react", "react", "react-dom", "react-use"],
+      include: [
+        "@auth0/auth0-react",
+        "@heroicons/react/24/solid",
+        "@sentry/react",
+        "@sentry/wasm",
+        "@zenfs/archives",
+        "@zenfs/core",
+        "@zenfs/dom",
+        "comlink",
+        "dayjs",
+        "dayjs/plugin/localeData",
+        "dayjs/plugin/localizedFormat",
+        "dayjs/plugin/utc",
+        "isbot",
+        "jose",
+        "missionlog",
+        "react",
+        "react-dom",
+        "react-dom/server.browser",
+        "react-icons/ci",
+        "react-icons/hi2",
+        "react-icons/md",
+        "react-icons/pi",
+        "react-use",
+      ],
       esbuildOptions: {
         target: "es2020",
       },
     },
     plugins: [
+      ...(mode === "development" ? [diagnosticsDevPlugin()] : []),
       {
         name: "cross-origin-isolation",
         configureServer(server) {

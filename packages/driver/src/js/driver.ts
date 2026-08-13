@@ -4,6 +4,7 @@ import * as Comlink from "comlink";
 import BrokerWorkerObject from "./broker.ts?worker";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager.ts";
 import { type ClipboardAction, ClipboardController, type ClipboardShortcut } from "./clipboard.ts";
+import type { DriverDiagnostic } from "./diagnostic.ts";
 import { markEnvironmentError } from "./error.ts";
 import { EventHandler } from "./event.ts";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard.ts";
@@ -40,6 +41,7 @@ export type FilesystemConfig = {
 export type DriverLifecycleCallbacks = {
   onWorkerCreated?: (worker: Worker) => void;
   onKeyboardStateChange?: (keys: readonly PoBKey[]) => void;
+  onDiagnostic?: (diagnostic: DriverDiagnostic) => void;
 };
 
 export class Driver {
@@ -67,6 +69,25 @@ export class Driver {
   private clipboard = new ClipboardController(navigator.clipboard);
   private pendingClipboardAction: Promise<void> = Promise.resolve();
 
+  private diagnostic(
+    phase: DriverDiagnostic["phase"],
+    event: string,
+    data?: Record<string, unknown>,
+    level: DriverDiagnostic["level"] = "info",
+  ) {
+    this.lifecycleCallbacks.onDiagnostic?.({ phase, event, data, level });
+  }
+
+  private observeWorker(worker: Worker, kind: "main" | "broker") {
+    this.diagnostic("worker", "created", { kind });
+    worker.addEventListener("error", (event) => {
+      this.diagnostic("worker", "error", { kind, message: event.message }, "error");
+    });
+    worker.addEventListener("messageerror", () => {
+      this.diagnostic("worker", "messageerror", { kind }, "error");
+    });
+  }
+
   private readonly MIN_CANVAS_WIDTH = 1550;
   private readonly MIN_CANVAS_HEIGHT = 800;
   private readonly TOOLBAR_SIZE = 60;
@@ -77,6 +98,7 @@ export class Driver {
     readonly hostCallbacks: HostCallbacks,
     readonly lifecycleCallbacks: DriverLifecycleCallbacks = {},
   ) {
+    this.diagnostic("driver", "construct", { build });
     const originalOnFrame = this.hostCallbacks.onFrame;
     this.hostCallbacks.onFrame = (at: number, time: number, stats?: RenderStats) => {
       this.pushFrame(at, time, stats);
@@ -93,10 +115,12 @@ export class Driver {
       );
     }
     this.isStarted = true;
+    this.diagnostic("driver", "start");
 
     try {
       const brokerWorker = new BrokerWorkerObject();
       this.brokerWorker = brokerWorker;
+      this.observeWorker(brokerWorker, "broker");
       this.broker = Comlink.wrap<AsyncBroker>(brokerWorker);
       const channel = new MessageChannel();
       const eventChannel = new MessageChannel();
@@ -112,6 +136,7 @@ export class Driver {
 
       const worker = new WorkerObject();
       this.worker = worker;
+      this.observeWorker(worker, "main");
       this.lifecycleCallbacks.onWorkerCreated?.(worker);
       this.driverWorker = Comlink.wrap<DriverWorker>(worker) as AsyncDriverWorker;
 
@@ -124,12 +149,14 @@ export class Driver {
         Comlink.proxy(this.hostCallbacks.onFrame),
         Comlink.proxy(this.hostCallbacks.onOAuthLogout),
         Comlink.proxy(this.hostCallbacks.onTitleChange),
+        Comlink.proxy((diagnostic: DriverDiagnostic) => this.lifecycleCallbacks.onDiagnostic?.(diagnostic)),
         Comlink.proxy((text: string) => this.copy(text)),
         Comlink.proxy((url) => {
           window.open(url, "_blank");
         }),
       );
     } catch (error) {
+      this.diagnostic("driver", "start-error", { error: String(error) }, "error");
       this.worker?.terminate();
       this.brokerWorker?.terminate();
       this.worker = undefined;
@@ -142,6 +169,7 @@ export class Driver {
   }
 
   destory() {
+    this.diagnostic("driver", "destroy");
     this.driverWorker?.destroy();
     this.worker?.terminate();
     this.brokerWorker?.terminate();
@@ -162,6 +190,7 @@ export class Driver {
     };
 
     this.canvasManager = new CanvasManager(canvasConfig);
+    this.diagnostic("canvas", "manager-created");
 
     this.canvasManager.setCallbacks({
       onStateChange: (state: CanvasState) => {
@@ -171,6 +200,7 @@ export class Driver {
         });
       },
       onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
+        this.diagnostic("canvas", "resize", { ...renderingSize });
         this.driverWorker?.resize({
           width: renderingSize.renderingWidth,
           height: renderingSize.renderingHeight,

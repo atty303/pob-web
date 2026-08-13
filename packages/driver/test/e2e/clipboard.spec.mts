@@ -45,6 +45,7 @@ test.describe("clipboard", () => {
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
     await page.getByRole("button", { name: "A", exact: true }).click();
     await page.getByRole("button", { name: "C", exact: true }).click();
+    await flushPoBInput(page);
 
     await expect.poll(() =>
       page.evaluate(() => (globalThis as typeof globalThis & { __CLIPBOARD_WRITE__?: string }).__CLIPBOARD_WRITE__)
@@ -99,6 +100,7 @@ test.describe("clipboard", () => {
     await page.getByRole("button", { name: "Ctrl", exact: true }).click();
     await page.getByRole("button", { name: "A", exact: true }).click();
     await page.getByRole("button", { name: "C", exact: true }).click();
+    await flushPoBInput(page);
 
     await expect.poll(() =>
       page.evaluate(() => (globalThis as typeof globalThis & { __CLIPBOARD_WRITE__?: string }).__CLIPBOARD_WRITE__)

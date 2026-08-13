@@ -136,6 +136,12 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
                   <dd>{report.context.pobVersion}</dd>
                   <dt>Phase</dt>
                   <dd>{report.context.phase}</dd>
+                  {report.context.runId && (
+                    <>
+                      <dt>Run ID</dt>
+                      <dd className="font-mono">{report.context.runId}</dd>
+                    </>
+                  )}
                   <dt>URL</dt>
                   <dd className="break-all">{report.context.url}</dd>
                   <dt>User agent</dt>

@@ -181,6 +181,45 @@ url = "https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz"
 [tools.emsdk."platforms.windows-x64"]
 url = "https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz"
 
+[[tools."github:Pinggy-io/cli-js"]]
+version = "0.5.1"
+backend = "github:Pinggy-io/cli-js"
+
+[tools."github:Pinggy-io/cli-js"."platforms.linux-arm64"]
+checksum = "sha256:f093d3787af028b2aad24141b84821055cd9788a452fcbc7c93689c777c55fa2"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-linux-arm64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179042"
+
+[tools."github:Pinggy-io/cli-js"."platforms.linux-arm64-musl"]
+checksum = "sha256:f093d3787af028b2aad24141b84821055cd9788a452fcbc7c93689c777c55fa2"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-linux-arm64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179042"
+
+[tools."github:Pinggy-io/cli-js"."platforms.linux-x64"]
+checksum = "sha256:4a31ce02b4338fef2ed1f5825d9220e4f5c82e20293c709b5bfbd345b5accbfc"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-linux-x64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179026"
+
+[tools."github:Pinggy-io/cli-js"."platforms.linux-x64-musl"]
+checksum = "sha256:4a31ce02b4338fef2ed1f5825d9220e4f5c82e20293c709b5bfbd345b5accbfc"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-linux-x64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179026"
+
+[tools."github:Pinggy-io/cli-js"."platforms.macos-arm64"]
+checksum = "sha256:41fd31e5cd9f327ca918a55ccc3d912e3db2179235e9a6465e69c8532f5874fe"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-macos-arm64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179375"
+
+[tools."github:Pinggy-io/cli-js"."platforms.macos-x64"]
+checksum = "sha256:a8366fa4b90f2fb476dfa6f0699f6a5f14b07eb569cb02009409a321353bdf94"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-macos-x64"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179801"
+
+[tools."github:Pinggy-io/cli-js"."platforms.windows-x64"]
+checksum = "sha256:4649ad28aea231c84015df07d03c4c1228b792f4a8c8214a550da5abcb3abf62"
+url = "https://github.com/Pinggy-io/cli-js/releases/download/v0.5.1/pinggy-win-x64.exe"
+url_api = "https://api.github.com/repos/Pinggy-io/cli-js/releases/assets/435179508"
+
 [[tools.hk]]
 version = "1.54.1"
 backend = "aqua:jdx/hk"

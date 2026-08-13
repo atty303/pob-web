@@ -7,6 +7,8 @@ import { INSTANCE_STRIDE, InstanceBuffer } from "./instance_buffer.ts";
 import type { TextureBitmap } from "../image.ts";
 import { type FormatDesc, glFormatFor } from "./webgl.ts";
 
+const MAX_INSTANCES_PER_BATCH = 8192;
+
 type BackendTexture = {
   target: GLenum;
   format: FormatDesc;
@@ -217,12 +219,29 @@ export class WebGL2Backend implements RenderBackend {
     return this.ext.textureBptc !== null;
   }
 
-  constructor(canvas: OffscreenCanvas) {
+  get contextLost(): boolean {
+    return this.gl.isContextLost();
+  }
+
+  constructor(
+    canvas: OffscreenCanvas,
+    onContextEvent?: (event: "context-lost" | "context-restored", data: Record<string, unknown>) => void,
+  ) {
     this._canvas = canvas;
 
     const gl = canvas.getContext("webgl2", { alpha: false });
     if (!gl) throw markEnvironmentError(new Error("Failed to get WebGL2 context"), "renderingContext");
     this.gl = gl;
+    canvas.addEventListener("contextlost", () => {
+      onContextEvent?.("context-lost", { contextLost: gl.isContextLost(), width: canvas.width, height: canvas.height });
+    });
+    canvas.addEventListener("contextrestored", () => {
+      onContextEvent?.("context-restored", {
+        contextLost: gl.isContextLost(),
+        width: canvas.width,
+        height: canvas.height,
+      });
+    });
 
     // https://developer.mozilla.org/en-US/docs/Web/API/EXT_texture_compression_bptc
     this.ext = {
@@ -437,6 +456,7 @@ export class WebGL2Backend implements RenderBackend {
     glyph: boolean,
   ) {
     if (!glyph) this.drawCount++;
+    if (this.instances.length >= MAX_INSTANCES_PER_BATCH) this.dispatch();
     const texture = glyph ? this.glyphTextures.get(textureBitmap.id) : this.getTexture(textureBitmap as TextureBitmap);
     if (!texture) throw new Error(`Unknown glyph atlas texture: ${textureBitmap.id}`);
     const slot = this.bindBatchTexture(textureBitmap.id, texture);

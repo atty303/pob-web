@@ -83,6 +83,19 @@ server, and its inspector select available ports, with the latter two forwarded 
 mise run web:dev
 ```
 
+### Test on a public mobile device
+
+Expose the web development server through a temporary Free Pinggy HTTPS URL:
+
+```bash
+mise run web:dev:public
+```
+
+Open the HTTPS URL printed by Pinggy in iPhone Safari. The URL changes each time the task starts and is publicly
+accessible without authentication, so do not put private build codes or credentials in it. Runtime diagnostics are
+streamed as JSON lines to the development server's standard error; filter a session by its `runId`. Press Ctrl+C to stop
+both the tunnel and the development server. Pass `--pob-cool-asset` to use the remote packed assets, as with `web:dev`.
+
 ### Visual verification with Codex
 
 If the workspace Playwright browser is not installed, prepare it in this trusted repository:

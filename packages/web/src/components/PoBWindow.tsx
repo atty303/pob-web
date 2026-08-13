@@ -20,6 +20,7 @@ import {
   createPoeOAuthBridge,
 } from "../lib/poe-oauth.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
+import { RuntimeDiagnostics } from "../lib/runtime-diagnostics.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
 const { useHash } = use;
@@ -45,6 +46,7 @@ export default function PoBWindow(props: {
   const onTitleChangeRef = useRef(props.onTitleChange);
   const onLayerVisibilityCallbackReadyRef = useRef(props.onLayerVisibilityCallbackReady);
   const onDriverReadyRef = useRef(props.onDriverReady);
+  const effectInputsRef = useRef<{ game: Game; version: string; authenticated: boolean; buildCode: boolean }>();
 
   onFrameRef.current = props.onFrame;
   onTitleChangeRef.current = props.onTitleChange;
@@ -89,6 +91,29 @@ export default function PoBWindow(props: {
   }, [props.toolbarComponent]);
 
   useEffect(() => {
+    const diagnostics = new RuntimeDiagnostics(props.game, props.version);
+    let active = true;
+    const effectInputs = {
+      game: props.game,
+      version: props.version,
+      authenticated: token !== undefined,
+      buildCode: buildCode !== "",
+    };
+    const previousInputs = effectInputsRef.current;
+    diagnostics.record("page", "effect-run", {
+      changed: previousInputs
+        ? (Object.keys(effectInputs) as (keyof typeof effectInputs)[]).filter(
+          (key) => previousInputs[key] !== effectInputs[key],
+        )
+        : ["initial"],
+    });
+    effectInputsRef.current = effectInputs;
+    const onPageShow = (event: PageTransitionEvent) => diagnostics.pageEvent("pageshow", event.persisted);
+    const onPageHide = (event: PageTransitionEvent) => diagnostics.pageEvent("pagehide", event.persisted);
+    const onVisibilityChange = () => diagnostics.pageEvent("visibilitychange");
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     onDriverReadyRef.current?.(null);
     setErrorReport(undefined);
     const assetPrefix = `${__ASSET_PREFIX__}/games/${props.game}/versions/${props.version}`;
@@ -112,7 +137,14 @@ export default function PoBWindow(props: {
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
     const showError = (error: unknown, phase: ErrorPhase) => {
-      const report = createDiagnosticReport({ error, phase, game: props.game, pobVersion: props.version });
+      diagnostics.record("driver", "reported-error", { phase, error: String(error) }, "error");
+      const report = createDiagnosticReport({
+        error,
+        phase,
+        game: props.game,
+        pobVersion: props.version,
+        ...(diagnostics.isEnabled ? { runId: diagnostics.runId, lifecycle: diagnostics.snapshot() } : {}),
+      });
       collectDiagnosticReport(report, {
         warn: (value) => log.warn(tag.pob, "Expected environment error", value),
         error: (value) => log.error(tag.pob, "Path of Building error", value),
@@ -200,8 +232,12 @@ export default function PoBWindow(props: {
         },
         onTitleChange: (title) => onTitleChangeRef.current(title),
       },
-      { onWorkerCreated: registerSentryWorker },
+      {
+        onWorkerCreated: registerSentryWorker,
+        ...(diagnostics.isEnabled ? { onDiagnostic: diagnostics.driver } : {}),
+      },
     );
+    diagnostics.record("driver", "constructed");
 
     driverRef.current = _driver;
 
@@ -214,14 +250,19 @@ export default function PoBWindow(props: {
           cloudflareKvAccessToken: token,
           cloudflareKvUserNamespace: gameData[props.game].cloudflareKvNamespace,
         });
+        if (!active) return;
+        diagnostics.record("driver", "started");
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {
           phase = "build-load";
           log.info(tag.pob, "loading build from ", buildCode);
           await _driver.loadBuildFromCode(buildCode);
+          if (!active) return;
         }
         phase = "renderer-attach";
         if (container.current) await _driver.attachToDOM(container.current);
+        if (!active) return;
+        diagnostics.record("driver", "renderer-attached");
 
         if (props.toolbarComponent) {
           _driver.setExternalToolbarComponent(props.toolbarComponent);
@@ -234,13 +275,20 @@ export default function PoBWindow(props: {
         onDriverReadyRef.current?.(_driver);
 
         setLoading(false);
+        diagnostics.record("driver", "ready");
       } catch (e) {
+        if (!active) return;
         showError(e, phase);
         setLoading(false);
       }
     })();
 
     return () => {
+      active = false;
+      diagnostics.complete("react-effect-cleanup");
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       _driver.detachFromDOM();
       _driver.destory();
       driverRef.current = null;
