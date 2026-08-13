@@ -61,6 +61,19 @@ Deno.test("CloudflareKV preserves existing bytes for partial writes and truncati
   assertEquals((await fs.promises.stat("/build.xml")).size, 8);
 });
 
+Deno.test("CloudflareKV persists empty files", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  await configureCloud(prefix);
+
+  const file = await fs.promises.open("/empty.xml", "w");
+  await file.close();
+
+  await configureCloud(prefix);
+  assertEquals((await fs.promises.readFile("/empty.xml")).byteLength, 0);
+  assertEquals((await fs.promises.stat("/empty.xml")).size, 0);
+});
+
 async function configureCloud(prefix: string, namespace?: string) {
   const cloud = await resolveMountConfig({
     backend: CloudflareKV,

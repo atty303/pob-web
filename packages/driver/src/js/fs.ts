@@ -1,6 +1,5 @@
-import type { Backend } from "@zenfs/core";
+import type { Backend, CreationOptions, InodeLike } from "@zenfs/core";
 import * as zenfs from "@zenfs/core";
-import { Errno, ErrnoError, Stats } from "@zenfs/core";
 import { log, tag } from "./logger.ts";
 
 class FetchError extends Error {
@@ -12,28 +11,27 @@ class FetchError extends Error {
   }
 }
 
-function statsToMetadata(stats: zenfs.StatsLike) {
+function inodeToMetadata(inode: InodeLike) {
   return {
-    atimeMs: stats.atimeMs,
-    mtimeMs: stats.mtimeMs,
-    ctimeMs: stats.ctimeMs,
-    birthtimeMs: stats.birthtimeMs,
-    uid: stats.uid,
-    gid: stats.gid,
-    size: stats.size,
-    mode: stats.mode,
-    ino: stats.ino,
+    atimeMs: inode.atimeMs,
+    mtimeMs: inode.mtimeMs,
+    ctimeMs: inode.ctimeMs,
+    birthtimeMs: inode.birthtimeMs,
+    uid: inode.uid,
+    gid: inode.gid,
+    size: inode.size,
+    mode: inode.mode,
+    ino: inode.ino,
   };
 }
 
-export class CloudflareKVFileSystem extends zenfs.FileSystem {
+export class CloudflareKVFileSystem extends zenfs.IndexFS {
   private readonly fetch: (
     method: string,
     path: string,
     body?: Uint8Array<ArrayBuffer>,
     headers?: Record<string, string>,
   ) => Promise<Response>;
-  private cache: Map<string, Stats> = new Map();
 
   constructor(
     readonly prefix: string,
@@ -43,8 +41,7 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
     super(0x43464b56, /*CFKV*/ "cloudflare-kvfs");
     this.fetch = (method: string, path: string, body?: Uint8Array<ArrayBuffer>, headers?: Record<string, string>) => {
       log.debug(tag.kvfs, "fetch", method, path);
-      const url = `${prefix}${path}`;
-      return fetch(url, {
+      return fetch(`${prefix}${path}`, {
         method,
         body,
         headers: {
@@ -61,184 +58,126 @@ export class CloudflareKVFileSystem extends zenfs.FileSystem {
   }
 
   async reload(): Promise<void> {
-    this.cache = new Map(await this.readList());
-  }
+    const nextIndex = new zenfs.Index();
+    nextIndex.set(
+      "/",
+      new zenfs.Inode({ mode: 0o777 | zenfs.constants.S_IFDIR, size: 4096, ino: 0, data: 1, nlink: 1 }),
+    );
 
-  async rename(oldPath: string, newPath: string): Promise<void> {
-    log.debug(tag.kvfs, "rename", { oldPath, newPath });
-    const oldFile = await this.openFile(oldPath, "r");
-    const stats = await oldFile.stat();
-    const buffer = new Uint8Array(stats.size);
-    await oldFile.read(buffer, 0, stats.size, 0);
-    await oldFile.close();
-
-    const newFile = await this.createFile(newPath, "w", stats.mode);
-    await newFile.write(buffer, 0, buffer.length, 0);
-    await newFile.close();
-
-    await this.unlink(oldPath);
-    this.cache.delete(oldPath);
-    this.cache.set(newPath, stats);
-  }
-  renameSync(_oldPath: string, _newPath: string): void {
-    throw new Error("Method not implemented.");
-  }
-
-  async stat(path: string): Promise<zenfs.Stats> {
-    return this.statSync(path);
-  }
-  statSync(path: string): zenfs.Stats {
-    const stats = this.cache.get(path);
-    if (!stats) {
-      throw new ErrnoError(Errno.ENOENT, "path", path, "stat");
-    }
-    return stats;
-  }
-
-  async openFile(path: string, flag: string): Promise<zenfs.File> {
-    log.debug(tag.kvfs, "openFile", { path, flag });
-    const stats = this.cache.get(path);
-    if (!stats) {
-      throw ErrnoError.With("ENOENT", path, "openFile");
-    }
-    if (!stats.hasAccess(zenfs.flagToMode(flag))) {
-      throw ErrnoError.With("EACCES", path, "openFile");
-    }
-    let buffer: ArrayBufferLike;
-    if (stats.isDirectory()) {
-      buffer = new ArrayBuffer(stats.size);
-    } else {
-      const r = await this.fetch("GET", path);
-      if (!r.ok) {
-        throw new FetchError(r);
-      }
-      buffer = await (await r.blob()).arrayBuffer();
+    const response = await this.fetch("GET", "");
+    if (!response.ok) {
+      throw new FetchError(response);
     }
 
-    return new zenfs.PreloadFile(this, path, flag, stats, new Uint8Array(buffer));
-  }
-  openFileSync(_path: string, _flag: string): zenfs.File {
-    throw new Error("Method not implemented.");
-  }
-
-  async createFile(path: string, flag: string, mode: number): Promise<zenfs.File> {
-    log.debug(tag.kvfs, "createFile", { path, flag, mode });
-    const data = new Uint8Array(0);
-    const r = await this.fetch("PUT", path, data);
-    if (!r.ok) {
-      throw new FetchError(r);
+    const entries = await response.json() as Array<{ name: string; metadata: Partial<InodeLike> }>;
+    for (const { name, metadata } of entries) {
+      const id = nextIndex._alloc();
+      nextIndex.set(`/${name}`, new zenfs.Inode({ ...metadata, ino: id, data: id + 1, nlink: 1 }));
     }
-    const stats = new zenfs.Stats({ mode: mode | zenfs.constants.S_IFREG, size: 0 });
-    this.cache.set(path, stats);
-    return new zenfs.PreloadFile(this, path, flag, stats, data);
-  }
-  createFileSync(_path: string, _flag: string, _mode: number): zenfs.File {
-    throw new Error("Method not implemented.");
+    this.index.clear();
+    for (const [path, inode] of nextIndex) this.index.set(path, inode);
+    log.debug(tag.kvfs, "reload", { entries: [...this.index.keys()] });
   }
 
-  async unlink(path: string): Promise<void> {
-    log.debug(tag.kvfs, "unlink", { path });
-    const r = await this.fetch("DELETE", path);
-    if (!r.ok) {
-      throw new FetchError(r);
+  protected override async remove(path: string): Promise<void> {
+    log.debug(tag.kvfs, "remove", { path });
+    const response = await this.fetch("DELETE", path);
+    if (!response.ok) {
+      throw new FetchError(response);
     }
-    this.cache.delete(path);
-  }
-  unlinkSync(_path: string): void {
-    throw new Error("Method not implemented.");
   }
 
-  async rmdir(path: string): Promise<void> {
-    log.debug(tag.kvfs, "rmdir", { path });
-    const r = await this.fetch("DELETE", path);
-    if (!r.ok) {
-      throw new FetchError(r);
+  protected override removeSync(_path: string): void {
+    throw new Error("Synchronous operations are not supported");
+  }
+
+  override async createFile(path: string, options: CreationOptions): Promise<zenfs.Inode> {
+    const inode = await super.createFile(path, options);
+    try {
+      await this.persist(path, new Uint8Array(0), inode);
+      return inode;
+    } catch (error) {
+      this.index.delete(path);
+      throw error;
     }
-    this.cache.delete(path);
-  }
-  rmdirSync(_path: string): void {
-    throw new Error("Method not implemented.");
   }
 
-  async mkdir(path: string, mode: number): Promise<void> {
-    log.debug(tag.kvfs, "mkdir", { path, mode });
-    const stats = new zenfs.Stats({ mode: mode | zenfs.constants.S_IFDIR, size: 4096 });
-    const r = await this.fetch("PUT", path, new Uint8Array(0), {
-      "x-metadata": JSON.stringify(statsToMetadata(stats)),
+  protected override async _mkdir(path: string, _options: CreationOptions): Promise<void> {
+    const inode = this.index.get(path)!;
+    inode.update({ size: 4096 });
+    try {
+      await this.persist(path, new Uint8Array(0), inode);
+    } catch (error) {
+      this.index.delete(path);
+      throw error;
+    }
+  }
+
+  override async read(path: string, buffer: Uint8Array, offset: number, end: number): Promise<void> {
+    const inode = this.index.get(path);
+    if (inode && (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFDIR) {
+      buffer.fill(0, 0, end - offset);
+      return;
+    }
+
+    const data = await this.load(path);
+    buffer.set(data.subarray(offset, end));
+  }
+
+  override readSync(_path: string, _buffer: Uint8Array, _offset: number, _end: number): void {
+    throw new Error("Synchronous operations are not supported");
+  }
+
+  override async write(path: string, data: Uint8Array, offset: number): Promise<void> {
+    const inode = this.index.get(path)!;
+    const existing = await this.load(path, true);
+    const contents = new Uint8Array(Math.max(existing.length, inode.size, offset + data.length));
+    contents.set(existing.subarray(0, contents.length));
+    contents.set(data, offset);
+    inode.update({ size: contents.length, mtimeMs: Date.now() });
+    await this.persist(path, contents, inode);
+  }
+
+  override writeSync(_path: string, _buffer: Uint8Array, _offset: number): void {
+    throw new Error("Synchronous operations are not supported");
+  }
+
+  override async touch(path: string, metadata: InodeLike): Promise<void> {
+    await super.touch(path, metadata);
+    const inode = this.index.get(path)!;
+    if ((inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFDIR) {
+      await this.persist(path, new Uint8Array(0), inode);
+      return;
+    }
+
+    const existing = await this.load(path, true);
+    const contents = new Uint8Array(inode.size);
+    contents.set(existing.subarray(0, inode.size));
+    await this.persist(path, contents, inode);
+  }
+
+  override touchSync(_path: string, _metadata: InodeLike): void {
+    throw new Error("Synchronous operations are not supported");
+  }
+
+  private async load(path: string, missingAllowed = false): Promise<Uint8Array<ArrayBuffer>> {
+    const response = await this.fetch("GET", path);
+    if (missingAllowed && response.status === 404) {
+      return new Uint8Array(0);
+    }
+    if (!response.ok) {
+      throw new FetchError(response);
+    }
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  private async persist(path: string, data: Uint8Array, inode: InodeLike): Promise<void> {
+    const response = await this.fetch("PUT", path, new Uint8Array(data), {
+      "x-metadata": JSON.stringify(inodeToMetadata(inode)),
     });
-    if (!r.ok) {
-      throw new FetchError(r);
+    if (!response.ok) {
+      throw new FetchError(response);
     }
-    this.cache.set(path, stats);
-  }
-  mkdirSync(_path: string, _mode: number): void {
-    throw new Error("Method not implemented.");
-  }
-
-  async readdir(path: string): Promise<string[]> {
-    log.debug(tag.kvfs, "readdir", { path });
-    return this.readdirSync(path);
-  }
-  readdirSync(path: string): string[] {
-    const prefix = !path.endsWith("/") ? `${path}/` : path;
-    return [...this.cache.keys()]
-      .filter((_) => _.startsWith(prefix) && _.substring(prefix.length).split("/").length === 1)
-      .map((_) => _.substring(prefix.length))
-      .filter((_) => _.length > 0);
-  }
-
-  link(_srcpath: string, _dstpath: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  linkSync(_srcpath: string, _dstpath: string): void {
-    throw new Error("Method not implemented.");
-  }
-
-  async sync(path: string, data: Uint8Array, stats: Readonly<zenfs.Stats>): Promise<void> {
-    log.debug(tag.kvfs, "sync", { path, data, stats });
-    const metadata = statsToMetadata(stats);
-    const body = stats.isDirectory() ? new Uint8Array(0) : new Uint8Array(data);
-    const r = await this.fetch("PUT", path, body, { "x-metadata": JSON.stringify(metadata) });
-    if (!r.ok) {
-      log.error(tag.kvfs, "sync", path, r.status, r.statusText);
-      throw ErrnoError.With("EIO", path, "sync");
-    }
-    this.cache.set(path, new Stats(stats));
-  }
-  syncSync(_path: string, _data: Uint8Array, _stats: Readonly<zenfs.Stats>): void {
-    throw new Error("Method not implemented.");
-  }
-
-  protected async readList() {
-    const r = await this.fetch("GET", "");
-    if (!r.ok) {
-      throw new FetchError(r);
-    }
-    const list = [
-      ["/", new zenfs.Stats({ mode: 0o777 | zenfs.constants.S_IFDIR, size: 4096 })],
-      ...(await r.json()).map((_: { name: string; metadata: { dir: boolean; size: number } }) => [
-        `/${_.name}`,
-        new zenfs.Stats(_.metadata),
-      ]),
-    ];
-    log.debug(tag.kvfs, "readList", { list });
-    return list;
-  }
-
-  read(_path: string, _buffer: Uint8Array, _offset: number, _end: number): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  readSync(_path: string, _buffer: Uint8Array, _offset: number, _end: number): void {
-    throw new Error("Method not implemented.");
-  }
-
-  write(_path: string, _buffer: Uint8Array, _offset: number): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  writeSync(_path: string, _buffer: Uint8Array, _offset: number): void {
-    throw new Error("Method not implemented.");
   }
 }
 
@@ -250,29 +189,14 @@ export interface CloudflareKVOptions {
 
 export const CloudflareKV = {
   name: "CloudflareKV",
-
   options: {
-    prefix: {
-      type: "string",
-      required: true,
-      description: "The URL prefix to use for requests",
-    },
-    token: {
-      type: "string",
-      required: true,
-      description: "The JWT token to use",
-    },
-    namespace: {
-      type: "string",
-      required: false,
-      description: "The user namespace to use",
-    },
+    prefix: { type: "string", required: true },
+    token: { type: "string", required: true },
+    namespace: { type: "string", required: false },
   },
-
   isAvailable(): boolean {
     return true;
   },
-
   create(options: CloudflareKVOptions) {
     return new CloudflareKVFileSystem(options.prefix, options.token, options.namespace);
   },
