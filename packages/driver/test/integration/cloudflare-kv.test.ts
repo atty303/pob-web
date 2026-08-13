@@ -74,6 +74,26 @@ Deno.test("CloudflareKV persists empty files", async () => {
   assertEquals((await fs.promises.stat("/empty.xml")).size, 0);
 });
 
+Deno.test("CloudflareKV recovers non-empty files with stale zero-sized metadata", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  const contents = '<PathOfBuilding name="recovered"/>';
+  const response = await fetch(`${prefix}/stale.xml`, {
+    method: "PUT",
+    body: contents,
+    headers: {
+      Authorization: "Bearer integration-token",
+      "x-metadata": JSON.stringify({ mode: 0o100644, size: 0 }),
+    },
+  });
+  await response.body?.cancel();
+  assertEquals(response.status, 204);
+
+  await configureCloud(prefix);
+  assertEquals(await fs.promises.readFile("/stale.xml", "utf8"), contents);
+  assertEquals((await fs.promises.stat("/stale.xml")).size, new TextEncoder().encode(contents).length);
+});
+
 async function configureCloud(prefix: string, namespace?: string) {
   const cloud = await resolveMountConfig({
     backend: CloudflareKV,

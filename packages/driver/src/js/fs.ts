@@ -113,6 +113,18 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     }
   }
 
+  override async stat(path: string): Promise<zenfs.Inode> {
+    const inode = this.index.get(path);
+    if (
+      inode?.size === 0 &&
+      (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFREG
+    ) {
+      const data = await this.load(path);
+      if (data.length > 0) inode.update({ size: data.length });
+    }
+    return await super.stat(path);
+  }
+
   override async read(path: string, buffer: Uint8Array, offset: number, end: number): Promise<void> {
     const inode = this.index.get(path);
     if (inode && (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFDIR) {
