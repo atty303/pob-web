@@ -51,9 +51,9 @@ export class FilesystemRpcHandler {
         return { value: entries.map((entry) => [entry.name, entry.isFile() ? 1 : entry.isDirectory() ? 2 : 3]) };
       }
       case "lstat":
-        return { value: serializeStat(await fs.promises.lstat(args[0] as string)) };
+        return { value: this.serializeStat(await fs.promises.lstat(args[0] as string), args[0] as string) };
       case "stat":
-        return { value: serializeStat(await fs.promises.stat(args[0] as string)) };
+        return { value: this.serializeStat(await fs.promises.stat(args[0] as string), args[0] as string) };
       case "fstat":
         return {
           value: serializeStat(
@@ -125,6 +125,14 @@ export class FilesystemRpcHandler {
       default:
         throw new Error(`Unknown filesystem operation: ${operation}`);
     }
+  }
+
+  private serializeStat(stat: zenfs.Stats, path?: string) {
+    const mode = path && this.cloudDirectory &&
+        (path === this.cloudDirectory || path.startsWith(`${this.cloudDirectory}/`))
+      ? stat.mode | 0o777
+      : stat.mode;
+    return { mode, size: stat.size };
   }
 }
 

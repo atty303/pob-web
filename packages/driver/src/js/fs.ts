@@ -86,10 +86,13 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
       const recovered = directoryNames.has(name)
         ? {
           ...normalizedMetadata,
-          mode: zenfs.constants.S_IFDIR | ((normalizedMetadata.mode ?? 0o777) & 0o7777),
+          mode: zenfs.constants.S_IFDIR | 0o777,
           size: 4096,
         }
-        : normalizedMetadata;
+        : {
+          ...normalizedMetadata,
+          mode: zenfs.constants.S_IFREG | 0o777,
+        };
       nextIndex.set(`/${name}`, new zenfs.Inode({ ...recovered, ino: id, data: id + 1, nlink: 1 }));
     }
     this.index.clear();
@@ -112,6 +115,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
 
   override async createFile(path: string, options: CreationOptions): Promise<zenfs.Inode> {
     const inode = await super.createFile(path, options);
+    inode.update({ mode: zenfs.constants.S_IFREG | 0o777 });
     try {
       await this.persist(path, new Uint8Array(0), inode);
       return inode;
@@ -123,7 +127,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
 
   protected override async _mkdir(path: string, _options: CreationOptions): Promise<void> {
     const inode = this.index.get(path)!;
-    inode.update({ size: 4096 });
+    inode.update({ mode: zenfs.constants.S_IFDIR | 0o777, size: 4096 });
     try {
       await this.persist(path, new Uint8Array(0), inode);
     } catch (error) {

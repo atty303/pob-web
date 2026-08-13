@@ -107,7 +107,32 @@ Deno.test("CloudflareKV recovers directories misclassified as regular files", as
   const publicStats = await fs.promises.stat("/Public");
   assertEquals(publicStats.isDirectory(), true);
   assertEquals(publicStats.size, 4096);
+  assertEquals(publicStats.mode & 0o777, 0o777);
   assertEquals(await fs.promises.readFile("/Public/att.xml", "utf8"), '<PathOfBuilding name="att"/>');
+  await fs.promises.writeFile("/Public/saved.xml", '<PathOfBuilding name="saved"/>');
+
+  await configureCloud(prefix);
+  assertEquals((await fs.promises.stat("/Public/saved.xml")).mode & 0o777, 0o777);
+  assertEquals(await fs.promises.readFile("/Public/saved.xml", "utf8"), '<PathOfBuilding name="saved"/>');
+});
+
+Deno.test("CloudflareKV reads a large XML response as bytes rather than Base64 text", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  const header = '<?xml version="1.0" encoding="UTF-8"?>\n<PathOfBuilding>';
+  const contents = `${header}${"x".repeat(35_191 - header.length - 17)}</PathOfBuilding>`;
+  await putKv(prefix, "2.xml", contents, { mode: 0o100000, size: 35_191 });
+
+  const response = await fetch(`${prefix}/2.xml`, {
+    headers: { Authorization: "Bearer integration-token" },
+  });
+  const body = new Uint8Array(await response.arrayBuffer());
+  assertEquals(body.length, 35_191);
+  assertEquals(new TextDecoder().decode(body.subarray(0, 5)), "<?xml");
+
+  await configureCloud(prefix);
+  assertEquals((await fs.promises.stat("/2.xml")).mode & 0o777, 0o777);
+  assertEquals(await fs.promises.readFile("/2.xml", "utf8"), contents);
 });
 
 async function putKv(prefix: string, path: string, body: BodyInit, metadata: Record<string, unknown>) {
