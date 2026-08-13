@@ -1,6 +1,7 @@
 import { Zip } from "@zenfs/archives";
 import { configure, fs, resolveMountConfig } from "@zenfs/core";
 import { WebAccess } from "@zenfs/dom";
+import { rejectWrites } from "../../../src/js/fs.ts";
 
 const rootZip = Uint8Array.from(
   atob(
@@ -22,6 +23,7 @@ declare global {
 
 async function configureRoot() {
   const root = await resolveMountConfig({ backend: Zip, data: rootZip.buffer, name: "root.zip" });
+  rejectWrites(root);
   await configure({ mounts: { "/root": root } });
 }
 

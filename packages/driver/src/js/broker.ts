@@ -5,7 +5,7 @@ import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import { markEnvironmentError } from "./error.ts";
 import { FilesystemRpcHandler } from "./filesystem-handler.ts";
-import { CloudflareKV } from "./fs.ts";
+import { CloudflareKV, rejectWrites } from "./fs.ts";
 import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
 import type { SubScriptWorker } from "./sub.ts";
@@ -49,6 +49,7 @@ class AsyncBroker {
     }
 
     const rootFileSystem = await zenfs.resolveMountConfig({ backend: Zip, data: rootZipData, name: "root.zip" });
+    rejectWrites(rootFileSystem);
 
     let userFileSystem: Awaited<ReturnType<typeof zenfs.resolveMountConfig<typeof WebAccess>>>;
     try {

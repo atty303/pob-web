@@ -7,7 +7,7 @@ test("Zip root filesystem is readable and immutable", async ({ page }) => {
     text: "root fixture\n",
     binary: [0, 1, 2, 255],
     entries: ["blob.bin", "test.txt"],
-    writeError: expect.stringMatching(/E(?:PERM|ROFS)/),
+    writeError: expect.stringMatching(/read-only file system|E(?:PERM|ROFS)/),
   });
 });
 

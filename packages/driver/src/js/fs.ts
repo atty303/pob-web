@@ -4,6 +4,11 @@ import { log, tag } from "./logger.ts";
 
 const DIRECT_ACCESS = 0x2000;
 
+export function rejectWrites(fileSystem: zenfs.FileSystem): void {
+  // ZenFS 2.6.2 checks this attribute before mutating a VNode, but omits it from FileSystemAttributes.
+  (fileSystem.attributes as Map<string, void>).set("readonly");
+}
+
 class FetchError extends Error {
   constructor(
     public readonly response: Response,
