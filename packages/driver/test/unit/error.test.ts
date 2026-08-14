@@ -24,12 +24,57 @@ Deno.test("environment errors retain their original details while carrying a Com
 
   const marked = markEnvironmentError(error, "assetLoad");
 
-  assertEquals(marked, error);
+  assertEquals(marked === error, false);
   assertEquals(marked.message, "network unavailable");
   assertEquals(marked.stack, originalStack);
+  assertEquals(marked.cause, error);
   assertEquals(marked.name, environmentErrorNames.assetLoad);
   assertEquals(environmentErrorCategory(marked), "assetLoad");
   assertEquals(isEnvironmentError(marked), true);
+});
+
+Deno.test("readonly browser errors can be marked as environment failures", () => {
+  const error = new Error("OPFS initialization failed");
+  Object.defineProperty(error, "name", { value: "InvalidStateError", writable: false });
+  const originalStack = error.stack;
+
+  const marked = markEnvironmentError(error, "storage");
+
+  assertEquals(marked.message, error.message);
+  assertEquals(marked.stack, originalStack);
+  assertEquals(marked.cause, error);
+  assertEquals(environmentErrorCategory(marked), "storage");
+  const cloned = structuredClone(marked);
+  assertEquals(cloned.message, error.message);
+  assertEquals((cloned.cause as Error).message, error.message);
+});
+
+Deno.test("virtual asset address-family failures are classified without hiding other Lua failures", () => {
+  const addressFamilyFailure = new Error(
+    "Error in lua: In 'Init': [string \"-- pob-web: Path of Building Web...\"]:95: " +
+      "LoadModule() error loading 'Classes/ModList.lua': cannot read Classes/ModList.lua: " +
+      "Address family not supported by protocol\n" +
+      "stack traceback:\n\t[C]: in function 'error'\n\tModules/Common.lua:71: in function 'getClass'",
+  );
+  const followedByAnotherFailure = new Error(
+    "Error in lua: LoadModule() error loading 'Classes/ModList.lua': cannot read Classes/ModList.lua: " +
+      "Address family not supported by protocol\n" +
+      "Modules/Build.lua:1193: attempt to index field 'calcsTab'",
+  );
+  const missingAsset = new Error(
+    "Error in lua: LoadModule() error loading 'Classes/Tooltip.lua': " +
+      "cannot open Classes/Tooltip.lua: No such file or directory",
+  );
+  const arbitraryLuaFailure = new Error("Error in lua: Modules/Build.lua:1193: attempt to index field 'calcsTab'");
+  const buildParseFailure = new Error(
+    "Error in lua: Error parsing 'Unnamed build': 'PathOfBuilding' root element missing",
+  );
+
+  assertEquals(environmentErrorCategory(addressFamilyFailure), "assetLoad");
+  assertEquals(environmentErrorCategory(followedByAnotherFailure), undefined);
+  assertEquals(environmentErrorCategory(missingAsset), undefined);
+  assertEquals(environmentErrorCategory(arbitraryLuaFailure), undefined);
+  assertEquals(environmentErrorCategory(buildParseFailure), undefined);
 });
 
 Deno.test("ordinary errors are not classified as expected environment failures", () => {

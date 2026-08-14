@@ -46,6 +46,20 @@ Deno.test("expected environment failures are logged without creating a Sentry is
   assertEquals(result.captures, []);
 });
 
+Deno.test("recognized virtual asset environment failures are shown without creating a Sentry issue", () => {
+  const error = new Error(
+    "Error in lua: LoadModule() error loading 'Classes/ModList.lua': cannot read Classes/ModList.lua: " +
+      "Address family not supported by protocol",
+  );
+  const report: DiagnosticReport = { error, classification: "environment/assetLoad", context };
+
+  const result = record(report);
+
+  assertEquals(result.warnings, [report]);
+  assertEquals(result.errors, []);
+  assertEquals(result.captures, []);
+});
+
 Deno.test("known upstream failures are logged without creating a pob-web Sentry issue", () => {
   const error = markKnownUpstreamError(
     new Error(

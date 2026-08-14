@@ -11,6 +11,12 @@ const upstreamErrorName = "PobUpstreamError";
 const upstreamErrorPatterns = [
   /In download callback: Classes\/PoEAPI\.lua:\d+: attempt to index local 'response' \(a nil value\)/,
 ];
+const environmentErrorPatterns: ReadonlyArray<readonly [EnvironmentErrorCategory, RegExp]> = [
+  [
+    "assetLoad",
+    /\bP?LoadModule\(\) error loading '[^']+': cannot (?:open|read) [^:\r\n]+: Address family not supported by protocol(?:\r?\nstack traceback:(?:\r?\n.*)*)?$/,
+  ],
+];
 
 const storagePathOperations = new Set(["readdir", "lstat", "stat", "open", "mkdir", "unlink", "rmdir", "truncate"]);
 const storageDescriptorOperations = new Set(["fstat", "close", "read", "write", "ftruncate"]);
@@ -31,8 +37,9 @@ export function isLocalUserStorageOperation(
 }
 
 export function markEnvironmentError(error: unknown, category: EnvironmentErrorCategory): Error {
-  const marked = error instanceof Error ? error : new Error(String(error));
-  const stack = marked.stack;
+  const source = error instanceof Error ? error : new Error(String(error));
+  const marked = new Error(source.message, { cause: error instanceof Error ? error : undefined });
+  const stack = source.stack;
   marked.name = environmentErrorNames[category];
   if (stack !== undefined) marked.stack = stack;
   return marked;
@@ -51,6 +58,9 @@ export function environmentErrorCategory(error: unknown): EnvironmentErrorCatego
 
   for (const [category, name] of Object.entries(environmentErrorNames)) {
     if (error.name === name) return category as EnvironmentErrorCategory;
+  }
+  for (const [category, pattern] of environmentErrorPatterns) {
+    if (pattern.test(error.message)) return category;
   }
   return undefined;
 }
