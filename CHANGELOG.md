@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.4](https://github.com/atty303/pob-web/compare/v0.33.3...v0.33.4) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** hide zero-byte cloud builds ([0fd43df](https://github.com/atty303/pob-web/commit/0fd43dfbb908761956cd1e7e24e0a8cc07c8055e))
+* **driver:** hide zero-byte cloud builds ([#199](https://github.com/atty303/pob-web/issues/199)) ([61de18c](https://github.com/atty303/pob-web/commit/61de18c88828e4eaa6d047c4725a7ebc09390f03))
+
 ## [0.33.3](https://github.com/atty303/pob-web/compare/v0.33.2...v0.33.3) (2026-08-14)
 
 
