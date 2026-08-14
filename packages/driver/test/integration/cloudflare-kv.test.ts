@@ -111,7 +111,8 @@ Deno.test("CloudflareKV reads files persisted by the ZenFS v1 driver", async () 
   const prefix = `${wrangler.url}/api/kv`;
   const withoutMetadata = '<PathOfBuilding name="without metadata"/>';
   const withStatsMetadata = '<PathOfBuilding name="with stats metadata"/>';
-  await putKv(prefix, "corrupt-zero-byte.xml", "", {});
+  await putKv(prefix, "corrupt-zero-byte.xml", "", { mode: 0o100644, size: 35_191 });
+  await putKv(prefix, "Encoded%20Name.xml", "", { mode: 0o100644, size: 35_191 });
   await putKv(prefix, "without-metadata.xml", withoutMetadata, {});
   await putKv(prefix, "with-stats-metadata.xml", withStatsMetadata, {
     atimeMs: 1_723_456_789_000,
@@ -229,7 +230,8 @@ Deno.test("CloudflareKV reads a large XML response as bytes rather than Base64 t
 });
 
 async function putKv(prefix: string, path: string, body: BodyInit, metadata: Record<string, unknown>) {
-  const response = await fetch(`${prefix}/${path}`, {
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  const response = await fetch(`${prefix}/${encodedPath}`, {
     method: "PUT",
     body,
     headers: {
