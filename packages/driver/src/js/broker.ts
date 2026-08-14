@@ -1,6 +1,5 @@
 import { Zip } from "@zenfs/archives";
 import * as zenfs from "@zenfs/core";
-import { WebAccess } from "@zenfs/dom";
 import * as Comlink from "comlink";
 import type { FilesystemConfig } from "./driver.ts";
 import { markEnvironmentError } from "./error.ts";
@@ -8,7 +7,9 @@ import { FilesystemRpcHandler } from "./filesystem-handler.ts";
 import { CloudflareKV, rejectWrites } from "./fs.ts";
 import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { exposeRpcPort, prepareFetchHeaders, type RpcResult } from "./rpc.ts";
+import { removeStaleSettingsSuffix } from "./settings.ts";
 import type { SubScriptWorker } from "./sub.ts";
+import { TruncatingWebAccess } from "./web-access.ts";
 // @ts-types="./vite-worker.d.ts"
 import SubWorkerObject from "./sub.ts?worker";
 
@@ -51,11 +52,11 @@ class AsyncBroker {
     const rootFileSystem = await zenfs.resolveMountConfig({ backend: Zip, data: rootZipData, name: "root.zip" });
     rejectWrites(rootFileSystem);
 
-    let userFileSystem: Awaited<ReturnType<typeof zenfs.resolveMountConfig<typeof WebAccess>>>;
+    let userFileSystem: Awaited<ReturnType<typeof zenfs.resolveMountConfig<typeof TruncatingWebAccess>>>;
     try {
       const userDirectory = await navigator.storage.getDirectory();
       userFileSystem = await zenfs.resolveMountConfig({
-        backend: WebAccess,
+        backend: TruncatingWebAccess,
         handle: userDirectory,
         disableAsyncCache: true,
       });
@@ -69,6 +70,10 @@ class AsyncBroker {
         "/user": userFileSystem,
       },
     });
+    const settingsPath = `/user/${config.userDirectory}/Settings.xml`;
+    if (await removeStaleSettingsSuffix(settingsPath)) {
+      console.warn("Removed stale data after Path of Building settings", { settingsPath });
+    }
     if (config.cloudflareKvAccessToken) {
       const cloud = await zenfs.resolveMountConfig({
         backend: CloudflareKV,
