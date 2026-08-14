@@ -98,9 +98,15 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
       }
     }
     for (const { name, metadata } of entries) {
+      const isDirectory = directoryNames.has(name);
+      const isLegacyEmptyCandidate = !isDirectory && metadata?.flags === undefined && (metadata?.size ?? 0) <= 0;
+      if (isLegacyEmptyCandidate && (await this.load(`/${name}`)).length === 0) {
+        log.warn(tag.kvfs, "ignoring legacy zero-byte file", { path: `/${name}` });
+        continue;
+      }
       const id = nextIndex._alloc();
       const normalizedMetadata = metadata ?? {};
-      const recovered = directoryNames.has(name)
+      const recovered = isDirectory
         ? {
           ...normalizedMetadata,
           mode: zenfs.constants.S_IFDIR | 0o777,
