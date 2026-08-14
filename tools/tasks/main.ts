@@ -31,6 +31,7 @@ const test = new Command().description("Run the complete reproducible validation
     const task of [
       "check",
       "test:driver",
+      "test:integration:zenfs",
       "test:web",
       "test:sentry-upload",
       "test:upstream-sync",

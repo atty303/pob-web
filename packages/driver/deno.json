@@ -30,6 +30,8 @@
     "preview": "vite preview",
     "test": "deno test --no-check --allow-env --allow-read=../../version.json,../../node_modules,build,src,test test/unit/*.test.ts && ctest --test-dir build --output-on-failure",
     "test:e2e": "playwright test",
+    "test:integration:zenfs:browser": "playwright test --config playwright.zenfs.config.mts",
+    "test:integration:zenfs:kv": "deno test --no-check --allow-env --allow-net=127.0.0.1 --allow-read=../.. --allow-write=/tmp --allow-run test/integration/cloudflare-kv.test.ts",
     "test:e2e:bc7": "playwright test bc7-fallback.spec.mts --project chromium",
     "test:e2e:serve": "vite --mode test --host 127.0.0.1",
     "test:performance": "playwright test --config playwright.performance.config.mts"

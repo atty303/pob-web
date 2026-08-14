@@ -44,9 +44,9 @@
     "npm:@types/react-dom@^18.3.7": "18.3.7_@types+react@18.3.31",
     "npm:@types/react@^18.3.31": "18.3.31",
     "npm:@vitejs/plugin-react@^5.2.0": "5.2.0_vite@6.4.3__@types+node@24.13.3__tsx@4.23.11_@types+node@24.13.3_tsx@4.23.11",
-    "npm:@zenfs/archives@1.0.5": "1.0.5_@zenfs+core@1.11.4_utilium@1.10.1",
-    "npm:@zenfs/core@1.11.4": "1.11.4",
-    "npm:@zenfs/dom@1.1.5": "1.1.5_@zenfs+core@1.11.4_utilium@1.10.1",
+    "npm:@zenfs/archives@1.4.0": "1.4.0_@zenfs+core@2.6.2_kerium@1.4.2_memium@0.4.5_utilium@3.5.0",
+    "npm:@zenfs/core@2.6.2": "2.6.2",
+    "npm:@zenfs/dom@1.2.10": "1.2.10_@zenfs+core@2.6.2_kerium@1.4.2_utilium@3.5.0",
     "npm:adm-zip@0.6": "0.6.0",
     "npm:comlink@^4.4.1": "4.4.2",
     "npm:daisyui@^5.7.16": "5.7.16",
@@ -1663,8 +1663,8 @@
     "@types/js-cookie@3.0.6": {
       "integrity": "sha512-wkw9yd1kEXOPnvEeEV1Go1MmxtBJL0RR79aOTAApecWFVu7w0NNXNqhcWgvw2YgZDYadliXkl14pa3WXw5jlCQ=="
     },
-    "@types/node@22.20.1": {
-      "integrity": "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==",
+    "@types/node@25.9.5": {
+      "integrity": "sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==",
       "dependencies": [
         "undici-types"
       ]
@@ -1703,30 +1703,34 @@
     "@xterm/xterm@5.5.0": {
       "integrity": "sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A=="
     },
-    "@zenfs/archives@1.0.5_@zenfs+core@1.11.4_utilium@1.10.1": {
-      "integrity": "sha512-eT+yo2LKfC6gsYOyvFiXVUcvjJoYmHGxrshwcLz3OcMIY10OjEM7f7Gm5UwQy3F3hvsX49306y3wscWxz1WcQw==",
+    "@zenfs/archives@1.4.0_@zenfs+core@2.6.2_kerium@1.4.2_memium@0.4.5_utilium@3.5.0": {
+      "integrity": "sha512-xO0yNGqZHdg2RO/hqfH2Nrz0pUFuk5n2n4Fj/BL4vZCLITdVTc37f6KtrnnGgdEkincnoMgUMnizwH+Gj2CkSg==",
       "dependencies": [
         "@zenfs/core",
         "fflate",
+        "kerium",
+        "memium",
         "utilium"
       ]
     },
-    "@zenfs/core@1.11.4": {
-      "integrity": "sha512-jFihhedKitw1X9rlImtaca4KTs1Xk9awo4GxUemqt2ucE1jLi10lyRfFFbiYXZsFDkuCWGHwEQwv7BeDIEXMbQ==",
+    "@zenfs/core@2.6.2": {
+      "integrity": "sha512-ggITBivQN9yif1OgcHJsvfrcT1ipgJY844gUsxyNl8z5RHeCI46piJwYQPhLM60vJZiLwi21ZJ0eLt8qVRxQjA==",
       "dependencies": [
         "@types/node",
         "buffer",
         "eventemitter3",
+        "kerium",
+        "memium",
         "readable-stream",
         "utilium"
       ],
-      "deprecated": true,
       "bin": true
     },
-    "@zenfs/dom@1.1.5_@zenfs+core@1.11.4_utilium@1.10.1": {
-      "integrity": "sha512-NMrHlm+6LBQAFzuJiur9viQ47GiSw74AwYJnw0kR8AL9eDUpGkuYe2ItlBM0NKgEH8fLGB32yGkoOjsrui4K5A==",
+    "@zenfs/dom@1.2.10_@zenfs+core@2.6.2_kerium@1.4.2_utilium@3.5.0": {
+      "integrity": "sha512-U85wcXvyzyxK7kgrdpjT2HrSTQquKY6rtOwQ5LiJ6PMsDfpFjtcHD0hROC02PdD6+uEuX+Yy33SCDF7hDLyCtA==",
       "dependencies": [
         "@zenfs/core",
+        "kerium",
         "utilium"
       ]
     },
@@ -2229,6 +2233,12 @@
         "graceful-fs"
       ]
     },
+    "kerium@1.4.2": {
+      "integrity": "sha512-K2gshjNgxuG4tE+hAnCS7HEWhu/JEobNh52rSLDR4Vu8Vxi5f+K9U8h3+9P4JWvaw/IL4Orfd+9mufhVtrl3lQ==",
+      "dependencies": [
+        "utilium"
+      ]
+    },
     "kleur@4.1.5": {
       "integrity": "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="
     },
@@ -2330,6 +2340,13 @@
     },
     "mdn-data@2.0.14": {
       "integrity": "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="
+    },
+    "memium@0.4.5": {
+      "integrity": "sha512-mnmHWWlcyKnkKSSU0qL1Jsg+CsoikVZ2xsOatAN89R+j4V3m3WlQr0nUoqcjKDyUVF5ZGdNinRiZGVd+7A+TJQ==",
+      "dependencies": [
+        "kerium",
+        "utilium"
+      ]
     },
     "merge2@1.4.1": {
       "integrity": "sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg=="
@@ -2822,8 +2839,8 @@
       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
       "bin": true
     },
-    "undici-types@6.21.0": {
-      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
+    "undici-types@7.24.6": {
+      "integrity": "sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg=="
     },
     "undici@7.29.0": {
       "integrity": "sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw=="
@@ -2855,14 +2872,15 @@
     "util-deprecate@1.0.2": {
       "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="
     },
-    "utilium@1.10.1": {
-      "integrity": "sha512-GQINDTb/ocyz4acQj3GXAe0wipYxws6L+9ouqaq10KlInTk9DGvW9TJd0pYa/Xu3cppNnZuB4T/sBuSXpcN2ng==",
+    "utilium@3.5.0": {
+      "integrity": "sha512-Id7Cl25JtIkrg1Ws7jY8CldZEq9g3LjEw7cjqf8di/nhqjLxWFU3kYjBaOzgMtI77RrjLNiy0xp0unANB8xMdg==",
       "dependencies": [
         "eventemitter3"
       ],
       "optionalDependencies": [
         "@xterm/xterm"
-      ]
+      ],
+      "bin": true
     },
     "valibot@1.4.2_typescript@5.9.3": {
       "integrity": "sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==",
@@ -3007,9 +3025,9 @@
       "npm:@types/react-dom@^18.3.7",
       "npm:@types/react@^18.3.31",
       "npm:@vitejs/plugin-react@^5.2.0",
-      "npm:@zenfs/archives@1.0.5",
-      "npm:@zenfs/core@1.11.4",
-      "npm:@zenfs/dom@1.1.5",
+      "npm:@zenfs/archives@1.4.0",
+      "npm:@zenfs/core@2.6.2",
+      "npm:@zenfs/dom@1.2.10",
       "npm:adm-zip@0.6",
       "npm:comlink@^4.4.1",
       "npm:daisyui@^5.7.16",

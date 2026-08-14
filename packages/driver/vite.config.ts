@@ -1,6 +1,7 @@
 import * as path from "@std/path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { createHash } from "node:crypto";
 import { defineConfig } from "vite";
 import Inspect from "vite-plugin-inspect";
 import { viteStaticCopy } from "vite-plugin-static-copy";
@@ -8,6 +9,10 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 const packageDir = path.dirname(path.fromFileUrl(import.meta.url));
 const packerR2Dir = path.resolve(packageDir, "../packer/r2");
 const rootDir = path.resolve(packageDir, "../..");
+const dependencyHash = createHash("sha256")
+  .update(Deno.readTextFileSync(path.join(rootDir, "deno.lock")))
+  .digest("hex")
+  .slice(0, 12);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -15,6 +20,7 @@ export default defineConfig(({ mode }) => {
   const usePobCoolAsset = mode === "development" && Deno.env.get("POB_COOL_ASSET") === "true";
 
   return {
+    cacheDir: path.join(packageDir, "node_modules", `.vite-${dependencyHash}`),
     resolve: {
       alias: {
         dds: path.join(rootDir, "packages/dds/src/index.ts"),

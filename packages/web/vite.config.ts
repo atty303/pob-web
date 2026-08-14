@@ -1,6 +1,7 @@
 import * as path from "@std/path";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { createHash } from "node:crypto";
 import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { wranglerDev } from "./wrangler-dev.ts";
@@ -10,6 +11,10 @@ const packageDir = path.dirname(path.fromFileUrl(import.meta.url));
 const rootDir = path.resolve(packageDir, "../..");
 const packerR2Dir = path.resolve(packageDir, "../packer/r2");
 const appVersion = Deno.readTextFileSync(path.join(rootDir, "version.txt")).trim();
+const dependencyHash = createHash("sha256")
+  .update(Deno.readTextFileSync(path.join(rootDir, "deno.lock")))
+  .digest("hex")
+  .slice(0, 12);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, isSsrBuild }) => {
@@ -23,6 +28,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
   }
 
   return {
+    cacheDir: path.join(packageDir, "node_modules", `.vite-${dependencyHash}`),
     resolve: {
       dedupe: ["react", "react-dom"],
       alias: {
