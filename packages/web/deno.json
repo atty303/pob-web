@@ -1,6 +1,6 @@
 {
   "name": "pob-web",
-  "version": "0.33.5",
+  "version": "0.33.6",
   "exports": "./src/root.tsx",
   "publish": false,
   "compilerOptions": {

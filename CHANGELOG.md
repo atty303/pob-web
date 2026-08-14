@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.33.6](https://github.com/atty303/pob-web/compare/v0.33.5...v0.33.6) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** classify browser environment failures ([bda4115](https://github.com/atty303/pob-web/commit/bda41156e759839020a06ea6b63a08d482108e1e))
+* **driver:** classify browser environment failures ([#203](https://github.com/atty303/pob-web/issues/203)) ([ecd2d36](https://github.com/atty303/pob-web/commit/ecd2d36361f5ceb540b3011c40b6bd8666ae3a6e))
+* **driver:** handle unsupported browser capabilities ([04d8328](https://github.com/atty303/pob-web/commit/04d83285ca921a856f896ee093971b3118e3d9f2))
+
 ## [0.33.5](https://github.com/atty303/pob-web/compare/v0.33.4...v0.33.5) (2026-08-14)
 
 
