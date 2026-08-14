@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.5](https://github.com/atty303/pob-web/compare/v0.33.4...v0.33.5) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** truncate OPFS files on shorter writes ([cdef566](https://github.com/atty303/pob-web/commit/cdef566d520d65877223832242ea4dc764e5d1be))
+* **driver:** truncate OPFS files on shorter writes ([#201](https://github.com/atty303/pob-web/issues/201)) ([24e4e35](https://github.com/atty303/pob-web/commit/24e4e35f5f302c0180c203c44ddceb8b465be852))
+
 ## [0.33.4](https://github.com/atty303/pob-web/compare/v0.33.3...v0.33.4) (2026-08-14)
 
 
