@@ -1,7 +1,7 @@
 import * as Comlink from "comlink";
 import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
 import type { DriverDiagnostic } from "./diagnostic.ts";
-import { markEnvironmentError, markKnownUpstreamError } from "./error.ts";
+import { cloneableError, markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
 import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
@@ -296,7 +296,7 @@ export class DriverWorker {
         this.diagnostic("frame", "error", { error: String(error) }, "error");
         this.pasteBuffer.clear();
         this.clipboardControlPending = false;
-        this.hostCallbacks?.onError(error);
+        this.hostCallbacks?.onError(cloneableError(error));
         this.dirtyCount = 0;
         return;
       }

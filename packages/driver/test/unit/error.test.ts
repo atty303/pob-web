@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
+  cloneableError,
   environmentErrorCategory,
   environmentErrorNames,
   isEnvironmentError,
@@ -8,6 +9,14 @@ import {
   markEnvironmentError,
   markKnownUpstreamError,
 } from "../../src/js/error.ts";
+
+Deno.test("worker errors are converted from uncloneable proxies", () => {
+  const proxy = new Proxy({ message: "Wasm failure" }, {});
+  const error = cloneableError(proxy);
+
+  assertEquals(error.message, "[object Object]");
+  assertEquals(structuredClone(error).message, "[object Object]");
+});
 
 Deno.test("environment errors retain their original details while carrying a Comlink-safe category", () => {
   const error = new Error("network unavailable");

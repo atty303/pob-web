@@ -4,6 +4,10 @@ import { log, tag } from "./logger.ts";
 
 const DIRECT_ACCESS = 0x2000;
 
+function encodeKvPath(path: string): string {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
 export function rejectWrites(fileSystem: zenfs.FileSystem): void {
   // ZenFS 2.6.2 checks this attribute before mutating a VNode, but omits it from FileSystemAttributes.
   (fileSystem.attributes as Map<string, void>).set("readonly");
@@ -51,7 +55,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     super(0x43464b56, /*CFKV*/ "cloudflare-kvfs");
     this.fetch = (method: string, path: string, body?: Uint8Array<ArrayBuffer>, headers?: Record<string, string>) => {
       log.debug(tag.kvfs, "fetch", method, path);
-      return fetch(`${prefix}${path}`, {
+      return fetch(`${prefix}${encodeKvPath(path)}`, {
         method,
         body,
         headers: {
@@ -99,7 +103,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     }
     for (const { name, metadata } of entries) {
       const isDirectory = directoryNames.has(name);
-      const isLegacyEmptyCandidate = !isDirectory && metadata?.flags === undefined && (metadata?.size ?? 0) <= 0;
+      const isLegacyEmptyCandidate = !isDirectory && metadata?.flags === undefined;
       if (isLegacyEmptyCandidate && (await this.load(`/${name}`)).length === 0) {
         log.warn(tag.kvfs, "ignoring legacy zero-byte file", { path: `/${name}` });
         continue;

@@ -38,6 +38,14 @@ export function markEnvironmentError(error: unknown, category: EnvironmentErrorC
   return marked;
 }
 
+export function cloneableError(error: unknown): Error {
+  if (!(error instanceof Error)) return new Error(String(error));
+  const clone = new Error(error.message);
+  clone.name = error.name;
+  if (error.stack !== undefined) clone.stack = error.stack;
+  return clone;
+}
+
 export function environmentErrorCategory(error: unknown): EnvironmentErrorCategory | undefined {
   if (!(error instanceof Error)) return undefined;
 
