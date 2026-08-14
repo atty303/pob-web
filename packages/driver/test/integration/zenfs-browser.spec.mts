@@ -23,3 +23,12 @@ test("WebAccess persists file contents and metadata across reload", async ({ pag
     entries: ["build.xml"],
   });
 });
+
+test("WebAccess repairs settings with a stale suffix left by a shorter write", async ({ page }) => {
+  await page.goto("/test/integration/fixtures/zenfs.html");
+  await page.evaluate(() => window.zenfsIntegration.clearUser());
+  expect(await page.evaluate(() => window.zenfsIntegration.recoverSettings())).toEqual({
+    recovered: true,
+    text: '<?xml version="1.0"?><PathOfBuilding><Mode name="日本語"/></PathOfBuilding>\n',
+  });
+});
