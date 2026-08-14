@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.33.2](https://github.com/atty303/pob-web/compare/v0.33.1...v0.33.2) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** ignore corrupt legacy cloud files ([568b1de](https://github.com/atty303/pob-web/commit/568b1debf4180a7cca69cc6f94fbb2b971e8fe03))
+* **driver:** tolerate legacy Cloudflare KV data ([#195](https://github.com/atty303/pob-web/issues/195)) ([cd034b7](https://github.com/atty303/pob-web/commit/cd034b7b91ca436c8f213637d1d1d6311b6f3785))
+* **web:** list all legacy cloud builds ([0b063a2](https://github.com/atty303/pob-web/commit/0b063a2caa494e77e68d3968692f4a151f545add))
+* **web:** paginate cloud build listings ([7a7184f](https://github.com/atty303/pob-web/commit/7a7184f2aecfa4ced2aed03cb65fade3dd9e2aea))
+* **web:** paginate cloud build listings ([43085f1](https://github.com/atty303/pob-web/commit/43085f1da04d3dbc5e012779a1938ced32c0a591))
+
 ## [0.33.1](https://github.com/atty303/pob-web/compare/v0.33.0...v0.33.1) (2026-08-14)
 
 
