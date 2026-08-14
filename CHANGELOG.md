@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.3](https://github.com/atty303/pob-web/compare/v0.33.2...v0.33.3) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** distinguish legacy cloud paths ([1cd4576](https://github.com/atty303/pob-web/commit/1cd4576908d945023289dc488c5803e3cf83c203))
+* **driver:** distinguish legacy cloud paths ([#197](https://github.com/atty303/pob-web/issues/197)) ([49938bb](https://github.com/atty303/pob-web/commit/49938bb1e7dde1529db9e096b7b6f3a8b6329144))
+
 ## [0.33.2](https://github.com/atty303/pob-web/compare/v0.33.1...v0.33.2) (2026-08-14)
 
 
