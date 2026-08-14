@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 import { environmentErrorCategory } from "../../src/js/error.ts";
 import type { RenderBackend } from "../../src/js/renderer/backend.ts";
 import { GlyphAtlas, loadFont, TextMetrics } from "../../src/js/renderer/text.ts";
@@ -72,7 +72,10 @@ Deno.test("font parsing failures are classified as initial asset errors", async 
   globalThis.self = { fonts: { add: () => {} } } as unknown as typeof self;
   try {
     const error = await assertRejects(() => loadFont("/broken.woff", "Broken"));
-    assertEquals(error, parsingError);
+    assertInstanceOf(error, Error);
+    assertEquals(error.message, parsingError.message);
+    assertEquals(error.stack, parsingError.stack);
+    assertEquals(error.cause, parsingError);
     assertEquals(environmentErrorCategory(error), "assetLoad");
   } finally {
     globalThis.fetch = originalFetch;
