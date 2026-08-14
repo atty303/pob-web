@@ -82,7 +82,6 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     if (!response.ok) {
       throw new FetchError(response);
     }
-
     const entries = await response.json() as Array<{
       name: string;
       metadata?: (Partial<InodeLike> & { dir?: boolean }) | null;
@@ -101,11 +100,14 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
         directoryNames.add(name.slice(0, separator));
       }
     }
-    for (const { name, metadata } of entries) {
+    const bodies = await Promise.all(
+      entries.map(({ name }) => directoryNames.has(name) ? undefined : this.load(`/${name}`)),
+    );
+    const nextPrefetched = new Map<string, Uint8Array<ArrayBuffer>>();
+    for (const [{ name, metadata }, body] of entries.map((entry, index) => [entry, bodies[index]] as const)) {
       const isDirectory = directoryNames.has(name);
-      const isLegacyEmptyCandidate = !isDirectory && metadata?.flags === undefined;
-      if (isLegacyEmptyCandidate && (await this.load(`/${name}`)).length === 0) {
-        log.warn(tag.kvfs, "ignoring legacy zero-byte file", { path: `/${name}` });
+      if (body?.length === 0) {
+        log.warn(tag.kvfs, "ignoring zero-byte cloud file", { path: `/${name}` });
         continue;
       }
       const id = nextIndex._alloc();
@@ -122,10 +124,12 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
           flags: DIRECT_ACCESS,
         };
       nextIndex.set(`/${name}`, new zenfs.Inode({ ...recovered, ino: id, data: id + 1, nlink: 1 }));
+      if (body) nextPrefetched.set(`/${name}`, body);
     }
     this.index.clear();
     this.prefetched.clear();
     for (const [path, inode] of nextIndex) this.index.set(path, inode);
+    for (const [path, body] of nextPrefetched) this.prefetched.set(path, body);
     log.debug(tag.kvfs, "reload", { entries: [...this.index.keys()] });
   }
 
@@ -135,6 +139,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     if (!response.ok) {
       throw new FetchError(response);
     }
+    this.prefetched.delete(path);
   }
 
   protected override removeSync(_path: string): void {
@@ -146,6 +151,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     inode.update({ mode: zenfs.constants.S_IFREG | 0o777, flags: DIRECT_ACCESS });
     try {
       await this.persist(path, new Uint8Array(0), inode);
+      this.prefetched.set(path, new Uint8Array(0));
       return inode;
     } catch (error) {
       this.index.delete(path);
@@ -167,7 +173,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
   override async stat(path: string): Promise<zenfs.Inode> {
     const inode = this.index.get(path);
     if (inode && (inode.mode & zenfs.constants.S_IFMT) === zenfs.constants.S_IFREG) {
-      const data = await this.load(path);
+      const data = this.prefetched.get(path) ?? await this.load(path);
       inode.update({ size: data.length, flags: DIRECT_ACCESS });
       this.prefetched.set(path, data);
     }
@@ -199,6 +205,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     contents.set(data, offset);
     inode.update({ size: contents.length, mtimeMs: Date.now() });
     await this.persist(path, contents, inode);
+    this.prefetched.set(path, contents);
   }
 
   override writeSync(_path: string, _buffer: Uint8Array, _offset: number): void {
@@ -217,6 +224,7 @@ export class CloudflareKVFileSystem extends zenfs.IndexFS {
     const contents = new Uint8Array(inode.size);
     contents.set(existing.subarray(0, inode.size));
     await this.persist(path, contents, inode);
+    this.prefetched.set(path, contents);
   }
 
   override touchSync(_path: string, _metadata: InodeLike): void {
