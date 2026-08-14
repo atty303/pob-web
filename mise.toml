@@ -39,7 +39,7 @@ run = [
   "deno task --filter pob-driver test:integration:zenfs:kv",
   "deno task --filter pob-driver test:integration:zenfs:browser",
 ]
-depends = ["install"]
+depends = ["visual:setup"]
 
 [tasks."test:web"]
 description = "Run focused web behavior tests"
