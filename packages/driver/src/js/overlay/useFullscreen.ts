@@ -14,16 +14,7 @@ export const useFullscreen = () => {
     };
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
   return {
     isFullscreen,
-    toggleFullscreen,
   };
 };

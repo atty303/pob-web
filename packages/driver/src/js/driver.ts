@@ -4,9 +4,10 @@ import * as Comlink from "comlink";
 import BrokerWorkerObject from "./broker.ts?worker";
 import { type CanvasConfig, CanvasManager, type CanvasRenderingSize, type CanvasState } from "./canvas-manager.ts";
 import { type ClipboardAction, ClipboardController, type ClipboardShortcut } from "./clipboard.ts";
+import { assertDriverCapabilities } from "./capability.ts";
 import type { DriverDiagnostic } from "./diagnostic.ts";
-import { markEnvironmentError } from "./error.ts";
 import { EventHandler } from "./event.ts";
+import { toggleFullscreen } from "./fullscreen.ts";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard.ts";
 import { MouseHandler, type MouseState } from "./mouse-handler.ts";
 import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay/index.ts";
@@ -108,12 +109,7 @@ export class Driver {
 
   async start(fileSystemConfig: FilesystemConfig) {
     if (this.isStarted) throw new Error("Already started");
-    if (!globalThis.crossOriginIsolated || typeof SharedArrayBuffer !== "function") {
-      throw markEnvironmentError(
-        new Error("Path of Building requires cross-origin isolation and SharedArrayBuffer support"),
-        "capability",
-      );
-    }
+    assertDriverCapabilities();
     this.isStarted = true;
     this.diagnostic("driver", "start");
 
@@ -512,61 +508,7 @@ export class Driver {
 
   private async toggleFullscreen() {
     if (!this.root) return;
-
-    try {
-      const doc = document as Document & {
-        webkitFullscreenElement?: Element;
-        mozFullScreenElement?: Element;
-        msFullscreenElement?: Element;
-        webkitExitFullscreen?: () => void;
-        webkitCancelFullScreen?: () => void;
-        mozCancelFullScreen?: () => void;
-        msExitFullscreen?: () => void;
-      };
-      const elem = this.root as HTMLElement & {
-        webkitRequestFullscreen?: () => void;
-        webkitEnterFullscreen?: () => void;
-        mozRequestFullScreen?: () => void;
-        msRequestFullscreen?: () => void;
-      };
-
-      const isFullscreen = !!(
-        doc.fullscreenElement ||
-        doc.webkitFullscreenElement ||
-        doc.mozFullScreenElement ||
-        doc.msFullscreenElement
-      );
-
-      if (!isFullscreen) {
-        if (elem.requestFullscreen) {
-          await elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        } else if (elem.webkitEnterFullscreen) {
-          elem.webkitEnterFullscreen();
-        } else if (elem.mozRequestFullScreen) {
-          elem.mozRequestFullScreen();
-        } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
-        } else {
-          console.warn("Fullscreen API not supported on this device");
-        }
-      } else {
-        if (doc.exitFullscreen) {
-          await doc.exitFullscreen();
-        } else if (doc.webkitExitFullscreen) {
-          doc.webkitExitFullscreen();
-        } else if (doc.webkitCancelFullScreen) {
-          doc.webkitCancelFullScreen();
-        } else if (doc.mozCancelFullScreen) {
-          doc.mozCancelFullScreen();
-        } else if (doc.msExitFullscreen) {
-          doc.msExitFullscreen();
-        }
-      }
-    } catch (error) {
-      console.warn("Fullscreen toggle failed:", error);
-    }
+    await toggleFullscreen(this.root);
   }
 
   private handleFullscreenChange() {

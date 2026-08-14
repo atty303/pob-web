@@ -34,7 +34,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   externalComponent: ExternalComponent,
 }) => {
   const [zoomControlVisible, setZoomControlVisible] = useState(false);
-  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const { isFullscreen } = useFullscreen();
 
   const handlePanModeToggle = useCallback(() => {
     callbacks.onPanModeToggle(!panModeEnabled);
@@ -45,9 +45,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   }, []);
 
   const handleFullscreenToggle = useCallback(() => {
-    toggleFullscreen();
     callbacks.onFullscreenToggle();
-  }, [toggleFullscreen, callbacks]);
+  }, [callbacks]);
 
   const containerClasses = `pw:navbar pw:bg-base-200/95 pw:shadow-lg pw:select-none pw:relative pw:gap-1 ${
     isLandscape ? "pw:flex-col pw:justify-center pw:h-full" : "pw:flex-row pw:justify-center pw:w-full"
