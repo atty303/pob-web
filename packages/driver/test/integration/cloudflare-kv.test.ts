@@ -106,6 +106,38 @@ Deno.test("CloudflareKV recognizes legacy and mode-based directory metadata", as
   });
 });
 
+Deno.test("CloudflareKV reads files persisted by the ZenFS v1 driver", async () => {
+  await using wrangler = await startWrangler();
+  const prefix = `${wrangler.url}/api/kv`;
+  const withoutMetadata = '<PathOfBuilding name="without metadata"/>';
+  const withStatsMetadata = '<PathOfBuilding name="with stats metadata"/>';
+  await putKv(prefix, "corrupt-zero-byte.xml", "", {});
+  await putKv(prefix, "without-metadata.xml", withoutMetadata, {});
+  await putKv(prefix, "with-stats-metadata.xml", withStatsMetadata, {
+    atimeMs: 1_723_456_789_000,
+    mtimeMs: 1_723_456_789_001,
+    ctimeMs: 1_723_456_789_002,
+    birthtimeMs: 1_723_456_789_003,
+    uid: 0,
+    gid: 0,
+    size: new TextEncoder().encode(withStatsMetadata).length,
+    mode: 0o100644,
+    ino: 6,
+  });
+
+  await configureCloud(prefix);
+  assertEquals(await fs.promises.readdir("/"), ["with-stats-metadata.xml", "without-metadata.xml"]);
+  assertEquals(await fs.promises.readFile("/without-metadata.xml", "utf8"), withoutMetadata);
+  assertEquals(await fs.promises.readFile("/with-stats-metadata.xml", "utf8"), withStatsMetadata);
+
+  await fs.promises.writeFile("/corrupt-zero-byte.xml", '<PathOfBuilding name="recovered"/>');
+  await configureCloud(prefix);
+  assertEquals(
+    await fs.promises.readFile("/corrupt-zero-byte.xml", "utf8"),
+    '<PathOfBuilding name="recovered"/>',
+  );
+});
+
 Deno.test("CloudflareKV preserves existing bytes for partial writes and truncation", async () => {
   await using wrangler = await startWrangler();
   const prefix = `${wrangler.url}/api/kv`;

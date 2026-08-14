@@ -6,6 +6,17 @@ interface Metadata {
   dir: boolean;
 }
 
+async function listKeys(kv: KVNamespace, prefix: string) {
+  const keys: KVNamespaceListResult<Metadata>["keys"] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await kv.list<Metadata>({ prefix, cursor });
+    keys.push(...page.keys);
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor !== undefined);
+  return keys;
+}
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const ns = context.request.headers.get("x-user-namespace");
   const sub = context.data.sub;
@@ -17,8 +28,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   if (!path) {
     const prefix = ns ? `user:${sub}:ns-vfs:${ns}:` : `user:${sub}:vfs:`;
-    const l = await context.env.KV.list({ prefix });
-    const r = l.keys.map((k) => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
+    const keys = await listKeys(context.env.KV, prefix);
+    const r = keys.map((k) => ({ name: k.name.replace(prefix, ""), metadata: k.metadata }));
     return new Response(JSON.stringify(r));
   }
 

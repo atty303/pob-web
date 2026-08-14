@@ -107,14 +107,6 @@ future state advance. Resolve them, or establish and record evidence that their
 Lua paths cannot be reached, before accepting a future change that touches the
 corresponding browser subsystem.
 
-### Cloud-provider error reporting
-
-- Risk: `GetCloudProvider` is absent, but PoB calls it without an existence
-  check from `OpenCloudErrorPopup` after settings or build file reads fail.
-- Required follow-up: provide a browser-compatible result or prove that every
-  relevant filesystem failure is translated before that popup path. Revisit on
-  filesystem, cloud-storage, persistence, or error-handling changes.
-
 ### Screenshot hotkey
 
 - Risk: `TakeScreenshot` is absent, but the browser input bridge maps the DOM
