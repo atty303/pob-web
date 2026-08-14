@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.33.1](https://github.com/atty303/pob-web/compare/v0.33.0...v0.33.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **driver:** await cloud build writes ([9092c18](https://github.com/atty303/pob-web/commit/9092c1855c177884091455e3b796926a94bc4b44))
+* **driver:** invalidate stale Vite dependencies ([6aa57a0](https://github.com/atty303/pob-web/commit/6aa57a03ed78aca9c23613dfc7b0c735635e94af))
+* **driver:** keep cloud builds writable ([2d32895](https://github.com/atty303/pob-web/commit/2d3289517a8c3d1b06b2703aa58a1a7061d6cbf6))
+* **driver:** preserve cloud directory metadata ([26a428d](https://github.com/atty303/pob-web/commit/26a428dc5bc4cf6033f024ef545b6c87669c1ffd))
+* **driver:** preserve Cloudflare KV file state ([13b2c7a](https://github.com/atty303/pob-web/commit/13b2c7aba7f9bd7e893fb0dbca2bc091fe7bcb45))
+* **driver:** recover stale cloud file sizes ([bc7a58b](https://github.com/atty303/pob-web/commit/bc7a58bc8185b64224d11fb0d6943347ccebe885))
+* **driver:** restore cloud entries after reload ([4d0ef38](https://github.com/atty303/pob-web/commit/4d0ef387c2585ae1ff4b483e08b13826ccf915a5))
+* **driver:** restore persistent build listings ([8b5d28e](https://github.com/atty303/pob-web/commit/8b5d28ef68de23b72d8c74919f12e1823bbec93d))
+* **driver:** restore persistent build listings ([#192](https://github.com/atty303/pob-web/issues/192)) ([94787c8](https://github.com/atty303/pob-web/commit/94787c87395a7d1fd7edc35911ac4cd7bef35d53))
+
 ## [0.33.0](https://github.com/atty303/pob-web/compare/v0.32.2...v0.33.0) (2026-08-13)
 
 
