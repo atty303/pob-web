@@ -48,9 +48,10 @@
 
 - Match verification effort to the changed behavior. Prefer static checks and focused tests before builds or interactive
   verification.
-- For Canvas/WebGL behavior that stable DOM assertions do not cover, use the repository's `investigate-canvas-ui` skill
-  when it is available. Automated E2E validation is a separate workflow and is not a prerequisite for visual
-  investigation.
+- For Canvas/WebGL behavior, Canvas-adjacent driver overlays, and PoB load/import state that stable DOM assertions do
+  not cover, use the repository's `investigate-canvas-ui` skill when it is available. The reported browser engine and
+  exact entry path are part of the reproduction. Automated E2E validation is a separate workflow and is not a
+  prerequisite for visual investigation.
 - The DDS file under `packages/dds/src/dds.test.ts` is a manual asset-processing script, not a self-contained automated
   test; do not treat it as coverage or run it without the referenced packed assets.
 
