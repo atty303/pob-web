@@ -102,7 +102,7 @@ const projectedFields: Readonly<Record<string, readonly string[]>> = {
   "driver.reported-error": ["phase", "errorName"],
   "driver.cleanup": ["reason"],
   "worker.created": ["kind"],
-  "worker.error": ["kind", "errorName"],
+  "worker.error": ["kind", "errorName", "message"],
   "worker.messageerror": ["kind"],
   "worker.rpc-error": ["operation", "errorName"],
   "worker.image-load-error": ["errorName"],

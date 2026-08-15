@@ -32,6 +32,15 @@ Deno.test("runtime projection excludes high-frequency events and non-allowlisted
   assertEquals(projectRuntimeEvent("input", "keydown", { key: "a" }), undefined);
 
   assertEquals(
+    projectRuntimeEvent("worker", "error", {
+      kind: "main",
+      message: "worker crashed",
+      arbitrary: { nested: true },
+    }),
+    { kind: "main", message: "worker crashed" },
+  );
+
+  assertEquals(
     projectRuntimeEvent("worker", "rpc-error", {
       operation: "resize",
       message: "safe structured message",
