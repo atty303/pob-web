@@ -204,14 +204,7 @@ function sentryApplicationKeyPlugin() {
     applicationKey: POB_SENTRY_APPLICATION_KEY,
     // An empty name prevents the plugin from inferring a Git release. Release
     // metadata and source maps remain owned by the existing sentry-cli tasks.
-    release: {
-      name: "",
-      inject: false,
-      create: false,
-      finalize: false,
-      setCommits: false,
-    },
+    release: { name: "" },
     sourcemaps: { disable: true },
-    telemetry: false,
   });
 }

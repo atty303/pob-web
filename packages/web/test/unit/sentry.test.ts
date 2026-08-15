@@ -3,7 +3,6 @@ import type { RuntimeSnapshot } from "../../src/lib/runtime-diagnostics.ts";
 import {
   enrichSentryEvent,
   isReportableRouteException,
-  sanitizeSentryEvent,
   shouldCaptureRouteException,
 } from "../../src/lib/sentry-event.ts";
 
@@ -106,95 +105,38 @@ Deno.test("route error capture deduplicates the same error without letting a 404
   assertEquals(shouldCaptureRouteException(captured, first), false);
 });
 
-Deno.test("Sentry events remove request payloads and URL details from transactions and spans", () => {
-  const event = sanitizeSentryEvent({
-    message: "failed at /poe2?query-secret#build-secret",
-    transaction: "/poe2?query-secret#build-secret",
-    extra: { token: "token-secret" },
-    request: {
-      url: "https://pob.cool/poe2?query-secret#build-secret",
-      headers: { authorization: "token-secret" },
-      data: "body-secret",
-      cookies: { session: "cookie-secret" },
-      query_string: "query-secret",
-    },
-    contexts: {
-      trace: {
-        trace_id: "00000000000000000000000000000000",
-        span_id: "0000000000000000",
-        "url.full": "https://pob.cool/poe2?query-secret#build-secret",
-        token: "token-secret",
-        buildCode: "build-secret",
-      },
-    },
-    breadcrumbs: [
-      { category: "console", message: "token-secret" },
-      { category: "pob.runtime", message: "driver.started" },
-    ],
-    exception: {
-      values: [{
-        value: "failed at https://pob.cool/poe2?query-secret#build-secret",
-        stacktrace: {
-          frames: [{
-            filename: "https://pob.cool/app.js?query-secret#build-secret",
-            abs_path: "https://pob.cool/app.js?query-secret#build-secret",
-          }],
-        },
-      }],
-    },
-    spans: [{
-      trace_id: "00000000000000000000000000000000",
-      span_id: "0000000000000000",
-      start_timestamp: 0,
-      timestamp: 1,
-      description: "GET /api/build?query-secret#build-secret",
-      data: {
-        "url.full": "https://pob.cool/api/build?query-secret#build-secret",
-        "http.request.header.authorization": "token-secret",
-        body: "body-secret",
-      },
-    }],
-  });
-
-  assertEquals(event.message, "failed at /poe2");
-  assertEquals(event.transaction, "/poe2");
-  assertEquals(event.extra, undefined);
-  assertEquals(event.request, {
-    url: "https://pob.cool/poe2",
-    headers: undefined,
-    data: undefined,
-    cookies: undefined,
-    query_string: undefined,
-  });
-  assertEquals(event.contexts, {
-    trace: {
-      trace_id: "00000000000000000000000000000000",
-      span_id: "0000000000000000",
-      "url.full": "https://pob.cool/poe2",
-    },
-  });
-  assertEquals(event.spans?.[0].description, "GET /api/build");
-  assertEquals(event.spans?.[0].data, { "url.full": "https://pob.cool/api/build" });
-  assertEquals(event.breadcrumbs, [{ category: "pob.runtime", message: "driver.started" }]);
-  assertEquals(event.exception?.values?.[0].value, "failed at https://pob.cool/poe2");
-  assertEquals(event.exception?.values?.[0].stacktrace?.frames, [{
-    filename: "https://pob.cool/app.js",
-    abs_path: "https://pob.cool/app.js",
-  }]);
-});
-
-Deno.test("Sentry enrichment keeps only projected runtime breadcrumbs", () => {
+Deno.test("Sentry enrichment preserves SDK-collected request, URL, console, and extra data", () => {
   const event = enrichSentryEvent(
     {
+      message: "failed at /poe2?public-query#build=public-build-code",
+      transaction: "/poe2?public-query#build=public-build-code",
+      extra: { buildCode: "public-build-code" },
+      request: {
+        url: "https://pob.cool/poe2?public-query#build=public-build-code",
+        headers: { "x-debug": "request-header" },
+        data: "request-body",
+        query_string: "public-query",
+      },
       breadcrumbs: [
-        { category: "console", message: "token-secret" },
-        { category: "pob.runtime", message: "driver.started", data: { operation: "start" } },
+        { category: "console", message: "public console message" },
+        { category: "pob.runtime", message: "driver.started" },
       ],
     },
     {},
     runtime,
   );
+
+  assertEquals(event.message, "failed at /poe2?public-query#build=public-build-code");
+  assertEquals(event.transaction, "/poe2?public-query#build=public-build-code");
+  assertEquals(event.extra, { buildCode: "public-build-code" });
+  assertEquals(event.request, {
+    url: "https://pob.cool/poe2?public-query#build=public-build-code",
+    headers: { "x-debug": "request-header" },
+    data: "request-body",
+    query_string: "public-query",
+  });
   assertEquals(event.breadcrumbs, [
-    { category: "pob.runtime", message: "driver.started", data: { operation: "start" } },
+    { category: "console", message: "public console message" },
+    { category: "pob.runtime", message: "driver.started" },
   ]);
 });

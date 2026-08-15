@@ -14,25 +14,36 @@ type EnvelopePayload = {
   }>;
 };
 
+type LogPayload = {
+  items?: Array<{
+    body?: string;
+    level?: string;
+  }>;
+};
+
 test("enriches stackless global rejections and coarse spans without external ingest", async ({ page }) => {
   const payloads: EnvelopePayload[] = [];
+  const logs: NonNullable<LogPayload["items"]> = [];
   const envelopes: string[] = [];
   await page.route("https://*.ingest.sentry.io/**", async (route) => {
-    const envelope = route.request().postData() ?? "";
-    envelopes.push(envelope);
-    for (const line of envelope.split("\n")) {
-      try {
-        const payload = JSON.parse(line) as EnvelopePayload;
+    const envelope = route.request().postDataBuffer() ?? new Uint8Array();
+    envelopes.push(new TextDecoder().decode(envelope));
+    try {
+      const items = parseEnvelopeItems(envelope);
+      for (const [itemHeader, itemPayload] of items) {
+        if (!itemPayload || typeof itemPayload !== "object") continue;
+        const payload = itemPayload as EnvelopePayload & LogPayload;
         if (payload.exception || payload.type === "transaction") payloads.push(payload);
-      } catch {
-        // Envelope headers and payloads are newline-delimited and not every line is an event.
+        if (itemHeader.type === "log" && payload.items) logs.push(...payload.items);
       }
+    } catch {
+      // Replay recording envelopes can be binary and are not part of these assertions.
     }
     await route.fulfill({ status: 200, json: {} });
   });
 
   const fixturePath = path.resolve(path.dirname(path.fromFileUrl(import.meta.url)), "fixtures/sentry-diagnostics.html");
-  await page.goto(`/@fs${fixturePath}?query-secret#build-secret`);
+  await page.goto(`/@fs${fixturePath}?public-query#build=public-build-code`);
   await expect
     .poll(() =>
       page.evaluate(
@@ -69,9 +80,11 @@ test("enriches stackless global rejections and coarse spans without external ing
     code: expect.any(Number),
   });
 
-  await expect.poll(() => payloads.filter((payload) => payload.type === "transaction").length).toBeGreaterThanOrEqual(
-    2,
-  );
+  await expect.poll(() => {
+    const observed = payloads.flatMap((payload) => payload.spans ?? []);
+    return observed.some((span) => span.op === "pob.driver.start") &&
+      observed.some((span) => span.op === "pob.renderer.attach");
+  }).toBe(true);
   const spans = payloads.flatMap((payload) => payload.spans ?? []);
   const succeeded = spans.find((span) => span.op === "pob.driver.start");
   const failed = spans.find((span) => span.op === "pob.renderer.attach");
@@ -86,17 +99,42 @@ test("enriches stackless global rejections and coarse spans without external ing
     data: { "pob.game": "poe2", "pob.version": "v0.5.0" },
   });
 
+  await expect.poll(() =>
+    logs.some((entry) => entry.body === "public console marker public-build-code" && entry.level === "warn")
+  ).toBe(true);
+
   const sent = envelopes.join("\n");
-  for (
-    const secret of [
-      "query-secret",
-      "build-secret",
-      "token-secret",
-      "header-secret",
-      "body-secret",
-      "clipboard-secret",
-    ]
-  ) {
-    expect(sent).not.toContain(secret);
-  }
+  expect(sent).toContain("public-query");
+  expect(sent).toContain("public-build-code");
 });
+
+function parseEnvelopeItems(envelope: Uint8Array): Array<[{ type?: string }, unknown]> {
+  let offset = 0;
+  const decoder = new TextDecoder();
+
+  const readLine = (): unknown => {
+    const newline = envelope.indexOf(0x0a, offset);
+    const end = newline < 0 ? envelope.length : newline;
+    const value = JSON.parse(decoder.decode(envelope.subarray(offset, end)));
+    offset = newline < 0 ? end : end + 1;
+    return value;
+  };
+
+  readLine();
+  const items: Array<[{ type?: string }, unknown]> = [];
+  while (offset < envelope.length) {
+    const header = readLine() as { type?: string; length?: number };
+    if (typeof header.length === "number") {
+      const payload = envelope.subarray(offset, offset + header.length);
+      offset = Math.min(offset + header.length + 1, envelope.length);
+      try {
+        items.push([header, JSON.parse(decoder.decode(payload))]);
+      } catch {
+        items.push([header, payload]);
+      }
+    } else {
+      items.push([header, readLine()]);
+    }
+  }
+  return items;
+}

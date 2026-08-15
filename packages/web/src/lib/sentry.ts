@@ -5,7 +5,7 @@ import { POB_SENTRY_APPLICATION_KEY } from "../../sentry.config.ts";
 import type { DiagnosticSink } from "./error-report.ts";
 import { log, tag } from "./logger.ts";
 import type { RuntimeDiagnostics, RuntimeEvent, RuntimeSnapshot } from "./runtime-diagnostics.ts";
-import { enrichSentryEvent, isReportableRouteException, sanitizeSentryEvent } from "./sentry-event.ts";
+import { enrichSentryEvent, isReportableRouteException } from "./sentry-event.ts";
 
 export { enrichSentryEvent, isReportableRouteException, shouldCaptureRouteException } from "./sentry-event.ts";
 
@@ -45,6 +45,8 @@ export function initSentry(): void {
     release: __SENTRY_RELEASE__,
     integrations: [
       Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+      Sentry.consoleLoggingIntegration(),
       ...wasmIntegrations,
       ...(import.meta.env.PROD
         ? [
@@ -55,10 +57,12 @@ export function initSentry(): void {
         ]
         : []),
     ],
+    enableLogs: true,
     tracesSampleRate: 1.0,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
     tracePropagationTargets: ["localhost", /^https:\/\/pob\.cool\/api/],
     beforeSend: (event, hint) => enrichSentryEvent(event, hint, activeRuntime?.snapshot()) as typeof event,
-    beforeSendTransaction: (event) => sanitizeSentryEvent(event) as typeof event,
   });
 }
 

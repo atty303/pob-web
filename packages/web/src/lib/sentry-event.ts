@@ -2,7 +2,6 @@ import type { Event, EventHint } from "@sentry/react";
 import type { RuntimeSnapshot } from "./runtime-diagnostics.ts";
 
 type CapturePath = "managed" | "route-boundary" | "global-onerror" | "global-unhandledrejection";
-type ExceptionValue = NonNullable<NonNullable<Event["exception"]>["values"]>[number];
 
 export function enrichSentryEvent(event: Event, hint: EventHint, runtimeSnapshot?: RuntimeSnapshot): Event {
   const capturePath = capturePathForEvent(event);
@@ -19,9 +18,8 @@ export function enrichSentryEvent(event: Event, hint: EventHint, runtimeSnapshot
     : undefined;
   const domException = describeDomException(hint.originalException);
 
-  return sanitizeSentryEvent({
+  return {
     ...event,
-    breadcrumbs: event.breadcrumbs?.filter((breadcrumb) => breadcrumb.category === "pob.runtime"),
     tags: {
       ...event.tags,
       "pob.capture_path": capturePath,
@@ -34,104 +32,7 @@ export function enrichSentryEvent(event: Event, hint: EventHint, runtimeSnapshot
       ...(runtimeSnapshot ? { "pob.timeline": { events: runtimeSnapshot.timeline.slice(-20) } } : {}),
       ...(domException ? { "pob.dom_exception": domException } : {}),
     },
-  });
-}
-
-export function sanitizeSentryEvent(event: Event): Event {
-  return {
-    ...event,
-    ...(event.message ? { message: stripUrlsInText(event.message) } : {}),
-    extra: undefined,
-    breadcrumbs: event.breadcrumbs?.filter((breadcrumb) => breadcrumb.category === "pob.runtime"),
-    ...(event.transaction ? { transaction: stripUrlsInText(event.transaction) } : {}),
-    ...(event.request
-      ? {
-        request: {
-          ...event.request,
-          ...(event.request.url ? { url: stripUrlDetails(event.request.url) } : {}),
-          headers: undefined,
-          data: undefined,
-          cookies: undefined,
-          query_string: undefined,
-        },
-      }
-      : {}),
-    contexts: sanitizeRecord(event.contexts) as Event["contexts"],
-    exception: event.exception
-      ? {
-        ...event.exception,
-        values: event.exception.values?.map((exception) => ({
-          ...exception,
-          ...(exception.value ? { value: stripUrlsInText(exception.value) } : {}),
-          stacktrace: sanitizeStacktrace(exception.stacktrace),
-        })),
-      }
-      : undefined,
-    spans: event.spans?.map((span) => ({
-      ...span,
-      ...(span.description ? { description: stripUrlsInText(span.description) } : {}),
-      data: (sanitizeRecord(span.data) ?? {}) as typeof span.data,
-    })),
   };
-}
-
-function stripUrlDetails(value: string): string {
-  try {
-    const url = new URL(value, "https://pob.invalid");
-    url.search = "";
-    url.hash = "";
-    return url.origin === "https://pob.invalid" ? url.pathname : url.toString();
-  } catch {
-    return value.split(/[?#]/, 1)[0];
-  }
-}
-
-function stripUrlsInText(value: string): string {
-  return value.replace(/(?:https?:\/\/|\/)[^\s"']+/g, (url) => stripUrlDetails(url));
-}
-
-function sanitizeStacktrace(stacktrace: ExceptionValue["stacktrace"]): ExceptionValue["stacktrace"] {
-  if (!stacktrace) return stacktrace;
-  return {
-    ...stacktrace,
-    frames: stacktrace.frames?.map((frame) => ({
-      ...frame,
-      ...(frame.filename ? { filename: stripUrlDetails(frame.filename) } : {}),
-      ...(frame.abs_path ? { abs_path: stripUrlDetails(frame.abs_path) } : {}),
-    })),
-  };
-}
-
-function sanitizeRecord(value: unknown): Record<string, unknown> | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-  const sanitized: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (isSensitiveKey(key)) continue;
-    if (typeof entry === "string") {
-      sanitized[key] = isUrlKey(key) ? stripUrlDetails(entry) : stripUrlsInText(entry);
-    } else if (Array.isArray(entry)) {
-      sanitized[key] = entry.map((item) =>
-        typeof item === "string"
-          ? stripUrlsInText(item)
-          : item && typeof item === "object"
-          ? sanitizeRecord(item)
-          : item
-      );
-    } else if (entry && typeof entry === "object") {
-      sanitized[key] = sanitizeRecord(entry);
-    } else {
-      sanitized[key] = entry;
-    }
-  }
-  return sanitized;
-}
-
-function isSensitiveKey(key: string): boolean {
-  return /(^|[._-])(authorization|cookie|token|headers?|body|clipboard|buildcode|query)([._-]|$)/i.test(key);
-}
-
-function isUrlKey(key: string): boolean {
-  return /(^|[._-])url([._-]|$)/i.test(key);
 }
 
 export function isReportableRouteException(error: unknown): boolean {

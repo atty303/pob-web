@@ -15,25 +15,18 @@ diagnostics.record("driver", "start", { build: "release" });
 diagnostics.record("worker", "created", { kind: "main" });
 diagnostics.record("renderer", "attach", { game: "poe2", pobVersion: "v0.5.0" });
 Sentry.addBreadcrumb({
-  category: "unsafe-test",
-  message: "token-secret",
+  category: "public-test",
+  message: "public-build-code",
   data: {
     url: location.href,
-    headers: "header-secret",
-    body: "body-secret",
-    clipboard: "clipboard-secret",
-    buildCode: "build-secret",
+    buildCode: "public-build-code",
   },
 });
-Sentry.setContext("unsafe-test", {
-  token: "token-secret",
-  headers: "header-secret",
-  body: "body-secret",
-  clipboard: "clipboard-secret",
-  buildCode: "build-secret",
+Sentry.setContext("public-test", {
+  buildCode: "public-build-code",
   url: location.href,
 });
-console.warn("unsafe diagnostic sentinel", "token-secret", "clipboard-secret");
+console.warn("public console marker", "public-build-code");
 
 window.__triggerSentryDiagnosticsTest = async () => {
   await tracePobOperation("pob.driver.start", { game: "poe2", pobVersion: "v0.5.0" }, async () => {
