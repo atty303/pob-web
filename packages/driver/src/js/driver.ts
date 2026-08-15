@@ -1,4 +1,5 @@
 import * as Comlink from "comlink";
+import type { SettingsRootElement } from "pob-game";
 
 // @ts-types="./vite-worker.d.ts"
 import BrokerWorkerObject from "./broker.ts?worker";
@@ -34,6 +35,7 @@ type AsyncDriverWorker = Comlink.Remote<DriverWorker> & {
 
 export type FilesystemConfig = {
   userDirectory: string;
+  settingsRootElement: SettingsRootElement;
   cloudflareKvPrefix: string;
   cloudflareKvAccessToken: string | undefined;
   cloudflareKvUserNamespace: string | undefined;

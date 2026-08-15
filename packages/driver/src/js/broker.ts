@@ -71,8 +71,8 @@ class AsyncBroker {
       },
     });
     const settingsPath = `/user/${config.userDirectory}/Settings.xml`;
-    if (await removeStaleSettingsSuffix(settingsPath)) {
-      console.warn("Removed stale data after Path of Building settings", { settingsPath });
+    if (await removeStaleSettingsSuffix(settingsPath, config.settingsRootElement)) {
+      console.warn("Removed stale data after game settings", { settingsPath });
     }
     if (config.cloudflareKvAccessToken) {
       const cloud = await zenfs.resolveMountConfig({

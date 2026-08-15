@@ -27,8 +27,19 @@ test("WebAccess persists file contents and metadata across reload", async ({ pag
 test("WebAccess repairs settings with a stale suffix left by a shorter write", async ({ page }) => {
   await page.goto("/test/integration/fixtures/zenfs.html");
   await page.evaluate(() => window.zenfsIntegration.clearUser());
-  expect(await page.evaluate(() => window.zenfsIntegration.recoverSettings())).toEqual({
-    recovered: true,
-    text: '<?xml version="1.0"?><PathOfBuilding><Mode name="日本語"/></PathOfBuilding>\n',
-  });
+  expect(await page.evaluate(() => window.zenfsIntegration.recoverSettings("Path of Building", "PathOfBuilding")))
+    .toEqual({
+      recovered: true,
+      text: '<?xml version="1.0"?><PathOfBuilding><Mode name="日本語"/></PathOfBuilding>\n',
+    });
+});
+
+test("WebAccess repairs Last Epoch settings with a stale suffix left by a shorter write", async ({ page }) => {
+  await page.goto("/test/integration/fixtures/zenfs.html");
+  await page.evaluate(() => window.zenfsIntegration.clearUser());
+  expect(await page.evaluate(() => window.zenfsIntegration.recoverSettings("Last Epoch Planner", "LastEpochPlanner")))
+    .toEqual({
+      recovered: true,
+      text: '<?xml version="1.0"?><LastEpochPlanner><Mode name="日本語"/></LastEpochPlanner>\n',
+    });
 });
