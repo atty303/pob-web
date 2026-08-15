@@ -8,9 +8,9 @@ startTransition(() => {
       <HydratedRouter />
     </StrictMode>
   );
-  if (/^\/(?:poe1|poe2|le)(?:\/|$)/.test(window.location.pathname)) {
-    createRoot(document as unknown as Element).render(app);
-  } else {
+  if (window.location.pathname === "/") {
     hydrateRoot(document, app);
+  } else {
+    createRoot(document as unknown as Element).render(app);
   }
 });
