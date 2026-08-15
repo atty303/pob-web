@@ -13,6 +13,7 @@ import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from
 import { MouseHandler, type MouseState } from "./mouse-handler.ts";
 import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay/index.ts";
 import type { ToolbarPosition as ToolbarPos } from "./overlay/types.ts";
+import { BackgroundPromiseOwner, enqueueOwnedAction } from "./promise-owner.ts";
 import type { DriverWorker, HostCallbacks } from "./worker.ts";
 // @ts-types="./vite-worker.d.ts"
 import WorkerObject from "./worker.ts?worker";
@@ -71,6 +72,7 @@ export class Driver {
   private externalComponent: React.ComponentType<{ position: ToolbarPos; isLandscape: boolean }> | undefined;
   private clipboard = new ClipboardController(navigator.clipboard);
   private pendingClipboardAction: Promise<void> = Promise.resolve();
+  private readonly backgroundPromises: BackgroundPromiseOwner;
 
   private diagnostic(
     phase: DriverDiagnostic["phase"],
@@ -101,6 +103,12 @@ export class Driver {
     readonly hostCallbacks: HostCallbacks,
     readonly lifecycleCallbacks: DriverLifecycleCallbacks = {},
   ) {
+    this.backgroundPromises = new BackgroundPromiseOwner(
+      (operation, error) => {
+        this.diagnostic("worker", "rpc-error", { operation, errorName: errorName(error) }, "error");
+      },
+      (error) => this.hostCallbacks.onError(error),
+    );
     this.diagnostic("driver", "construct", { build });
     const originalOnFrame = this.hostCallbacks.onFrame;
     this.hostCallbacks.onFrame = (at: number, time: number, stats?: RenderStats) => {
@@ -168,9 +176,12 @@ export class Driver {
 
   destory() {
     this.diagnostic("driver", "destroy");
-    this.driverWorker?.destroy();
     this.worker?.terminate();
     this.brokerWorker?.terminate();
+  }
+
+  private dispatchWorker(operation: string, invoke: () => Promise<unknown> | undefined): void {
+    this.backgroundPromises.dispatch(operation, invoke);
   }
 
   async attachToDOM(root: HTMLElement): Promise<void> {
@@ -199,11 +210,12 @@ export class Driver {
       },
       onRenderingSizeChange: (renderingSize: CanvasRenderingSize) => {
         this.diagnostic("canvas", "resize", { ...renderingSize });
-        this.driverWorker?.resize({
-          width: renderingSize.renderingWidth,
-          height: renderingSize.renderingHeight,
-          pixelRatio: renderingSize.pixelRatio,
-        });
+        this.dispatchWorker("resize", () =>
+          this.driverWorker?.resize({
+            width: renderingSize.renderingWidth,
+            height: renderingSize.renderingHeight,
+            pixelRatio: renderingSize.pixelRatio,
+          }));
       },
     });
 
@@ -250,18 +262,18 @@ export class Driver {
     this.pobKeyboardState = PoBKeyboardState.make({
       onKeyDown: (state: PoBKeyboardState, key: PoBKey, doubleClick: number) => {
         this.lifecycleCallbacks.onKeyboardStateChange?.([...state.pobKeys]);
-        this.driverWorker?.updateKeyboardState(state.pobKeys);
-        this.driverWorker?.handleKeyDown(key, doubleClick);
-        if (doubleClick > 0) this.driverWorker?.handleKeyUp(key, 0);
+        this.dispatchWorker("keyboard-state", () => this.driverWorker?.updateKeyboardState(state.pobKeys));
+        this.dispatchWorker("key-down", () => this.driverWorker?.handleKeyDown(key, doubleClick));
+        if (doubleClick > 0) this.dispatchWorker("key-up", () => this.driverWorker?.handleKeyUp(key, 0));
       },
       onKeyUp: (state: PoBKeyboardState, key: PoBKey) => {
         this.lifecycleCallbacks.onKeyboardStateChange?.([...state.pobKeys]);
-        this.driverWorker?.updateKeyboardState(state.pobKeys);
-        this.driverWorker?.handleKeyUp(key, 0);
+        this.dispatchWorker("keyboard-state", () => this.driverWorker?.updateKeyboardState(state.pobKeys));
+        this.dispatchWorker("key-up", () => this.driverWorker?.handleKeyUp(key, 0));
       },
       onChar: (state: PoBKeyboardState, key: string) => {
-        this.driverWorker?.updateKeyboardState(state.pobKeys);
-        this.driverWorker?.handleChar(key, 0);
+        this.dispatchWorker("keyboard-state", () => this.driverWorker?.updateKeyboardState(state.pobKeys));
+        this.dispatchWorker("character", () => this.driverWorker?.handleChar(key, 0));
       },
     });
     this.domKeyboardState = DOMKeyboardState.make(this.pobKeyboardState);
@@ -276,7 +288,7 @@ export class Driver {
       {
         onMouseStateUpdate: (mouseState) => {
           const transformedMouse = this.transformMouseCoordinates(mouseState);
-          this.driverWorker?.handleMouseMove(transformedMouse);
+          this.dispatchWorker("mouse-move", () => this.driverWorker?.handleMouseMove(transformedMouse));
         },
         onZoom: (scale, centerX, centerY) => {
           this.canvasManager?.zoom(scale, centerX, centerY);
@@ -295,14 +307,17 @@ export class Driver {
         if (!visible) {
           this.domKeyboardState?.releasePhysicalKeys();
         }
-        this.driverWorker?.handleVisibilityChange(visible);
+        this.dispatchWorker("visibility", () => this.driverWorker?.handleVisibilityChange(visible));
       },
       onCopy: () => this.dispatchClipboardAction({ type: "copy" }),
       onPaste: (text) => this.dispatchClipboardAction({ type: "paste", text }),
     });
 
     this.mouseHandler!.setPanMode(this.panModeEnabled);
-    this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible");
+    this.dispatchWorker(
+      "visibility",
+      () => this.driverWorker?.handleVisibilityChange(root.ownerDocument.visibilityState === "visible"),
+    );
 
     const toolbarCallbacks: ToolbarCallbacks = {
       onZoomReset: () => {
@@ -402,7 +417,9 @@ export class Driver {
   }
 
   private enqueueClipboardAction(action: () => Promise<void>) {
-    this.pendingClipboardAction = this.pendingClipboardAction.then(action);
+    this.pendingClipboardAction = enqueueOwnedAction(this.pendingClipboardAction, action, (error) => {
+      this.diagnostic("worker", "rpc-error", { operation: "clipboard", errorName: errorName(error) }, "error");
+    });
   }
 
   async loadBuildFromCode(code: string) {
@@ -423,7 +440,7 @@ export class Driver {
   }
 
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
-    return this.driverWorker?.setLayerVisible(layer, sublayer, visible);
+    this.dispatchWorker("layer-visible", () => this.driverWorker?.setLayerVisible(layer, sublayer, visible));
   }
 
   triggerSentryTestCrash() {
@@ -565,4 +582,8 @@ export class Driver {
     this.performanceVisible = visible;
     this.updateOverlayWithTransform();
   }
+}
+
+function errorName(error: unknown): string {
+  return error instanceof Error && error.name ? error.name : "Error";
 }

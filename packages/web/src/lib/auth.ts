@@ -4,6 +4,8 @@ const LOGOUT_CONFIRMATION = "Logging out will reload the page and discard any un
 
 export function confirmAndLogout(auth0: Pick<Auth0ContextInterface, "logout">): boolean {
   if (!window.confirm(LOGOUT_CONFIRMATION)) return false;
-  void auth0.logout({ logoutParams: { returnTo: window.location.origin } });
+  void auth0.logout({ logoutParams: { returnTo: window.location.origin } }).catch((error) => {
+    console.warn("Logout did not complete", error);
+  });
   return true;
 }

@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 import { type ClipboardAction, PasteBuffer } from "./clipboard.ts";
+import { observeOwnedPromise } from "./promise-owner.ts";
 import type { DriverDiagnostic } from "./diagnostic.ts";
 import { cloneableError, markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
@@ -349,9 +350,21 @@ export class DriverWorker {
         this.pressedKeys.has(name as PoBKey) || (name === "CTRL" && this.clipboardControlPending),
       takePasteText: () => this.pasteBuffer.take(),
       imageLoad: (handle: number, filename: string, flags: number) => {
-        this.imageRepo?.load(handle, filename, flags).then(() => {
-          this.invalidate();
-        });
+        const load = this.imageRepo?.load(handle, filename, flags);
+        if (!load) return;
+        observeOwnedPromise(
+          load,
+          () => this.invalidate(),
+          (error) => {
+            this.diagnostic(
+              "worker",
+              "image-load-error",
+              { errorName: error instanceof Error && error.name ? error.name : "Error" },
+              "error",
+            );
+            this.hostCallbacks?.onError(cloneableError(error));
+          },
+        );
       },
       drawCommit: (bufferPtr: number, size: number) => {
         this.renderer?.render(new DataView(module.HEAPU8.buffer, bufferPtr, size));

@@ -39,6 +39,7 @@
     "@react-router/dev": "npm:@react-router/dev@^7.18.2",
     "@react-router/fs-routes": "npm:@react-router/fs-routes@^7.18.2",
     "@sentry/react": "npm:@sentry/react@^10.69.0",
+    "@sentry/vite-plugin": "npm:@sentry/vite-plugin@^5.4.0",
     "@sentry/wasm": "npm:@sentry/wasm@^10.69.0",
     "@std/assert": "jsr:@std/assert@1.0.19",
     "@std/fs": "jsr:@std/fs@^1.0.23",
