@@ -8,8 +8,13 @@ export class BackgroundPromiseOwner {
   ) {}
 
   dispatch(operation: string, invoke: () => Promise<unknown> | undefined): void {
-    const task = Promise.resolve()
-      .then(invoke)
+    let result: Promise<unknown> | undefined;
+    try {
+      result = invoke();
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    const task = Promise.resolve(result)
       .then(() => undefined)
       .catch((error) => {
         try {

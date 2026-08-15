@@ -15,15 +15,33 @@ Deno.test("background rejection is diagnosed, reported once, and does not escape
     );
     owner.dispatch("resize", () => Promise.reject(new Error("first")));
     owner.dispatch("mouse", () => Promise.reject(new Error("second")));
+    owner.dispatch("visibility", () => {
+      throw new Error("third");
+    });
     await owner.settled();
     await Promise.resolve();
 
-    assertEquals(diagnostics.map(({ operation }) => operation), ["resize", "mouse"]);
+    assertEquals(diagnostics.map(({ operation }) => operation), ["resize", "mouse", "visibility"]);
     assertEquals(reports.map(String), ["Error: first"]);
     assertEquals(unhandled, []);
   } finally {
     globalThis.removeEventListener("unhandledrejection", onUnhandled);
   }
+});
+
+Deno.test("background work observes mutable input at dispatch time", async () => {
+  const snapshots: string[][] = [];
+  const owner = new BackgroundPromiseOwner(() => {}, () => {});
+  const keys = new Set(["A"]);
+
+  owner.dispatch("keyboard-state", () => {
+    snapshots.push([...keys]);
+    return Promise.resolve();
+  });
+  keys.clear();
+
+  assertEquals(snapshots, [["A"]]);
+  await owner.settled();
 });
 
 Deno.test("owned clipboard queue recovers after a rejected action", async () => {
