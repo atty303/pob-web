@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.9](https://github.com/atty303/pob-web/compare/v0.33.8...v0.33.9) (2026-08-15)
+
+
+### Bug Fixes
+
+* **ci:** retry transient Sentry uploads ([c632a28](https://github.com/atty303/pob-web/commit/c632a28510fb0c8ab77b49c84f6540e633076276))
+* **ci:** retry transient Sentry uploads ([#210](https://github.com/atty303/pob-web/issues/210)) ([8391245](https://github.com/atty303/pob-web/commit/839124550ae483f3663591551160ebcc5572d64d))
+
 ## [0.33.8](https://github.com/atty303/pob-web/compare/v0.33.7...v0.33.8) (2026-08-15)
 
 
