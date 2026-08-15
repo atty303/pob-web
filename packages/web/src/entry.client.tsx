@@ -1,12 +1,16 @@
 import { startTransition, StrictMode } from "react";
-import { hydrateRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
 
 startTransition(() => {
-  hydrateRoot(
-    document,
+  const app = (
     <StrictMode>
       <HydratedRouter />
-    </StrictMode>,
+    </StrictMode>
   );
+  if (/^\/(?:poe1|poe2|le)(?:\/|$)/.test(window.location.pathname)) {
+    createRoot(document as unknown as Element).render(app);
+  } else {
+    hydrateRoot(document, app);
+  }
 });
