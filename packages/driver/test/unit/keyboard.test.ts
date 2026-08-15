@@ -1,5 +1,11 @@
 import { assertEquals } from "@std/assert";
-import { type DOMKey, DOMKeyboardState, type PoBKey, PoBKeyboardState } from "../../src/js/keyboard.ts";
+import {
+  type DOMKey,
+  DOMKeyboardState,
+  KeyboardHandler,
+  type PoBKey,
+  PoBKeyboardState,
+} from "../../src/js/keyboard.ts";
 
 type Event = { type: "down" | "up" | "char"; value: string };
 
@@ -99,4 +105,25 @@ Deno.test("virtual Control shortcuts do not emit text", () => {
     { type: "down", value: "a" },
     { type: "up", value: "a" },
   ]);
+});
+
+Deno.test("keyboard handler safely handles key events without a key value", () => {
+  const listeners = new Map<string, EventListener>();
+  const element = {
+    addEventListener(type: string, listener: EventListener) {
+      listeners.set(type, listener);
+    },
+  } as unknown as HTMLElement;
+  const { dom, events } = makeKeyboard();
+  const handler = KeyboardHandler.make(element, dom, () => events.push({ type: "char", value: "copy" }));
+
+  listeners.get("keydown")!(new globalThis.Event("keydown"));
+  dom.keydown("Control" as DOMKey);
+  listeners.get("keyup")!(new globalThis.Event("keyup"));
+
+  assertEquals(events, [
+    { type: "down", value: "CTRL" },
+    { type: "up", value: "CTRL" },
+  ]);
+  handler.destroy();
 });
