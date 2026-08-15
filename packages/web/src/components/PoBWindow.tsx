@@ -19,6 +19,7 @@ import {
   corsFetchPolicy,
   createPoeOAuthBridge,
 } from "../lib/poe-oauth.ts";
+import { loadPobbBuildViaProxy, pobbJsonUrl } from "../lib/pobb.ts";
 import { registerSentryWorker } from "../lib/sentry.ts";
 import { RuntimeDiagnostics } from "../lib/runtime-diagnostics.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
@@ -179,6 +180,27 @@ export default function PoBWindow(props: {
               headers: { "content-type": "application/json" },
               status: 200,
             };
+          }
+
+          if (!body && pobbJsonUrl(url)) {
+            try {
+              const build = await loadPobbBuildViaProxy(url, headers);
+              if (build) {
+                return {
+                  body: build.content,
+                  error: undefined,
+                  headers: { "content-type": "text/plain" },
+                  status: 200,
+                };
+              }
+            } catch (error) {
+              return {
+                body: "",
+                error: error instanceof Error ? error.message : String(error),
+                headers: {},
+                status: undefined,
+              };
+            }
           }
 
           let rep: FetchResult | undefined;
