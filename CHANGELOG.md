@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.33.11](https://github.com/atty303/pob-web/compare/v0.33.10...v0.33.11) (2026-08-15)
+
+
+### Bug Fixes
+
+* **driver:** handle missing keyboard event keys ([3021953](https://github.com/atty303/pob-web/commit/302195396de238278f1f476f0f2d70663fd16a25))
+* **driver:** handle missing keyboard event keys ([#215](https://github.com/atty303/pob-web/issues/215)) ([a25bfb1](https://github.com/atty303/pob-web/commit/a25bfb1501b6ad32adfb46f1bb136adfb9fcb82c))
+* **driver:** recover Last Epoch settings ([eb30480](https://github.com/atty303/pob-web/commit/eb30480cf8e53525f605d55766696a46af7427cc))
+* **driver:** recover Last Epoch settings ([#214](https://github.com/atty303/pob-web/issues/214)) ([f0f8aa6](https://github.com/atty303/pob-web/commit/f0f8aa6d1b09af7788bbe9d90107e52600ae59ba))
+
 ## [0.33.10](https://github.com/atty303/pob-web/compare/v0.33.9...v0.33.10) (2026-08-15)
 
 
