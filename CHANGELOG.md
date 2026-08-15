@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.34.0](https://github.com/atty303/pob-web/compare/v0.33.11...v0.34.0) (2026-08-15)
+
+
+### Features
+
+* **web:** improve Sentry diagnostics ([50c6c7a](https://github.com/atty303/pob-web/commit/50c6c7a77325c8b6c5915c6f764e824aaa51e130))
+
+
+### Bug Fixes
+
+* **driver:** preserve background dispatch state ([141a5cc](https://github.com/atty303/pob-web/commit/141a5cc0f65cd1622c232c7fff909e444bc5be5c))
+* **web:** follow Sentry default data handling ([b0a208b](https://github.com/atty303/pob-web/commit/b0a208b2cd4b63fd36641479981c7aa8389d7a57))
+* **web:** preserve worker error details ([d88000b](https://github.com/atty303/pob-web/commit/d88000b14160129c8f4016edb4961612e870b70c))
+
 ## [0.33.11](https://github.com/atty303/pob-web/compare/v0.33.10...v0.33.11) (2026-08-15)
 
 
