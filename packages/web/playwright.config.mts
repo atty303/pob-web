@@ -21,6 +21,12 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
+    {
+      name: "firefox-pobb",
+      testMatch: "**/build-import.spec.mts",
+      grep: /@firefox-pobb/,
+      use: { browserName: "firefox" },
+    },
     { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.mts", use: { browserName: "firefox" } },
   ],
   webServer: {

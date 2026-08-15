@@ -2,6 +2,7 @@ import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { SignJWT } from "jose";
 import {
   authenticateWithPoe,
+  browserDirectFetchHeaders,
   corsFetchPolicy,
   createPoeOAuthBridge,
   getPoeAccessToken,
@@ -120,6 +121,25 @@ Deno.test("only CORS-capable PoE APIs bypass the proxy", () => {
     corsFetchPolicy("https://www.pathofexile.com/api/trade/search/Standard", "https://pob.cool"),
     undefined,
   );
+});
+
+Deno.test("browser direct fetches leave User-Agent control to the browser", () => {
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "User-Agent": "Path of Building/0.23.1",
+  };
+
+  assertEquals(browserDirectFetchHeaders(headers), {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
+  assertEquals(browserDirectFetchHeaders({ "user-agent": "Path of Building/0.23.1" }), {});
+  assertEquals(headers, {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "User-Agent": "Path of Building/0.23.1",
+  });
 });
 
 Deno.test("the deployed OAuth helper detaches cross-origin isolation headers", async () => {

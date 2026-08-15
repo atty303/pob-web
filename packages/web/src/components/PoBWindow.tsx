@@ -16,6 +16,7 @@ import { log, tag } from "../lib/logger.ts";
 import {
   authenticateWithPoe,
   authorizePoeWithRedirect,
+  browserDirectFetchHeaders,
   corsFetchPolicy,
   createPoeOAuthBridge,
 } from "../lib/poe-oauth.ts";
@@ -211,7 +212,7 @@ export default function PoBWindow(props: {
               const r = await fetch(url, {
                 method: body ? "POST" : "GET",
                 body,
-                headers,
+                headers: browserDirectFetchHeaders(headers),
               });
               const directResult = {
                 body: await r.text(),

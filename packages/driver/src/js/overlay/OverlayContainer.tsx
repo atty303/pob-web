@@ -198,10 +198,10 @@ export class ReactOverlayManager {
   }
 
   destroy() {
-    if (this.root) {
-      this.root.unmount();
-      this.root = null;
-    }
+    const root = this.root;
+    this.root = null;
     this.currentProps = null;
+    // Avoid synchronously unmounting this root during a parent React render.
+    if (root) setTimeout(() => root.unmount(), 0);
   }
 }
