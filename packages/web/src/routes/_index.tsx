@@ -14,6 +14,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import { gameData } from "pob-game";
 import { Link, redirect } from "react-router";
+import { loadPobbBuildViaProxy } from "../lib/pobb.ts";
 import type { Route } from "../routes/+types/_index";
 import type { Games } from "./_game.tsx";
 
@@ -24,6 +25,8 @@ dayjs.extend(localizedFormat);
 export async function clientLoader(_args: Route.ClientLoaderArgs) {
   // Redirect if the landing from the pobb.in
   if (location.hash.startsWith("#build=")) {
+    const build = await loadPobbBuildViaProxy(location.hash.slice("#build=".length)).catch(() => undefined);
+    if (build) return redirect(`/${build.game}${location.hash}`);
     return redirect(`/poe1#${location.hash.slice("#build".length)}`);
   }
 

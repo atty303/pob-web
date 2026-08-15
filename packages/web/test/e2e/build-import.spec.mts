@@ -4,6 +4,7 @@ import { webE2EReleases } from "../../../../tools/e2e-releases.mts";
 const POE1_IMPORT_VERSION = webE2EReleases.find(({ game }) => game === "poe1")?.version;
 if (!POE1_IMPORT_VERSION) throw new Error("The web E2E releases do not include Path of Exile 1");
 const BUILD_URL = "https://pobb.in/pob/e2e-import";
+const POBB_BUILD_URL = "https://pobb.in/e2e-import";
 const BUILD_CODE =
   "eJxdUE1PAjEQ_SuTuSsLeNCkLYkEDQfRuKseTdMOS0O3JW1Z_flmcFfR23tv3kcyYvHZeegpZReDxOllhUDBROtCK_Glubu4xoUST7rsHre3R-f5oMQJgaeevMSrGULRqaXyOvbM3ysE43XOG92RxDdXzA5BZ0PBLn_1TQyE0GkX6mj2VO5TPB4kThF6Rx8P0ZLE5nm1wokSTSICbYrrqT6QYZcSjKAkorPp2c2wvbYS539WWakQQrSUJXLrhGuVqPfO-zzWM6mpDBMDA2dZ4My3W4l1oW4MMf7JDOQscrIqsYxh61oW_r30C-adgW4=";
 
@@ -13,12 +14,46 @@ test("a fixed Path of Exile build imports from a pobb.in URL", async ({ page }) 
     buildRequests += 1;
     return route.fulfill({ status: 200, contentType: "text/plain", body: BUILD_CODE });
   });
+  await page.route(
+    "**/api/fetch",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "not a JSON build" }),
+      }),
+  );
 
-  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=https://pobb.in/e2e-import`);
+  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=${POBB_BUILD_URL}`);
 
   await expect.poll(() => page.title(), { timeout: 45_000 }).toBe("Imported build (Witch) - Path of Building");
   expect(buildRequests).toBe(1);
   await expect(page.getByText("Critical Error Occurred")).toHaveCount(0);
+});
+
+test("a current POBb.in link selects its game and downloads its JSON build content", async ({ page }) => {
+  let proxyRequests = 0;
+  await page.route("**/api/fetch", async (route) => {
+    proxyRequests += 1;
+    const payload = JSON.parse(route.request().postData() ?? "{}") as { url?: string };
+    expect(payload.url).toBe(`${POBB_BUILD_URL}/json`);
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        body: JSON.stringify({ content: BUILD_CODE, metadata: { game_version: "Two" } }),
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    });
+  });
+
+  const poe2RootZip = page.waitForRequest((request) => request.url().includes("/games/poe2/versions/"));
+  await page.goto(`/poe1#=${POBB_BUILD_URL}`);
+
+  await poe2RootZip;
+  await expect(page).toHaveURL(new RegExp(`/poe2#=${POBB_BUILD_URL}$`));
+  expect(proxyRequests).toBeGreaterThanOrEqual(1);
 });
 
 test("a failed direct pobb.in request falls back to the fetch proxy", async ({ page }) => {
@@ -31,6 +66,13 @@ test("a failed direct pobb.in request falls back to the fetch proxy", async ({ p
   await page.route("**/api/fetch", async (route) => {
     proxyRequests += 1;
     const payload = JSON.parse(route.request().postData() ?? "{}") as { url?: string };
+    if (payload.url === `${POBB_BUILD_URL}/json`) {
+      return await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "not a JSON build" }),
+      });
+    }
     expect(payload.url).toBe(BUILD_URL);
     return await route.fulfill({
       status: 200,
@@ -43,15 +85,24 @@ test("a failed direct pobb.in request falls back to the fetch proxy", async ({ p
     });
   });
 
-  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=https://pobb.in/e2e-import`);
+  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=${POBB_BUILD_URL}`);
 
   await expect.poll(() => page.title(), { timeout: 45_000 }).toBe("Imported build (Witch) - Path of Building");
-  expect({ directRequests, proxyRequests }).toEqual({ directRequests: 1, proxyRequests: 1 });
+  expect({ directRequests, proxyRequests }).toEqual({ directRequests: 1, proxyRequests: 2 });
 });
 
 test("an unhandled build download subscript failure reaches the driver error dialog", async ({ page }) => {
   let wasmRequests = 0;
   await page.route(BUILD_URL, (route) => route.fulfill({ status: 200, contentType: "text/plain", body: BUILD_CODE }));
+  await page.route(
+    "**/api/fetch",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "not a JSON build" }),
+      }),
+  );
   await page.route("**/driver.wasm", async (route) => {
     wasmRequests += 1;
     if (wasmRequests === 1) {
@@ -61,7 +112,7 @@ test("an unhandled build download subscript failure reaches the driver error dia
     }
   });
 
-  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=https://pobb.in/e2e-import`);
+  await page.goto(`/poe1/versions/${POE1_IMPORT_VERSION}#=${POBB_BUILD_URL}`);
 
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Path of Building encountered an error" })).toBeVisible({
