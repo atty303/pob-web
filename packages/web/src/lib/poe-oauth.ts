@@ -175,3 +175,8 @@ export function corsFetchPolicy(url: string, appOrigin: string): "direct" | "fal
   if (hostname === "pobb.in") return appOrigin === "https://pob.cool" ? "direct" : "fallback";
   return undefined;
 }
+
+export function browserDirectFetchHeaders(headers: Readonly<Record<string, string>>): Record<string, string> {
+  // Firefox forwards an author-provided User-Agent and preflights an otherwise simple cross-origin request.
+  return Object.fromEntries(Object.entries(headers).filter(([key]) => key.toLowerCase() !== "user-agent"));
+}

@@ -15,6 +15,10 @@ Deno.test("fetch headers preserve content type or supply the legacy default", ()
   assertEquals(prepareFetchHeaders({ "content-type": "application/json" }), {
     "content-type": "application/json",
   });
+  assertEquals(prepareFetchHeaders({ "User-Agent": "Path of Building/0.23.1" }), {
+    "User-Agent": "Path of Building/0.23.1",
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
 });
 
 Deno.test("environment error categories survive RPC error serialization", () => {
