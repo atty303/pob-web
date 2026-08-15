@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.7](https://github.com/atty303/pob-web/compare/v0.33.6...v0.33.7) (2026-08-15)
+
+
+### Bug Fixes
+
+* **web:** import current POBb.in build links ([17683d5](https://github.com/atty303/pob-web/commit/17683d55aee8283ee1f4c5f1cded618896ab9284))
+* **web:** import current POBb.in build links ([#206](https://github.com/atty303/pob-web/issues/206)) ([8d468e3](https://github.com/atty303/pob-web/commit/8d468e3d0ee5a28a8f9fdb318d3f02161e4a6384))
+
 ## [0.33.6](https://github.com/atty303/pob-web/compare/v0.33.5...v0.33.6) (2026-08-14)
 
 
