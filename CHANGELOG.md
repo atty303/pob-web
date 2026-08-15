@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.33.10](https://github.com/atty303/pob-web/compare/v0.33.9...v0.33.10) (2026-08-15)
+
+
+### Bug Fixes
+
+* **driver:** defer overlay cleanup during React render ([4ea4f8a](https://github.com/atty303/pob-web/commit/4ea4f8a7a74b32f5908d0de8b7841473d8002448))
+* **web:** import POBb builds in Firefox ([#212](https://github.com/atty303/pob-web/issues/212)) ([d3658d9](https://github.com/atty303/pob-web/commit/d3658d9c9b745d3c814dd18e746df3d39ad439b0))
+* **web:** import POBb links in Firefox ([6fd39c1](https://github.com/atty303/pob-web/commit/6fd39c1ec72d868866d27b9409dcf469cc37a082))
+
 ## [0.33.9](https://github.com/atty303/pob-web/compare/v0.33.8...v0.33.9) (2026-08-15)
 
 
