@@ -248,7 +248,14 @@ export const KeyboardHandler = {
     el.addEventListener(
       "keydown",
       (e) => {
-        const clipboardShortcut = resolveClipboardShortcut(e.key, e.ctrlKey || e.metaKey);
+        const key: unknown = e.key;
+        if (typeof key !== "string" || key.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const domKey = key as DOMKey;
+        const clipboardShortcut = resolveClipboardShortcut(key, e.ctrlKey || e.metaKey);
         if (clipboardShortcut) {
           if (clipboardShortcut === "copy") {
             e.preventDefault();
@@ -257,9 +264,9 @@ export const KeyboardHandler = {
           return;
         }
         e.preventDefault();
-        keyboardState.keydown(e.key as DOMKey);
-        if (e.key.length === 1 && !e.metaKey && (!e.ctrlKey || e.getModifierState("AltGraph"))) {
-          keyboardState.keypress(e.key);
+        keyboardState.keydown(domKey);
+        if (key.length === 1 && !e.metaKey && (!e.ctrlKey || e.getModifierState("AltGraph"))) {
+          keyboardState.keypress(key);
         }
       },
       { signal },
@@ -269,7 +276,12 @@ export const KeyboardHandler = {
       "keyup",
       (e) => {
         e.preventDefault();
-        keyboardState.keyup(e.key as DOMKey);
+        const key: unknown = e.key;
+        if (typeof key !== "string" || key.length === 0) {
+          keyboardState.releasePhysicalKeys();
+          return;
+        }
+        keyboardState.keyup(key as DOMKey);
       },
       { signal },
     );
