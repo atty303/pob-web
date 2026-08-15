@@ -1,5 +1,6 @@
 import { expect, test } from "../../../../tools/playwright.mts";
 import { webE2EReleases } from "../../../../tools/e2e-releases.mts";
+import { getCurrentBuildModel, matchesBuildModel, POBB_POE2_V05_EXPECTATION } from "./build-model.mts";
 
 const POE1_IMPORT_VERSION = webE2EReleases.find(({ game }) => game === "poe1")?.version;
 if (!POE1_IMPORT_VERSION) throw new Error("The web E2E releases do not include Path of Exile 1");
@@ -72,6 +73,14 @@ test("a current POBb.in link imports after selecting its game @firefox-pobb", as
   await expect.poll(() => page.title(), { timeout: 45_000 }).toBe(
     "Imported build (Gemling Legionnaire) - Path of Building (PoE2)",
   );
+  await expect.poll(async () => {
+    try {
+      const model = await getCurrentBuildModel(page);
+      return matchesBuildModel(model, POBB_POE2_V05_EXPECTATION) ? "matches" : JSON.stringify(model);
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+  }, { timeout: 45_000 }).toBe("matches");
   expect(proxyRequests).toBeGreaterThanOrEqual(1);
   expect(rawRequests).toHaveLength(1);
   expect(rawRequests[0]?.method).toBe("GET");

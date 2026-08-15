@@ -9,4 +9,7 @@ interface Window {
     runId: string;
     snapshot: () => unknown;
   };
+  __POB_WEB_TEST__?: {
+    getBuildCode: () => Promise<string>;
+  };
 }

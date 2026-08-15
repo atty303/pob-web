@@ -1,4 +1,5 @@
 import { expect, test } from "../../../../tools/playwright.mts";
+import { getCurrentBuildModel, matchesBuildModel, POBB_POE2_V05_EXPECTATION } from "./build-model.mts";
 
 const versions = JSON.parse(Deno.readTextFileSync(new URL("../../../../version.json", import.meta.url))) as {
   poe2: { head: string };
@@ -74,6 +75,10 @@ test("the landing page starts the current Path of Exile 2 head from local assets
   await expect(totalDraws).toBeVisible();
   await expect.poll(async () => Number((await totalDraws.textContent())?.split(": ")[1] ?? 0)).toBeGreaterThan(0);
   await expect.poll(() => webgl2Backend).toBe(true);
+
+  const emptyBuild = await getCurrentBuildModel(page);
+  expect(emptyBuild.allocatedNodeCount).toBeLessThan(POBB_POE2_V05_EXPECTATION.minimumAllocatedNodeCount);
+  expect(matchesBuildModel(emptyBuild, POBB_POE2_V05_EXPECTATION)).toBe(false);
 
   await expect(page.getByText("Critical Error Occurred")).toHaveCount(0);
   expect(pageErrors).toEqual([]);

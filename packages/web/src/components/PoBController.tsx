@@ -54,6 +54,22 @@ export default function PoBController(p: { game: keyof Games; version: string; i
   const driverRef = useRef<Driver | null>(null);
   const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
+  useEffect(() => {
+    if (import.meta.env.MODE !== "test") return;
+
+    const testApi = {
+      getBuildCode: () => {
+        const driver = driverRef.current;
+        if (!driver) throw new Error("PoB driver is not ready");
+        return driver.getBuildCode();
+      },
+    };
+    window.__POB_WEB_TEST__ = testApi;
+    return () => {
+      if (window.__POB_WEB_TEST__ === testApi) delete window.__POB_WEB_TEST__;
+    };
+  }, []);
+
   const [settings, setSettings] = useState<WebSettings>();
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
