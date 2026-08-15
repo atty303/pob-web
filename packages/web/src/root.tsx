@@ -1,35 +1,15 @@
 import "./app.css";
 
 import { Auth0Provider } from "@auth0/auth0-react";
-import * as Sentry from "@sentry/react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "./lib/logger.ts";
 import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
-import { wasmIntegrations } from "./lib/sentry.ts";
+import { captureRouteException, initSentry, shouldCaptureRouteException } from "./lib/sentry.ts";
 
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    release: __SENTRY_RELEASE__,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-      Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
-      ...wasmIntegrations,
-    ],
-    enableLogs: true,
-    // Performance Monitoring
-    tracesSampleRate: 1.0, //  Capture 100% of the transactions
-    // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
-    tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-    // Session Replay
-    replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
-    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-  });
-}
+initSentry();
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -101,6 +81,13 @@ export default function Root() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const captured = useRef(new Set<unknown>());
+  useEffect(() => {
+    if (!shouldCaptureRouteException(captured.current, error)) return;
+    captured.current.add(error);
+    captureRouteException(error);
+  }, [error]);
+
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
@@ -131,9 +118,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                 className="btn btn-square btn-sm btn-neutral"
                 aria-label="Copy to clipboard"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(stack);
-                  setCopy("copied");
-                  setTimeout(() => setCopy("copy"), 2000);
+                  try {
+                    await navigator.clipboard.writeText(stack);
+                    setCopy("copied");
+                    setTimeout(() => setCopy("copy"), 2000);
+                  } catch {
+                    setCopy("copy failed");
+                  }
                 }}
               >
                 <svg className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">

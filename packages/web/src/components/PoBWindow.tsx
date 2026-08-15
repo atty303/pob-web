@@ -1,5 +1,4 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import * as Sentry from "@sentry/react";
 import { Driver } from "pob-driver/driver";
 import type { RenderStats } from "pob-driver/renderer";
 import { type Game, gameData } from "pob-game";
@@ -21,7 +20,7 @@ import {
   createPoeOAuthBridge,
 } from "../lib/poe-oauth.ts";
 import { loadPobbBuildViaProxy, pobbJsonUrl } from "../lib/pobb.ts";
-import { registerSentryWorker } from "../lib/sentry.ts";
+import { bindSentryRuntime, registerSentryWorker, sentryDiagnosticSink, tracePobOperation } from "../lib/sentry.ts";
 import { RuntimeDiagnostics } from "../lib/runtime-diagnostics.ts";
 import ErrorDialog from "./ErrorDialog.tsx";
 
@@ -67,7 +66,7 @@ export default function PoBWindow(props: {
         setToken(t);
       }
     }
-    getToken();
+    void getToken().catch((error) => log.warn(tag.pob, "Cloud token refresh failed", error));
   }, [auth0.getAccessTokenSilently, auth0.isAuthenticated]);
 
   const [hash, _setHash] = useHash();
@@ -94,6 +93,7 @@ export default function PoBWindow(props: {
 
   useEffect(() => {
     const diagnostics = new RuntimeDiagnostics(props.game, props.version);
+    const unbindSentryRuntime = bindSentryRuntime(diagnostics);
     let active = true;
     const effectInputs = {
       game: props.game,
@@ -125,12 +125,30 @@ export default function PoBWindow(props: {
         const skipCloudTokenUpdate = !auth0Ref.current.isAuthenticated;
         skipCloudTokenUpdateRef.current = skipCloudTokenUpdate;
         try {
-          return await authenticateWithPoe(
-            auth0Ref.current,
-            forceAuthorization,
-            (force) => authorizePoeWithRedirect(force, timeoutMs),
+          diagnostics.record("oauth", "authorize", { game: props.game, pobVersion: props.version });
+          const startedAt = performance.now();
+          const token = await tracePobOperation(
+            "pob.oauth.authorize",
+            { game: props.game, pobVersion: props.version },
+            () =>
+              authenticateWithPoe(
+                auth0Ref.current,
+                forceAuthorization,
+                (force) => authorizePoeWithRedirect(force, timeoutMs),
+              ),
           );
+          diagnostics.record("oauth", "authorized", {
+            game: props.game,
+            pobVersion: props.version,
+            durationMs: performance.now() - startedAt,
+          });
+          return token;
         } catch (error) {
+          diagnostics.record("oauth", "error", {
+            game: props.game,
+            pobVersion: props.version,
+            errorName: error instanceof Error && error.name ? error.name : "Error",
+          }, "error");
           if (skipCloudTokenUpdate) skipCloudTokenUpdateRef.current = false;
           throw error;
         }
@@ -139,27 +157,20 @@ export default function PoBWindow(props: {
     log.debug(tag.pob, "loading assets from", assetPrefix);
 
     const showError = (error: unknown, phase: ErrorPhase) => {
-      diagnostics.record("driver", "reported-error", { phase, error: String(error) }, "error");
+      diagnostics.record("managed", "error", {
+        phase,
+        errorName: error instanceof Error && error.name ? error.name : "Error",
+        ...(typeof DOMException !== "undefined" && error instanceof DOMException ? { errorCode: error.code } : {}),
+      }, "error");
       const report = createDiagnosticReport({
         error,
         phase,
         game: props.game,
         pobVersion: props.version,
-        ...(diagnostics.isEnabled ? { runId: diagnostics.runId, lifecycle: diagnostics.snapshot() } : {}),
+        runId: diagnostics.runId,
+        lifecycle: diagnostics.snapshot(),
       });
-      collectDiagnosticReport(report, {
-        warn: (value) => log.warn(tag.pob, "Expected environment error", value),
-        error: (value) => log.error(tag.pob, "Path of Building error", value),
-        captureException: (exception, context) => {
-          Sentry.withScope((scope) => {
-            scope.setTag("pob.game", context.game);
-            scope.setTag("pob.version", context.pobVersion);
-            scope.setTag("pob.error_phase", context.phase);
-            scope.setContext("pob.diagnostics", context);
-            Sentry.captureException(exception);
-          });
-        },
-      });
+      collectDiagnosticReport(report, sentryDiagnosticSink);
       setErrorReport(report);
       setShowErrorDialog(true);
     };
@@ -257,7 +268,7 @@ export default function PoBWindow(props: {
       },
       {
         onWorkerCreated: registerSentryWorker,
-        ...(diagnostics.isEnabled ? { onDiagnostic: diagnostics.driver } : {}),
+        onDiagnostic: diagnostics.driver,
       },
     );
     diagnostics.record("driver", "constructed");
@@ -267,24 +278,73 @@ export default function PoBWindow(props: {
     (async () => {
       let phase: ErrorPhase = "driver-start";
       try {
-        await _driver.start({
-          userDirectory: gameData[props.game].userDirectory,
-          settingsRootElement: gameData[props.game].settingsRootElement,
-          cloudflareKvPrefix: "/api/kv",
-          cloudflareKvAccessToken: token,
-          cloudflareKvUserNamespace: gameData[props.game].cloudflareKvNamespace,
-        });
+        await tracePobOperation(
+          "pob.driver.start",
+          { game: props.game, pobVersion: props.version },
+          () =>
+            _driver.start({
+              userDirectory: gameData[props.game].userDirectory,
+              settingsRootElement: gameData[props.game].settingsRootElement,
+              cloudflareKvPrefix: "/api/kv",
+              cloudflareKvAccessToken: token,
+              cloudflareKvUserNamespace: gameData[props.game].cloudflareKvNamespace,
+            }),
+        );
         if (!active) return;
         diagnostics.record("driver", "started");
         log.debug(tag.pob, "started", container.current);
         if (buildCode) {
           phase = "build-load";
-          log.info(tag.pob, "loading build from ", buildCode);
-          await _driver.loadBuildFromCode(buildCode);
+          log.info(tag.pob, "loading build");
+          diagnostics.record("build", "load", { game: props.game, pobVersion: props.version });
+          const buildStartedAt = performance.now();
+          try {
+            await tracePobOperation(
+              "pob.build.load",
+              { game: props.game, pobVersion: props.version },
+              () => _driver.loadBuildFromCode(buildCode),
+            );
+            diagnostics.record("build", "loaded", {
+              game: props.game,
+              pobVersion: props.version,
+              durationMs: performance.now() - buildStartedAt,
+            });
+          } catch (error) {
+            diagnostics.record("build", "error", {
+              game: props.game,
+              pobVersion: props.version,
+              durationMs: performance.now() - buildStartedAt,
+              errorName: error instanceof Error && error.name ? error.name : "Error",
+            }, "error");
+            throw error;
+          }
           if (!active) return;
         }
         phase = "renderer-attach";
-        if (container.current) await _driver.attachToDOM(container.current);
+        if (container.current) {
+          diagnostics.record("renderer", "attach", { game: props.game, pobVersion: props.version });
+          const rendererStartedAt = performance.now();
+          try {
+            await tracePobOperation(
+              "pob.renderer.attach",
+              { game: props.game, pobVersion: props.version },
+              () => _driver.attachToDOM(container.current!),
+            );
+            diagnostics.record("renderer", "attached", {
+              game: props.game,
+              pobVersion: props.version,
+              durationMs: performance.now() - rendererStartedAt,
+            });
+          } catch (error) {
+            diagnostics.record("renderer", "error", {
+              game: props.game,
+              pobVersion: props.version,
+              durationMs: performance.now() - rendererStartedAt,
+              errorName: error instanceof Error && error.name ? error.name : "Error",
+            }, "error");
+            throw error;
+          }
+        }
         if (!active) return;
         diagnostics.record("driver", "renderer-attached");
 
@@ -310,6 +370,7 @@ export default function PoBWindow(props: {
     return () => {
       active = false;
       diagnostics.complete("react-effect-cleanup");
+      unbindSentryRuntime();
       window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onVisibilityChange);

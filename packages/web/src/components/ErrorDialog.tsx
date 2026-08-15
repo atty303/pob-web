@@ -34,7 +34,7 @@ export default function ErrorDialog({ report, onReload, onClose }: ErrorDialogPr
   };
 
   return (
-    <dialog className="modal modal-open">
+    <dialog open className="modal modal-open">
       <div className="modal-box max-w-full max-h-full w-[90vw] h-[90vh] flex flex-col">
         <button type="button" className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10" onClick={onClose}>
           ✕

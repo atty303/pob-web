@@ -1,0 +1,176 @@
+import type { Event, EventHint } from "@sentry/react";
+import type { RuntimeSnapshot } from "./runtime-diagnostics.ts";
+
+type CapturePath = "managed" | "route-boundary" | "global-onerror" | "global-unhandledrejection";
+type ExceptionValue = NonNullable<NonNullable<Event["exception"]>["values"]>[number];
+
+export function enrichSentryEvent(event: Event, hint: EventHint, runtimeSnapshot?: RuntimeSnapshot): Event {
+  const capturePath = capturePathForEvent(event);
+  const stackPresent = event.exception?.values?.some((exception) => (exception.stacktrace?.frames?.length ?? 0) > 0) ??
+    false;
+  const runtime = runtimeSnapshot
+    ? {
+      runId: runtimeSnapshot.runId,
+      game: runtimeSnapshot.game,
+      pobVersion: runtimeSnapshot.pobVersion,
+      phase: runtimeSnapshot.phase,
+      lastTransition: runtimeSnapshot.lastTransition,
+    }
+    : undefined;
+  const domException = describeDomException(hint.originalException);
+
+  return sanitizeSentryEvent({
+    ...event,
+    breadcrumbs: event.breadcrumbs?.filter((breadcrumb) => breadcrumb.category === "pob.runtime"),
+    tags: {
+      ...event.tags,
+      "pob.capture_path": capturePath,
+      "pob.attribution": capturePath === "managed" || capturePath === "route-boundary" ? "app" : "unknown",
+      "pob.stack_present": String(stackPresent),
+    },
+    contexts: {
+      ...event.contexts,
+      ...(runtime ? { "pob.runtime": runtime } : {}),
+      ...(runtimeSnapshot ? { "pob.timeline": { events: runtimeSnapshot.timeline.slice(-20) } } : {}),
+      ...(domException ? { "pob.dom_exception": domException } : {}),
+    },
+  });
+}
+
+export function sanitizeSentryEvent(event: Event): Event {
+  return {
+    ...event,
+    ...(event.message ? { message: stripUrlsInText(event.message) } : {}),
+    extra: undefined,
+    breadcrumbs: event.breadcrumbs?.filter((breadcrumb) => breadcrumb.category === "pob.runtime"),
+    ...(event.transaction ? { transaction: stripUrlsInText(event.transaction) } : {}),
+    ...(event.request
+      ? {
+        request: {
+          ...event.request,
+          ...(event.request.url ? { url: stripUrlDetails(event.request.url) } : {}),
+          headers: undefined,
+          data: undefined,
+          cookies: undefined,
+          query_string: undefined,
+        },
+      }
+      : {}),
+    contexts: sanitizeRecord(event.contexts) as Event["contexts"],
+    exception: event.exception
+      ? {
+        ...event.exception,
+        values: event.exception.values?.map((exception) => ({
+          ...exception,
+          ...(exception.value ? { value: stripUrlsInText(exception.value) } : {}),
+          stacktrace: sanitizeStacktrace(exception.stacktrace),
+        })),
+      }
+      : undefined,
+    spans: event.spans?.map((span) => ({
+      ...span,
+      ...(span.description ? { description: stripUrlsInText(span.description) } : {}),
+      data: (sanitizeRecord(span.data) ?? {}) as typeof span.data,
+    })),
+  };
+}
+
+function stripUrlDetails(value: string): string {
+  try {
+    const url = new URL(value, "https://pob.invalid");
+    url.search = "";
+    url.hash = "";
+    return url.origin === "https://pob.invalid" ? url.pathname : url.toString();
+  } catch {
+    return value.split(/[?#]/, 1)[0];
+  }
+}
+
+function stripUrlsInText(value: string): string {
+  return value.replace(/(?:https?:\/\/|\/)[^\s"']+/g, (url) => stripUrlDetails(url));
+}
+
+function sanitizeStacktrace(stacktrace: ExceptionValue["stacktrace"]): ExceptionValue["stacktrace"] {
+  if (!stacktrace) return stacktrace;
+  return {
+    ...stacktrace,
+    frames: stacktrace.frames?.map((frame) => ({
+      ...frame,
+      ...(frame.filename ? { filename: stripUrlDetails(frame.filename) } : {}),
+      ...(frame.abs_path ? { abs_path: stripUrlDetails(frame.abs_path) } : {}),
+    })),
+  };
+}
+
+function sanitizeRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (isSensitiveKey(key)) continue;
+    if (typeof entry === "string") {
+      sanitized[key] = isUrlKey(key) ? stripUrlDetails(entry) : stripUrlsInText(entry);
+    } else if (Array.isArray(entry)) {
+      sanitized[key] = entry.map((item) =>
+        typeof item === "string"
+          ? stripUrlsInText(item)
+          : item && typeof item === "object"
+          ? sanitizeRecord(item)
+          : item
+      );
+    } else if (entry && typeof entry === "object") {
+      sanitized[key] = sanitizeRecord(entry);
+    } else {
+      sanitized[key] = entry;
+    }
+  }
+  return sanitized;
+}
+
+function isSensitiveKey(key: string): boolean {
+  return /(^|[._-])(authorization|cookie|token|headers?|body|clipboard|buildcode|query)([._-]|$)/i.test(key);
+}
+
+function isUrlKey(key: string): boolean {
+  return /(^|[._-])url([._-]|$)/i.test(key);
+}
+
+export function isReportableRouteException(error: unknown): boolean {
+  return !isRouteErrorResponse(error) || error.status !== 404;
+}
+
+export function shouldCaptureRouteException(captured: ReadonlySet<unknown>, error: unknown): boolean {
+  return !captured.has(error) && isReportableRouteException(error);
+}
+
+function isRouteErrorResponse(value: unknown): value is {
+  status: number;
+  statusText: string;
+  internal: boolean;
+  data: unknown;
+} {
+  return !!value && typeof value === "object" && "status" in value && typeof value.status === "number" &&
+    "statusText" in value && typeof value.statusText === "string" && "internal" in value &&
+    typeof value.internal === "boolean" && "data" in value;
+}
+
+function capturePathForEvent(event: Event): CapturePath {
+  const explicit = event.tags?.["pob.capture_path"];
+  if (isCapturePath(explicit)) return explicit;
+  const mechanisms = event.exception?.values?.map((exception) => exception.mechanism?.type) ?? [];
+  return mechanisms.some((mechanism) => mechanism?.includes("unhandledrejection"))
+    ? "global-unhandledrejection"
+    : "global-onerror";
+}
+
+function isCapturePath(value: unknown): value is CapturePath {
+  return value === "managed" || value === "route-boundary" || value === "global-onerror" ||
+    value === "global-unhandledrejection";
+}
+
+function describeDomException(value: unknown): { name: string; message: string; code: number } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  if (!("name" in value) || typeof value.name !== "string") return undefined;
+  if (!("message" in value) || typeof value.message !== "string") return undefined;
+  if (!("code" in value) || typeof value.code !== "number") return undefined;
+  return { name: value.name, message: value.message, code: value.code };
+}

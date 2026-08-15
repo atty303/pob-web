@@ -2,6 +2,7 @@ import { Command, EnumType } from "@cliffy/command";
 import $ from "@david/dax";
 import { walk } from "@std/fs";
 import { games } from "../../packages/game/src/index.ts";
+import { POB_SENTRY_APPLICATION_KEY } from "../../packages/web/sentry.config.ts";
 
 const gameType = new EnumType(games);
 
@@ -287,8 +288,31 @@ async function buildDriver(kind: "debug" | "release"): Promise<void> {
 }
 
 async function verifyWebBuild(): Promise<void> {
+  const markedBundles = new Set<string>();
+  const entries = {
+    client: "/src/entry.client.tsx",
+    "main worker": "/driver/src/js/worker.ts",
+    "broker worker": "/driver/src/js/broker.ts",
+  } as const;
+
   for await (const entry of walk("packages/web/build/client", { includeDirs: false })) {
     if (entry.name.endsWith(".debug.wasm")) throw new Error(`Web build contains Wasm debug sidecar: ${entry.path}`);
+    if (!entry.name.endsWith(".js.map")) continue;
+
+    const sourceMap = JSON.parse(await Deno.readTextFile(entry.path)) as { sources?: string[] };
+    for (const [name, source] of Object.entries(entries)) {
+      if (!sourceMap.sources?.some((value) => value.replaceAll("\\", "/").endsWith(source))) continue;
+      const bundlePath = entry.path.slice(0, -4);
+      const bundle = await Deno.readTextFile(bundlePath);
+      if (!bundle.includes(`_sentryBundlerPluginAppKey:${POB_SENTRY_APPLICATION_KEY}`)) {
+        throw new Error(`${name} bundle is missing the Sentry application key marker: ${bundlePath}`);
+      }
+      markedBundles.add(name);
+    }
+  }
+
+  for (const name of Object.keys(entries)) {
+    if (!markedBundles.has(name)) throw new Error(`Web build did not contain a source-mapped ${name} bundle`);
   }
 }
 

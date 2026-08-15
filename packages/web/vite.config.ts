@@ -1,11 +1,13 @@
 import * as path from "@std/path";
 import { reactRouter } from "@react-router/dev/vite";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { createHash } from "node:crypto";
 import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { wranglerDev } from "./wrangler-dev.ts";
 import { diagnosticsDevPlugin } from "./diagnostics-dev.ts";
+import { POB_SENTRY_APPLICATION_KEY } from "./sentry.config.ts";
 
 const packageDir = path.dirname(path.fromFileUrl(import.meta.url));
 const rootDir = path.resolve(packageDir, "../..");
@@ -18,6 +20,7 @@ const dependencyHash = createHash("sha256")
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, isSsrBuild }) => {
+  const productionClient = mode === "production" && !isSsrBuild;
   const usePobCoolAsset = mode === "development" && Deno.env.get("POB_COOL_ASSET") === "true";
   const publicDev = mode === "development" && Deno.env.get("PUBLIC_DEV_SERVER") === "true";
   const renderingMax = mode === "development" && Deno.env.has("POB_RENDERING_MAX")
@@ -33,7 +36,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       dedupe: ["react", "react-dom"],
       alias: {
         ...(mode === "development" ? {} : {
-          "../lib/runtime-diagnostics.ts": path.join(
+          "./runtime-diagnostics-dev.ts": path.join(
             packageDir,
             "src/lib/runtime-diagnostics-disabled.ts",
           ),
@@ -115,6 +118,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     worker: {
       format: "es",
+      plugins: () => productionClient ? [sentryApplicationKeyPlugin()] : [],
     },
     ssr: {
       optimizeDeps: {
@@ -190,6 +194,24 @@ export default defineConfig(({ mode, isSsrBuild }) => {
           }),
         ]
         : []),
+      ...(productionClient ? [sentryApplicationKeyPlugin()] : []),
     ],
   };
 });
+
+function sentryApplicationKeyPlugin() {
+  return sentryVitePlugin({
+    applicationKey: POB_SENTRY_APPLICATION_KEY,
+    // An empty name prevents the plugin from inferring a Git release. Release
+    // metadata and source maps remain owned by the existing sentry-cli tasks.
+    release: {
+      name: "",
+      inject: false,
+      create: false,
+      finalize: false,
+      setCommits: false,
+    },
+    sourcemaps: { disable: true },
+    telemetry: false,
+  });
+}

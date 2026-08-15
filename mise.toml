@@ -137,9 +137,9 @@ depends = ["install"]
 run = "deno task repo playwright-mcp"
 
 [tasks."visual:setup"]
-description = "Install the Chromium and Firefox browsers used for E2E and visual verification"
+description = "Install the browsers used for E2E and visual verification"
 depends = ["install"]
-run = "deno task playwright install chromium firefox"
+run = "deno task playwright install chromium firefox webkit"
 
 [tasks.pack]
 description = "Pack the distribution from upstream repository"

@@ -1,7 +1,7 @@
 import { type Game, gameData } from "pob-game";
 import { Driver } from "./driver.ts";
 
-(async () => {
+async function main(): Promise<void> {
   const testMode = import.meta.env.MODE === "test";
   const params = new URLSearchParams(window.location.search);
   const game = (testMode ? params.get("game") : null) ?? __RUN_GAME__;
@@ -135,4 +135,9 @@ import { Driver } from "./driver.ts";
     testState.getBuildCode = () => driver.getBuildCode();
     testState.flushInput = () => driver.flushInput();
   }
-})();
+}
+
+void main().catch((error) => {
+  window.__POB_TEST__?.errors.push(String(error));
+  console.error("Driver startup failed", error);
+});

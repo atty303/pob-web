@@ -28,6 +28,16 @@ export default defineConfig({
       use: { browserName: "firefox" },
     },
     { name: "firefox-sentry", testMatch: "**/sentry-wasm.spec.mts", use: { browserName: "firefox" } },
+    {
+      name: "firefox-sentry-diagnostics",
+      testMatch: "**/sentry-diagnostics.spec.mts",
+      use: { browserName: "firefox" },
+    },
+    {
+      name: "webkit-sentry-diagnostics",
+      testMatch: "**/sentry-diagnostics.spec.mts",
+      use: { browserName: "webkit" },
+    },
   ],
   webServer: {
     command: "deno task test:e2e:serve",
