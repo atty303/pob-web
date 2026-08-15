@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.33.8](https://github.com/atty303/pob-web/compare/v0.33.7...v0.33.8) (2026-08-15)
+
+
+### Bug Fixes
+
+* **web:** avoid hydration for non-root routes ([#208](https://github.com/atty303/pob-web/issues/208)) ([261f794](https://github.com/atty303/pob-web/commit/261f7947ebc26239fc3d372ccaf91721aa768652))
+* **web:** render game routes without hydration ([4028d62](https://github.com/atty303/pob-web/commit/4028d625b31d603ce81ef26c8b461441a4e51e4e))
+* **web:** render non-root routes on the client ([62c642e](https://github.com/atty303/pob-web/commit/62c642e72fa4b2b44c3df4dc64176273fbba6ff2))
+
 ## [0.33.7](https://github.com/atty303/pob-web/compare/v0.33.6...v0.33.7) (2026-08-15)
 
 
