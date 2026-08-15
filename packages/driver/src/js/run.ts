@@ -120,6 +120,7 @@ import { Driver } from "./driver.ts";
   );
   await driver.start({
     userDirectory: gameData[game as Game].userDirectory,
+    settingsRootElement: gameData[game as Game].settingsRootElement,
     cloudflareKvPrefix: "/api/kv/",
     cloudflareKvAccessToken: undefined,
     cloudflareKvUserNamespace: undefined,

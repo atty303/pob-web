@@ -269,6 +269,7 @@ export default function PoBWindow(props: {
       try {
         await _driver.start({
           userDirectory: gameData[props.game].userDirectory,
+          settingsRootElement: gameData[props.game].settingsRootElement,
           cloudflareKvPrefix: "/api/kv",
           cloudflareKvAccessToken: token,
           cloudflareKvUserNamespace: gameData[props.game].cloudflareKvNamespace,

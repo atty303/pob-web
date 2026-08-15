@@ -40,6 +40,7 @@ const driver = new Driver(
 
 const filesystemConfig: FilesystemConfig = {
   userDirectory: "Path of Building",
+  settingsRootElement: "PathOfBuilding",
   cloudflareKvPrefix: "/api/kv",
   cloudflareKvAccessToken: undefined,
   cloudflareKvUserNamespace: undefined,

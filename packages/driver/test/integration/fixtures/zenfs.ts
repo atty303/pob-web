@@ -1,5 +1,6 @@
 import { Zip } from "@zenfs/archives";
 import { configure, fs, resolveMountConfig } from "@zenfs/core";
+import type { SettingsRootElement } from "pob-game";
 import { rejectWrites } from "../../../src/js/fs.ts";
 import { removeStaleSettingsSuffix } from "../../../src/js/settings.ts";
 import { TruncatingWebAccess } from "../../../src/js/web-access.ts";
@@ -18,7 +19,10 @@ declare global {
       writeUser(): Promise<void>;
       readUser(): Promise<{ text: string; size: number; entries: string[] }>;
       clearUser(): Promise<void>;
-      recoverSettings(): Promise<{ recovered: boolean; text: string }>;
+      recoverSettings(
+        userDirectory: string,
+        rootElement: SettingsRootElement,
+      ): Promise<{ recovered: boolean; text: string }>;
     };
   }
 }
@@ -74,15 +78,15 @@ window.zenfsIntegration = {
     for await (const name of handle.keys()) await handle.removeEntry(name, { recursive: true });
   },
 
-  async recoverSettings() {
+  async recoverSettings(userDirectory: string, rootElement: SettingsRootElement) {
     await configureUser();
-    const path = "/user/Path of Building/Settings.xml";
-    await fs.promises.mkdir("/user/Path of Building", { recursive: true });
+    const path = `/user/${userDirectory}/Settings.xml`;
+    await fs.promises.mkdir(`/user/${userDirectory}`, { recursive: true });
     await fs.promises.writeFile(
       path,
-      '<?xml version="1.0"?><PathOfBuilding><Mode name="日本語"/></PathOfBuilding>stale</PathOfBuilding>\n',
+      `<?xml version="1.0"?><${rootElement}><Mode name="日本語"/></${rootElement}>stale</${rootElement}>\n`,
     );
-    const recovered = await removeStaleSettingsSuffix(path);
+    const recovered = await removeStaleSettingsSuffix(path, rootElement);
     return { recovered, text: await fs.promises.readFile(path, "utf8") };
   },
 };
