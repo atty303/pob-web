@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME}
         src/c/driver.c
         src/c/draw.c
         src/c/draw.h
+        src/c/text_width_cache.c
+        src/c/text_width_cache.h
         src/c/draw_color.c
         src/c/draw_color.h
         src/c/dpi.c
@@ -65,6 +67,25 @@ add_executable(driver_bridge_test
 )
 target_include_directories(driver_bridge_test PRIVATE src/c)
 add_test(NAME driver_bridge_test COMMAND driver_bridge_test)
+
+add_executable(driver_text_width_cache_test
+        ${LUA_SOURCES}
+        test/c/text_width_cache_test.c
+        src/c/draw.c
+        src/c/text_width_cache.c
+        src/c/byte_buffer.c
+        src/c/draw_color.c
+        src/c/dpi.c
+)
+target_include_directories(driver_text_width_cache_test PRIVATE src/c)
+target_compile_definitions(driver_text_width_cache_test PRIVATE DRIVER_TESTING)
+target_link_options(driver_text_width_cache_test PRIVATE
+        "-sMODULARIZE"
+        "-sEXPORT_ES6"
+        "-sENVIRONMENT=node"
+)
+add_test(NAME driver_text_width_cache_test COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/run-native.mts $<TARGET_FILE:driver_text_width_cache_test>)
 
 add_executable(driver_fs_integration_test
         ${LUA_SOURCES}
