@@ -115,3 +115,12 @@ corresponding browser subsystem.
 - Required follow-up: implement a browser screenshot operation, intercept the
   unsupported action safely, or deliberately remove the reachable key contract.
   Revisit on input mapping, Canvas capture, or screenshot UI changes.
+
+### Conservative offscreen quad rejection
+
+- Static image and glyph quads wholly outside the viewport are rejected before
+  texture lookup/batch submission. Float32 bounds and a shader-rounding guard band
+  preserve intersecting geometry; uncertain/non-finite bounds remain drawable.
+- Dynamic updateSubImage textures bypass rejection, preserving update ordering and
+  effects on later visible draws. Frame clearing, compositing and layers are unchanged.
+- Re-evaluate when viewport coordinates, shader precision or dynamic texture APIs change.
