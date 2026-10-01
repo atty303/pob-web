@@ -46,8 +46,14 @@ for (const release of releases) {
     expect(state?.title).not.toBe("");
     expect(webgl2Backend).toBe(true);
     expect(state?.renderStats?.glyphAtlas.pages).toBeGreaterThan(0);
-    expect(state?.renderStats?.glyphAtlas.lookups).toBeGreaterThan(0);
-    expect(state?.renderStats?.glyphAtlas.hits).toBeGreaterThan(0);
+    if (state?.renderStats?.reused) {
+      expect(state.renderStats.glyphAtlas.lookups).toBe(0);
+      expect(state.renderStats.glyphAtlas.hits).toBe(0);
+      expect(state.renderStats.backend.dispatches).toBe(0);
+    } else {
+      expect(state?.renderStats?.glyphAtlas.lookups).toBeGreaterThan(0);
+      expect(state?.renderStats?.glyphAtlas.hits).toBeGreaterThan(0);
+    }
 
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);

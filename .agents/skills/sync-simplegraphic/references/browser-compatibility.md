@@ -115,3 +115,12 @@ corresponding browser subsystem.
 - Required follow-up: implement a browser screenshot operation, intercept the
   unsupported action safely, or deliberately remove the reachable key contract.
   Revisit on input mapping, Canvas capture, or screenshot UI changes.
+
+### Reusing unchanged rendered output
+
+- Exact command-byte equality, unchanged referenced image objects and the glyph atlas
+  generation permit skipping compilation/GPU submission only. Lua OnFrame still runs.
+- The previous command copy is bounded to 8 MiB. Resize, layer visibility, backend and
+  context events invalidate it. Pending image completion/replacement is observed even
+  when command bytes are unchanged; frames using dynamic textures are never reused.
+- Re-evaluate when frame clearing, glyph storage or resource mutation semantics change.
