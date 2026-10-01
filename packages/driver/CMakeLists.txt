@@ -56,6 +56,10 @@ add_executable(${PROJECT_NAME}
 )
 
 enable_testing()
+add_executable(driver_image_test ${LUA_SOURCES} test/c/image_test.c src/c/image.c src/c/util.c)
+target_include_directories(driver_image_test PRIVATE src/c)
+add_test(NAME driver_image_test COMMAND driver_image_test)
+
 add_executable(driver_bridge_test
         test/c/bridge_test.c
         src/c/byte_buffer.c

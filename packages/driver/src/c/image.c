@@ -61,6 +61,39 @@ static VfsEntry *lookup_vfs_entry(const char *name) {
 static const char *IMAGE_HANDLE_TYPE = "ImageHandle";
 
 static int st_next_handle = 0;
+static const char st_image_resources = 0;
+
+// Intern immutable texture identities in the Lua state's registry. Repeated UI
+// frames may create new userdata, but only a new filename/effective-flags pair
+// allocates another resource ID. The table is reclaimed with the Lua state.
+static int image_resource_id(lua_State *L, const char *filename, int flags, ImageHandle *image) {
+    lua_rawgetp(L, LUA_REGISTRYINDEX, &st_image_resources);
+    lua_getfield(L, -1, filename);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -3, filename);
+    }
+    lua_rawgeti(L, -1, flags);
+    int is_new = lua_isnil(L, -1);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        VfsEntry *entry = lookup_vfs_entry(filename);
+        lua_pushinteger(L, ++st_next_handle); lua_rawseti(L, -2, 1);
+        lua_pushinteger(L, entry ? entry->width : 1); lua_rawseti(L, -2, 2);
+        lua_pushinteger(L, entry ? entry->height : 1); lua_rawseti(L, -2, 3);
+        lua_pushvalue(L, -1);
+        lua_rawseti(L, -3, flags);
+    }
+    lua_rawgeti(L, -1, 1); image->handle = lua_tointeger(L, -1); lua_pop(L, 1);
+    lua_rawgeti(L, -1, 2); image->width = lua_tointeger(L, -1); lua_pop(L, 1);
+    lua_rawgeti(L, -1, 3); image->height = lua_tointeger(L, -1); lua_pop(L, 1);
+    lua_pop(L, 3);
+    return is_new;
+}
+
 
 static int is_user_data(lua_State *L, int index, const char *type) {
     if (lua_type(L, index) != LUA_TUSERDATA) {
@@ -81,13 +114,14 @@ static int is_user_data(lua_State *L, int index, const char *type) {
 static ImageHandle *get_image_handle(lua_State *L) {
     assert(is_user_data(L, 1, IMAGE_HANDLE_TYPE));
     ImageHandle *image_handle = lua_touserdata(L, 1);
-    lua_remove(L, 1);
+    // Keep userdata rooted while Load allocates registry entries.
     return image_handle;
 }
 
 static int NewImageHandle(lua_State *L) {
     ImageHandle *image_handle = lua_newuserdata(L, sizeof(ImageHandle));
-    image_handle->handle = ++st_next_handle;
+    // Zero is the white fallback; unloaded handles must remain absent.
+    image_handle->handle = -1;
     image_handle->width = 1;
     image_handle->height = 1;
 
@@ -101,19 +135,12 @@ static int ImageHandle_Load(lua_State *L) {
     ImageHandle *image_handle = get_image_handle(L);
 
     int n = lua_gettop(L);
-    assert(n >= 1);
-    assert(lua_isstring(L, 1));
-
-    const char *filename = lua_tostring(L, 1);
-
-    VfsEntry *entry = lookup_vfs_entry(filename);
-    if (entry != NULL) {
-        image_handle->width = entry->width;
-        image_handle->height = entry->height;
-    }
+    assert(n >= 2);
+    assert(lua_isstring(L, 2));
+    const char *filename = lua_tostring(L, 2);
 
     int flags = TF_NOMIPMAP;
-    for (int f = 2; f <= n; ++f) {
+    for (int f = 3; f <= n; ++f) {
         if (!lua_isstring(L, f)) {
             continue;
         }
@@ -132,7 +159,7 @@ static int ImageHandle_Load(lua_State *L) {
         }
     }
 
-    EM_ASM({
+    if (image_resource_id(L, filename, flags, image_handle)) EM_ASM({
                Module.imageLoad($0, UTF8ToString($1), $2);
            }, image_handle->handle, filename, flags);
 
@@ -151,6 +178,9 @@ static int ImageHandle_ImageSize(lua_State *L) {
 void image_init(lua_State *L) {
     // Parse vfs.tsv
     parse_vfs_tsv();
+
+    lua_newtable(L);
+    lua_rawsetp(L, LUA_REGISTRYINDEX, &st_image_resources);
 
     // Image handles
     lua_newtable(L);

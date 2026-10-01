@@ -83,6 +83,7 @@ let zstdInitialized = false;
 export class ImageRepository {
   private readonly prefix: string;
   private images: Map<number, TextureHolder> = new Map();
+  private readonly resources = new Map<string, TextureHolder>();
   private resolveBptcSupport: ((supported: boolean) => void) | undefined;
   private readonly bptcSupport = new Promise<boolean>((resolve) => {
     this.resolveBptcSupport = resolve;
@@ -97,17 +98,23 @@ export class ImageRepository {
     this.resolveBptcSupport = undefined;
   }
 
-  async load(handle: number, src: string, flags: number): Promise<void> {
-    if (this.images.has(handle)) return;
-
-    const type = src.endsWith(".dds.zst") ? "Texture" : "Image";
-    const holder: TextureHolder = {
-      flags,
-      textureSource: undefined,
-      textureBitmap: undefined,
-    };
+  // A cache hit has no completion promise and must not trigger another redraw.
+  load(handle: number, src: string, flags: number): Promise<boolean> | undefined {
+    const key = JSON.stringify([src, flags]);
+    const cached = this.resources.get(key);
+    if (cached) {
+      this.images.set(handle, cached);
+      return undefined;
+    }
+    const holder: TextureHolder = { flags, textureSource: undefined, textureBitmap: undefined };
+    // Publish before fetching so concurrent handles share in-flight decoding.
+    this.resources.set(key, holder);
     this.images.set(handle, holder);
+    return this.loadResource(holder, src, flags, `image:${key}`);
+  }
 
+  private async loadResource(holder: TextureHolder, src: string, flags: number, id: string): Promise<boolean> {
+    const type = src.endsWith(".dds.zst") ? "Texture" : "Image";
     const r = await fetch(this.prefix + src, { referrerPolicy: "no-referrer" });
     if (r.ok) {
       const blob = await r.blob();
@@ -141,7 +148,7 @@ export class ImageRepository {
           image = await createImageBitmap(blob);
         } catch (error) {
           log.warn(tag.texture, `Failed to load image: src=${src}`, error);
-          return;
+          return false;
         }
         if (flags & TextureFlags.TF_NOMIPMAP) {
           holder.textureSource = TextureSource.newImage(image, flags);
@@ -161,9 +168,10 @@ export class ImageRepository {
         }
       }
       if (holder.textureSource) {
-        holder.textureBitmap = { id: handle.toString(), source: holder.textureSource };
+        holder.textureBitmap = { id, source: holder.textureSource };
       }
     }
+    return holder.textureBitmap !== undefined;
   }
 
   get(handle: number): TextureBitmap | undefined {

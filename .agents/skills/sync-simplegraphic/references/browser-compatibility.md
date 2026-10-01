@@ -115,3 +115,13 @@ corresponding browser subsystem.
 - Required follow-up: implement a browser screenshot operation, intercept the
   unsupported action safely, or deliberately remove the reachable key contract.
   Revisit on input mapping, Canvas capture, or screenshot UI changes.
+
+### Shared immutable image resources
+
+- ImageHandle userdata remain independent, but filename/effective-sampler-flag pairs
+  share native resource IDs, dimensions, browser decoding and GPU texture identity.
+- Only a new successfully decoded resource schedules a completion redraw. Cache hits
+  and cached failures do not repeatedly fetch or schedule frames; the existing Lua
+  async-state API differences remain unchanged.
+- Re-evaluate when mutable file contents, resource unloading, retry policy or additional
+  ImageHandle methods become observable. ASYNC still does not change sampler identity.
