@@ -354,7 +354,9 @@ export class DriverWorker {
         if (!load) return;
         observeOwnedPromise(
           load,
-          () => this.invalidate(),
+          (available) => {
+            if (available) this.invalidate();
+          },
           (error) => {
             this.diagnostic(
               "worker",
