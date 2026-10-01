@@ -5,6 +5,7 @@ import { log, tag } from "../logger.ts";
 import type { BackendStats, GlyphAtlasTexture, RenderBackend } from "./backend.ts";
 import { INSTANCE_STRIDE, InstanceBuffer } from "./instance_buffer.ts";
 import type { TextureBitmap } from "../image.ts";
+import { quadOutsideViewport } from "./quad_visibility.ts";
 import { type FormatDesc, glFormatFor } from "./webgl.ts";
 
 const MAX_INSTANCES_PER_BATCH = 8192;
@@ -194,6 +195,7 @@ export class WebGL2Backend implements RenderBackend {
   private readonly textures: Map<string, BackendTexture> = new Map();
   private readonly glyphTextures: Map<string, BackendTexture> = new Map();
   private viewport: number[] = [];
+  private viewportCullPadding = 1;
   private pixelRatio = 1;
   private instances = new InstanceBuffer();
   private drawCount = 0;
@@ -352,6 +354,15 @@ export class WebGL2Backend implements RenderBackend {
 
   setViewport(x: number, y: number, width: number, height: number) {
     this.viewport = [x, y, width, height];
+    // Guard against mediump shader coordinates and Float32 vertex rounding.
+    this.viewportCullPadding = 1 + Math.max(
+          this.canvas.width,
+          this.canvas.height,
+          Math.abs(x),
+          Math.abs(y),
+          Math.abs(width),
+          Math.abs(height),
+        ) / 512;
   }
 
   beginFrame() {
@@ -455,6 +466,23 @@ export class WebGL2Backend implements RenderBackend {
     maskLayer: number,
     glyph: boolean,
   ) {
+    // Dynamic textures may update resources used by a later visible draw.
+    if (
+      (glyph || !(textureBitmap as TextureBitmap).updateSubImage) &&
+      quadOutsideViewport(
+        this.viewport[2],
+        this.viewport[3],
+        this.viewportCullPadding,
+        x1,
+        y1,
+        x2,
+        y2,
+        x3,
+        y3,
+        x4,
+        y4,
+      )
+    ) return;
     if (!glyph) this.drawCount++;
     if (this.instances.length >= MAX_INSTANCES_PER_BATCH) this.dispatch();
     const texture = glyph ? this.glyphTextures.get(textureBitmap.id) : this.getTexture(textureBitmap as TextureBitmap);
