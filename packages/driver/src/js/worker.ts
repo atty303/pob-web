@@ -11,6 +11,7 @@ import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { loadFonts, Renderer, type RenderStats, TextMetrics, WebGL2Backend } from "./renderer/index.ts";
 import { createRpcClient } from "./rpc.ts";
 import { registerSentryWasm } from "./sentry-wasm.ts";
+import { loadStartupAssets } from "./startup-assets.ts";
 
 const setSentryWasmCodeFile = registerSentryWasm(self);
 const debugWasmUrl = new URL("../../dist/debug/driver.wasm", import.meta.url).href;
@@ -97,14 +98,12 @@ export class DriverWorker {
     onDiagnostic: (diagnostic: DriverDiagnostic) => void,
     copy: MainCallbacks["copy"],
     openUrl: MainCallbacks["openUrl"],
+    filesystemReady: () => Promise<void> = () => Promise.resolve(),
   ) {
     this.onDiagnostic = onDiagnostic;
     this.diagnostic("worker", "start");
     this.imageRepo = new ImageRepository(`${assetPrefix}/root/`);
 
-    await loadFonts();
-    this.textMetrics = new TextMetrics();
-    this.renderer = new Renderer(this.imageRepo, this.textMetrics, this.screenSize);
     this.hostCallbacks = {
       onError,
       onFrame,
@@ -116,29 +115,25 @@ export class DriverWorker {
       openUrl,
     };
 
-    let driver: { default: EmscriptenModuleFactory<DriverModule> };
-    try {
-      driver = (await import(`../../dist/${build}/driver.mjs`)) as typeof driver;
-    } catch (error) {
-      throw markEnvironmentError(error, "assetLoad");
-    }
     const wasmUrl = build === "release" ? releaseWasmUrl : debugWasmUrl;
     setSentryWasmCodeFile(wasmUrl);
-    let wasmBinary: ArrayBuffer;
+    const rpcCall = createRpcClient(rpcPort);
+    let module: DriverModule;
     try {
-      const response = await fetch(wasmUrl);
-      if (!response.ok) throw new Error(`Failed to load driver Wasm (${response.status} ${response.statusText})`);
-      wasmBinary = await response.arrayBuffer();
+      module = await loadStartupAssets(
+        async () => {
+          const driver = await import(`../../dist/${build}/driver.mjs`);
+          // Retain Emscripten's streaming compilation and ArrayBuffer fallback.
+          return await driver.default({ print: console.log, printErr: console.warn, rpcCall });
+        },
+        loadFonts,
+        filesystemReady,
+      );
     } catch (error) {
       throw markEnvironmentError(error, "assetLoad");
     }
-    const rpcCall = createRpcClient(rpcPort);
-    const module = await driver.default({
-      print: console.log,
-      printErr: console.warn,
-      rpcCall,
-      wasmBinary,
-    });
+    this.textMetrics = new TextMetrics();
+    this.renderer = new Renderer(this.imageRepo, this.textMetrics, this.screenSize);
 
     Object.assign(module, this.exports(module));
     this.imports = this.resolveImports(module);

@@ -130,7 +130,7 @@ export class Driver {
       this.broker = Comlink.wrap<AsyncBroker>(brokerWorker);
       const channel = new MessageChannel();
       const eventChannel = new MessageChannel();
-      await this.broker.start(
+      const filesystemReady = this.broker.start(
         Comlink.transfer(channel.port1, [channel.port1]),
         Comlink.transfer(eventChannel.port1, [eventChannel.port1]),
         this.assetPrefix,
@@ -146,21 +146,25 @@ export class Driver {
       this.lifecycleCallbacks.onWorkerCreated?.(worker);
       this.driverWorker = Comlink.wrap<DriverWorker>(worker) as AsyncDriverWorker;
 
-      return await this.driverWorker.start(
-        this.build,
-        this.assetPrefix,
-        Comlink.transfer(channel.port2, [channel.port2]),
-        Comlink.transfer(eventChannel.port2, [eventChannel.port2]),
-        Comlink.proxy(this.hostCallbacks.onError),
-        Comlink.proxy(this.hostCallbacks.onFrame),
-        Comlink.proxy(this.hostCallbacks.onOAuthLogout),
-        Comlink.proxy(this.hostCallbacks.onTitleChange),
-        Comlink.proxy((diagnostic: DriverDiagnostic) => this.lifecycleCallbacks.onDiagnostic?.(diagnostic)),
-        Comlink.proxy((text: string) => this.copy(text)),
-        Comlink.proxy((url) => {
-          window.open(url, "_blank");
-        }),
-      );
+      await Promise.all([
+        filesystemReady,
+        this.driverWorker.start(
+          this.build,
+          this.assetPrefix,
+          Comlink.transfer(channel.port2, [channel.port2]),
+          Comlink.transfer(eventChannel.port2, [eventChannel.port2]),
+          Comlink.proxy(this.hostCallbacks.onError),
+          Comlink.proxy(this.hostCallbacks.onFrame),
+          Comlink.proxy(this.hostCallbacks.onOAuthLogout),
+          Comlink.proxy(this.hostCallbacks.onTitleChange),
+          Comlink.proxy((diagnostic: DriverDiagnostic) => this.lifecycleCallbacks.onDiagnostic?.(diagnostic)),
+          Comlink.proxy((text: string) => this.copy(text)),
+          Comlink.proxy((url) => {
+            window.open(url, "_blank");
+          }),
+          Comlink.proxy(() => filesystemReady),
+        ),
+      ]);
     } catch (error) {
       this.diagnostic("driver", "start-error", { error: String(error) }, "error");
       this.worker?.terminate();
