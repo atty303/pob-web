@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.28)
 
 project("driver")
 
+option(POB_COMPACT_VALUES "Use Lua's 8-byte tagged values on wasm32" ON)
+if(POB_COMPACT_VALUES)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+        message(FATAL_ERROR "POB_COMPACT_VALUES requires wasm32; configure with -DPOB_COMPACT_VALUES=OFF for other targets")
+    endif()
+    if(NOT CMAKE_C_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
+        message(FATAL_ERROR "POB_COMPACT_VALUES requires little-endian doubles")
+    endif()
+    # Apply the same Lua layout to the driver, luautf8, and native tests.
+    add_compile_definitions(LUA_NANTRICK LUA_IEEEENDIAN=0)
+endif()
+
 STRING (TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
 add_custom_command(
@@ -30,6 +42,7 @@ add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/luautf8/lutf8lib.c
         ${CMAKE_BINARY_DIR}/boot.c
         src/c/driver.c
+        src/c/lua_value_layout.c
         src/c/draw.c
         src/c/draw.h
         src/c/draw_color.c
@@ -56,6 +69,17 @@ add_executable(${PROJECT_NAME}
 )
 
 enable_testing()
+add_executable(driver_lua_values_test
+        ${LUA_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/luautf8/lutf8lib.c
+        src/c/lua_value_layout.c
+        test/c/lua_values_test.c
+)
+target_link_options(driver_lua_values_test PRIVATE "-sMALLOC=mimalloc" "-sALLOW_MEMORY_GROWTH")
+add_test(NAME driver_lua_values_test
+        COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_CURRENT_SOURCE_DIR}/test/run-lua-values.mjs $<TARGET_FILE:driver_lua_values_test>
+)
+
 add_executable(driver_bridge_test
         test/c/bridge_test.c
         src/c/byte_buffer.c
