@@ -174,7 +174,10 @@ export class DriverWorker {
 
   setCanvas(canvas: OffscreenCanvas) {
     this.diagnostic("canvas", "transferred", { width: canvas.width, height: canvas.height });
-    const backend = new WebGL2Backend(canvas, (event, data) => this.diagnostic("webgl", event, data));
+    const backend = new WebGL2Backend(canvas, (event, data) => {
+      this.renderer?.invalidateReuse();
+      this.diagnostic("webgl", event, data);
+    });
     this.imageRepo?.setBptcSupport(__BPTC_SUPPORT_OVERRIDE__ ?? backend.supportsBptc);
     if (this.renderer) {
       this.renderer.backend = backend;

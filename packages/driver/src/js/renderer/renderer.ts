@@ -3,6 +3,7 @@ import { DrawCommandCompiler, type DrawCommandSink } from "../draw.ts";
 import { type ImageRepository, type TextureBitmap, TextureFlags, TextureSource } from "../image.ts";
 import type { BackendStats, RenderBackend } from "./backend.ts";
 import { GlyphAtlas, type GlyphAtlasStats, type TextMetrics } from "./text.ts";
+import { CommandReuse } from "./command-reuse.ts";
 
 const WHITE_TEXTURE_BITMAP: TextureBitmap = (() => {
   const tex = new Texture(Target.TARGET_2D_ARRAY, Format.RGBA8_UNORM_PACK8, [8, 8, 1], 1, 1, 1);
@@ -48,6 +49,7 @@ export type RenderStats = {
   compileSubmitTime: number;
   glyphAtlas: GlyphAtlasStats;
   backend: BackendStats;
+  reused?: boolean;
 };
 
 export class Renderer implements DrawCommandSink {
@@ -58,6 +60,13 @@ export class Renderer implements DrawCommandSink {
   private renderStats: RenderStats;
   private layerVisibility: Map<string, boolean> = new Map();
   private readonly compiler = new DrawCommandCompiler();
+  private readonly reuse = new CommandReuse();
+  private readonly frameImages = new Map<number, TextureBitmap | undefined>();
+  private frameHasDynamicTextures = false;
+
+  invalidateReuse() {
+    this.reuse.invalidate();
+  }
 
   constructor(
     readonly imageRepo: ImageRepository,
@@ -85,11 +94,13 @@ export class Renderer implements DrawCommandSink {
   }
 
   set backend(backend: RenderBackend | undefined) {
+    this.invalidateReuse();
     this._backend = backend;
     this.glyphAtlas.setBackend(backend);
   }
 
   resize(screenSize: { width: number; height: number; pixelRatio: number }) {
+    this.invalidateReuse();
     this.screenSize = screenSize;
     this._backend?.resize(screenSize.width, screenSize.height, screenSize.pixelRatio);
   }
@@ -100,6 +111,18 @@ export class Renderer implements DrawCommandSink {
 
     const frameStartTime = performance.now();
     this.renderStats.frameCount++;
+    const sameImages = [...this.frameImages].every(([handle, image]) => this.imageRepo.get(handle) === image);
+    this.renderStats.reused = sameImages && this.reuse.matches(view, this.glyphAtlas.generation);
+    if (this.renderStats.reused) {
+      this.glyphAtlas.resetFrameStats();
+      this.renderStats.glyphAtlas = this.glyphAtlas.getStats();
+      this.renderStats.layerIndexTime = this.renderStats.compileSubmitTime = 0;
+      this.renderStats.backend = { ...backend.getStats(), instances: 0, instanceBytes: 0, dispatches: 0 };
+      this.renderStats.lastFrameTime = performance.now() - frameStartTime;
+      return;
+    }
+    this.frameImages.clear();
+    this.frameHasDynamicTextures = false;
     this.renderStats.layerStats = [];
     this.glyphAtlas.resetFrameStats();
 
@@ -141,6 +164,9 @@ export class Renderer implements DrawCommandSink {
     this.renderStats.lastFrameTime = performance.now() - frameStartTime;
     this.renderStats.glyphAtlas = this.glyphAtlas.getStats();
     this.renderStats.backend = backend.getStats();
+    // Dynamic images can change without changed commands or resource identities.
+    if (this.frameHasDynamicTextures) this.invalidateReuse();
+    else this.reuse.remember(view, this.glyphAtlas.generation);
   }
 
   setViewport(x: number, y: number, width: number, height: number) {
@@ -252,6 +278,8 @@ export class Renderer implements DrawCommandSink {
       );
     } else {
       const texture = this.imageRepo.get(handle);
+      this.frameImages.set(handle, texture);
+      if (texture?.updateSubImage) this.frameHasDynamicTextures = true;
       if (texture) {
         this.backend?.drawQuad(
           x1,
@@ -348,6 +376,7 @@ export class Renderer implements DrawCommandSink {
   getStats(): RenderStats {
     return {
       frameCount: this.renderStats.frameCount,
+      reused: this.renderStats.reused,
       totalLayers: this.renderStats.totalLayers,
       layerStats: [...this.renderStats.layerStats],
       lastFrameTime: this.renderStats.lastFrameTime,
@@ -389,6 +418,7 @@ export class Renderer implements DrawCommandSink {
   }
 
   setLayerVisible(layer: number, sublayer: number, visible: boolean) {
+    this.invalidateReuse();
     const layerKey = `${layer}.${sublayer}`;
     this.layerVisibility.set(layerKey, visible);
   }

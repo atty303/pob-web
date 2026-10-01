@@ -26,6 +26,7 @@ export interface RenderStats {
   frameCount: number;
   glyphAtlas: GlyphAtlasStats;
   backend: BackendStats;
+  reused?: boolean;
 }
 
 interface PerformanceOverlayProps {

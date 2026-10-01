@@ -269,6 +269,7 @@ export type GlyphAtlasOptions = {
 };
 
 export class GlyphAtlas {
+  generation = 0;
   private readonly canvas = new OffscreenCanvas(1, 1);
   private readonly context: OffscreenCanvasRenderingContext2D;
   private readonly glyphs = new Map<string, Glyph | EmptyGlyph>();
@@ -292,6 +293,7 @@ export class GlyphAtlas {
 
   setBackend(backend: RenderBackend | undefined) {
     if (backend === this.backend) return;
+    this.generation++;
     if (this.backend) {
       if (this.atlasTexture) this.backend.destroyGlyphAtlasTexture(this.atlasTexture);
     }
@@ -410,6 +412,7 @@ export class GlyphAtlas {
 
     const { page, rect } = this.allocate(key, width, bitmapHeight);
     this.backend!.uploadGlyph(page.texture, rect.x, rect.y, width, bitmapHeight, alpha);
+    this.generation++;
     this.stats.uploadedBytes += alpha.byteLength;
     this.stats.rasterizeTime += performance.now() - started;
 
@@ -472,6 +475,7 @@ export class GlyphAtlas {
     const index = this.pages.indexOf(page);
     const replacement = this.createPage(index, page.generation + 1);
     this.pages[index] = replacement;
+    this.generation++;
     this.stats.evictions++;
     const rect = replacement.packer.add(width, height)!;
     replacement.keys.add(key);

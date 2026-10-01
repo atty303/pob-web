@@ -1,0 +1,22 @@
+import { assertEquals } from "@std/assert";
+import { CommandReuse } from "../../src/js/renderer/command-reuse.ts";
+Deno.test("draw reuse checks every byte, resource generation, resize and size bound", () => {
+  const cache = new CommandReuse();
+  const bytes = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
+  const view = new DataView(bytes.buffer, 1, 7);
+  assertEquals(cache.matches(view, 0), false);
+  cache.remember(view, 0);
+  assertEquals(cache.matches(view, 0), true);
+  bytes[7]++;
+  assertEquals(cache.matches(view, 0), false);
+  bytes[7]--;
+  bytes[2]++;
+  assertEquals(cache.matches(view, 0), false);
+  bytes[2]--;
+  assertEquals(cache.matches(view, 1), false);
+  cache.invalidate();
+  assertEquals(cache.matches(view, 0), false);
+  const huge = new DataView(new ArrayBuffer(8 * 1024 * 1024 + 1));
+  cache.remember(huge, 0);
+  assertEquals(cache.matches(huge, 0), false);
+});
