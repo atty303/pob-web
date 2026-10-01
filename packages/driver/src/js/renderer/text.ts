@@ -310,8 +310,9 @@ export class GlyphAtlas {
       if (previous !== undefined) penX += this.kerning(height, fontNum, previous, scalar);
       const glyph = this.getGlyph(height, fontNum, scalar);
       if ("texture" in glyph) {
-        const x1 = x + penX + glyph.offsetX;
-        const y1 = y + glyph.offsetY;
+        // Snap the rasterized bitmap, retaining fractional advances and kerning.
+        const x1 = Math.round(x + penX + glyph.offsetX);
+        const y1 = Math.round(y + glyph.offsetY);
         this.backend.drawQuad(
           x1,
           y1,
