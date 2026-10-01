@@ -198,7 +198,8 @@ static int lcurl_easy_setopt_url(lua_State *L) {
     return 0;
 }
 
-EM_JS(const char *, fetch, (const char *url, const char *headers, const char *body), {
+// EM_JS names share the loader scope; do not shadow browser fetch.
+EM_JS(const char *, pob_http_fetch, (const char *url, const char *headers, const char *body), {
     const reqHeaders = headers ? UTF8ToString(headers) : undefined;
     const reqBody = body ? UTF8ToString(body) : undefined;
 
@@ -249,7 +250,7 @@ static int lcurl_easy_perform(lua_State *L) {
         return 2;
     }
 
-    const char *response = fetch(le->url, le->headers, le->body);
+    const char *response = pob_http_fetch(le->url, le->headers, le->body);
 
     const char *p = response;
     const char *body = p;

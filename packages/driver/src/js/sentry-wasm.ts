@@ -4,8 +4,7 @@ type WorkerTarget = { postMessage(message: unknown): void };
 export function registerSentryWasm(worker: WorkerTarget): (codeFile: string) => void {
   let codeFile = "";
   const instantiate = WebAssembly.instantiate;
-  const wrappedInstantiate = async (source: BufferSource, imports?: WebAssembly.Imports): Promise<WasmResult> => {
-    const result = await instantiate(source, imports) as unknown as WasmResult;
+  const register = (result: WasmResult): WasmResult => {
     try {
       const image = createDebugImage(result.module, codeFile);
       if (image) {
@@ -16,7 +15,14 @@ export function registerSentryWasm(worker: WorkerTarget): (codeFile: string) => 
     }
     return result;
   };
+  const wrappedInstantiate = async (source: BufferSource, imports?: WebAssembly.Imports): Promise<WasmResult> => {
+    return register(await instantiate(source, imports) as unknown as WasmResult);
+  };
   WebAssembly.instantiate = wrappedInstantiate as typeof WebAssembly.instantiate;
+  const streaming = WebAssembly.instantiateStreaming;
+  if (streaming) {
+    WebAssembly.instantiateStreaming = async (source, imports) => register(await streaming(source, imports));
+  }
   return (value) => {
     codeFile = value;
   };

@@ -115,3 +115,12 @@ corresponding browser subsystem.
 - Required follow-up: implement a browser screenshot operation, intercept the
   unsupported action safely, or deliberately remove the reachable key contract.
   Revisit on input mapping, Canvas capture, or screenshot UI changes.
+
+### Overlapped startup prerequisites
+
+- Broker preparation, Wasm streaming/fallback instantiation and six font loads begin
+  independently. Native initialization/Lua startup remain gated on all prerequisites.
+- The HTTP EM_JS helper is named pob_http_fetch to avoid shadowing the generated
+  Emscripten loader's browser fetch. Both streaming and buffer instantiation register
+  the Wasm debug image; native HTTP behavior and packaged assets are unchanged.
+- Re-evaluate when Emscripten initialization, broker readiness or font loading changes.

@@ -6,12 +6,14 @@ const reColorPrefix = /^\^(?:[0-9]|[xX][0-9a-fA-F]{6})/;
 const textEncoder = new TextEncoder();
 
 export async function loadFonts() {
-  await loadFont("/LiberationSans-Regular.woff", "Liberation Sans");
-  await loadFont("/LiberationSans-Bold.woff", "Liberation Sans Bold");
-  await loadFont("/VeraMono.woff", "Bitstream Vera Mono");
-  await loadFont("/Fontin-Italic.woff", "Fontin Italic");
-  await loadFont("/Fontin-Regular.woff", "Fontin Regular");
-  await loadFont("/Fontin-SmallCaps.woff", "Fontin SmallCaps");
+  await Promise.all([
+    loadFont("/LiberationSans-Regular.woff", "Liberation Sans"),
+    loadFont("/LiberationSans-Bold.woff", "Liberation Sans Bold"),
+    loadFont("/VeraMono.woff", "Bitstream Vera Mono"),
+    loadFont("/Fontin-Italic.woff", "Fontin Italic"),
+    loadFont("/Fontin-Regular.woff", "Fontin Regular"),
+    loadFont("/Fontin-SmallCaps.woff", "Fontin SmallCaps"),
+  ]);
 }
 
 export async function loadFont(url: string, family: string) {
