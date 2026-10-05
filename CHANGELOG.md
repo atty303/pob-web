@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.34.1](https://github.com/atty303/pob-web/compare/v0.34.0...v0.34.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **driver:** align rasterized glyphs to framebuffer pixels ([c39ec62](https://github.com/atty303/pob-web/commit/c39ec6289bf9c8e60ace2b34c607d1a4b0c53235))
+* **driver:** align rasterized glyphs to framebuffer pixels ([#220](https://github.com/atty303/pob-web/issues/220)) ([aead90f](https://github.com/atty303/pob-web/commit/aead90ff705e511ca6b20e488cef093211570c27))
+
 ## [0.34.0](https://github.com/atty303/pob-web/compare/v0.33.11...v0.34.0) (2026-08-15)
 
 
