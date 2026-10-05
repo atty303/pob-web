@@ -57,6 +57,30 @@ mise run setup
 This installs the pinned tools and Deno-managed dependencies, initializes the submodules, and installs the repository
 hooks.
 
+### Lua value representation
+
+The wasm32 driver enables the vendored Lua interpreter's existing NaN-boxed value representation. Each tagged value
+occupies 8 bytes instead of 16; numbers still use full double precision. This reduces storage for Lua table entries and
+stack slots without changing packaged PoB code or the garbage-collection policy. It does not halve total browser memory.
+
+`POB_COMPACT_VALUES` defaults to `ON`. The configuration checks the wasm32 pointer size and little-endian target, and
+production compilation checks the compact value layout. The same definitions apply to Lua, luautf8, and native tests.
+The focused driver suite includes numeric edge cases, mixed table keys, closures, coroutines, UTF-8, and garbage
+collection.
+
+For a comparison with the original representation, configure and build explicitly:
+
+```bash
+mise exec -- emcmake cmake --fresh -G Ninja -B packages/driver/build -S packages/driver -DCMAKE_BUILD_TYPE=Release -DPOB_COMPACT_VALUES=OFF
+mise exec -- cmake --build packages/driver/build
+mise exec -- ctest --test-dir packages/driver/build --output-on-failure
+```
+
+Repeat with `-DPOB_COMPACT_VALUES=ON` to test compact values. The ordinary `mise run driver:build` uses a fresh
+configuration and restores the default. `driver_lua_values_test` reports the value size and Lua allocation for a
+100,000-number array; this is a representation check, not a whole-browser memory benchmark. No serialized build or
+public Lua API format changes.
+
 ### Pack upstream PoB
 
 Before running the development server, you need to pack the upstream PoB assets into a structure that the driver can
