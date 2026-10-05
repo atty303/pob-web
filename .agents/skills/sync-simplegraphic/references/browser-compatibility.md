@@ -115,3 +115,9 @@ corresponding browser subsystem.
 - Required follow-up: implement a browser screenshot operation, intercept the
   unsupported action safely, or deliberately remove the reachable key contract.
   Revisit on input mapping, Canvas capture, or screenshot UI changes.
+
+### Rasterized glyph placement
+
+- Glyph bitmaps snap to physical framebuffer pixels. Advances, kerning, text widths,
+  cursor indices and logical-coordinate scaling retain their existing precision.
+- Re-evaluate when glyph rasterization resolution, DPI scaling or texture sampling changes.
