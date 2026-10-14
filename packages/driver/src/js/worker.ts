@@ -4,6 +4,7 @@ import { observeOwnedPromise } from "./promise-owner.ts";
 import type { DriverDiagnostic } from "./diagnostic.ts";
 import { cloneableError, markEnvironmentError, markKnownUpstreamError } from "./error.ts";
 import { ImageRepository } from "./image.ts";
+import { InputFrameBoundary } from "./input-frame.ts";
 import type { PoBKey } from "./keyboard.ts";
 import { log, tag } from "./logger.ts";
 import type { MouseState } from "./mouse-handler.ts";
@@ -11,10 +12,12 @@ import type { PoeOAuthAuthorization } from "./poe-oauth.ts";
 import { loadFonts, Renderer, type RenderStats, TextMetrics, WebGL2Backend } from "./renderer/index.ts";
 import { createRpcClient } from "./rpc.ts";
 import { registerSentryWasm } from "./sentry-wasm.ts";
+import { FrameDemand } from "./frame-demand.ts";
 
 const setSentryWasmCodeFile = registerSentryWasm(self);
 const debugWasmUrl = new URL("../../dist/debug/driver.wasm", import.meta.url).href;
 const releaseWasmUrl = new URL("../../dist/release/driver.wasm", import.meta.url).href;
+const mouseButtons = ["LEFTBUTTON", "MIDDLEBUTTON", "RIGHTBUTTON", "MOUSE4", "MOUSE5"] as PoBKey[];
 
 declare const __BPTC_SUPPORT_OVERRIDE__: boolean | undefined;
 
@@ -80,10 +83,11 @@ export class DriverWorker {
   private hostCallbacks: Omit<HostCallbacks, "onFetch" | "onOAuthAuthorize"> | undefined;
   private mainCallbacks: MainCallbacks | undefined;
   private imports: Imports | undefined;
-  private dirtyCount = 0;
+  private readonly frameDemand = new FrameDemand();
   private _frameScheduled = false;
   private visible = false;
   private onDiagnostic: ((diagnostic: DriverDiagnostic) => void) | undefined;
+  private readonly inputFrame = new InputFrameBoundary(() => this.renderFrame());
 
   async start(
     build: "debug" | "release",
@@ -191,12 +195,13 @@ export class DriverWorker {
   }
 
   invalidate() {
-    this.dirtyCount = 3;
+    this.frameDemand.request(3);
     this.scheduleFrame();
   }
 
   private requestFrames(count: number) {
-    this.dirtyCount = Math.max(this.dirtyCount, count + 1);
+    // The running frame was consumed at entry, so Lua requests count future frames.
+    this.frameDemand.request(count);
     this.scheduleFrame();
   }
 
@@ -208,36 +213,51 @@ export class DriverWorker {
   }
 
   updateMouseState(mouseState: MouseState) {
+    this.inputFrame.flush();
+    if (mouseState.x !== this.mouseState.x || mouseState.y !== this.mouseState.y) this.inputFrame.markMotion();
     this.mouseState = mouseState;
   }
 
   updateKeyboardState(keys: Set<PoBKey>) {
+    this.inputFrame.flush();
+    if (mouseButtons.some((button) => this.pressedKeys.has(button) && !keys.has(button))) {
+      // PoB stops dragging as soon as the held-button state changes. Apply the
+      // latest coalesced position first, including a release before the next RAF.
+      this.inputFrame.flushMotion();
+    }
     this.pressedKeys = keys;
   }
 
   handleMouseMove(mouseState: MouseState) {
-    this.mouseState = mouseState;
-    this.invalidate();
+    this.updateMouseState(mouseState);
+    this.frameDemand.request(1);
+    this.scheduleFrame();
   }
 
   handleKeyDown(name: string, doubleClick: number) {
     this.imports?.onKeyDown(name, doubleClick);
+    this.inputFrame.markPending();
     this.invalidate();
   }
 
   handleKeyUp(name: string, doubleClick: number) {
     this.imports?.onKeyUp(name, doubleClick);
+    this.inputFrame.markPending();
     this.invalidate();
   }
 
   handleChar(char: string, doubleClick: number) {
     this.imports?.onChar(char, doubleClick);
+    this.inputFrame.markPending();
     this.invalidate();
   }
 
-  flushInput() {}
+  flushInput() {
+    this.inputFrame.flush();
+  }
 
   handleVisibilityChange(visible: boolean) {
+    if (!visible) this.flushInput();
     this.visible = visible;
     if (visible) {
       this.invalidate();
@@ -272,39 +292,46 @@ export class DriverWorker {
   private async tick() {
     this._frameScheduled = false;
 
-    if (this.visible && this.dirtyCount > 0) {
+    if (this.visible && this.frameDemand.pending > 0) {
       try {
-        const start = performance.now();
-
-        this.imports?.onFrame();
-        this.pasteBuffer.clear();
-        this.clipboardControlPending = false;
-
-        const time = performance.now() - start;
-        const stats = this.renderer?.getStats();
-        this.hostCallbacks?.onFrame(start, time, stats);
-        if ((stats?.frameCount ?? 0) <= 3 || (stats?.frameCount ?? 0) % 60 === 0 || time > 100) {
-          this.diagnostic("frame", "complete", {
-            duration: time,
-            frameCount: stats?.frameCount,
-            instances: stats?.backend.instances,
-            instanceBytes: stats?.backend.instanceBytes,
-            dispatches: stats?.backend.dispatches,
-          });
-        }
-        this.dirtyCount -= 1;
+        this.renderFrame();
       } catch (error) {
         this.diagnostic("frame", "error", { error: String(error) }, "error");
         this.pasteBuffer.clear();
         this.clipboardControlPending = false;
         this.hostCallbacks?.onError(cloneableError(error));
-        this.dirtyCount = 0;
+        this.frameDemand.clear();
         return;
       }
     }
 
-    if (this.visible && this.dirtyCount > 0) {
+    if (this.visible && this.frameDemand.pending > 0) {
       this.scheduleFrame();
+    }
+  }
+
+  private renderFrame(): void {
+    // Also applies to synchronous frames used to preserve discrete input ordering.
+    this.frameDemand.consume();
+    const start = performance.now();
+    try {
+      this.imports?.onFrame();
+    } finally {
+      this.inputFrame.clear();
+      this.pasteBuffer.clear();
+      this.clipboardControlPending = false;
+    }
+    const time = performance.now() - start;
+    const stats = this.renderer?.getStats();
+    this.hostCallbacks?.onFrame(start, time, stats);
+    if ((stats?.frameCount ?? 0) <= 3 || (stats?.frameCount ?? 0) % 60 === 0 || time > 100) {
+      this.diagnostic("frame", "complete", {
+        duration: time,
+        frameCount: stats?.frameCount,
+        instances: stats?.backend.instances,
+        instanceBytes: stats?.backend.instanceBytes,
+        dispatches: stats?.backend.dispatches,
+      });
     }
   }
 
@@ -378,12 +405,14 @@ export class DriverWorker {
   }
 
   handleClipboardAction(action: ClipboardAction) {
+    this.flushInput();
     const key = action.type === "copy" ? "c" : "v";
     if (action.type === "paste") this.pasteBuffer.push(action.text);
 
     this.clipboardControlPending = true;
     this.imports?.onKeyDown(key, 0);
     this.imports?.onKeyUp(key, 0);
+    this.inputFrame.markPending();
     this.invalidate();
   }
 }

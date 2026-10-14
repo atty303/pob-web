@@ -10,6 +10,7 @@ import type { DriverDiagnostic } from "./diagnostic.ts";
 import { EventHandler } from "./event.ts";
 import { toggleFullscreen } from "./fullscreen.ts";
 import { DOMKeyboardState, KeyboardHandler, type PoBKey, PoBKeyboardState } from "./keyboard.ts";
+import { LatestValueDispatcher } from "./latest-value-dispatcher.ts";
 import { MouseHandler, type MouseState } from "./mouse-handler.ts";
 import { type FrameData, ReactOverlayManager, type RenderStats, type ToolbarCallbacks } from "./overlay/index.ts";
 import type { ToolbarPosition as ToolbarPos } from "./overlay/types.ts";
@@ -73,6 +74,7 @@ export class Driver {
   private clipboard = new ClipboardController(navigator.clipboard);
   private pendingClipboardAction: Promise<void> = Promise.resolve();
   private readonly backgroundPromises: BackgroundPromiseOwner;
+  private readonly mouseMoves: LatestValueDispatcher<MouseState>;
 
   private diagnostic(
     phase: DriverDiagnostic["phase"],
@@ -108,6 +110,9 @@ export class Driver {
         this.diagnostic("worker", "rpc-error", { operation, errorName: errorName(error) }, "error");
       },
       (error) => this.hostCallbacks.onError(error),
+    );
+    this.mouseMoves = new LatestValueDispatcher((position) =>
+      this.backgroundPromises.dispatch("mouse-move", () => this.driverWorker?.handleMouseMove(position))
     );
     this.diagnostic("driver", "construct", { build });
     const originalOnFrame = this.hostCallbacks.onFrame;
@@ -175,12 +180,14 @@ export class Driver {
   }
 
   destory() {
+    this.mouseMoves.close();
     this.diagnostic("driver", "destroy");
     this.worker?.terminate();
     this.brokerWorker?.terminate();
   }
 
   private dispatchWorker(operation: string, invoke: () => Promise<unknown> | undefined): void {
+    this.mouseMoves.flushPending();
     this.backgroundPromises.dispatch(operation, invoke);
   }
 
@@ -288,7 +295,7 @@ export class Driver {
       {
         onMouseStateUpdate: (mouseState) => {
           const transformedMouse = this.transformMouseCoordinates(mouseState);
-          this.dispatchWorker("mouse-move", () => this.driverWorker?.handleMouseMove(transformedMouse));
+          this.mouseMoves.push(transformedMouse);
         },
         onZoom: (scale, centerX, centerY) => {
           this.canvasManager?.zoom(scale, centerX, centerY);
@@ -376,6 +383,7 @@ export class Driver {
   }
 
   detachFromDOM() {
+    this.mouseMoves.discardPending();
     this.canvasManager?.detachFromDOM();
     this.overlayManager?.destroy();
     document.removeEventListener("fullscreenchange", () => this.handleFullscreenChange());
@@ -400,12 +408,14 @@ export class Driver {
   }
 
   private dispatchClipboardAction(action: ClipboardAction) {
+    this.mouseMoves.flushPending();
     this.enqueueClipboardAction(async () => {
       await this.driverWorker?.handleClipboardAction(action);
     });
   }
 
   private handleVirtualClipboardShortcut(shortcut: ClipboardShortcut) {
+    this.mouseMoves.flushPending();
     this.enqueueClipboardAction(async () => {
       if (shortcut === "copy") {
         await this.driverWorker?.handleClipboardAction({ type: "copy" });
@@ -427,6 +437,7 @@ export class Driver {
   }
 
   async getBuildCode(): Promise<string> {
+    await this.flushInput();
     const code = await this.driverWorker?.getBuildCode();
     if (!code) {
       throw new Error("getBuildCode failed");
@@ -436,6 +447,8 @@ export class Driver {
 
   async flushInput(): Promise<void> {
     await this.pendingClipboardAction;
+    this.mouseMoves.flushPending();
+    await this.backgroundPromises.settled();
     await this.driverWorker?.flushInput();
   }
 

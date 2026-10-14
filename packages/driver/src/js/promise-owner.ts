@@ -7,7 +7,7 @@ export class BackgroundPromiseOwner {
     private readonly reportFirst: (error: unknown) => void,
   ) {}
 
-  dispatch(operation: string, invoke: () => Promise<unknown> | undefined): void {
+  dispatch(operation: string, invoke: () => Promise<unknown> | undefined): Promise<void> {
     let result: Promise<unknown> | undefined;
     try {
       result = invoke();
@@ -33,6 +33,7 @@ export class BackgroundPromiseOwner {
       });
     this.pending.add(task);
     void task.then(() => this.pending.delete(task));
+    return task;
   }
 
   async settled(): Promise<void> {

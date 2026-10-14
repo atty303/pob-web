@@ -84,6 +84,15 @@ incompatibility remains unresolved.
 
 ## Browser replacements preserving upstream behavior
 
+### Input dispatch and frame ordering
+
+- High-frequency pointer motion is replaceable while a worker update is in flight, but the latest position is flushed
+  before discrete input, resize, visibility, clipboard, and explicit input-flush operations are posted. The worker
+  consumes queued Lua input before replacing its cursor or key snapshot.
+- Releasing a held mouse button applies the final coalesced position while the button is still held. Ordinary motion
+  requests one frame; other invalidations and explicit Lua frame requests retain their existing budgets. Re-evaluate
+  when worker dispatch, pointer capture, Lua input queuing, or frame scheduling changes.
+
 ### Screen and DPI scaling
 
 - `RenderInit("DPI_AWARE")`, `GetScreenScale`, and the DPI scale override APIs
