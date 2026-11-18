@@ -1,6 +1,6 @@
 [tools]
 deno = "2.9.3"
-"github:Pinggy-io/cli-js" = { version = "0.5.1", exe = "pinggy" }
+"github:Pinggy-io/cli-js" = { version = "0.5.1", bin = "pinggy" }
 emsdk = "6.0.6"
 cmake = "4.3.3"
 ninja = "1.13.2"
