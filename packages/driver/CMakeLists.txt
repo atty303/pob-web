@@ -82,6 +82,22 @@ target_link_options(driver_fs_integration_test PRIVATE
         "-sEXPORTED_RUNTIME_METHODS=ERRNO_CODES,setValue,HEAPU8,stringToUTF8OnStack,stackSave,stackRestore"
 )
 
+set(LUA_COMPOUND_TEST_SCRIPT
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/lua/test/luajit-compound-compat.lua
+)
+add_executable(driver_lua_compound_test
+        ${LUA_SOURCES}
+        test/c/lua_compound_test.c
+)
+target_link_options(driver_lua_compound_test PRIVATE
+        "-sMODULARIZE"
+        "-sEXPORT_ES6"
+        "-sENVIRONMENT=node"
+        "--embed-file"
+        "${LUA_COMPOUND_TEST_SCRIPT}@/luajit-compound-compat.lua"
+)
+set_property(TARGET driver_lua_compound_test APPEND PROPERTY LINK_DEPENDS ${LUA_COMPOUND_TEST_SCRIPT})
+
 set(DRIVER_LINK_FLAGS
         "-flto"
         "-Wl,--build-id=sha1"

@@ -56,6 +56,16 @@ jobs:
           [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
           mise run upstream-sync:collect "${args[@]}"
 
+      # Compatibility failures are recorded in JSON without failing the sync step.
+      - name: Upload driver E2E diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: driver-e2e-${{ matrix.game }}
+          path: packages/driver/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload compatibility result
         uses: actions/upload-artifact@v7
         with:
