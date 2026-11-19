@@ -99,7 +99,7 @@ export async function mergeResultFiles(options: {
   const after = JSON.stringify(merged);
   if (before === after) return merged;
 
-  await Deno.writeTextFile(options.versionFile, JSON.stringify(merged, null, 2));
+  await Deno.writeTextFile(options.versionFile, `${JSON.stringify(merged, null, 2)}\n`);
   if (!options.dryRun) {
     await (options.runner ?? daxMiseRunner)(["sync:metadata", "--file", options.versionFile]);
   }

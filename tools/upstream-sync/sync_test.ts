@@ -178,7 +178,9 @@ Deno.test("mergeResultFiles writes one combined metadata file and uploads only o
       },
     });
 
-    const merged = JSON.parse(await Deno.readTextFile(versionFile));
+    const serialized = await Deno.readTextFile(versionFile);
+    const merged = JSON.parse(serialized);
+    assertEquals(serialized, `${JSON.stringify(merged, null, 2)}\n`);
     assertEquals(merged.poe1.head, "v2");
     assertEquals(commands, [["sync:metadata", "--file", versionFile]]);
 
@@ -189,6 +191,7 @@ Deno.test("mergeResultFiles writes one combined metadata file and uploads only o
       dryRun: true,
       runner: () => Promise.reject(new Error("dry run attempted an upload")),
     });
+    assertEquals(await Deno.readTextFile(versionFile), serialized);
   } finally {
     await Deno.remove(directory, { recursive: true });
   }
