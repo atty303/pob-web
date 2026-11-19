@@ -1,16 +1,16 @@
 {
   "poe1": {
-    "head": "v2.67.2",
+    "head": "v2.68.1",
     "versions": [
       {
         "value": "v2.68.1",
         "date": "2026-11-17T08:07:49Z",
-        "testResult": "failed"
+        "testResult": "tested"
       },
       {
         "value": "v2.68.0",
         "date": "2026-11-17T06:59:26Z",
-        "testResult": "failed"
+        "testResult": "tested"
       },
       {
         "value": "v2.67.2",
