@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.34.2](https://github.com/atty303/pob-web/compare/v0.34.1...v0.34.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ci:** enable Firefox software WebGL2 with headless EGL ([d62e2a2](https://github.com/atty303/pob-web/commit/d62e2a26b44656befcc14680c5cd56a4538cd44c))
+* **ci:** enable headless Firefox software WebGL2 ([#233](https://github.com/atty303/pob-web/issues/233)) ([d173858](https://github.com/atty303/pob-web/commit/d173858439170b462195cff3ee9dbc7099614b9f))
+* **ci:** install EGL runtime and requeue failed PoE1 releases ([5c46249](https://github.com/atty303/pob-web/commit/5c4624926fcb4f29d3ad35aefa7cc38eea4f8891))
+* **metadata:** mark PoE1 v2.68 releases tested after runtime fix ([4400440](https://github.com/atty303/pob-web/commit/4400440d4c6dbe3b527cd33238a732a41c18ae5e))
+* **metadata:** requeue failed PoE1 releases through normal sync ([6c9d675](https://github.com/atty303/pob-web/commit/6c9d675d5be83ba92ddc279e8ddc752240cc9e6e))
+* **metadata:** requeue failed PoE1 v2.68 releases for upstream sync ([#231](https://github.com/atty303/pob-web/issues/231)) ([339a963](https://github.com/atty303/pob-web/commit/339a963011ef36848b549b3f4299c6e13cd6236d))
+
 ## [0.34.1](https://github.com/atty303/pob-web/compare/v0.34.0...v0.34.1) (2026-11-19)
 
 
