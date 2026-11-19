@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.34.1](https://github.com/atty303/pob-web/compare/v0.34.0...v0.34.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ci:** initialize submodules for upstream release sync ([4a8e875](https://github.com/atty303/pob-web/commit/4a8e875d92b24886f5c95ca192a0dfb3dddfbb9e))
+* **ci:** initialize submodules for upstream release sync ([#229](https://github.com/atty303/pob-web/issues/229)) ([e67c592](https://github.com/atty303/pob-web/commit/e67c59242b6a5d68752c466458839fa7ce51394d))
+* **ci:** use supported mise bin option for Pinggy ([0555a15](https://github.com/atty303/pob-web/commit/0555a15ad20928a9f5bec0f7b60d078dfad37a46))
+* **driver:** align rasterized glyphs to framebuffer pixels ([c39ec62](https://github.com/atty303/pob-web/commit/c39ec6289bf9c8e60ace2b34c607d1a4b0c53235))
+* **driver:** align rasterized glyphs to framebuffer pixels ([#220](https://github.com/atty303/pob-web/issues/220)) ([aead90f](https://github.com/atty303/pob-web/commit/aead90ff705e511ca6b20e488cef093211570c27))
+* **sync:** restore PoE1 compatibility and formatted metadata ([5a21944](https://github.com/atty303/pob-web/commit/5a21944faa231cc8ae05ba58e8be331dc1096890))
+* **sync:** restore PoE1 compatibility and formatted metadata ([#230](https://github.com/atty303/pob-web/issues/230)) ([e0d2bbe](https://github.com/atty303/pob-web/commit/e0d2bbe1bb08ac6b085bd4b8eb423d5b61165ead))
+
 ## [0.34.0](https://github.com/atty303/pob-web/compare/v0.33.11...v0.34.0) (2026-08-15)
 
 
