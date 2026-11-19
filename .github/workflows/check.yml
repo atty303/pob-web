@@ -27,6 +27,9 @@ jobs:
       - name: Check and build
         run: mise run test
 
+      - name: Install headless Firefox software rendering libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libegl-mesa0 libgl1-mesa-dri
+
       # Temporary PR validation; removed after confirming both versions on this runner.
       - name: Validate PoE1 compatibility on the CI runner
         run: |
