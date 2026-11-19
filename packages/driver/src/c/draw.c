@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -9,6 +10,7 @@
 #include "dpi.h"
 #include "lauxlib.h"
 #include "image.h"
+#include "text_width_cache.h"
 
 static int st_layer = 0;
 
@@ -80,6 +82,35 @@ typedef struct {
 #pragma pack(pop)
 
 static ByteBuffer st_buffer = {0};
+static size_t st_text_width_bridge_calls;
+
+/* Fonts load before draw_init. If a host replaces fonts or text measurement
+ * during a session, it must invalidate these physical-pixel results too. */
+EMSCRIPTEN_KEEPALIVE
+void invalidate_text_width_cache(void) {
+    text_width_cache_reset(text_width_cache_profile().enabled);
+    st_text_width_bridge_calls = 0;
+}
+
+/* A same-binary profiling switch; clearing also releases all owned strings. */
+EMSCRIPTEN_KEEPALIVE
+void set_text_width_cache_enabled(int enabled) {
+    text_width_cache_reset(enabled != 0);
+    st_text_width_bridge_calls = 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char *get_text_width_cache_profile(void) {
+    static char result[512];
+    TextWidthCacheProfile cache = text_width_cache_profile();
+    snprintf(result, sizeof(result), "{\"enabled\":%s,\"calls\":%zu,\"hits\":%zu,\"misses\":%zu,"
+             "\"bypasses\":%zu,\"bridgeCalls\":%zu,\"evictions\":%zu,\"entries\":%zu,"
+             "\"textBytes\":%zu,\"allocatedBytes\":%zu}",
+             cache.enabled ? "true" : "false", cache.calls, cache.hits, cache.misses,
+             cache.bypasses, st_text_width_bridge_calls, cache.evictions, cache.entries,
+             cache.text_bytes, cache.allocated_bytes);
+    return result;
+}
 
 static double get_system_scale(void) {
     return EM_ASM_DOUBLE({ return Module.getScreenScale(); });
@@ -467,9 +498,14 @@ static int DrawStringWidth(lua_State *L) {
     int font = luaL_checkoption(L, 2, "FIXED", fontMap);
     const char *text = lua_tostring(L, 3);
 
-    int width = EM_ASM_INT({
-        return Module.getStringWidth($0, $1, UTF8ToString($2));
-    }, height, font, text);
+    int width;
+    if (!text_width_cache_get(height, font, text, &width)) {
+        st_text_width_bridge_calls++;
+        width = EM_ASM_INT({
+            return Module.getStringWidth($0, $1, UTF8ToString($2));
+        }, height, font, text);
+        text_width_cache_put(height, font, text, width);
+    }
 
     lua_pushnumber(L, width / scale);
     return 1;
@@ -500,6 +536,7 @@ static int DrawStringCursorIndex(lua_State *L) {
 }
 
 void draw_init(lua_State *L) {
+    set_text_width_cache_enabled(EM_ASM_INT({ return Module.nativeTextWidthCacheEnabled !== false; }));
     lua_pushcclosure(L, RenderInit, 0);
     lua_setglobal(L, "RenderInit");
 

@@ -100,6 +100,26 @@ incompatibility remains unresolved.
   by the effective DPI scale; this becomes an identity conversion at system
   default.
 
+### Text width measurement
+
+- `DrawStringWidth` retains JavaScript's authoritative measurement on a miss,
+  caching the returned integer physical width in a bounded native LRU. Keys
+  include effective scaled font height, validated font, and owned text bytes;
+  the current DPI scale still divides the result on every call. Thus DPI mode,
+  device scale, and override changes preserve the Lua-facing width contract.
+- Color escapes, multiline text, UTF-8 conversion and first-NUL termination
+  retain the existing browser measurement semantics. Native hits skip string
+  conversion and JavaScript entry; cursor-index measurement is unchanged.
+- Null text pointers and scaled font heights at or below 2 retain the original
+  bridge path. The renderer subtracts 2 for CSS font size; an invalid tiny size
+  can leave Canvas using its preceding font and is unsuitable for native reuse.
+- Fonts are loaded before Lua initialization. Cache entries are cleared on
+  initialization and their memory is released with the worker. A future runtime
+  font/measurement replacement must also call `invalidate_text_width_cache`.
+- Re-evaluate when font loading, measurement, accepted text arguments, or DPI
+  scaling changes. Focused native tests compare enabled/disabled results and
+  cover cache bounds, owned string lifetime, collisions and scaling changes.
+
 ## Known unresolved reachability risks
 
 These entries are not reviewed exemptions. Do not reuse them to justify a
