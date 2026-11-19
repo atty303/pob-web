@@ -50,6 +50,9 @@ jobs:
       - uses: jdx/mise-action@v3
       - run: mise run install
 
+      - name: Install headless Firefox software rendering libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libegl-mesa0 libgl1-mesa-dri
+
       - name: Sync and test new releases
         run: |
           args=(--game "$GAME" --output ".artifacts/$GAME.json")

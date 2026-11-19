@@ -17,7 +17,19 @@ export default defineConfig({
   testDir: "test/e2e",
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
-    { name: "firefox", use: { browserName: "firefox" } },
+    {
+      name: "firefox",
+      use: {
+        browserName: "firefox",
+        // GPU-less CI needs software WebGL2 and surfaceless EGL rather than GLX.
+        launchOptions: Deno.env.get("CI")
+          ? {
+            firefoxUserPrefs: { "webgl.force-enabled": true },
+            env: { ...Deno.env.toObject(), MOZ_WEBGL_FORCE_EGL: "1" },
+          }
+          : {},
+      },
+    },
   ],
   fullyParallel: false,
   workers: 2,
