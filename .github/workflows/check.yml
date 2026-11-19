@@ -26,3 +26,18 @@ jobs:
 
       - name: Check and build
         run: mise run test
+
+      # Temporary PR validation; removed after confirming both versions on this runner.
+      - name: Validate PoE1 compatibility on the CI runner
+        run: |
+          mise run visual:setup
+          mise run test:e2e:driver --game poe1 --version v2.68.0
+          mise run test:e2e:driver --game poe1 --version v2.68.1
+
+      - name: Upload temporary E2E diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: temporary-webgl-e2e
+          path: packages/driver/test-results
+          if-no-files-found: ignore
